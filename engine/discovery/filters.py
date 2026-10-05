@@ -71,13 +71,17 @@ def applied_keys():
         ids = {x.strip() for x in open(p).read().replace("\n", ",").split(",") if x.strip()}
     p = os.path.join(WORKSPACE, "events.jsonl")
     if os.path.exists(p):
+        latest = {}  # job -> its latest event, so a correction overrides an earlier status
         for line in open(p, encoding="utf-8"):
             try:
                 e = json.loads(line)
             except ValueError:
                 continue
-            if e.get("kind") == "application" and not e.get("dry") and e.get("status") in ("SUBMITTED", "SKIPPED"):
-                keys.add(norm(e.get("job", "")))
+            if e.get("kind") == "application" and not e.get("dry"):
+                latest[norm(e.get("job", ""))] = e
+        for k, e in latest.items():
+            if e.get("status") in ("SUBMITTED", "SKIPPED"):
+                keys.add(k)
                 m = re.search(r"(?:jobs/|token=|gh_jid=|ashbyhq\.com/[^/]+/|lever\.co/[^/]+/)([0-9a-f-]{6,})", e.get("url", ""))
                 if m:
                     ids.add(m.group(1))

@@ -45,6 +45,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - More provable answers: "Legal Full Name", "based in or around the Bay Area" (derived from your preset city), "relatives that currently work at…", data-use consent ("Do you authorize X to use your information"). Street address is filled only if you add `address_line1` to presets.
 - **newgrad resolver:** a board is cached only after a lead title actually matched there. A same-slug board from a different company (e.g. `ashby:pylon`) is no longer trusted, and misses are retried after 7 days instead of never.
 
+- **False SUBMITTED (critical):** Greenhouse success detection matched the bare word "confirmation" anywhere on the page, so a form waiting at the email-code step was once logged as submitted. Now the code step is checked first, and success needs explicit thank-you/received wording or a `/confirmation` URL, plus the submit button gone. The one affected record was corrected with an appended `correction` event (the log stays append-only), and every other submission was re-verified against its proof.
+- Dedupe (`apply` guard and discovery) uses each job's **latest** status, so a correction overrides an earlier event.
+- Greenhouse **education block** (Degree / Discipline / School react-selects inside `.education--form`) is now scanned and filled. School names match Greenhouse's spelling variants ("…University-Fullerton").
+- ACK recognizes "I will read…"; the select fast path opens menus that a click only focused.
+- **Ashby bot check:** "flagged as possible spam" is reported as `BOT-CHECK` (apply manually with the prepared resume) and never worked around.
+
 ### Transparency
 - Every `application` event now stores the full question -> answer list the filler used, so any submission can be audited after the fact.
 

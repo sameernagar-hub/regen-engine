@@ -74,7 +74,7 @@ RULES = [
     (r"privacy|consent|acknowledge|agree|certify|attest", "__ACK__"),
 ]
 DECLINE = re.compile(r"decline|prefer not|don.t wish|do not wish|not to (answer|disclose|say)|choose not", re.I)
-ACK = re.compile(r"^(yes|i agree|i acknowledge|i consent|i accept|i have read|i understand|i confirm|i certify|i attest|acknowledged?|agreed?|accepted?|confirm(ed)?|understood)\b", re.I)
+ACK = re.compile(r"^(yes|i agree|i acknowledge|i consent|i accept|i have read|i will read|i understand|i confirm|i certify|i attest|acknowledged?|agreed?|accepted?|confirm(ed)?|understood)\b", re.I)
 NACK = re.compile(r"\b(do not|don.t|disagree|decline|not|no|reject)\b", re.I)
 
 # Open-ended "why us" questions get the job's note (written per job from Fact Bank entries, reviewed before use).
@@ -95,7 +95,8 @@ BANK = load_answer_bank()
 
 # Same fact, other spellings a dropdown may use (tried only when the main answer has no matching option).
 ALIASES = {P["state"]: [P.get("state_abbr", "")], P["country"]: ["United States of America", "USA"],
-           P["degree"]: ["Master of Science", "Masters", "M.S."]}
+           P["degree"]: ["Master of Science", "Masters", "M.S."],
+           P["school"]: [P["school"].replace(", ", "-"), P["school"].replace(", ", " - "), P["school"].replace(",", "")]}
 ALIASES = {k: [v for v in vs if v] for k, vs in ALIASES.items()}
 
 YESNO_Q = re.compile(r"^\s*(are|do|does|did|will|would|have|has|had|is|was|can|could|should|may|any)\b", re.I)
@@ -238,6 +239,9 @@ def submit_ashby(page):
         if re.search(r"successfully submitted|thank you for applying|application was submitted", body, re.I): return True, "success"
         m = re.findall(r"Missing entry for required field: [^\n]+", body)
         if m: return False, "; ".join(m)
+        if re.search(r"flagged as possible spam", body, re.I):
+            # bot detection: never worked around. You submit this one by hand (resume is ready).
+            return False, "BOT-CHECK: Ashby flagged the automated submit; apply manually with the prepared resume"
     return False, "no confirmation seen (captcha?)"
 
 # ---------------- Greenhouse (job-boards.greenhouse.io) ----------------
@@ -269,7 +273,7 @@ def fill_gh(page, job, log):
                 cc.click(timeout=3000); cc.type("United States", delay=10); time.sleep(0.8); page.keyboard.press("Enter")
             except Exception: pass
     seen = set()
-    for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question"):
+    for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question, .education--form .select__container, .education--form .text-input-wrapper"):
         key = f.evaluate("e => e.innerText.slice(0,120)")
         if key in seen: continue
         seen.add(key)
@@ -299,15 +303,17 @@ def set_gh(page, f, ans, label=""):
     txt = f.query_selector("input[type=text]:not([role=combobox]), input[type=email], input[type=tel], input[type=url], input[type=number], textarea")
     if sel:
         inp = f.query_selector("input[role=combobox]") or sel
-        terms = {"__DECLINE__": ["decline", "prefer not", "don't wish", "not wish"], "__ACK__": ["yes", "i acknowledge", "acknowledge", "agree"],
+        terms = {"__DECLINE__": ["decline", "prefer not", "don't wish", "not wish"], "__ACK__": ["yes", "i acknowledge", "acknowledge", "agree", "understand", "read"],
                  "Company careers page": ["Company Website", "Company website", "Careers", "Website", "Job Board", "Other"]}.get(ans, [ans, ans[:12]])
         def options():
             opts = page.query_selector_all("[role=option], .select__option")
             return [o for o in opts if not re.search(r"no options|loading", o.inner_text(), re.I)]
 
         # fast path: open the menu once and choose from the full list (most selects have < 15 options)
-        inp.click(timeout=4000); time.sleep(0.4)
+        inp.click(timeout=4000); time.sleep(0.5)
         real = options()
+        if not real:  # click focused the box without opening the menu
+            page.keyboard.press("ArrowDown"); time.sleep(0.4); real = options()
         h = None
         if real:
             labeled = [(o.inner_text(), o) for o in real]
@@ -317,7 +323,9 @@ def set_gh(page, f, ans, label=""):
         for term in ([] if h else terms):
             inp.click(timeout=4000); inp.fill(""); inp.type(term, delay=15); time.sleep(0.9)
             real = options()
-            h = pick_option([(o.inner_text(), o) for o in real], term if ans == "Company careers page" else ans)
+            labeled = [(o.inner_text(), o) for o in real]
+            h = pick_option(labeled, term) if ans == "Company careers page" else next(
+                (x for x in (pick_option(labeled, v) for v in [ans] + ALIASES.get(ans, [])) if x), None)
             if not h and len(real) == 1 and term.lower() in real[0].inner_text().lower() and not ans.startswith("__"):
                 h = real[0]  # the only option left contains what we searched for
             if h: break
@@ -365,8 +373,13 @@ def submit_gh(page):
     for _ in range(30):
         time.sleep(1)
         body = page.inner_text("body"); u = page.url
-        if re.search(r"thank you for applying|application (has been )?(received|submitted)|confirmation", body + u, re.I): return True, "success"
-        if re.search(r"security code|verification code", body, re.I):
+        # code step first: its page also contains words like "confirm", which once produced a false SUBMITTED
+        code_step = page.query_selector("input[id^=security-input]") or re.search(r"(security|verification) code (was|has been) sent|enter the 8-character code", body, re.I)
+        form_gone = not page.query_selector("button[type=submit]:visible, button:has-text('Submit application'):visible")
+        if not code_step and form_gone and (re.search(r"thank you for (applying|your application)|application (has been |was )?(received|submitted)|we.ve received your application", body, re.I)
+                              or re.search(r"/confirmation\b", u)):
+            return True, "success"
+        if code_step:
             ok = enter_email_code(page)
             if not ok: return False, "EMAIL CODE REQUIRED (timed out)"
             continue
@@ -386,8 +399,13 @@ def main(argv=None):
 
 
 def already_submitted():
+    """URLs whose latest (non-dry) status is SUBMITTED; a later correction event overrides an earlier one."""
     from engine.feedback.events import read
-    return {e.get("url") for e in read("application") if e.get("status") == "SUBMITTED" and not e.get("dry")}
+    latest = {}
+    for e in read("application"):
+        if not e.get("dry") and e.get("url"):
+            latest[e["url"]] = e.get("status")
+    return {u for u, s in latest.items() if s == "SUBMITTED"}
 
 
 def run(jobs, dry=False):
