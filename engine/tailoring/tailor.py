@@ -71,7 +71,7 @@ def tailor(spec, jd):
 
 
 BLOCKERS = [
-    ("citizenship", r"u\.?s\.? citizen(ship)? (is )?(required|only)|must be (a )?u\.?s\.? citizen|requires? u\.?s\.? citizenship|us persons? only|itar|export control|green card holders? only"),
+    ("citizenship", r"u\.?s\.? citizen(ship)? (is )?(required|only)|must be (a )?u\.?s\.? citizen|requires? u\.?s\.? citizenship|us persons? only|\bitar\b|export control|green card holders? only"),
     ("clearance", r"(active|current|obtain|eligib\w+ for)( a)? (secret|ts|top secret|security) clearance|polygraph"),
     ("no sponsorship", r"(unable|not able|will not|won.t|cannot|can.t|do(es)? not|no longer)( be able to)? (to )?(provide |offer )?(visa )?sponsor|sponsorship (is )?not (available|provided|offered)|without (the need for )?(current or future )?(visa )?sponsorship|not eligible for (visa )?sponsorship"),
     ("grad window", r"(graduating|graduation date|expected to graduate|graduate) (in|between|from|during)[^.]{0,40}(2027|2028)|class of (2027|2028)|(2027|2028) (start|new grads?|graduates)"),
