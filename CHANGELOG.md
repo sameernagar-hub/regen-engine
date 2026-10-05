@@ -4,6 +4,10 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.5.1] - 2026-10-05
+### Fixed
+- Docker watcher was restarting at the 256 MB memory limit (a full poll holds about 110k postings). Limit raised to 1 GB; verified with a full poll (about 750 MB, 0 restarts). *Next:* stream boards through the filter instead of holding all postings, to bring this down.
+
 ## [0.4.0] - 2026-10-05 · "More sources, fewer stalls"
 
 ### Added

@@ -30,4 +30,5 @@ Or leave `python -m engine watch 10` running and batch whatever it announces.
 3. **newgrad-jobs resolution rate (~10%).** Most unresolved leads are Workday/iCIMS/custom portals. Next: add SmartRecruiters/Recruitee fetchers and a company→ATS hint table.
 4. **Gmail code step** is still operator-driven. A local IMAP reader with your app password, kept in `.env`, would close it without any third-party API.
 5. **Memory ingesters** (`fact_bank.json` + `events.jsonl` → Neo4j/pgvector).
-6. **Scheduler:** run `watch` as a service and auto-build batches for jobs that pass the fit gate.
+6. **Watcher memory:** stream each board through the filter instead of holding ~110k postings (now ~750 MB in Docker).
+7. **Scheduler:** run `watch` as a service and auto-build batches for jobs that pass the fit gate.
