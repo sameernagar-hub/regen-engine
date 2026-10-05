@@ -1,6 +1,6 @@
 # REGEN · the job-hunting engine
 
-**Live:** the engine at work, replayed and anonymized → https://regen-engine.onrender.com *(Render static site from `site/`)*
+**Live face:** the engine at work, replayed and anonymized (`site/`, built by `python -m engine site`). [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sameernagar-hub/regen-engine) *(free static site from `render.yaml`; the public URL goes here once deployed)*
 
 > **The fuel for job hunting.** An open-source engine that finds jobs at the source, minutes after they go live, writes a truthful resume for each one, applies automatically within your domain, and learns from every outcome through an agentic memory that runs in Docker.
 
@@ -214,6 +214,8 @@ regen-engine/
 | **v0.1–0.3** ✅ | **Engine core** | Greenhouse + GitHub-feed discovery · Fact-Bank tailoring with validator · Greenhouse/Ashby apply with proof and human queue · email-code pause · event log · CLI + package |
 | **v0.4** ✅ | **Sources & reliability** | Greenhouse/Ashby/Lever/Workable discovery · board registry + harvest · `watch` + webhook · newgrad-jobs leads · JD fit gate · per-job Fact-Bank tailoring + audit log · `inspect` · answer bank · runner timeouts + double-apply guard · tests |
 | **v0.6** ✅ | **Live engine (frontend)** | Not a dashboard: one calm screen where work moves through *listening → judging → writing → applying → hearing back*, narrated one plain sentence at a time; embers = verified applications. `python -m engine live` or the Docker `live` service. Concept, roadmap and free-service research: [docs/FRONTEND.md](docs/FRONTEND.md) |
+| **v0.7** | **Engine room (rendered architecture)** | GPU-rendered live view: instanced board galaxy, glowing pipeline tube, 3D lane tree, bloom; render-on-demand within a small CPU budget. Research: [docs/FRONTEND.md](docs/FRONTEND.md) |
+| **v0.7** | **Lean engine** | Conditional requests (skip unchanged boards), adaptive concurrency, lower peak memory |
 | **v0.4.x** | **Agentic memory** | Ingest the profile and events into Neo4j + pgvector · facts-for-JD retrieval · approved-answer memory · procedural site memory |
 | **v0.5** | **Connectors** | MCP server (`discover_jobs`, `tailor_resume`, `apply`, `queue_status`, `memory_query`, `engine_control`) · REST + webhooks · Claude Code plugin |
 | **v0.6** | **Feedback loop** | Gmail reader (security codes + outcome classification) · lane and timing bandits · learned filters proposed by the graph |

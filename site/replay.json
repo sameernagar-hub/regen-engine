@@ -1,22 +1,58 @@
 {
-"generated": "2026-10-05 14:29",
+"generated": "2026-10-05 14:34",
 "days": 7,
 "verified": 12,
 "verified_roles": [
+[
 "Software Engineer",
-"Full-Stack Engineer, Human Agent Tooling",
-"Software Engineer, Data Platform",
-"Software Engineer, Autonomy Visualization",
-"Software Engineer - AI Security Product",
-"New Grad Software Engineer, Routing",
-"Data Engineer",
-"Software Engineer",
-"Software Engineer, Sandboxing",
-"ML Engineer - API Platform",
-"Software Engineer II, Monetization Engineering",
-"Software Development Engineer II – Life Hub (Super App) (Ne…"
+"fullstack"
 ],
-"boards": 2074,
+[
+"Full-Stack Engineer, Human Agent Tooling",
+"ai"
+],
+[
+"Software Engineer, Data Platform",
+"data"
+],
+[
+"Software Engineer, Autonomy Visualization",
+"backend"
+],
+[
+"Software Engineer - AI Security Product",
+"ai"
+],
+[
+"New Grad Software Engineer, Routing",
+"fullstack"
+],
+[
+"Data Engineer",
+"data"
+],
+[
+"Software Engineer",
+"earlier"
+],
+[
+"Software Engineer, Sandboxing",
+"earlier"
+],
+[
+"ML Engineer - API Platform",
+"platform"
+],
+[
+"Software Engineer II, Monetization Engineering",
+"fullstack"
+],
+[
+"Software Development Engineer II – Life Hub (Super App) (Ne…",
+"fullstack"
+]
+],
+"boards": 2075,
 "events": [
 {
 "stage": "judge",
