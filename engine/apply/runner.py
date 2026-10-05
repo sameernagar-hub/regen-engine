@@ -14,6 +14,7 @@ from playwright.sync_api import sync_playwright
 
 from engine.config import in_workspace, profile_file
 from engine.feedback.events import record
+from engine import safety
 
 P = json.load(open(os.environ.get("REGEN_PRESETS") or profile_file("presets.json")))
 BAY_AREA = r"san francisco|san jose|oakland|berkeley|palo alto|mountain view|sunnyvale|santa clara|cupertino|fremont|menlo park|redwood city|san mateo|hayward|milpitas"
@@ -35,7 +36,7 @@ RULES = [
     (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
     (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor", "Yes"),
     (r"authori[sz]ed to work|eligible to work|legally (authori|work|permitted)|work authori", "Yes"),
-    (r"(ever )?(been )?(previously )?employed (by|at)|worked (for|at) .{0,30} before|former employee|previous employee", "No"),
+    (r"(ever )?(been )?(previously )?employed (by|at)|worked (for|at) .{0,30} before|former employee|previous employee|(currently|previously|ever).{0,30}work(ed)? (at|for) (?!(a|an|any|or|with|the|one|another)\b)", P.get("previous_employer_of_company", "No")),
     (r"non-?compete|non-?solicit|subject to any agreement", "No"),
     (r"government|public official|family members", "No"),
     (r"security clearance|active clearance", "No"),
@@ -436,6 +437,8 @@ def run(jobs, dry=False):
         for job in jobs:
             name = job.get("name") or job["url"]
             log = lambda s: print(s, flush=True)
+            if safety.stop_requested():
+                log("STOP file present (workspace/STOP): halting before " + name); break
             log(f"== {name}")
             ash = "ashbyhq" in job["url"]
             if not ash and "greenhouse" not in job["url"]:
@@ -448,7 +451,15 @@ def run(jobs, dry=False):
                 missing = fill_ashby(page, job, log) if ash else fill_gh(page, job, log)
                 stamp = datetime.datetime.now().strftime("%m%d-%H%M%S")
                 shot = f"proof/{re.sub(r'[^A-Za-z0-9]+', '_', name)[:50]}_{stamp}.png"
-                if missing:
+                # airbags: anything sensitive, unexpected or over the limits stops this job before submit
+                problems = (safety.check_labels([a[0] for a in job.get("_answers", [])])
+                            + safety.check_page(page.inner_text("body"), page.url, job["url"])
+                            + safety.check_answers(job.get("_answers"), P)
+                            + ([] if dry else safety.check_rate(name.split(" - ")[0])))
+                if problems:
+                    page.screenshot(path=shot, full_page=True)
+                    status = "FLAGGED: " + safety.flag("airbag", name, " | ".join(problems), job["url"])
+                elif missing:
                     page.screenshot(path=shot, full_page=True)
                     status = "NEEDS YOU: " + " | ".join(missing)
                 elif dry:

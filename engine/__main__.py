@@ -10,6 +10,9 @@
   apply  <batches/x.json> [--dry]  fill (and submit) every job in a batch
   inspect <job url> [--show]       list a form's fields + the engine's answers, without filling it
   status                           application outcomes from the event log
+  inbox   <msgs.json> | --imap [d] classify recruiting email -> outcome events (OA / interview / rejection / offer / scam)
+  learn                            response rates by lane and ATS -> workspace/learnings.md
+  sos-test                         send a test SOS alert (engine/notify.py; .env SMTP app password)
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
 """
 import collections, sys
@@ -90,6 +93,14 @@ def main():
         m = status
     elif cmd == "report":
         m = report
+    elif cmd == "inbox":
+        from engine.feedback.inbox import main as m
+    elif cmd == "learn":
+        from engine.feedback.inbox import learn
+        m = lambda _argv: learn()
+    elif cmd == "sos-test":
+        from engine.notify import sos
+        m = lambda _argv: sos("[REGEN] test alert", "If you can read this, SOS alerts work.")
     else:
         raise SystemExit(f"unknown command {cmd!r}\n{__doc__}")
     m(argv)

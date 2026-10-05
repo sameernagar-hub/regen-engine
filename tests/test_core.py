@@ -130,3 +130,30 @@ def test_without_sponsorship_is_never_guessed():
 def test_pick_option_ignores_curly_quotes():
     opts = [("High School Diploma/GED", 1), ("Bachelor’s", 2), ("Master’s", 3), ("PhD", 4)]
     assert pick_option(opts, "Master's") == 3
+
+
+def test_fit_word_boundaries():
+    assert fit("Benefits for people leaving the military or becoming disabled.") == []
+    assert "citizenship" in fit("This role is subject to ITAR and requires a US person.")
+
+
+def test_airbags():
+    from engine import safety
+    assert safety.check_labels(["Social Security Number", "First Name"]) == ["form asks for sensitive data: Social Security Number"]
+    assert safety.check_labels(["Application fee (card number)"])
+    assert safety.check_labels(["LinkedIn", "Are you authorized to work in the US?"]) == []
+    assert safety.check_page("We build payment methods for merchants", "https://job-boards.greenhouse.io/x", "https://job-boards.greenhouse.io/x/jobs/1") == []
+    assert safety.check_page("", "https://evil.example.com/apply", "https://job-boards.greenhouse.io/x/jobs/1")
+    presets = {"authorized_without_sponsorship": "Yes", "needs_sponsorship_now_or_future": "Yes", "work_authorized_us": "Yes"}
+    assert safety.check_answers([["Will you require sponsorship?", "Yes"], ["Authorized to work without sponsorship?", "Yes"]], presets) == []
+    assert safety.check_answers([["Will you now or in the future require visa sponsorship?", "No"]], presets)
+
+
+def test_inbox_classify():
+    from engine.feedback.inbox import classify
+    assert classify("Thank you for applying to Anthropic", "If there is a fit, someone will reach out to schedule an interview.") == "confirmation"
+    assert classify("Next steps", "We'd like to invite you to a phone screen. Please share your availability.") == "interview"
+    assert classify("Your application", "Unfortunately, we have decided to move forward with other candidates.") == "rejection"
+    assert classify("Coding challenge", "Please complete the HackerRank assessment within 7 days.") == "oa"
+    assert classify("Job offer", "Please buy equipment with a gift card and we'll reimburse you") == "scam"
+    assert classify("Security code for your application to X", "paste this code") == "other"

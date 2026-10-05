@@ -51,6 +51,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - ACK recognizes "I will read…"; the select fast path opens menus that a click only focused.
 - **Ashby bot check:** "flagged as possible spam" is reported as `BOT-CHECK` (apply manually with the prepared resume) and never worked around.
 
+### Safety airbags + SOS + outcome loop
+- **Airbags** (`engine/safety.py`): before any submit, the job is stopped, flagged (`workspace/flags.jsonl` + a `flag` event) and skipped if:
+  - the form asks for sensitive data (SSN, bank/card, password, date of birth, license/passport numbers)
+  - a field asks for payment or fees
+  - the form is on an unexpected site
+  - a legal answer (sponsorship / work authorization) disagrees with your presets
+  - the daily cap (`REGEN_MAX_PER_DAY`, default 25) or 3 per company per day is reached
+
+  **Kill switch:** create `workspace/STOP` and the runner halts before the next job.
+- **SOS email** (`engine/notify.py`): stdlib SMTP from your own mailbox using an app password in `.env`; no third-party service. Without it, alerts go to `workspace/sos_outbox.md`. `python -m engine sos-test`.
+- **Outcome loop** (`engine/feedback/inbox.py`): `inbox <msgs.json>` (operator-fetched) or `inbox --imap` (read-only IMAP) classifies recruiting email as confirmation, OA, interview, rejection, offer, action or **scam**, and links it to the exact application by company and role title. Each becomes an `outcome` event plus a line in `workspace/outcomes.md`. Interviews, OAs, offers and scams trigger an alert. Conditional wording ("if there's a fit we'll schedule an interview") is not mistaken for an invite.
+- `learn`: reply / OA / interview / rejection counts by resume lane and ATS -> `workspace/learnings.md` (the signal for adapting lanes and sources).
+- JD fit gate: `ITAR` is word-bounded (it had matched "mil-**itar**-y" and skipped an eligible job).
+- "Are you currently, or have you previously, worked at X?" uses your `previous_employer_of_company` preset. Questions about working *with a partner/supplier* still go to you.
+
 ### Always-on + honest numbers
 - **Docker watcher** (`Dockerfile`, `deploy/watcher.compose.yml`): `watch 10 --newgrad` runs in a small container with no browser, as an unprivileged user, on a read-only root filesystem, with all capabilities dropped, a 256 MB / 0.5 CPU limit, and `restart: unless-stopped`. `profile/` is mounted read-only and `workspace/` holds all state. *Verify:* `docker compose -f deploy/watcher.compose.yml logs -f`.
 - `watch --newgrad` also pulls newgrad-jobs.com leads about once an hour (cached, so cheap).
