@@ -117,6 +117,7 @@ The first real run applied to **7 jobs** (Greenhouse + Ashby), each with its own
 | Greenhouse · Ashby · Lever · Workable discovery (~2,300 boards, ~45 s) | ✅ v0.4 |
 | `watch`: new-posting alerts + webhook, as an always-on Docker service | ✅ v0.4 |
 | `report`: verified submissions only (proof on disk) | ✅ v0.4 |
+| `live`: the engine, watched live (not a dashboard) | ✅ v0.6 prototype |
 | newgrad-jobs.com leads resolved to the employer's ATS | ✅ v0.4 |
 | JD fit gate (citizenship, clearance, sponsorship, years, grad window) | ✅ v0.4 |
 | Per-job Fact-Bank tailoring + coverage + fact-id audit log | ✅ v0.4 |
@@ -154,7 +155,7 @@ python -m pytest -q                     # tests (run on profile.example/, never 
 Always-on discovery in Docker (small, no browser, read-only profile mount, auto-restart):
 
 ```bash
-docker compose -f deploy/watcher.compose.yml up -d --build   # runs: watch 10 --newgrad
+docker compose -f deploy/watcher.compose.yml up -d --build   # watcher (watch 10 --newgrad) + live view on http://127.0.0.1:7777
 docker compose -f deploy/watcher.compose.yml logs -f         # live "NEW ..." lines; matches land in workspace/queue.json
 python -m engine report                                      # verified submissions only (confirmation screenshot on disk)
 ```
@@ -210,6 +211,7 @@ regen-engine/
 |---|---|---|
 | **v0.1–0.3** ✅ | **Engine core** | Greenhouse + GitHub-feed discovery · Fact-Bank tailoring with validator · Greenhouse/Ashby apply with proof and human queue · email-code pause · event log · CLI + package |
 | **v0.4** ✅ | **Sources & reliability** | Greenhouse/Ashby/Lever/Workable discovery · board registry + harvest · `watch` + webhook · newgrad-jobs leads · JD fit gate · per-job Fact-Bank tailoring + audit log · `inspect` · answer bank · runner timeouts + double-apply guard · tests |
+| **v0.6** ✅ | **Live engine (frontend)** | Not a dashboard: one calm screen where work moves through *listening → judging → writing → applying → hearing back*, narrated one plain sentence at a time; embers = verified applications. `python -m engine live` or the Docker `live` service. Concept, roadmap and free-service research: [docs/FRONTEND.md](docs/FRONTEND.md) |
 | **v0.4.x** | **Agentic memory** | Ingest the profile and events into Neo4j + pgvector · facts-for-JD retrieval · approved-answer memory · procedural site memory |
 | **v0.5** | **Connectors** | MCP server (`discover_jobs`, `tailor_resume`, `apply`, `queue_status`, `memory_query`, `engine_control`) · REST + webhooks · Claude Code plugin |
 | **v0.6** | **Feedback loop** | Gmail reader (security codes + outcome classification) · lane and timing bandits · learned filters proposed by the graph |

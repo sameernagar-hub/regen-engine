@@ -4,6 +4,14 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.6.0] - 2026-10-05 · "The live engine"
+### Added
+- **Live view** (`engine/live/`, `python -m engine live`): one calm screen, not a dashboard. Work travels as light through five stations (listening, judging, writing, applying, hearing back). The engine narrates each real event in one plain sentence. Every verified application (confirmation screenshot on disk) becomes a permanent ember, and the verified count is the only number shown. "N things are waiting on you" lists what needs you **now**, from each job's latest status.
+- Server: standard library only, read-only, bound to 127.0.0.1, Server-Sent Events, strict CSP. Page: one HTML file, Canvas 2D, no build step, no CDN, no tracking. Respects `prefers-reduced-motion` and light/dark.
+- Docker `live` service in `deploy/watcher.compose.yml`: read-only workspace mount, published on 127.0.0.1 only, 128 MB.
+- `docs/FRONTEND.md`: concept, anti-dashboard rules, frontend roadmap (60-second day replay, click-an-ember proof, lane "workers", phone access, anonymized public demo) and free-service research (Tailscale, Cloudflare Tunnel, self-hosted ntfy, GitHub Pages, Artifacts, InsForge, three.js/Rive).
+- Narration is evidence-based: it never says "proof saved" unless the file exists, and never shows invented counts. *Verify:* `python -m pytest -q` (`test_live_narration_is_plain_and_evidence_based`).
+
 ## [0.5.1] - 2026-10-05
 ### Fixed
 - Docker watcher was restarting at the 256 MB memory limit (a full poll holds about 110k postings). Limit raised to 1 GB; verified with a full poll (about 750 MB, 0 restarts). *Next:* stream boards through the filter instead of holding all postings, to bring this down.
