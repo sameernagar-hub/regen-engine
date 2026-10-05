@@ -1,0 +1,7 @@
+# Commits made before the privacy gate existed (owner chose to keep history as is). SHAs only; no new exceptions allowed.
+1b14ff4b77061c5f6a053476108f19907dca4469
+0cf3840f5b16e823c40fe756e60b357ae328dfa6
+d5835fe6653da313226103456fd1c2a25735f829
+4af1e7364a9f9c056d3d1c642d97fe0752ee7295
+e3eb012fa2aa9d012582024ba3bf5b00273285fe
+8e8b3b58ef06015ade81f841869b845afcad6afd

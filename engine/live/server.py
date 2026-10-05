@@ -23,7 +23,7 @@ def short(s, n=70):
 
 
 def who(job):
-    """'Nuro - New Grad Software Engineer, Routing' -> ('Nuro', 'New Grad Software Engineer, Routing')"""
+    """'Acme - New Grad Software Engineer, Routing' -> ('Acme', 'New Grad Software Engineer, Routing')"""
     co, _, role = (job or "").partition(" - ")
     return co.strip(), short(role.strip(), 60)
 

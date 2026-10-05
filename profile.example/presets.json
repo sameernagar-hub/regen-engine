@@ -28,7 +28,20 @@
  "years_experience": "<your years_experience>",
  "zip": "<your zip>",
  "state_abbr": "<your state_abbr>",
- "authorized_without_sponsorship": "<Yes/No: authorized to work in the US today without sponsorship (e.g. F-1 OPT = Yes)>",
+ "authorized_without_sponsorship": "<Yes/No: authorized to work in the US today without employer sponsorship>",
  "address_line1": "<optional: street address, only if you want forms that ask for it filled>",
- "preferred_location": "<optional: e.g. San Francisco Bay Area>"
+ "preferred_location": "<optional: e.g. a metro area>",
+ "major": "<e.g. Computer Science>",
+ "needs_relocation_assistance": "<Yes/No>",
+ "accept_posted_salary_range": "<Yes/No>",
+ "open_to_onsite_or_relocation": "<Yes/No: answer to onsite / hybrid / relocation questions>",
+ "start_date": "<e.g. 2 weeks notice>",
+ "salary_expectation": "<free-text answer for salary questions>",
+ "government_official_or_family": "<Yes/No>",
+ "lives_in_us": "<Yes/No>",
+ "relatives_at_company": "<Yes/No>",
+ "over_18": "<Yes/No>",
+ "has_degree": "<Yes/No>",
+ "currently_enrolled": "<Yes/No>",
+ "sms_opt_in": "<Yes/No>"
 }

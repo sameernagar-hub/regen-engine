@@ -1,0 +1,50 @@
+# Merge gate. Branch protection on main requires both jobs to pass for EVERY merge, admins included.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  privacy:
+    name: privacy gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history, so every commit's author email is checked
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: No personal data (PII patterns, forbidden paths, private-term fingerprints, commit emails)
+        env:
+          PRIVACY_KEY: ${{ secrets.PRIVACY_KEY }}
+          # only the commits this PR / push adds (pre-gate legacy commits are listed in .privacy/accepted_history.txt)
+          PRIVACY_RANGE: ${{ github.event_name == 'pull_request' && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || format('{0}..{1}', github.event.before, github.sha) }}
+        run: python scripts/privacy_scan.py --ci
+      - name: Public site rebuild check (site/ must contain no company names or status details)
+        run: |
+          python - <<'EOF'
+          import json, re, sys
+          d = json.load(open("site/replay.json", encoding="utf-8"))
+          bad = [e["text"] for e in d["events"] if re.search(r"sponsor|citizen|visa|clearance|itar|\bopt\b|f-1|needs you", e["text"], re.I)]
+          if bad:
+              print("site/replay.json reveals status:", bad[:5]); sys.exit(1)
+          print("site/replay.json: ok,", len(d["events"]), "events")
+          EOF
+
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt pytest
+      - run: python -m pytest -q

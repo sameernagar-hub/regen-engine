@@ -32,17 +32,17 @@ def test_keep_titles_levels_companies():
 
 
 def test_harvest_urls():
-    f = harvest_urls(["https://job-boards.greenhouse.io/Stripe/jobs/1", "https://jobs.ashbyhq.com/Clay/abc",
-                      "https://jobs.lever.co/palantir/xyz/apply", "https://boards.greenhouse.io/embed/job_app?for=reddit&token=2"])
-    assert f["greenhouse"] == {"stripe", "reddit"}
-    assert f["ashby"] == {"Clay"}           # Ashby tokens are case-sensitive
-    assert f["lever"] == {"palantir"}
+    f = harvest_urls(["https://job-boards.greenhouse.io/Globex/jobs/1", "https://jobs.ashbyhq.com/Initech/abc",
+                      "https://jobs.lever.co/umbrella/xyz/apply", "https://boards.greenhouse.io/embed/job_app?for=hooli&token=2"])
+    assert f["greenhouse"] == {"globex", "hooli"}
+    assert f["ashby"] == {"Initech"}           # Ashby tokens are case-sensitive
+    assert f["lever"] == {"umbrella"}
 
 
 def test_slugs():
     s = slugs("The D. E. Shaw Group")
     assert "deshaw" in s
-    assert "chime" in slugs("Chime Financial, Inc")
+    assert "vandelay" in slugs("Vandelay Industries, Inc")
 
 
 # ---- JD fit checks ----
@@ -98,7 +98,7 @@ def test_rules_dont_overmatch():
     assert answer_for("Major", {}) == "Computer Science"
     assert answer_for("Open source community contributions", {}) is None
     assert answer_for("Are you based in the U.S.? We only hire in the U.S.", {}) == "Yes"
-    assert answer_for("What is the earliest you would want to start?", {}).startswith("Immediately")
+    assert answer_for("What is the earliest you would want to start?", {}) == "Two weeks notice"
 
 
 def test_pick_option():
@@ -151,7 +151,7 @@ def test_airbags():
 
 def test_inbox_classify():
     from engine.feedback.inbox import classify
-    assert classify("Thank you for applying to Anthropic", "If there is a fit, someone will reach out to schedule an interview.") == "confirmation"
+    assert classify("Thank you for applying to Umbrella", "If there is a fit, someone will reach out to schedule an interview.") == "confirmation"
     assert classify("Next steps", "We'd like to invite you to a phone screen. Please share your availability.") == "interview"
     assert classify("Your application", "Unfortunately, we have decided to move forward with other candidates.") == "rejection"
     assert classify("Coding challenge", "Please complete the HackerRank assessment within 7 days.") == "oa"
@@ -161,9 +161,22 @@ def test_inbox_classify():
 
 def test_live_narration_is_plain_and_evidence_based():
     from engine.live.server import narrate
-    n = narrate({"kind": "application", "status": "SUBMITTED", "job": "Nuro - New Grad SWE", "proof": "proof/missing.png"})
+    n = narrate({"kind": "application", "status": "SUBMITTED", "job": "Acme - New Grad SWE", "proof": "proof/missing.png"})
     assert n["tone"] == "win" and "Proof saved" not in n["text"] and n["verified"] is False   # no proof on disk, no claim
-    assert narrate({"kind": "application", "status": "SKIPPED", "job": "Stripe - FS", "detail": "JD: 5+ yrs"})["text"] == "Let Stripe go: 5+ yrs."
+    assert narrate({"kind": "application", "status": "SKIPPED", "job": "Globex - FS", "detail": "JD: 5+ yrs"})["text"] == "Let Globex go: 5+ yrs."
     assert narrate({"kind": "resume", "job": "X - Y"})["text"] == "Wrote a resume for X."
     assert narrate({"kind": "application", "status": "filled (dry run)", "job": "X - Y", "dry": True}) is None
-    assert "wants to talk" in narrate({"kind": "outcome", "outcome": "interview", "company": "Reddit"})["text"]
+    assert "wants to talk" in narrate({"kind": "outcome", "outcome": "interview", "company": "Hooli"})["text"]
+
+
+def test_no_personal_defaults_in_code():
+    """Every status / eligibility answer must come from presets, never be hardcoded in the engine."""
+    import re
+    import engine.apply.runner as r
+    src = open(r.__file__, encoding="utf-8").read()
+    assert not re.search(r', "(Yes|No)"\),', src), "hardcoded Yes/No answer in RULES: move it to presets"
+    assert answer_for("Will you now or in the future require visa sponsorship?", {}) == r.P["needs_sponsorship_now_or_future"]
+
+
+def test_placeholders_are_never_answers():
+    assert answer_for("Are you a US citizen?", {"us citizen": "<Yes/No>"}) is None

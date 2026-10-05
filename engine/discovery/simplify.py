@@ -25,7 +25,15 @@ def ats_of(url):
     return "other"
 
 
-def pull(days=7, feed="simplify-newgrad", needs_sponsorship=True):
+def _needs_sponsorship():
+    import json, os
+    from engine.config import PROFILE
+    p = os.path.join(PROFILE, "presets.json")
+    return os.path.exists(p) and json.load(open(p, encoding="utf-8")).get("needs_sponsorship_now_or_future") == "Yes"
+
+
+def pull(days=7, feed="simplify-newgrad", needs_sponsorship=None):
+    needs_sponsorship = _needs_sponsorship() if needs_sponsorship is None else needs_sponsorship
     dom = load_domain()
     data = json.load(urllib.request.urlopen(FEEDS[feed], timeout=30))
     with in_workspace():

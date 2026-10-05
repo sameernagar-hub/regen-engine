@@ -1,14 +1,44 @@
-# REGEN · the job-hunting engine
+<div align="center">
 
-**Live face:** the engine at work, replayed and anonymized (`site/`, built by `python -m engine site`). [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sameernagar-hub/regen-engine) *(free static site from `render.yaml`; the public URL goes here once deployed)*
+# REGEN
 
-> **The fuel for job hunting.** An open-source engine that finds jobs at the source, minutes after they go live, writes a truthful resume for each one, applies automatically within your domain, and learns from every outcome through an agentic memory that runs in Docker.
+### The open-source engine that finds jobs minutes after they're posted, and applies with nothing but the truth.
 
-*REGEN is a working name. Branding comes later. The engine is what matters.*
+[![ci](https://github.com/sameernagar-hub/regen-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/sameernagar-hub/regen-engine/actions/workflows/ci.yml)
+[![stars](https://img.shields.io/github/stars/sameernagar-hub/regen-engine?style=flat&color=e9b65c)](https://github.com/sameernagar-hub/regen-engine/stargazers)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.10%2B-informational)](pyproject.toml)
+[![docker](https://img.shields.io/badge/docker-ready-2496ED)](deploy/watcher.compose.yml)
+[![privacy](https://img.shields.io/badge/privacy-gated%20in%20CI-success)](SECURITY.md)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-[![status](https://img.shields.io/badge/status-v0.4%20alpha-orange)](#roadmap) [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![python](https://img.shields.io/badge/python-3.10%2B-informational)](pyproject.toml)
+<img src="docs/assets/live-dark.png" alt="REGEN live view: work flows through listening, judging, writing, applying and hearing back; each gold bead is an application sent with proof, grouped by resume lane" width="100%">
+
+<sub>The live view, replaying real activity with company names hidden. Each gold bead is an application sent <b>with proof</b>, grouped by the resume lane that wrote it.</sub>
+
+**[Live demo](#-see-it-live)** · **[Quick start](#quick-start)** · **[How it works](#architecture)** · **[Roadmap](#roadmap)** · **[Contribute](CONTRIBUTING.md)**
+
+</div>
 
 ---
+
+## Why people star this
+
+- ⚡ **First, not fiftieth.** It watches **~2,300 company job boards** (Greenhouse, Ashby, Lever, Workable) directly and flags new roles **minutes** after they go live, before they reach LinkedIn.
+- 🧾 **Zero fabrication, by construction.** Resumes are assembled only from your Fact Bank. The code *cannot* invent a skill, number or employer, and every resume logs the exact facts it used.
+- 🎯 **One resume per job.** Each posting gets its own one-page resume, routed to the right lane (backend, platform, full-stack, AI, data) and ordered by what the job asks for.
+- 🛑 **Airbags.** Sensitive fields (SSN, bank, passwords), fees, unexpected sites, answers that drift from your presets, and rate caps all stop the engine and flag a human. There's a one-file kill switch.
+- 🔒 **Local-first and private.** Your profile, history and browser session never leave your machine, and every merge to this repo passes an automated privacy gate.
+- 📈 **Honest numbers.** `report` counts only applications with a confirmation screenshot on disk. No inflated "500 applied!" claims.
+- 🌱 **Learns from replies.** Your inbox is classified (confirmation, OA, interview, rejection, offer, scam) and linked back to the exact application and resume lane.
+- 🐳 **Always on.** A tiny hardened Docker service keeps listening while you sleep.
+
+> If this is the kind of job-search tool you wish existed, **⭐ star the repo**. It's the easiest way to follow along, and it helps other job seekers find it.
+
+## 👀 See it live
+The live view is **not a dashboard**: it's one calm screen where work moves as light through *listening → judging → writing → applying → hearing back*, narrated one plain sentence at a time.
+- **Public demo:** [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sameernagar-hub/regen-engine). A free static site (`render.yaml`) that replays recent real activity, **anonymized** (no company names, no personal details; the build refuses to publish if a name would leak).
+- **Your own:** `python -m engine live` → http://127.0.0.1:7777, or the `live` Docker service.
 
 ## What this is (and isn't)
 
@@ -110,27 +140,27 @@ The loop does three things. The human queue shrinks over time, because approved 
 
 ---
 
-## Status: v0.3 alpha
+## Status: v0.6 alpha
 
-The first real run applied to **7 jobs** (Greenhouse + Ashby), each with its own tailored resume. v0.4 widened discovery from 345 to about 2,300 boards and hardened the filler. Every change is in **[CHANGELOG.md](CHANGELOG.md)**; live state and next fixes are in **[docs/HANDOFF.md](docs/HANDOFF.md)**.
+Built in the open, with every change itemized in **[CHANGELOG.md](CHANGELOG.md)** (what changed, why, and how to verify it). Live state and next steps are in **[docs/HANDOFF.md](docs/HANDOFF.md)**.
 
 | Capability | State |
 |---|---|
-| Greenhouse · Ashby · Lever · Workable discovery (~2,300 boards, ~45 s) | ✅ v0.4 |
-| `watch`: new-posting alerts + webhook, as an always-on Docker service | ✅ v0.4 |
-| `report`: verified submissions only (proof on disk) | ✅ v0.4 |
-| `live`: the engine, watched live (not a dashboard) | ✅ v0.6 prototype |
-| newgrad-jobs.com leads resolved to the employer's ATS | ✅ v0.4 |
-| JD fit gate (citizenship, clearance, sponsorship, years, grad window) | ✅ v0.4 |
-| Per-job Fact-Bank tailoring + coverage + fact-id audit log | ✅ v0.4 |
-| `inspect`: preview any form's fields and answers | ✅ v0.4 |
-| Greenhouse apply | ✅ working |
-| SimplifyJobs feed · event log · `status` | ✅ working |
-| Ashby apply | ⚠️ beta |
-| Lever / Workable apply | 🔜 resume prepared, you click apply |
-| Memory stack (Docker) | 🧱 stack defined, ingesters next |
-| Gmail outcome loop | 🔜 |
-| MCP / REST connectors | 🔜 |
+| Discovery: Greenhouse · Ashby · Lever · Workable (~2,300 boards, ~45 s per pass) | ✅ |
+| `watch`: brand-new postings within minutes, webhook, always-on Docker service | ✅ |
+| Sources: board harvest from public GitHub job lists · newgrad-jobs.com leads resolved to the employer's own ATS | ✅ |
+| JD fit gate (eligibility, clearance, years, graduation window) | ✅ |
+| Per-job Fact-Bank tailoring + coverage + fact-id audit log | ✅ |
+| Greenhouse apply (email security-code step, proof screenshots) | ✅ |
+| Ashby apply (pauses for a human when Ashby asks for one) | ⚠️ beta |
+| Airbags + SOS email + kill switch | ✅ |
+| Inbox outcome loop (`inbox`, `learn`) | ✅ |
+| `report`: verified-only counts | ✅ |
+| Live view + anonymized public site | ✅ |
+| Privacy gate in CI on every merge | ✅ |
+| Lever / Workable apply | 🔜 (resume prepared; you click apply) |
+| Platform: Next.js + TypeScript UI, FastAPI + Pydantic API, Postgres | 🔜 v0.7 |
+| Agentic memory (graph + vectors) · MCP / REST connectors | 🔜 |
 
 ---
 
@@ -211,19 +241,17 @@ regen-engine/
 
 | Release | Theme | Deliverables |
 |---|---|---|
-| **v0.1–0.3** ✅ | **Engine core** | Greenhouse + GitHub-feed discovery · Fact-Bank tailoring with validator · Greenhouse/Ashby apply with proof and human queue · email-code pause · event log · CLI + package |
-| **v0.4** ✅ | **Sources & reliability** | Greenhouse/Ashby/Lever/Workable discovery · board registry + harvest · `watch` + webhook · newgrad-jobs leads · JD fit gate · per-job Fact-Bank tailoring + audit log · `inspect` · answer bank · runner timeouts + double-apply guard · tests |
-| **v0.6** ✅ | **Live engine (frontend)** | Not a dashboard: one calm screen where work moves through *listening → judging → writing → applying → hearing back*, narrated one plain sentence at a time; embers = verified applications. `python -m engine live` or the Docker `live` service. Concept, roadmap and free-service research: [docs/FRONTEND.md](docs/FRONTEND.md) |
-| **v0.7** | **Engine room (rendered architecture)** | GPU-rendered live view: instanced board galaxy, glowing pipeline tube, 3D lane tree, bloom; render-on-demand within a small CPU budget. Research: [docs/FRONTEND.md](docs/FRONTEND.md) |
-| **v0.7** | **Lean engine** | Conditional requests (skip unchanged boards), adaptive concurrency, lower peak memory |
-| **v0.4.x** | **Agentic memory** | Ingest the profile and events into Neo4j + pgvector · facts-for-JD retrieval · approved-answer memory · procedural site memory |
-| **v0.5** | **Connectors** | MCP server (`discover_jobs`, `tailor_resume`, `apply`, `queue_status`, `memory_query`, `engine_control`) · REST + webhooks · Claude Code plugin |
-| **v0.6** | **Feedback loop** | Gmail reader (security codes + outcome classification) · lane and timing bandits · learned filters proposed by the graph |
-| **v0.7** | **Coverage** | Ashby hardening · Lever + Workable apply adapters · YC Work at a Startup (in your browser session) · Workday and iCIMS (you create the account, the engine fills) |
-| **v0.8** | **Always on** | Scheduler (every 15 min) · LLM fit scoring · dashboard (pipeline, human queue, response rates) |
-| **v1.0** | **First public release** | Stable APIs · one-command setup · docs site · branding |
+| **v0.1–0.3** ✅ | Engine core | Discovery · Fact-Bank tailoring with validator · Greenhouse/Ashby apply with proof · human queue · event log · CLI |
+| **v0.4** ✅ | Sources & reliability | 4-ATS discovery · board registry + harvest · `watch` · newgrad-jobs leads · JD fit gate · per-job tailoring + audit log · `inspect` · answer bank · runner hardening · tests |
+| **v0.5** ✅ | Safety & feedback | Airbags · SOS email · kill switch · inbox outcome loop · `learn` · verified-only `report` · Docker watcher |
+| **v0.6** ✅ | Live engine | Not-a-dashboard live view · lane tree · anonymized public site · privacy gate in CI |
+| **v0.7** | **Platform** | **Next.js + TypeScript** live view (App Router, Server-Sent Events, Canvas/WebGL) · **FastAPI + Pydantic** API over the engine (typed events, jobs, outcomes, human queue) · **Postgres** for events, jobs and outcomes (pgvector next) · Docker Compose for the whole stack · typed client generated from the OpenAPI schema |
+| **v0.7** | Engine room | GPU-rendered live view: instanced board galaxy, glowing pipeline, 3D lane tree, bloom, render-on-demand within a small CPU budget ([research](docs/FRONTEND.md)) |
+| **v0.8** | Coverage & lean | Lever + Workable adapters · Workday/iCIMS assist · conditional requests (skip unchanged boards) · adaptive concurrency |
+| **v0.9** | Memory & connectors | Graph + vector memory · facts-for-JD retrieval · MCP server (`discover_jobs`, `tailor_resume`, `apply`, `queue_status`) · REST + webhooks |
+| **v1.0** | First public release | One-command setup · docs site · stable APIs · branding |
 
-Beyond v1: recruiter and hiring-manager outreach, interview-prep packets from the job's graph neighborhood, and multi-profile support.
+Beyond v1: recruiter and hiring-manager outreach (always with your approval), interview-prep packets, multi-profile support.
 
 ---
 
@@ -237,9 +265,16 @@ Beyond v1: recruiter and hiring-manager outreach, interview-prep packets from th
 6. **Transparent**: every resume event lists the fact ids it used, every skipped job logs the JD reason, and every submission saves a full-page proof.
 7. **Lean**: as few external calls as possible. Dead boards are skipped, resolutions are cached, and the first `watch` poll only seeds state.
 
-## Contributing
+## Privacy & security
+Your data never belongs in this repo, and the repo enforces it. Every pull request and every push to `main` (the maintainer's included) runs a **privacy gate**. It checks for PII patterns, forbidden paths, non-noreply commit emails, and keyed fingerprints of the maintainer's private terms. Details are in **[SECURITY.md](SECURITY.md)**.
 
-Issues and PRs are welcome, especially ATS adapters (Lever, Workday, iCIMS), discovery sources, and memory ingesters. Never commit real profile data. Use `profile.example/` for fixtures.
+## Contributing
+Good first contributions: ATS adapters (Lever, Workday, iCIMS), new discovery sources, live-view polish, memory ingesters. Read **[CONTRIBUTING.md](CONTRIBUTING.md)**. Use the fictional fixtures (`tests/fixtures/`, `profile.example/`), never real data.
+
+## Star history
+[![Star History Chart](https://api.star-history.com/svg?repos=sameernagar-hub/regen-engine&type=Date)](https://star-history.com/#sameernagar-hub/regen-engine&Date)
+
+If REGEN helped you, or you just like the idea of an honest job engine, **⭐ star it** and share it with someone who's job hunting.
 
 ## License
 

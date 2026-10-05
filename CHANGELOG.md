@@ -4,6 +4,24 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.6.3] - 2026-10-06 · "Private by construction"
+### Security / privacy
+- **No personal defaults in code:** every eligibility and status answer (sponsorship, work authorization, clearance, relocation, onsite, degree, enrollment, start date, salary, location in US, relatives, non-compete…) now comes only from the git-ignored `profile/presets.json`. An unset preset or an unfilled `<placeholder>` goes to the human queue. A test forbids hardcoded Yes/No answers.
+- **Public site:** skip reasons are published only as generic categories (eligibility requirements, seniority, graduation window), so nothing about anyone's citizenship or visa status can be inferred.
+- **Privacy gate** (`scripts/privacy_scan.py`, `.github/workflows/ci.yml`): every PR and push to `main` must pass:
+  - PII patterns, forbidden paths, noreply-only commit emails
+  - keyed HMAC fingerprints of private terms (`.privacy/denylist.json` + the `PRIVACY_KEY` secret)
+  - a public-site wording check
+
+  Local mode adds a full git-history scan and a pre-push hook. `main` branch protection requires the gate and tests for everyone, admins included.
+- **Scrubbed:** real company names in tests (now fictional: Acme, Globex, Initech, Hooli, Umbrella, Vandelay), docs and comments; personal wording in comments and the changelog.
+- **Tests** use a fictional persona (`tests/fixtures/presets.json`, Jane Doe) via `REGEN_PRESETS`.
+- Merges now use a noreply author identity; earlier server-side merge commits exposed a personal email in commit metadata, which was removed by resetting the public history.
+
+### Added
+- README rewrite (hero screenshot of the anonymized demo, badges, why-star, live demo, star history), `SECURITY.md`, `CONTRIBUTING.md`, PR template with a privacy checklist.
+- Roadmap v0.7 **Platform:** Next.js + TypeScript live view, FastAPI + Pydantic API, Postgres.
+
 ## [0.6.2] - 2026-10-05 · "A tidy tree"
 ### Changed
 - The live view's applications are now a **tree**, not floating dots. Stations sit on a straight, evenly spaced line (the pipeline is the trunk). From *applying*, a trunk rises and splits into one tidy stem per **resume lane** (full-stack, AI, data, backend, platform, earlier). Each bead on a stem is one application sent with proof, and each lane's name and count sit on top of its stem. A caption explains it and always fits on screen; hovering a bead names the application (the role only, on the public site).
@@ -50,7 +68,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 
 ### Changed
 - `batch` is ATS-agnostic (Greenhouse, Ashby, Lever, Workable job descriptions) and records `ats` and `lane` per job.
-- Domain filter moved to `engine/discovery/filters.py` and is shared by every source. It adds a real US-location test (state codes, US cities, non-US country list), excluded employers (defense/ITAR, since you need sponsorship), and more excluded levels and titles (VP, architect, polygraph, mobile, 2027, research scientist...).
+- Domain filter moved to `engine/discovery/filters.py` and is shared by every source. It adds a real US-location test (state codes, US cities, non-US country list), excluded employers (configurable, e.g. ITAR-restricted), and more excluded levels and titles (VP, architect, polygraph, mobile, 2027, research scientist...).
 - `engine/discovery/greenhouse.py` is now a compatibility shim over the new modules (old imports keep working).
 - `profile.example/domains.json` now mirrors the engine defaults. The old example silently weakened the filter.
 - Greenhouse selects open once and choose from the full option list, and only fall back to typed search for long or async lists. EEO-heavy forms went from minutes per question to seconds.

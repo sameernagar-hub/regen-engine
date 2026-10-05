@@ -31,47 +31,47 @@ RULES = [
     (r"e-?mail", P["email"]), (r"phone", P["phone"]),
     (r"linkedin", P["linkedin"]),
     (r"github|website|portfolio|other (web)?site|personal site", P["github"]),
-    # "authorized ... WITHOUT sponsorship" is a different question from "will you need sponsorship" (F-1 OPT: authorized
-    # now, sponsorship later). Only your explicit preset answers it; unset -> human queue.
+    # Legal / status answers come ONLY from your presets (never hardcoded). An unset preset -> human queue.
+    # "authorized ... WITHOUT sponsorship" is a different question from "will you need sponsorship", so it has its own key.
     (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
-    (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor", "Yes"),
-    (r"authori[sz]ed to work|eligible to work|legally (authori|work|permitted)|work authori", "Yes"),
+    (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor", P.get("needs_sponsorship_now_or_future")),
+    (r"authori[sz]ed to work|eligible to work|legally (authori|work|permitted)|work authori", P.get("work_authorized_us")),
     (r"(ever )?(been )?(previously )?employed (by|at)|worked (for|at) .{0,30} before|former employee|previous employee|(currently|previously|ever).{0,30}work(ed)? (at|for) (?!(a|an|any|or|with|the|one|another)\b)", P.get("previous_employer_of_company", "No")),
-    (r"non-?compete|non-?solicit|subject to any agreement", "No"),
-    (r"government|public official|family members", "No"),
-    (r"security clearance|active clearance", "No"),
+    (r"non-?compete|non-?solicit|subject to any agreement", P.get("non_compete")),
+    (r"government|public official|family members", P.get("government_official_or_family")),
+    (r"security clearance|active clearance", P.get("security_clearance")),
     (r"(country|where).{0,40}(reside|based|located|live)|^country", P["country"]),
     (r"(state|province).{0,30}(reside|live|located|working from|work from)", P["state"]),
     (r"city.{0,40}(reside|live|located)|current location|where are you located|^location", P["city"]),
     (r"current (or previous )?(employer|company)|current \(or most recent\) company|most recent (employer|company)|^company", P["current_employer"]),
     (r"address (from which|where) you (plan|will|intend)|where (will|do) you (plan to )?work from|work(ing)? location address", f"{P['city']}, {P['state']}"),
-    (r"located in the united states|reside in the (united states|us)|currently live in the us|based in the (u\.?s\.?|united states|us)\b|(live|reside|located) in the (u\.?s\.?|us)\b", "Yes"),
-    (r"(ever )?worked for .{0,40}(company|previously|before)|interviewed (at|with) .{0,30} before", "No"),
-    (r"related to|close personal relationship|relatives? (who |that )?(currently )?work", "No"),
+    (r"located in the united states|reside in the (united states|us)|currently live in the us|based in the (u\.?s\.?|united states|us)\b|(live|reside|located) in the (u\.?s\.?|us)\b", P.get("lives_in_us")),
+    (r"(ever )?worked for .{0,40}(company|previously|before)|interviewed (at|with) .{0,30} before", P.get("previous_employer_of_company")),
+    (r"related to|close personal relationship|relatives? (who |that )?(currently )?work", P.get("relatives_at_company")),
     (r"(based|live|located|reside) (in|near) (or around )?the (san francisco )?bay area|in or around the (san francisco )?bay area",
      "Yes" if re.search(BAY_AREA, P.get("city", ""), re.I) else None),
     (r"current (or previous )?(job )?title", P["current_title"]),
     (r"hear about|how did you find|learned about|^source\b|(job|application|referral|candidate) source", "Company careers page"),
     (r"zip|postal code", P["zip"]),
     (r"^city$", P["city"]), (r"^state$", P["state"]),
-    (r"previously worked (at|for)|worked at .{0,30} (before|previously)", "No"),
+    (r"previously worked (at|for)|worked at .{0,30} (before|previously)", P.get("previous_employer_of_company")),
     (r"processing of personal data|personal data|ai policy|data privacy|privacy notice|candidate privacy|(authori[sz]e|consent).{0,80}(use|process|store|retain).{0,40}(information|data)", "__ACK__"),
-    (r"relocation assistance|require relocation|need relocation", "No"),
-    (r"accept the (listed )?salary|comfortable with the (salary|pay|compensation) range", "Yes"),
-    (r"at least 18|18 years of age|over 18", "Yes"),
-    (r"(office|in-person|onsite|on-site|hybrid|relocat|commut|remote-eligible states)", "Yes"),
-    (r"do you have an? (college|university|bachelor.?s?|undergraduate)? ?degree|completed an? (bachelor|college|university)", "Yes"),
-    (r"currently enrolled|enrolled in (full.time )?(education|school|a degree)", "No"),
+    (r"relocation assistance|require relocation|need relocation", P.get("needs_relocation_assistance")),
+    (r"accept the (listed )?salary|comfortable with the (salary|pay|compensation) range", P.get("accept_posted_salary_range")),
+    (r"at least 18|18 years of age|over 18", P.get("over_18")),
+    (r"(office|in-person|onsite|on-site|hybrid|relocat|commut|remote-eligible states)", P.get("open_to_onsite_or_relocation")),
+    (r"do you have an? (college|university|bachelor.?s?|undergraduate)? ?degree|completed an? (bachelor|college|university)", P.get("has_degree")),
+    (r"currently enrolled|enrolled in (full.time )?(education|school|a degree)", P.get("currently_enrolled")),
     (r"university|school|college|institution", P["school"]),
-    (r"discipline|field of study|\bmajor\b(?! life)", "Computer Science"),
+    (r"discipline|field of study|\bmajor\b(?! life)", P.get("major")),
     (r"degree|highest (level of )?education", P["degree"]),
     (r"gpa", P["gpa"]),
     (r"graduat.{0,20}(year|date)|year.{0,20}graduat|expected graduation", P["grad_year"]),
-    (r"whatsapp|text message|sms", "No"),
+    (r"whatsapp|text message|sms", P.get("sms_opt_in")),
     (r"years of (professional |relevant )?experience|how many years", P["years_experience"]),
-    (r"start date|when can you start|available to start|earliest.{0,30}start", "Immediately (2 weeks notice)"),
-    (r"preferred (office |work )?location|location preference|which (office|location)", P.get("preferred_location", "San Francisco Bay Area")),
-    (r"salary|compensation expectation|desired pay", "Open to discussing; aligned with the posted range"),
+    (r"start date|when can you start|available to start|earliest.{0,30}start", P.get("start_date")),
+    (r"preferred (office |work )?location|location preference|which (office|location)", P.get("preferred_location")),
+    (r"salary|compensation expectation|desired pay", P.get("salary_expectation")),
     (r"privacy|consent|acknowledge|agree|certify|attest", "__ACK__"),
 ]
 DECLINE = re.compile(r"decline|prefer not|don.t wish|do not wish|not to (answer|disclose|say)|choose not", re.I)
@@ -114,6 +114,8 @@ def answer_for(label, extra):
     # per-job extras first, then your approved answer bank, then the built-in rules
     for pat, ans in list(extra.items()) + BANK + RULES:
         if re.search(pat, l, re.I):
+            if isinstance(ans, str) and ans.startswith("<"):
+                return None  # an unfilled "<placeholder>" from profile.example is never submitted
             return ans  # None for rules that must come from the user (e.g. arbitration)
     return None
 

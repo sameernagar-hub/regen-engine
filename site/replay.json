@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-05 14:34",
+"generated": "2026-10-05 14:42",
 "days": 7,
 "verified": 12,
 "verified_roles": [
@@ -57,7 +57,7 @@
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: 5+ yrs.",
+"text": "Let a company go: seniority.",
 "ts": "2026-10-05T13:23"
 },
 {
@@ -75,13 +75,13 @@
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: 5+ yrs.",
+"text": "Let a company go: seniority.",
 "ts": "2026-10-05T13:23"
 },
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: citizenship, no sponsorship.",
+"text": "Let a company go: eligibility requirements.",
 "ts": "2026-10-05T13:23"
 },
 {
@@ -93,7 +93,7 @@
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: citizenship.",
+"text": "Let a company go: eligibility requirements.",
 "ts": "2026-10-05T13:23"
 },
 {
@@ -183,13 +183,13 @@
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: no sponsorship.",
+"text": "Let a company go: eligibility requirements.",
 "ts": "2026-10-05T13:39"
 },
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: no sponsorship.",
+"text": "Let a company go: eligibility requirements.",
 "ts": "2026-10-05T13:39"
 },
 {
@@ -201,13 +201,13 @@
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: citizenship, no sponsorship.",
+"text": "Let a company go: eligibility requirements.",
 "ts": "2026-10-05T13:39"
 },
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: no sponsorship.",
+"text": "Let a company go: eligibility requirements.",
 "ts": "2026-10-05T13:39"
 },
 {
@@ -279,7 +279,7 @@
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: no sponsorship.",
+"text": "Let a company go: eligibility requirements.",
 "ts": "2026-10-05T13:53"
 },
 {
@@ -376,14 +376,92 @@
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: 5+ yrs.",
+"text": "Let a company go: seniority.",
 "ts": "2026-10-05T14:29"
 },
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: 5+ yrs.",
+"text": "Let a company go: seniority.",
 "ts": "2026-10-05T14:29"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Machine Learning Engineer — Pre-training (LLM), 8 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: AI Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: AI Product Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Backend Software Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Backend Software Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Forward Deployed Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Forward Deployed Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Forward Deployed Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Founding Product Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Full Stack Software Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Full Stack Software Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer, 1295 min after it went live.",
+"ts": "2026-10-05T21:35"
 }
 ]
 }

@@ -313,7 +313,7 @@ discovered → scored → (rejected_by_filter | queued) → tailored → validat
 |---|---|---|
 | **Semantic: Answer Bank** | Question → approved answer (+ embedding, company context) | Reused or adapted; fewer human approvals over time |
 | **Procedural: Site Memory** | Per domain/ATS: field selectors → profile keys, step order, quirks, failure signatures | Generic adapter becomes deterministic on 2nd visit |
-| **Episodic: Action Log** | Every action, input, output, proof, error | Debugging, audit, Claude recalls "what happened with Stripe?" |
+| **Episodic: Action Log** | Every action, input, output, proof, error | Debugging, audit, Claude recalls "what happened with Acme?" |
 | **Outcome Memory** | Application features → outcome | Trains the scorer and the strategy bandits |
 | **Preference Memory** | Your approvals, edits, rejections of drafts/jobs | Learns your taste; tunes thresholds |
 
@@ -398,7 +398,7 @@ Thousands of jobs per day come in, but Claude only sees the promising ones.
 | Scheduler | The daemon itself; Windows Task Scheduler to auto-start on boot |
 | MCP | MCP Python SDK |
 
-### 12.3 Claude cost estimate (Anthropic list prices, 2026-09)
+### 12.3 Claude cost estimate (Claude API list prices, 2026-09)
 Default model: **Claude Opus 5.5** (`claude-opus-5-5`, $4 in / $20 out per 1M tokens; cache reads $0.20/M). Your profile and Fact Bank go in a **cached prompt prefix**, so after the first call each request pays mostly cache-read rates on that bulk.
 
 Rough per-application token budget (cached prefix ~8k tokens):
@@ -424,7 +424,7 @@ Rough per-application token budget (cached prefix ~8k tokens):
 ## 13. Tech stack
 
 - **Language:** Python 3.12 (Playwright, JobSpy, FastMCP, sentence-transformers all live here)
-- **Core libs:** `playwright`, `python-jobspy`, `httpx`, `pydantic`, `anthropic`, `mcp`, `psycopg[binary]` + `pgvector`, `sentence-transformers`, `google-api-python-client` (Gmail), `keyring`, `typst`/`tectonic`, `apscheduler` (light timers), `structlog`
+- **Core libs:** `playwright`, `python-jobspy`, `httpx`, `pydantic`, `claude SDK`, `mcp`, `psycopg[binary]` + `pgvector`, `sentence-transformers`, `google-api-python-client` (Gmail), `keyring`, `typst`/`tectonic`, `apscheduler` (light timers), `structlog`
 - **Data:** Postgres 16 + pgvector (local Docker or InsForge)
 - **UI:** FastAPI + HTMX + Cytoscape.js (or Next.js if hosting on InsForge)
 - **Runs on:** your Windows PC (residential IP, real Chrome), auto-start at login
