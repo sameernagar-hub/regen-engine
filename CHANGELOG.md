@@ -39,6 +39,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - Years-of-experience parser: "5 to 15+ years" means 5+ (it used to read 15+), and en-dash ranges ("4–7 years") parse correctly.
 - Grad-window check no longer blocks "degree **by** June 2027", which a 2026 graduate already meets.
 
+- **Wrong answer risk:** "Are you authorized to work in the US *without* sponsorship?" used to fall into the generic "sponsorship -> Yes" rule. It now has its own preset, `authorized_without_sponsorship`; when that's unset the job goes to the human queue.
+- **Wrong answer risk:** free-text boxes never get a bare "Yes"/"No" unless the label is a yes/no question (an optional "What address will you work from? If you'd relocate…" box would have received "Yes"). Work-address questions now get your city and state.
+- Dropdown matching ignores curly quotes and dashes (`Master’s` = `Master's`) and tries same-fact aliases (`California` -> `CA`, `Master's` -> `Master of Science`).
+- More provable answers: "Legal Full Name", "based in or around the Bay Area" (derived from your preset city), "relatives that currently work at…", data-use consent ("Do you authorize X to use your information"). Street address is filled only if you add `address_line1` to presets.
+- **newgrad resolver:** a board is cached only after a lead title actually matched there. A same-slug board from a different company (e.g. `ashby:pylon`) is no longer trusted, and misses are retried after 7 days instead of never.
+
+### Transparency
+- Every `application` event now stores the full question -> answer list the filler used, so any submission can be audited after the fact.
+
 ### Policy (unchanged, now enforced in code)
 - **Arbitration** agreements are never answered by default. They need a per-job `extra` (your approval for that company).
 - Jobs on ATSs without an adapter (Lever, Workable) get a tailored resume and a `NEEDS YOU` entry. They're never pushed through the wrong filler.

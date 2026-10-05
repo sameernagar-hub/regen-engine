@@ -24,11 +24,15 @@ RULES = [
     # demographic / EEO questions are always declined, and checked before anything else can match their long labels
     (r"gender|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun|chronic condition|armed forces", "__DECLINE__"),
     (r"preferred (first )?name", P["first_name"]),
-    (r"^(full )?name|legal name", P["first_name"] + " " + P["last_name"]),
+    (r"^(full )?name|legal (full )?name|full (legal )?name", P["first_name"] + " " + P["last_name"]),
+    (r"address line 1|street address|^address$|mailing address", P.get("address_line1")),  # None unless you add it to presets
     (r"first name", P["first_name"]), (r"last name", P["last_name"]),
     (r"e-?mail", P["email"]), (r"phone", P["phone"]),
     (r"linkedin", P["linkedin"]),
     (r"github|website|portfolio|other (web)?site|personal site", P["github"]),
+    # "authorized ... WITHOUT sponsorship" is a different question from "will you need sponsorship" (F-1 OPT: authorized
+    # now, sponsorship later). Only your explicit preset answers it; unset -> human queue.
+    (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
     (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor", "Yes"),
     (r"authori[sz]ed to work|eligible to work|legally (authori|work|permitted)|work authori", "Yes"),
     (r"(ever )?(been )?(previously )?employed (by|at)|worked (for|at) .{0,30} before|former employee|previous employee", "No"),
@@ -39,6 +43,7 @@ RULES = [
     (r"(state|province).{0,30}(reside|live|located|working from|work from)", P["state"]),
     (r"city.{0,40}(reside|live|located)|current location|where are you located|^location", P["city"]),
     (r"current (or previous )?(employer|company)|current \(or most recent\) company|most recent (employer|company)|^company", P["current_employer"]),
+    (r"address (from which|where) you (plan|will|intend)|where (will|do) you (plan to )?work from|work(ing)? location address", f"{P['city']}, {P['state']}"),
     (r"located in the united states|reside in the (united states|us)|currently live in the us|based in the (u\.?s\.?|united states|us)\b|(live|reside|located) in the (u\.?s\.?|us)\b", "Yes"),
     (r"(ever )?worked for .{0,40}(company|previously|before)|interviewed (at|with) .{0,30} before", "No"),
     (r"related to|close personal relationship|relatives? (who |that )?(currently )?work", "No"),
@@ -49,7 +54,7 @@ RULES = [
     (r"zip|postal code", P["zip"]),
     (r"^city$", P["city"]), (r"^state$", P["state"]),
     (r"previously worked (at|for)|worked at .{0,30} (before|previously)", "No"),
-    (r"processing of personal data|personal data|ai policy|data privacy|privacy notice|candidate privacy", "__ACK__"),
+    (r"processing of personal data|personal data|ai policy|data privacy|privacy notice|candidate privacy|(authori[sz]e|consent).{0,80}(use|process|store|retain).{0,40}(information|data)", "__ACK__"),
     (r"relocation assistance|require relocation|need relocation", "No"),
     (r"accept the (listed )?salary|comfortable with the (salary|pay|compensation) range", "Yes"),
     (r"at least 18|18 years of age|over 18", "Yes"),
@@ -88,6 +93,20 @@ def load_answer_bank():
 BANK = load_answer_bank()
 
 
+# Same fact, other spellings a dropdown may use (tried only when the main answer has no matching option).
+ALIASES = {P["state"]: [P.get("state_abbr", "")], P["country"]: ["United States of America", "USA"],
+           P["degree"]: ["Master of Science", "Masters", "M.S."]}
+ALIASES = {k: [v for v in vs if v] for k, vs in ALIASES.items()}
+
+YESNO_Q = re.compile(r"^\s*(are|do|does|did|will|would|have|has|had|is|was|can|could|should|may|any)\b", re.I)
+
+
+def text_ok(label, ans):
+    """A free-text box only gets a bare Yes/No when its label is actually a yes/no question
+    (keeps "Yes" out of e.g. "What address will you work from? If you'd relocate, ...")."""
+    return ans not in ("Yes", "No") or bool(YESNO_Q.search(label or ""))
+
+
 def answer_for(label, extra):
     l = " ".join(label.split()).lower()
     # per-job extras first, then your approved answer bank, then the built-in rules
@@ -95,6 +114,12 @@ def answer_for(label, extra):
         if re.search(pat, l, re.I):
             return ans  # None for rules that must come from the user (e.g. arbitration)
     return None
+
+def _norm_opt(t):
+    """Compare option text loosely: case, curly quotes, dashes and runs of whitespace don't matter."""
+    t = (t or "").replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"').replace("–", "-").replace("—", "-")
+    return " ".join(t.split()).lower()
+
 
 def pick_option(options, ans):
     """options: list of (text, handle). Return best handle for answer."""
@@ -106,15 +131,16 @@ def pick_option(options, ans):
         for t, h in options:
             if ACK.search(t.strip()) and not NACK.search(t): return h
         return options[0][1] if len(options) == 1 and not NACK.search(options[0][0]) else None
-    a = ans.lower()
+    a = _norm_opt(ans)
+    options = [(_norm_opt(t), h) for t, h in options]
     for t, h in options:
-        if t.strip().lower() == a: return h
+        if t == a: return h
     for t, h in options:
-        if t.strip().lower().startswith(a): return h
+        if t.startswith(a): return h
     for t, h in options:
-        if a in t.lower(): return h
+        if a in t: return h
     for t, h in options:  # short option inside a longer answer ("San Francisco" for "San Francisco Bay Area")
-        o = t.strip().lower()
+        o = t
         if len(o) >= 4 and re.search(r"(?<![a-z0-9])" + re.escape(o) + r"(?![a-z0-9])", a): return h
     return None
 
@@ -147,7 +173,7 @@ def fill_ashby(page, job, log):
         if NOTE_Q.search(label) and job.get("note"):
             ans = job["note"]
         try:
-            if _pass == 0: log(f"   . {label[:60]} -> {str(ans)[:30]}")
+            if _pass == 0: log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
             ok = set_field(page, f, label, ans)
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
@@ -200,7 +226,7 @@ def set_field(page, f, label, ans):
             if combo.input_value() == want: return True
         page.keyboard.press("Escape"); return False
     if txt:
-        if ans.startswith("__"): return False
+        if ans.startswith("__") or not text_ok(label, ans): return False
         txt.fill(""); txt.type(ans, delay=2); return True
     return False
 
@@ -259,14 +285,14 @@ def fill_gh(page, job, log):
             if bt: bt.click(); time.sleep(0.3); ta = f.query_selector("textarea")
             if ta: ta.fill(job["note"]); continue
         try:
-            log(f"   . {label[:60]} -> {str(ans)[:30]}")
-            ok = set_gh(page, f, ans)
+            log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
+            ok = set_gh(page, f, ans, label)
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
         if not ok and req: missing.append(label[:90])
     return missing
 
-def set_gh(page, f, ans):
+def set_gh(page, f, ans, label=""):
     if ans is None: return False
     sel = f.query_selector("input[role=combobox], .select__input input, [class*=select__control]")
     choices = f.query_selector_all("input[type=checkbox], input[type=radio]")
@@ -285,7 +311,7 @@ def set_gh(page, f, ans):
         h = None
         if real:
             labeled = [(o.inner_text(), o) for o in real]
-            for term in (terms if ans == "Company careers page" else [ans]):
+            for term in (terms if ans == "Company careers page" else [ans] + ALIASES.get(ans, [])):
                 h = pick_option(labeled, term)
                 if h: break
         for term in ([] if h else terms):
@@ -309,7 +335,7 @@ def set_gh(page, f, ans):
         if h: h.check(force=True); return True
         return False
     if txt:
-        if ans.startswith("__"): return False
+        if ans.startswith("__") or not text_ok(label, ans): return False
         if txt.input_value(): return True
         txt.fill(ans); return True
     return False
@@ -406,7 +432,7 @@ def run(jobs, dry=False):
             except Exception as e:
                 status, shot = f"ERROR: {e}"[:200], ""
             log(f"   -> {status}")
-            record("application", job=name, url=job["url"], status=status.split(":")[0], detail=status, proof=shot,
+            record("application", job=name, url=job["url"], status=status.split(":")[0], detail=status, proof=shot, answers=job.get("_answers"),
                    resume=job.get("resume"), dry=dry)
             if status == "SUBMITTED":
                 m = re.search(r"(?:jobs/|token=|gh_jid=)(\d+)", job["url"])

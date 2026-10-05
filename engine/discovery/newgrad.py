@@ -29,7 +29,7 @@ def slugs(company):
     base = re.sub(r"[^a-z0-9 ]", "", company.lower().replace("&", "and"))
     words = base.split()
     core = [w for w in words if not SUFFIX.fullmatch(w)] or words
-    c = {"".join(words), "".join(core), "-".join(core), "".join(core[:1]), "".join(core[:2])}
+    c = {"".join(words), "".join(core), "-".join(core), "".join(core[:1]), "".join(core[:2]), core[-1]}
     return [s for s in c if len(s) >= 3]
 
 
@@ -60,22 +60,34 @@ def pull(days=1, views=("swe", "aiml", "de")):
     return leads
 
 
-def resolve(leads):
-    """Find each lead on its employer's own ATS board."""
+def _match(jobs, title):
+    """Best posting on a board for a lead title: exact normalized title, else a close fuzzy match."""
+    want = norm(title)
+    exact = [j for j in jobs if norm(j["title"]) == want]
+    pool = exact or [j for j in jobs if difflib.SequenceMatcher(None, norm(j["title"]), want).ratio() >= 0.88]
+    return max(pool, key=lambda j: j.get("posted") or "") if pool else None
+
+
+def resolve(leads, miss_ttl_days=7):
+    """Find each lead on its employer's own ATS board.
+
+    Cache (workspace/resolve_cache.json):  company -> {"board": [ats, token]}  only after a lead title matched there
+                                                     {"miss": "YYYY-MM-DD"}     nothing matched; retried after a week
+    A slug can belong to a different company (e.g. ashby:pylon), so a board is never trusted on its name alone."""
     cache_p = os.path.join(WORKSPACE, "resolve_cache.json")
     cache = json.load(open(cache_p)) if os.path.exists(cache_p) else {}
+    cache = {k: v for k, v in cache.items() if isinstance(v, dict)}  # drop the unverified v0.4.0 format
     boards = A.load_boards()
-    # company -> candidate boards: cached, already-registered boards with a matching slug, then guesses
+    today = datetime.now(timezone.utc).date()
     companies = sorted({l["company"] for l in leads})
 
     def candidates(co):
-        if co in cache:
-            return [tuple(cache[co])] if cache[co] else []
-        out = []
-        for s in slugs(co):
-            for a in A.ATS:
-                out.append((a, s))
-        return out
+        c = cache.get(co, {})
+        if c.get("board"):
+            return [tuple(c["board"])]
+        if c.get("miss") and (today - datetime.fromisoformat(c["miss"]).date()).days < miss_ttl_days:
+            return []                                   # saves ~15 calls per company per run
+        return [(a, s) for s in slugs(co) for a in A.ATS]
 
     def board_jobs(at):
         try:
@@ -84,37 +96,27 @@ def resolve(leads):
             return at, None
 
     todo = {at for co in companies for at in candidates(co)}
-    fetched = {}
     with cf.ThreadPoolExecutor(32) as ex:
-        for at, jobs in ex.map(board_jobs, todo):
-            fetched[at] = jobs
+        fetched = dict(ex.map(board_jobs, todo))
     resolved, unresolved = [], []
     for co in companies:
         cands = [at for at in candidates(co) if fetched.get(at)]
-        if co not in cache:
-            # prefer the board whose jobs mention the most of this company's lead titles
-            mine = [norm(l["title"]) for l in leads if l["company"] == co]
-            score = lambda at: sum(1 for j in fetched[at] if norm(j["title"]) in mine)
-            best = max(cands, key=score, default=None)
-            cache[co] = list(best) if best and score(best) else (list(best) if best and len(cands) == 1 else None)
-        board = tuple(cache[co]) if cache[co] else None
         for l in (x for x in leads if x["company"] == co):
-            hit = None
-            if board and fetched.get(board):
-                titles = {j["id"]: norm(j["title"]) for j in fetched[board]}
-                want = norm(l["title"])
-                exact = [j for j in fetched[board] if titles[j["id"]] == want]
-                fuzzy = [j for j in fetched[board] if difflib.SequenceMatcher(None, titles[j["id"]], want).ratio() >= 0.88]
-                pool = exact or fuzzy
-                if pool:
-                    hit = max(pool, key=lambda j: j.get("posted") or "")
+            hit, board = None, None
+            for at in cands:
+                hit = _match(fetched[at], l["title"])
+                if hit:
+                    board = at; break
             if hit:
-                resolved.append({**hit, "company": l["company"] if hit["ats"] != "greenhouse" else hit["company"],
+                cache[co] = {"board": list(board)}
+                resolved.append({**hit, "company": hit["company"] if hit["ats"] == "greenhouse" else co,
                                  "source": "newgrad-jobs", "h1b": l["h1b"], "lead_url": l["lead_url"]})
                 if board[1] not in boards[board[0]]:
                     boards[board[0]].append(board[1])
             else:
                 unresolved.append(l)
+        if co not in cache or not cache[co].get("board"):
+            cache[co] = {"miss": today.isoformat()}
     json.dump(cache, open(cache_p, "w"), indent=1)
     A.save_boards(boards)
     return resolved, unresolved

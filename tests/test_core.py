@@ -109,3 +109,24 @@ def test_pick_option():
     assert pick_option([("San Jose, California, United States", 1), ("San Jose, Costa Rica", 2)], "San Jose") == 1
     assert pick_option([("London", 1), ("San Francisco", 2)], "San Francisco Bay Area") == 2
     assert pick_option([("No", 1), ("Yes", 2)], "Immediately (2 weeks notice)") is None
+
+
+def test_text_fields_never_get_bare_yes_no():
+    from engine.apply.runner import text_ok
+    label = "What is the address from which you plan on working? If you would need to relocate, please share"
+    assert answer_for(label, {}) != "Yes"
+    assert not text_ok("Where will you work from if you relocate?", "Yes")
+    assert text_ok("Are you open to relocation?", "Yes")
+    assert text_ok("LinkedIn", "https://linkedin.com/in/x")
+
+
+def test_without_sponsorship_is_never_guessed():
+    from engine.apply.runner import P
+    # answered only from the explicit preset, never by the generic "sponsor -> Yes" rule
+    assert answer_for("Are you authorized to work lawfully in the US without sponsorship?", {}) == P.get("authorized_without_sponsorship")
+    assert answer_for("Will you now or in the future require visa sponsorship?", {}) == "Yes"
+
+
+def test_pick_option_ignores_curly_quotes():
+    opts = [("High School Diploma/GED", 1), ("Bachelor’s", 2), ("Master’s", 3), ("PhD", 4)]
+    assert pick_option(opts, "Master's") == 3
