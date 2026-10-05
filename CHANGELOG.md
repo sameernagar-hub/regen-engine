@@ -4,6 +4,12 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.6.2] - 2026-10-05 · "A tidy tree"
+### Changed
+- The live view's applications are now a **tree**, not floating dots. Stations sit on a straight, evenly spaced line (the pipeline is the trunk). From *applying*, a trunk rises and splits into one tidy stem per **resume lane** (full-stack, AI, data, backend, platform, earlier). Each bead on a stem is one application sent with proof, and each lane's name and count sit on top of its stem. A caption explains it and always fits on screen; hovering a bead names the application (the role only, on the public site).
+- The snapshot carries each verified application's lane (from the `resume` event that built it).
+- README: a "Deploy to Render" button replaces a public URL that wasn't live yet.
+
 ## [0.6.1] - 2026-10-05 · "A public face, a lighter engine"
 ### Added
 - **Public site** (`python -m engine site` -> `site/`, deployed on Render via `render.yaml`, free static tier): the live view in demo mode, replaying the last 7 days of real activity **anonymized**. Role titles, stages, outcomes and skip reasons are kept. Company names, anything waiting on the candidate, answers, URLs, emails and files are removed. A one-line intro and a repo link are added for visitors. Identical lines collapse ("16 companies confirmed…").

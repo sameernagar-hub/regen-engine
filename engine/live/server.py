@@ -76,13 +76,15 @@ def narrate(e):
 
 def snapshot():
     """Numbers the page shows, all derived from evidence on disk."""
-    latest, waiting = {}, 0
+    latest, waiting, lanes = {}, 0, {}
     if os.path.exists(EVENTS()):
         for line in open(EVENTS(), encoding="utf-8"):
             try:
                 e = json.loads(line)
             except ValueError:
                 continue
+            if e.get("kind") == "resume" and e.get("lane"):
+                lanes[e.get("job")] = e["lane"]                  # which resume lane wrote this application
             if e.get("kind") == "application" and not e.get("dry"):
                 latest[" ".join((e.get("job") or "").lower().split())] = e  # by job name: old backfilled events have no url
     verified = [e for e in latest.values() if e.get("status") == "SUBMITTED" and e.get("proof")
@@ -103,7 +105,7 @@ def snapshot():
     seen = os.path.join(WORKSPACE, "seen.json")
     last_poll = os.path.getmtime(seen) if os.path.exists(seen) else None
     today = time.strftime("%Y-%m-%d")
-    return dict(verified=len(verified), verified_jobs=[list(who(e["job"])) for e in sorted(verified, key=lambda e: e["ts"])],
+    return dict(verified=len(verified), verified_jobs=[list(who(e["job"])) + [lanes.get(e["job"]) or "earlier"] for e in sorted(verified, key=lambda e: e["ts"])],
                 verified_today=sum(1 for e in verified if e["ts"].startswith(today)),
                 waiting=waiting, waiting_items=waiting_items[-12:], boards=boards, last_poll=last_poll)
 

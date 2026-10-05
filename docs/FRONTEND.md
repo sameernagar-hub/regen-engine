@@ -44,6 +44,13 @@ events.jsonl ──tail──> engine/live/server.py ──narrate()──> SSE 
 | v0.8 | **Public demo:** an anonymized replay ("a fintech in NYC", no names) on GitHub Pages so people can see the engine work without seeing your data | Branding moment |
 | later | Optional sound (Web Audio: a soft tone per verified application, opt-in), 3D "engine room" variant | Only if it stays calm |
 
+## The spectacular track: a rendered architecture (v0.7 research)
+The 2D view is the language; the rendered version is the same language as a lit, living machine, not UI components.
+- **Scene:** a dark "engine room". The ~2,300 boards are a slow galaxy of **instanced points** (one draw call) around the intake. The five stations are machined rings on a glowing **spline tube** (the pipeline). Work is light travelling the tube, and the lane tree grows from *applying* as real 3D branches with beads.
+- **Stack (free, local):** three.js (MIT) with `InstancedMesh`, `TubeGeometry` and `EffectComposer` + `UnrealBloomPass` for glow; GSAP (free) or Theatre.js for the camera choreography of the "day in 60 seconds"; optional WebGPU compute for particle flow where supported, falling back to WebGL2. Spline (free tier) can prototype the look visually before coding.
+- **Performance budget, so the engine doesn't take more load:** render on demand (redraw only when an event or animation is active), cap at 30 fps when idle, pause when the tab is hidden, one draw call for the board field, a texture-free shader for glow. Target under 3% CPU idle on a laptop.
+- **Fallback:** the 2D canvas view stays the default for low-power devices and `prefers-reduced-motion`.
+
 ## Free services that fit (local-first stays the rule)
 | Need | Option | Why it fits | Cost |
 |---|---|---|---|

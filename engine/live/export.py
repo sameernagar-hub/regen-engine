@@ -54,7 +54,7 @@ def build(days=7):
         merged.append(ev)
     events = merged
     s = snapshot()
-    roles = [role for _co, role in s.get("verified_jobs", [])]  # role titles only, never the company
+    roles = [[role, lane] for _co, role, lane in s.get("verified_jobs", [])]  # role + lane only, never the company
     data = {"generated": time.strftime("%Y-%m-%d %H:%M"), "days": days, "verified": s["verified"],
             "verified_roles": roles, "boards": s["boards"], "events": events[-160:]}
     # airbag: refuse to publish if any company name we've ever touched would appear on the public page

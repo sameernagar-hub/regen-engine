@@ -2,6 +2,17 @@
 
 Full list of changes, with how to verify each: **[CHANGELOG.md](../CHANGELOG.md)**.
 
+## ▶ Resume here (last stop: 2026-10-05 evening)
+**State:** `main` is current (PRs #1–#6 merged). 19 tests pass. Running in Docker: `regen-watcher` (watch 10 --newgrad) and `regen-live` (http://127.0.0.1:7777). The scheduled task `regen-daily-inbox-and-apply` runs daily at 8:13 AM while the desktop app is open.
+**Numbers (evidence-only):** 12 verified submissions on 10-05 plus 7 on 10-04, all with confirmation emails; no OA, interview or rejection yet. `python -m engine report`.
+**Waiting on the user:** `workspace/human_queue.md` (Ashby manual submits, mintmcp/OpenEye/Ambrook answers, YC founder messages, Gmail app password for SOS + IMAP, address_line1 optional).
+**Next, in order:**
+1. **Render:** the user clicks the "Deploy to Render" button in README (or New → Blueprint → this repo). Then put the real URL in README and in the GitHub repo "About". The site updates on every push after `python -m engine site`.
+2. Frontend v0.6.x: click a bead → that application's proof + exact Fact Bank facts; "a day in 60 seconds" replay (docs/FRONTEND.md).
+3. Spectacular render track (v0.7, research in docs/FRONTEND.md): GPU-rendered "engine room". three.js instanced points for ~2,300 boards, glowing spline tubes for the pipeline, bloom post-processing, the lane tree in 3D, idle at low FPS and paused when the tab is hidden. No CDN: vendor three.js locally.
+4. Lean engine: the remaining peak memory is concurrent JSON parsing of big boards. Try a lower worker count for huge boards, plus conditional requests (ETag/Last-Modified) to skip unchanged boards.
+5. Lever + Workable apply adapters; newgrad resolution beyond ~10%.
+
 ## Daily loop (about 10 minutes of your attention)
 ```bash
 python -m engine boards harvest      # once a day: grow the board registry
