@@ -1,0 +1,38 @@
+{
+ "contact": {
+  "name": "JANE DOE",
+  "line": "City, ST | +1 (555) 555-5555 | jane@example.com | github.com/jane | LinkedIn"
+ },
+ "facts": {
+  "x_api": "Built <b>12 production REST APIs</b> ... (every bullet must be something you actually did)"
+ },
+ "roles": {
+  "acme": [
+   "Acme Corp",
+   "Software Engineer",
+   "City, ST",
+   "Jan 2023 - Present"
+  ]
+ },
+ "projects": {
+  "proj": [
+   "Project name",
+   "2026",
+   [
+    "One-line truthful bullet."
+   ]
+  ]
+ },
+ "skills": {
+  "lang": [
+   "Languages",
+   "Python, TypeScript"
+  ]
+ },
+ "education": [
+  [
+   "B.S. Computer Science -- Some University",
+   "2019 - 2023"
+  ]
+ ]
+}

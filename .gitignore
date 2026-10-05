@@ -1,0 +1,14 @@
+# Personal data and runtime state: never commit
+profile/
+workspace/*
+!workspace/.gitkeep
+.env
+.env.local
+.insforge/
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/

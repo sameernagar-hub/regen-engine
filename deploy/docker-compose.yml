@@ -1,0 +1,23 @@
+# Memory stack for the engine (graph + vectors/events). Local-first: data stays in Docker volumes on your machine.
+#   docker compose -f deploy/docker-compose.yml --env-file .env up -d
+services:
+  graph:
+    image: neo4j:5
+    container_name: engine-graph
+    ports: ["7474:7474", "7687:7687"]
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?set NEO4J_PASSWORD in .env}
+      NEO4J_PLUGINS: '["apoc"]'
+    volumes: ["graph-data:/data"]
+  vectors:
+    image: pgvector/pgvector:pg16
+    container_name: engine-vectors
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_USER: engine
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: engine
+    volumes: ["vector-data:/var/lib/postgresql/data"]
+volumes:
+  graph-data:
+  vector-data:

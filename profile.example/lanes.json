@@ -1,0 +1,30 @@
+{
+ "lanes": {
+  "backend": {
+   "headline": "Software Engineer | Backend | <your stack>",
+   "summary": "<2-3 truthful sentences for backend roles>",
+   "roles": [
+    [
+     "acme",
+     [
+      "x_api"
+     ]
+    ]
+   ],
+   "projects": [
+    "proj"
+   ],
+   "skills": [
+    "lang"
+   ]
+  }
+ },
+ "routing": [
+  [
+   "backend",
+   "backend|api|distributed",
+   "title"
+  ]
+ ],
+ "default": "backend"
+}

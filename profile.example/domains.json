@@ -1,0 +1,6 @@
+{
+ "include_titles": "software|backend|full.?stack|ai engineer",
+ "exclude_titles": "senior|staff|principal|manager|intern",
+ "include_locations": "remote|united states|, [A-Z]{2}\b",
+ "exclude_locations": "\bUK\b|Canada|India"
+}
