@@ -19,5 +19,5 @@ services:
     tmpfs: ["/tmp"]
     security_opt: ["no-new-privileges:true"]
     cap_drop: ["ALL"]
-    mem_limit: 256m
+    mem_limit: 1g                             # a full poll holds ~110k postings in memory
     cpus: 0.5
