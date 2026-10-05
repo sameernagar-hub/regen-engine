@@ -1,13 +1,18 @@
-"""Turn queued jobs into an apply batch: fetch each job description, route it to a resume lane,
-build a Fact-Bank-only resume for it, and flag questions that need a human.
+"""Turn queued jobs into an apply batch: fetch each job description (Greenhouse, Ashby or Lever),
+check it for hard blockers, route it to a resume lane, tailor a Fact-Bank-only resume for it,
+and flag questions that need a human.
 
 Lanes and routing rules live in profile/lanes.json (your domains). See profile.example/lanes.json.
-Usage: python -m engine batch <batch-name> <job_id,job_id,...>   (ids from workspace/queue.json)
+Usage: python -m engine batch <batch-name> <job_id,job_id,...> [--force]   (ids from workspace/queue.json)
+       --force   keep jobs that have JD blockers (they're still printed)
 """
-import html, json, os, re, sys, urllib.request
+import json, os, re, sys
 
 from engine.config import WORKSPACE, in_workspace, profile_file
+from engine.discovery.ats import job_description
+from engine.feedback.events import record
 from engine.tailoring import resume
+from engine.tailoring.tailor import tailor, fit
 
 FLAG = re.compile(r"years|possess|experience with|clearance|citizen|export|relocat|salary|why|arbitrat", re.I)
 
@@ -19,45 +24,71 @@ def load_lanes():
 def route(cfg, title, jd):
     for lane, pattern, scope in cfg["routing"]:
         text = title if scope == "title" else title + " " + jd[:3000]
-        if re.search(pattern, text, re.I):
+        if lane in cfg["lanes"] and re.search(pattern, text, re.I):
             return lane
     return cfg["default"]
 
 
-def fetch_job(token, job_id):
-    d = json.load(urllib.request.urlopen(f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs/{job_id}?questions=true", timeout=20))
-    jd = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html.unescape(d.get("content", ""))))
-    return d, jd
+def load_queue():
+    q = {}
+    for name in ("queue.json",):
+        if os.path.exists(name):
+            for j in json.load(open(name)):
+                j.setdefault("ats", "greenhouse")  # legacy records
+                q[str(j["id"])] = j
+    return q
 
 
-def build(name, ids):
+def build(name, ids, force=False):
     cfg = load_lanes()
     with in_workspace():
-        q = {str(j["id"]): j for j in json.load(open("queue.json"))}
-        os.makedirs("specs", exist_ok=True); os.makedirs("batches", exist_ok=True); os.makedirs("jd", exist_ok=True)
-        batch = []
+        q = load_queue()
+        for d in ("specs", "batches", "jd"):
+            os.makedirs(d, exist_ok=True)
+        batch, skipped = [], []
         for i in ids:
-            j = q[i]; tok = j["token"]
-            d, jd = fetch_job(tok, i)
-            json.dump(d, open(f"jd/{tok}_{i}.json", "w"), indent=1)
+            if i not in q:
+                print(f"  ! {i} not in queue.json (run scan / newgrad first)"); continue
+            j = q[i]
+            raw, jd, questions = job_description(j)
+            if not jd:
+                print(f"  ! {j['company']} | {j['title']}: posting is gone"); continue
+            co = re.sub(r"[^A-Za-z0-9]", "", j["company"])[:20]
+            short = str(i)[:12]
+            json.dump(raw, open(f"jd/{j['ats']}_{co}_{short}.json", "w"), indent=1)
+            blockers = fit(jd)
+            label = f"{j['company']} - {j['title']}"
+            if blockers:
+                print(f"  x {label}: {blockers}")
+                if not force:
+                    skipped.append(label)
+                    record("application", job=label, url=j["url"], status="SKIPPED", detail="JD: " + ", ".join(blockers), dry=False)
+                    continue
             ln = route(cfg, j["title"], jd)
-            spec = dict(cfg["lanes"][ln]); co = re.sub(r"[^A-Za-z0-9]", "", j["company"])[:20]
-            spec["file"] = f"Resume_{co}_{i}.pdf"
-            json.dump(spec, open(f"specs/{co}_{i}.json", "w"), indent=1)
+            spec = tailor(cfg["lanes"][ln], jd)
+            cov = spec.pop("_coverage")
+            spec["file"] = f"Resume_{co}_{short}.pdf"
+            json.dump(spec, open(f"specs/{co}_{short}.json", "w"), indent=1)
             pdf = resume.fit(spec)
-            flagged = [qq["label"][:100] for qq in d.get("questions", []) if qq.get("required") and FLAG.search(qq["label"])]
-            print(f"{j['company']} | {j['title']} | lane={ln} | flagged: {flagged}")
-            batch.append({"name": f"{j['company']} - {j['title']}", "url": f"https://job-boards.greenhouse.io/{tok}/jobs/{i}",
-                          "resume": os.path.relpath(pdf, WORKSPACE), "extra": {}})
+            flagged = [qq["label"][:100] for qq in questions if qq.get("required") and FLAG.search(qq["label"])]
+            print(f"{label} | {j['ats']} | lane={ln} | resume covers {len(cov['on_resume'])}/{len(cov['jd_terms_you_have'])} JD terms"
+                  + (f" | flagged: {flagged}" if flagged else ""))
+            # transparency: the exact Fact Bank entries this resume used, so every claim is traceable
+            record("resume", job=label, url=j["url"], lane=ln, file=spec["file"], facts=spec["roles"],
+                   projects=spec.get("projects", []), skills=spec["skills"], coverage=cov)
+            batch.append({"name": label, "url": j["url"], "ats": j["ats"], "resume": os.path.relpath(pdf, WORKSPACE),
+                          "lane": ln, "extra": {}})
         path = f"batches/{name}.json"
         json.dump(batch, open(path, "w"), indent=1)
-    print("->", os.path.join("workspace", path))
+    print(f"-> workspace/{path}: {len(batch)} jobs" + (f", {len(skipped)} skipped for JD blockers" if skipped else ""))
     return batch
 
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    build(argv[0], argv[1].split(","))
+    force = "--force" in argv
+    argv = [a for a in argv if a != "--force"]
+    build(argv[0], argv[1].split(","), force)
 
 
 if __name__ == "__main__":

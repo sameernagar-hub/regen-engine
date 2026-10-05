@@ -1,0 +1,10 @@
+# Never bake personal data or runtime state into the image; they are mounted at run time.
+profile/
+workspace/
+.env
+.env.local
+.insforge/
+.git/
+**/__pycache__/
+*.pdf
+tests/

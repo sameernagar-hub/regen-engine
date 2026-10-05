@@ -1,6 +1,7 @@
 {
- "include_titles": "software|backend|full.?stack|ai engineer",
- "exclude_titles": "senior|staff|principal|manager|intern",
- "include_locations": "remote|united states|, [A-Z]{2}\b",
- "exclude_locations": "\bUK\b|Canada|India"
+ "_comment": "Regexes (case-insensitive). Any key you set replaces the engine default in engine/discovery/filters.py; delete a key to use the default.",
+ "include_titles": "software|full.?stack|backend|back-end|ai engineer|machine learning engineer|ml engineer|forward.?deployed|platform engineer|product engineer|applied ai|founding engineer|member of technical staff|developer|\\bsde\\b|\\bswe\\b|data engineer",
+ "exclude_titles": "senior|\\bsr\\b|\\bsr\\.|staff|principal|\\blead\\b|manager|director|head of|\\bvp\\b|vice president|chief|architect|intern\\b|internship|co-?op\\b|apprentice|firmware|embedded|hardware|silicon|asic|fpga|verification|clearance|polygraph|top secret|\\bts/sci\\b|\\biii\\b|\\biv\\b|\\b[345]\\b|\\bios\\b|android|mobile|salesforce admin|technician|quality engineer|test engineer|sdet|2027|phd|research scientist|professor|instructor|recruiter|sales engineer|solutions? consultant",
+ "exclude_companies": "anduril|spacex|chaos industries|lockheed|raytheon|\\brtx\\b|northrop|general dynamics|bae systems|l3harris|leidos|\\bsaic\\b|booz allen|palantir|shield ai|epirus|saronic|hadrian|castelion|militar|defense",
+ "require_us": true
 }

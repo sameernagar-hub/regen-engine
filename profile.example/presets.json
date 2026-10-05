@@ -27,5 +27,8 @@
  "state": "<your state>",
  "years_experience": "<your years_experience>",
  "zip": "<your zip>",
- "state_abbr": "<your state_abbr>"
+ "state_abbr": "<your state_abbr>",
+ "authorized_without_sponsorship": "<Yes/No: authorized to work in the US today without sponsorship (e.g. F-1 OPT = Yes)>",
+ "address_line1": "<optional: street address, only if you want forms that ask for it filled>",
+ "preferred_location": "<optional: e.g. San Francisco Bay Area>"
 }
