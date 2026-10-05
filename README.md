@@ -1,5 +1,7 @@
 # REGEN · the job-hunting engine
 
+**Live:** the engine at work, replayed and anonymized → https://regen-engine.onrender.com *(Render static site from `site/`)*
+
 > **The fuel for job hunting.** An open-source engine that finds jobs at the source, minutes after they go live, writes a truthful resume for each one, applies automatically within your domain, and learns from every outcome through an agentic memory that runs in Docker.
 
 *REGEN is a working name. Branding comes later. The engine is what matters.*

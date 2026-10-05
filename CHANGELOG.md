@@ -4,6 +4,16 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.6.1] - 2026-10-05 · "A public face, a lighter engine"
+### Added
+- **Public site** (`python -m engine site` -> `site/`, deployed on Render via `render.yaml`, free static tier): the live view in demo mode, replaying the last 7 days of real activity **anonymized**. Role titles, stages, outcomes and skip reasons are kept. Company names, anything waiting on the candidate, answers, URLs, emails and files are removed. A one-line intro and a repo link are added for visitors. Identical lines collapse ("16 companies confirmed…").
+- **Leak airbag:** the export refuses to write if any company name from the event log would appear on the public page.
+- Embers are captioned ("each light: an application sent, with proof"); hovering one names the application in the local view and the role only in the public view.
+
+### Changed
+- **Lighter discovery:** boards are streamed through the filter as they arrive (`fetch_all(keep=..., keys=...)`), so a pass holds only fresh postings plus id strings instead of all ~110k posting objects. Measured peak Python memory for a full pass: 317 MB -> 260 MB; the remaining peak comes from parsing large boards concurrently. Worker pool 32 -> 24.
+- Corrections supersede: the public replay shows only the latest, corrected record for a job. Two skips logged as "15+ yrs" by the old years parser were corrected to "5+ yrs" with appended `correction` events.
+
 ## [0.6.0] - 2026-10-05 · "The live engine"
 ### Added
 - **Live view** (`engine/live/`, `python -m engine live`): one calm screen, not a dashboard. Work travels as light through five stations (listening, judging, writing, applying, hearing back). The engine narrates each real event in one plain sentence. Every verified application (confirmation screenshot on disk) becomes a permanent ember, and the verified count is the only number shown. "N things are waiting on you" lists what needs you **now**, from each job's latest status.

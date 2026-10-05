@@ -14,6 +14,7 @@
   learn                            response rates by lane and ATS -> workspace/learnings.md
   sos-test                         send a test SOS alert (engine/notify.py; .env SMTP app password)
   live    [port]                   the engine, watched live (localhost page; read-only)
+  site    [days]                   build the public face (site/): the live view replaying anonymized recent activity
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
 """
 import collections, sys
@@ -59,7 +60,7 @@ def boards(argv):
     elif argv and argv[0] == "recheck":
         b = ats.load_boards()
         dead = [d.split(":", 1) for d in b.get("dead", [])]
-        _, still = ats.fetch_all({a: [t for x, t in dead if x == a] for a in ats.ATS})
+        _, still, _ = ats.fetch_all({a: [t for x, t in dead if x == a] for a in ats.ATS}, keep=lambda j: False)
         b["dead"] = sorted(f"{a}:{t}" for a, t in still)
         ats.save_boards(b)
         print(f"{len(dead) - len(still)} of {len(dead)} dead boards are back")
@@ -96,6 +97,8 @@ def main():
         m = report
     elif cmd == "live":
         from engine.live.server import main as m
+    elif cmd == "site":
+        from engine.live.export import main as m
     elif cmd == "inbox":
         from engine.feedback.inbox import main as m
     elif cmd == "learn":

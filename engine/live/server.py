@@ -103,7 +103,8 @@ def snapshot():
     seen = os.path.join(WORKSPACE, "seen.json")
     last_poll = os.path.getmtime(seen) if os.path.exists(seen) else None
     today = time.strftime("%Y-%m-%d")
-    return dict(verified=len(verified), verified_today=sum(1 for e in verified if e["ts"].startswith(today)),
+    return dict(verified=len(verified), verified_jobs=[list(who(e["job"])) for e in sorted(verified, key=lambda e: e["ts"])],
+                verified_today=sum(1 for e in verified if e["ts"].startswith(today)),
                 waiting=waiting, waiting_items=waiting_items[-12:], boards=boards, last_poll=last_poll)
 
 
