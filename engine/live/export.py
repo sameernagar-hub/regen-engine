@@ -18,6 +18,17 @@ def anonymize(text, company):
     if company:
         text = re.sub(re.escape(company), "a company", text, flags=re.I)
     text = re.sub(r"https?://\S+|\S+@\S+", "", text)
+    # skip reasons can reveal personal status (citizenship, visa, clearance). Publicly, they become generic categories.
+    m = re.match(r"(Let a company go: )(.*)\.$", text)
+    if m:
+        r, cats = m.group(2).lower(), []
+        if re.search(r"citizen|sponsor|clearance|itar|polygraph|export", r):
+            cats.append("eligibility requirements")
+        if re.search(r"\d+\+ yrs", r):
+            cats.append("seniority")
+        if "grad window" in r:
+            cats.append("graduation window")
+        text = m.group(1) + (" and ".join(cats) or "not a fit") + "."
     return text[:1].upper() + text[1:]
 
 

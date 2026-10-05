@@ -2,16 +2,15 @@
 
 Full list of changes, with how to verify each: **[CHANGELOG.md](../CHANGELOG.md)**.
 
-## ▶ Resume here (last stop: 2026-10-05 evening)
-**State:** `main` is current (PRs #1–#6 merged). 19 tests pass. Running in Docker: `regen-watcher` (watch 10 --newgrad) and `regen-live` (http://127.0.0.1:7777). The scheduled task `regen-daily-inbox-and-apply` runs daily at 8:13 AM while the desktop app is open.
-**Numbers (evidence-only):** 12 verified submissions on 10-05 plus 7 on 10-04, all with confirmation emails; no OA, interview or rejection yet. `python -m engine report`.
-**Waiting on the user:** `workspace/human_queue.md` (Ashby manual submits, mintmcp/OpenEye/Ambrook answers, YC founder messages, Gmail app password for SOS + IMAP, address_line1 optional).
+## ▶ Resume here (last stop: 2026-10-06)
+**State:** `main` = v0.6.3 with a clean public history. The privacy gate and tests run in CI on every PR and push, and `main` is protected (admins included). Docker: `regen-watcher` + `regen-live` (http://127.0.0.1:7777). Daily scheduled task `regen-daily-inbox-and-apply` at 8:13 AM.
+**Privacy workflow:** after adding private terms (`profile/private_terms.txt`), run `python scripts/privacy_scan.py --update-denylist` and commit `.privacy/denylist.json`. Merge PRs with a noreply author: `gh pr merge N --merge --author-email 180349498+sameernagar-hub@users.noreply.github.com`, never a plain web merge.
 **Next, in order:**
-1. **Render:** the user clicks the "Deploy to Render" button in README (or New → Blueprint → this repo). Then put the real URL in README and in the GitHub repo "About". The site updates on every push after `python -m engine site`.
-2. Frontend v0.6.x: click a bead → that application's proof + exact Fact Bank facts; "a day in 60 seconds" replay (docs/FRONTEND.md).
-3. Spectacular render track (v0.7, research in docs/FRONTEND.md): GPU-rendered "engine room". three.js instanced points for ~2,300 boards, glowing spline tubes for the pipeline, bloom post-processing, the lane tree in 3D, idle at low FPS and paused when the tab is hidden. No CDN: vendor three.js locally.
-4. Lean engine: the remaining peak memory is concurrent JSON parsing of big boards. Try a lower worker count for huge boards, plus conditional requests (ETag/Last-Modified) to skip unchanged boards.
-5. Lever + Workable apply adapters; newgrad resolution beyond ~10%.
+1. **Render:** the user clicks "Deploy to Render" in the README. Then add the URL to the README and the repo homepage (`gh repo edit --homepage <url>`).
+2. **v0.7 Platform** (user request): move the live view to **Next.js + TypeScript** (App Router, SSE client, Canvas/WebGL), and put a **FastAPI + Pydantic** API over the engine (typed models for events, jobs, applications, outcomes and the human queue). **Postgres** for events and jobs, with a migration from events.jsonl (keep the append-only semantics), and `docker compose` for web + api + db + watcher. Generate the TS client from OpenAPI. Keep the anonymized public export and the leak airbag.
+3. Engine room (GPU) on top of the Next.js view: docs/FRONTEND.md.
+4. Lean engine: conditional requests, adaptive concurrency.
+5. Lever + Workable apply adapters.
 
 ## Daily loop (about 10 minutes of your attention)
 ```bash

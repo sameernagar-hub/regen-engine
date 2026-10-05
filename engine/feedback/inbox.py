@@ -60,7 +60,7 @@ def applied_companies():
 
 def match_company(msg, companies):
     hay = f"{msg.get('from', '')} {msg.get('subject', '')} {msg.get('snippet', '')}".lower()
-    squashed = re.sub(r"[^a-z0-9]", "", hay)  # "Physical Intelligence" vs a board token "physicalintelligence"
+    squashed = re.sub(r"[^a-z0-9]", "", hay)  # "Acme Robotics" vs a board token "acmerobotics"
     best = None
     for co in companies:
         key = re.sub(r"[,.]? (inc|llc|ltd|corp|financial)\.?$", "", co.lower()).strip()

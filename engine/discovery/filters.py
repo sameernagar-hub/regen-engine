@@ -1,7 +1,7 @@
 """Domain filter shared by every discovery source: title, level, location, ineligible employers, dedupe.
 
 Rules come from profile/domains.json (regex strings) layered over DEFAULT_DOMAIN. Optional keys:
-  exclude_companies   regex of employers you can't or won't apply to (e.g. ITAR/defense if you need sponsorship)
+  exclude_companies   regex of employers you can't or won't apply to (e.g. ITAR-restricted employers if they don't fit your eligibility)
   require_us          true (default) keeps only jobs located in the US or US-remote
 """
 import json, os, re

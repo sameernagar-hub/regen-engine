@@ -12,7 +12,7 @@ One screen, no navigation. Five stations on a quiet line, named as verbs:
 
 - **Listening:** a faint field of points around the first station, one per company board being watched (about 2,300). A soft ring pulses out each time the watcher finishes a pass.
 - **Work moves as light.** Every real event (a job spotted, a job let go, a resume written, an application sent, a reply received) is a point that travels between stations. Jobs that are let go sink away quietly instead of being listed.
-- **One sentence at a time.** At the bottom, the engine narrates in plain English: *"Spotted Nuro: New Grad Software Engineer, 3 min after it went live."* Older lines fade. No jargon, no ids.
+- **One sentence at a time.** At the bottom, the engine narrates in plain English: *"Spotted Acme: New Grad Software Engineer, 3 min after it went live."* Older lines fade. No jargon, no ids.
 - **Embers.** Each verified application (confirmation screenshot on disk) leaves a permanent gold ember above *applying*. The only big number on screen is that count, and it's always evidence-backed.
 - **The human.** A single amber line, "3 things are waiting on you", opens a short list of what needs you now, computed from each job's latest status (never stale history).
 - **Alarms are rare and red:** an airbag stop, a scam email. Wins are gold: an interview, an OA, an offer.
