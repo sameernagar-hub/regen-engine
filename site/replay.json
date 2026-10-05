@@ -1,0 +1,353 @@
+{
+"generated": "2026-10-05 14:29",
+"days": 7,
+"verified": 12,
+"verified_roles": [
+"Software Engineer",
+"Full-Stack Engineer, Human Agent Tooling",
+"Software Engineer, Data Platform",
+"Software Engineer, Autonomy Visualization",
+"Software Engineer - AI Security Product",
+"New Grad Software Engineer, Routing",
+"Data Engineer",
+"Software Engineer",
+"Software Engineer, Sandboxing",
+"ML Engineer - API Platform",
+"Software Engineer II, Monetization Engineering",
+"Software Development Engineer II – Life Hub (Super App) (Ne…"
+],
+"boards": 2074,
+"events": [
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: 5+ yrs.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, fullstack lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, backend lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: 5+ yrs.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: citizenship, no sponsorship.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, backend lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: citizenship.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, data lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, backend lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, backend lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, ai lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, ai lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, ai lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, data lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, backend lane.",
+"ts": "2026-10-05T13:23"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, fullstack lane.",
+"ts": "2026-10-05T13:24"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company, backend lane.",
+"ts": "2026-10-05T13:24"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Software Engineer. Proof saved.",
+"ts": "2026-10-05T13:34"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: Missing entry for required field: Location; Missing entry f….",
+"ts": "2026-10-05T13:35"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: Missing entry for required field: Using Google's leveling s….",
+"ts": "2026-10-05T13:39"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-05T13:39"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: no sponsorship.",
+"ts": "2026-10-05T13:39"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: no sponsorship.",
+"ts": "2026-10-05T13:39"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-05T13:39"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: citizenship, no sponsorship.",
+"ts": "2026-10-05T13:39"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: no sponsorship.",
+"ts": "2026-10-05T13:39"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Full-Stack Engineer, Human Agent Tooling. Proof saved.",
+"ts": "2026-10-05T13:41"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Software Engineer, Data Platform. Proof saved.",
+"ts": "2026-10-05T13:42"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Software Engineer, Autonomy Visualization. Proof saved.",
+"ts": "2026-10-05T13:43"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: no confirmation seen (captcha?).",
+"ts": "2026-10-05T13:46"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: Missing entry for required field: Location; Missing entry f….",
+"ts": "2026-10-05T13:46"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Software Engineer - AI Security Product. Proof saved.",
+"ts": "2026-10-05T13:49"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, New Grad Software Engineer, Routing. Proof saved.",
+"ts": "2026-10-05T13:50"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: no confirmation seen (captcha?).",
+"ts": "2026-10-05T13:51"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: Degree is required.; Discipline is required..",
+"ts": "2026-10-05T13:51"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: CXO AI Engineer, 3 min after it went live.",
+"ts": "2026-10-05T13:53"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: ML Engineer - API Platform, 35 min after it went live.",
+"ts": "2026-10-05T13:53"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: no sponsorship.",
+"ts": "2026-10-05T13:53"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-05T13:53"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Data Engineer. Proof saved.",
+"ts": "2026-10-05T13:54"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Software Engineer. Proof saved.",
+"ts": "2026-10-05T13:55"
+},
+{
+"stage": "apply",
+"tone": "alarm",
+"text": "Corrected the record for a company: CORRECTION: 13:56 SUBMITTED was a false positive (page was at the email-code st…",
+"ts": "2026-10-05T13:57"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Software Engineer, Sandboxing. Proof saved.",
+"ts": "2026-10-05T13:58"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, ML Engineer - API Platform. Proof saved.",
+"ts": "2026-10-05T13:58"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-05T14:02"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-05T14:03"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Software Engineer II, Monetization Engineering. Proof saved.",
+"ts": "2026-10-05T14:06"
+},
+{
+"stage": "hear",
+"tone": "calm",
+"text": "16 companies confirmed they have the application.",
+"ts": "2026-10-05T14:11",
+"n": 16
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Software Development Engineer II – Life Hub (Super App) (Ne…. Proof saved.",
+"ts": "2026-10-05T14:14"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Security Engineer, Secure Frameworks, 5 min after it went live.",
+"ts": "2026-10-05T21:16"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: US Founding Engineer, 14 min after it went live.",
+"ts": "2026-10-05T21:16"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Product Engineer, 2 min after it went live.",
+"ts": "2026-10-05T21:26"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Machine Learning Engineer — GPU Kernel, 6 min after it went live.",
+"ts": "2026-10-05T21:26"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: 5+ yrs.",
+"ts": "2026-10-05T14:29"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: 5+ yrs.",
+"ts": "2026-10-05T14:29"
+}
+]
+}

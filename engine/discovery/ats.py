@@ -159,26 +159,38 @@ def save_boards(b):
               open(boards_path(), "w"), indent=1)
 
 
-def fetch_all(boards, workers=32):
-    """Fetch every board in parallel. Returns (jobs, dead) where dead lists (ats, token) boards that 404.
-    Boards that fail with a network error are kept and simply retried on the next scan."""
-    dead = set(boards.get("dead", []))  # boards that 404'd: skipped to save calls (`boards recheck` retries them)
-    tasks = [(a, t) for a in ATS for t in boards.get(a, []) if f"{a}:{t}" not in dead]
-    jobs, dead = [], []
+def fetch_all(boards, workers=24, keep=None, keys=None):
+    """Fetch every board in parallel and stream each one through `keep` as it arrives.
+
+    keep(job) -> bool   only kept jobs are held in memory (default: keep all)
+    keys: set | None    if given, every "ats:id" seen is added to it (cheap strings, for watch's seen-set)
+    Returns (kept jobs, dead boards, total postings). Boards that 404 are reported as dead; boards that fail
+    with a network error are kept and retried on the next pass. Streaming keeps a full pass of ~110k postings
+    at a fraction of the memory of holding them all."""
+    dead_known = set(boards.get("dead", []))  # skipped to save calls (`boards recheck` retries them)
+    tasks = [(a, t) for a in ATS for t in boards.get(a, []) if f"{a}:{t}" not in dead_known]
+    kept, dead, total = [], [], 0
 
     def one(at):
         try:
-            return at, FETCH[at[0]](at[1]), None
-        except Exception as e:
-            return at, [], e
+            r = FETCH[at[0]](at[1])
+        except Exception:
+            return at, [], [], 0                      # transient: keep the board
+        if r is None:
+            return at, None, [], 0
+        ids = [f"{j['ats']}:{j['id']}" for j in r] if keys is not None else []
+        return at, ([j for j in r if keep(j)] if keep else r), ids, len(r)
 
     with cf.ThreadPoolExecutor(workers) as ex:
-        for at, r, err in ex.map(one, tasks):
+        for fut in cf.as_completed([ex.submit(one, at) for at in tasks]):
+            at, r, ids, n = fut.result()
             if r is None:
                 dead.append(at)
-            else:
-                jobs += r
-    return jobs, dead
+                continue
+            kept += r; total += n
+            if keys is not None:
+                keys.update(ids)
+    return kept, dead, total
 
 
 HARVEST = {

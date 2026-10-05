@@ -10,7 +10,7 @@ interval and surface only postings that did not exist on the previous poll.
 The first poll only seeds seen.json (nothing is announced), so the stream is truly "new since I started".
 """
 import json, os, sys, time, urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from engine.config import WORKSPACE
 from engine.discovery import ats as A
@@ -27,15 +27,17 @@ def _post(url, payload):
 
 
 def poll(seen):
-    jobs, _ = A.fetch_all(A.load_boards())
-    fresh = [j for j in jobs if f"{j['ats']}:{j['id']}" not in seen]
+    """One pass. Only postings missing from `seen` and published in the last 2 days are held in memory."""
     first = not seen
-    seen.update(f"{j['ats']}:{j['id']}" for j in jobs)
+    cut = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+    now_keys = set()
+    fresh, _, total = A.fetch_all(A.load_boards(), keys=now_keys,
+                                  keep=lambda j: f"{j['ats']}:{j['id']}" not in seen and (j.get("posted") or "") >= cut)
+    seen.update(now_keys)
     if first:
-        return [], len(jobs)
-    # a posting new to us but published long ago is a board we just added; only keep the last 2 days
+        return [], total
     matches, _ = filter_jobs(fresh, 2)
-    return matches, len(jobs)
+    return matches, total
 
 
 def main(argv=None):

@@ -52,7 +52,8 @@ def scan(days=3, only=None):
     boards = A.load_boards()
     if only:
         boards = {a: (boards[a] if a in only else []) for a in A.ATS}
-    jobs, dead = A.fetch_all(boards)
+    cut = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    jobs, dead, total = A.fetch_all(boards, keep=lambda j: (j.get("posted") or "") >= cut)  # stream: hold only fresh postings
     out, dropped = filter_jobs(jobs, days)
     os.makedirs(WORKSPACE, exist_ok=True)
     json.dump(out, open(os.path.join(WORKSPACE, "queue.json"), "w"), indent=1)
@@ -61,7 +62,7 @@ def scan(days=3, only=None):
         b["dead"] = sorted(set(b.get("dead", [])) | {f"{a}:{t}" for a, t in dead})
         A.save_boards(b)
     n = sum(len(v) for k, v in boards.items() if k in A.ATS)
-    print(f"scanned {n} boards, {len(jobs)} postings in {time.time() - t0:.0f}s; dropped {dropped}; {len(dead)} dead boards")
+    print(f"scanned {n} boards, {total} postings ({len(jobs)} fresh) in {time.time() - t0:.0f}s; dropped {dropped}; {len(dead)} dead boards")
     return out
 
 
