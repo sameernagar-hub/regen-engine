@@ -51,6 +51,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - ACK recognizes "I will read…"; the select fast path opens menus that a click only focused.
 - **Ashby bot check:** "flagged as possible spam" is reported as `BOT-CHECK` (apply manually with the prepared resume) and never worked around.
 
+### Always-on + honest numbers
+- **Docker watcher** (`Dockerfile`, `deploy/watcher.compose.yml`): `watch 10 --newgrad` runs in a small container with no browser, as an unprivileged user, on a read-only root filesystem, with all capabilities dropped, a 256 MB / 0.5 CPU limit, and `restart: unless-stopped`. `profile/` is mounted read-only and `workspace/` holds all state. *Verify:* `docker compose -f deploy/watcher.compose.yml logs -f`.
+- `watch --newgrad` also pulls newgrad-jobs.com leads about once an hour (cached, so cheap).
+- **`report` command:** counts only *verified* submissions, meaning each job's latest status is SUBMITTED and its confirmation screenshot exists on disk. No inflated totals.
+- **Ashby cooldown:** after Ashby flags an automated submit, Ashby auto-submits pause for 24 h. Forms are still filled and screenshotted, and you click submit. This protects your standing with Ashby-hosted employers.
+
 ### Transparency
 - Every `application` event now stores the full question -> answer list the filler used, so any submission can be audited after the fact.
 

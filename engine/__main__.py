@@ -2,7 +2,7 @@
 
   scan    [days] [--ats a,b]       Greenhouse + Ashby + Lever boards -> workspace/queue.json
   newgrad [days]                   newgrad-jobs.com leads, resolved to the employer's ATS -> queue.json / leads.json
-  watch   [minutes] [--once]       poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)
+  watch   [min] [--once] [--newgrad] poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)
   feed    [days]                   SimplifyJobs new-grad feed -> workspace/feed_queue.json
   boards  [harvest|recheck]        grow the board registry / retry boards marked dead (workspace/boards.json)
   batch  <name> <id,id,...>        queue ids -> tailored resumes + workspace/batches/<name>.json
@@ -10,6 +10,7 @@
   apply  <batches/x.json> [--dry]  fill (and submit) every job in a batch
   inspect <job url> [--show]       list a form's fields + the engine's answers, without filling it
   status                           application outcomes from the event log
+  report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
 """
 import collections, sys
 
@@ -25,6 +26,25 @@ def status(_argv):
     print(f"{len(latest)} jobs tracked:", dict(by))
     for e in latest.values():
         print(f"  {e['status']:<10} {e['job'][:70]}")
+
+
+def report(argv):
+    """Count only what can be proven: each job's latest status is SUBMITTED and its proof screenshot exists."""
+    import os
+    from engine.config import WORKSPACE
+    from engine.feedback.events import read
+    day = argv[0] if argv else None
+    latest = {}
+    for e in read("application"):
+        if not e.get("dry"):
+            latest[e.get("url") or e["job"]] = e
+    rows = [e for e in latest.values() if e["status"] == "SUBMITTED" and (not day or e["ts"].startswith(day))]
+    verified = [e for e in rows if e.get("proof") and os.path.exists(os.path.join(WORKSPACE, e["proof"]))]
+    backfilled = [e for e in rows if e.get("backfilled")]
+    print(f"{len(verified)} verified submissions" + (f" on {day}" if day else "") +
+          f" (proof on disk){'; ' + str(len(backfilled)) + ' backfilled from the tracker without a stored proof path' if backfilled else ''}")
+    for e in sorted(verified, key=lambda e: e["ts"]):
+        print(f"  {e['ts'][:16].replace('T', ' ')}  {e['job'][:60]:<60}  {e['proof']}")
 
 
 def boards(argv):
@@ -68,6 +88,8 @@ def main():
         from engine.apply.inspect_form import main as m
     elif cmd == "status":
         m = status
+    elif cmd == "report":
+        m = report
     else:
         raise SystemExit(f"unknown command {cmd!r}\n{__doc__}")
     m(argv)

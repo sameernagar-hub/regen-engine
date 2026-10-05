@@ -1,0 +1,23 @@
+# Always-on discovery. Runs `python -m engine watch 10 --newgrad` in a small container (no browser, unprivileged user).
+#   docker compose -f deploy/watcher.compose.yml up -d --build      start (restarts automatically, also after reboot)
+#   docker compose -f deploy/watcher.compose.yml logs -f            live "NEW ..." lines
+#   docker compose -f deploy/watcher.compose.yml down               stop
+# State lives in your local folders (bind mounts); the container keeps nothing.
+services:
+  watcher:
+    build: ..
+    image: regen-engine:local
+    container_name: regen-watcher
+    command: ["watch", "10", "--newgrad"]
+    restart: unless-stopped
+    environment:
+      REGEN_WEBHOOK: ${REGEN_WEBHOOK:-}      # optional: Slack/Discord/n8n URL for new-job alerts
+    volumes:
+      - ../profile:/data/profile:ro           # read-only: the container can never change your profile
+      - ../workspace:/data/workspace          # queue.json, new.jsonl, seen.json, events.jsonl
+    read_only: true                           # container filesystem is immutable apart from the mount + /tmp
+    tmpfs: ["/tmp"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    mem_limit: 256m
+    cpus: 0.5

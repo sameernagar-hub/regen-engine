@@ -398,6 +398,16 @@ def main(argv=None):
         run(jobs, dry="--dry" in argv)
 
 
+def ashby_cooling(hours=24):
+    """After Ashby flags an automated submit, stop auto-submitting Ashby for a day: repeated flagged attempts
+    could hurt the candidate's standing. Forms are still filled; the human clicks submit."""
+    try:
+        t = datetime.datetime.fromisoformat(open("ashby_cooldown").read().strip())
+    except (OSError, ValueError):
+        return False
+    return datetime.datetime.now() - t < datetime.timedelta(hours=hours)
+
+
 def already_submitted():
     """URLs whose latest (non-dry) status is SUBMITTED; a later correction event overrides an earlier one."""
     from engine.feedback.events import read
@@ -443,9 +453,14 @@ def run(jobs, dry=False):
                     status = "NEEDS YOU: " + " | ".join(missing)
                 elif dry:
                     page.screenshot(path=shot, full_page=True); status = "filled (dry run)"
+                elif ash and ashby_cooling():
+                    page.screenshot(path=shot, full_page=True)
+                    status = "NEEDS YOU: Ashby cooldown after a bot-check; form is filled, submit it by hand (resume ready)"
                 else:
                     ok, msg = submit_ashby(page) if ash else submit_gh(page)
                     page.screenshot(path=shot, full_page=True)
+                    if not ok and msg.startswith("BOT-CHECK"):
+                        open("ashby_cooldown", "w").write(datetime.datetime.now().isoformat())
                     status = ("SUBMITTED" if ok else "FAILED: ") + ("" if ok else msg)
             except Exception as e:
                 status, shot = f"ERROR: {e}"[:200], ""

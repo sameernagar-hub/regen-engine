@@ -115,7 +115,8 @@ The first real run applied to **7 jobs** (Greenhouse + Ashby), each with its own
 | Capability | State |
 |---|---|
 | Greenhouse · Ashby · Lever · Workable discovery (~2,300 boards, ~45 s) | ✅ v0.4 |
-| `watch`: new-posting alerts + webhook | ✅ v0.4 |
+| `watch`: new-posting alerts + webhook, as an always-on Docker service | ✅ v0.4 |
+| `report`: verified submissions only (proof on disk) | ✅ v0.4 |
 | newgrad-jobs.com leads resolved to the employer's ATS | ✅ v0.4 |
 | JD fit gate (citizenship, clearance, sponsorship, years, grad window) | ✅ v0.4 |
 | Per-job Fact-Bank tailoring + coverage + fact-id audit log | ✅ v0.4 |
@@ -148,6 +149,14 @@ python -m engine apply batches/b1.json --dry   # fill only; check workspace/proo
 python -m engine apply batches/b1.json         # fill + submit (already-submitted jobs are skipped)
 python -m engine status                 # outcomes from the event log
 python -m pytest -q                     # tests (run on profile.example/, never your data)
+```
+
+Always-on discovery in Docker (small, no browser, read-only profile mount, auto-restart):
+
+```bash
+docker compose -f deploy/watcher.compose.yml up -d --build   # runs: watch 10 --newgrad
+docker compose -f deploy/watcher.compose.yml logs -f         # live "NEW ..." lines; matches land in workspace/queue.json
+python -m engine report                                      # verified submissions only (confirmation screenshot on disk)
 ```
 
 Optional memory stack:

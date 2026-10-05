@@ -1,4 +1,4 @@
-"""`python -m engine watch [minutes=10] [--once]`: be first. Poll every registered board on a short
+"""`python -m engine watch [minutes=10] [--once] [--newgrad]`: be first. Poll every registered board on a short
 interval and surface only postings that did not exist on the previous poll.
 
   workspace/seen.json   every (ats:id) ever observed, so a restart never re-announces old jobs
@@ -41,13 +41,21 @@ def poll(seen):
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     once = "--once" in argv
-    argv = [a for a in argv if a != "--once"]
+    with_newgrad = "--newgrad" in argv          # also pull newgrad-jobs.com leads about once an hour
+    argv = [a for a in argv if a not in ("--once", "--newgrad")]
+    last_newgrad = 0.0
     every = float(argv[0]) if argv else 10
     seen_p = os.path.join(WORKSPACE, "seen.json")
     seen = set(json.load(open(seen_p))) if os.path.exists(seen_p) else set()
     hook = os.environ.get("REGEN_WEBHOOK")
     while True:
         t0 = time.time()
+        if with_newgrad and t0 - last_newgrad > 3600:
+            try:
+                from engine.discovery import newgrad
+                newgrad.main(["1"]); last_newgrad = t0
+            except Exception as e:
+                print("  ! newgrad:", e, flush=True)
         try:
             matches, n = poll(seen)
         except Exception as e:
