@@ -8,7 +8,7 @@ Output (workspace): feed_queue.json
 import json, os, re, sys, time, urllib.request
 
 from engine.config import in_workspace
-from engine.discovery.greenhouse import load_domain
+from engine.discovery.filters import load_domain, us_location
 
 FEEDS = {
     "simplify-newgrad": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
@@ -39,7 +39,9 @@ def pull(days=7, feed="simplify-newgrad", needs_sponsorship=True):
                 continue
             if dom["exclude_titles"].search(t) or EXTRA_BAD.search(t):
                 continue
-            if dom["exclude_locations"].search(locs) and not re.search(r", (?!UK)[A-Z]{2}\b", locs):
+            if dom.get("exclude_companies") and dom["exclude_companies"].search(x["company_name"]):
+                continue
+            if not any(us_location(l) for l in x.get("locations") or [""]):
                 continue
             if needs_sponsorship and x.get("sponsorship") in NO_SPONSOR:
                 continue
