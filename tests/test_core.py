@@ -157,3 +157,13 @@ def test_inbox_classify():
     assert classify("Coding challenge", "Please complete the HackerRank assessment within 7 days.") == "oa"
     assert classify("Job offer", "Please buy equipment with a gift card and we'll reimburse you") == "scam"
     assert classify("Security code for your application to X", "paste this code") == "other"
+
+
+def test_live_narration_is_plain_and_evidence_based():
+    from engine.live.server import narrate
+    n = narrate({"kind": "application", "status": "SUBMITTED", "job": "Nuro - New Grad SWE", "proof": "proof/missing.png"})
+    assert n["tone"] == "win" and "Proof saved" not in n["text"] and n["verified"] is False   # no proof on disk, no claim
+    assert narrate({"kind": "application", "status": "SKIPPED", "job": "Stripe - FS", "detail": "JD: 5+ yrs"})["text"] == "Let Stripe go: 5+ yrs."
+    assert narrate({"kind": "resume", "job": "X - Y"})["text"] == "Wrote a resume for X."
+    assert narrate({"kind": "application", "status": "filled (dry run)", "job": "X - Y", "dry": True}) is None
+    assert "wants to talk" in narrate({"kind": "outcome", "outcome": "interview", "company": "Reddit"})["text"]

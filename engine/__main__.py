@@ -13,6 +13,7 @@
   inbox   <msgs.json> | --imap [d] classify recruiting email -> outcome events (OA / interview / rejection / offer / scam)
   learn                            response rates by lane and ATS -> workspace/learnings.md
   sos-test                         send a test SOS alert (engine/notify.py; .env SMTP app password)
+  live    [port]                   the engine, watched live (localhost page; read-only)
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
 """
 import collections, sys
@@ -93,6 +94,8 @@ def main():
         m = status
     elif cmd == "report":
         m = report
+    elif cmd == "live":
+        from engine.live.server import main as m
     elif cmd == "inbox":
         from engine.feedback.inbox import main as m
     elif cmd == "learn":

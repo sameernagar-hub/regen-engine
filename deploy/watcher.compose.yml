@@ -1,4 +1,4 @@
-# Always-on discovery. Runs `python -m engine watch 10 --newgrad` in a small container (no browser, unprivileged user).
+# Always-on discovery + the live view (http://127.0.0.1:7777). Runs `python -m engine watch 10 --newgrad` in a small container (no browser, unprivileged user).
 #   docker compose -f deploy/watcher.compose.yml up -d --build      start (restarts automatically, also after reboot)
 #   docker compose -f deploy/watcher.compose.yml logs -f            live "NEW ..." lines
 #   docker compose -f deploy/watcher.compose.yml down               stop
@@ -21,3 +21,22 @@ services:
     cap_drop: ["ALL"]
     mem_limit: 1g                             # a full poll holds ~110k postings in memory
     cpus: 0.5
+
+  live:
+    image: regen-engine:local
+    container_name: regen-live
+    command: ["live", "7777", "--no-open"]
+    restart: unless-stopped
+    depends_on: [watcher]
+    environment:
+      REGEN_LIVE_HOST: 0.0.0.0                 # inside the container; published to this computer only (below)
+    ports: ["127.0.0.1:7777:7777"]             # never exposed to your network
+    volumes:
+      - ../profile:/data/profile:ro
+      - ../workspace:/data/workspace:ro        # the view only reads
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    mem_limit: 128m
+    cpus: 0.25
