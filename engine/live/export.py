@@ -148,7 +148,12 @@ def main(argv=None):
     print(f"site/ ready: {len(d['events'])} anonymized events, {d['verified']} verified applications, "
           f"graph {len(d['graph']['nodes'])} nodes")
     if "--push" in argv:
-        print("public feed:", publish())
+        r = publish()
+        print("public feed:", r)
+        if r == "pushed":  # trace: every public update is an event (counts only; the feed itself is on gh-pages)
+            from engine.feedback.events import record
+            record("published", target="gh-pages", events=len(d["events"]), verified=d["verified"],
+                   graph_nodes=len(d["graph"]["nodes"]))
 
 
 if __name__ == "__main__":
