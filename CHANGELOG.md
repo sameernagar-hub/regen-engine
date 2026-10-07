@@ -10,6 +10,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - **`engine/discovery/gmail_alerts.js`**: run in a signed-in Gmail tab. It reads alert emails through Gmail's own print view (same origin, no API key, nothing leaves the browser) and extracts only title / company / location per listing, with one parser per sender. No links, tracking ids or message bodies are kept.
 - `newgrad.resolve(..., source=)` so every resolved job records where it was found.
 
+### Added
+- **Lever apply adapter** (`fill_lever` / `submit_lever`): resume upload, standard fields, custom questions (text, textarea, radio, checkbox, select), location autocomplete restricted to your state/US, EEO selects declined. A visible hCaptcha/reCAPTCHA is never solved: the job goes to the human queue with the form filled. First run: 3 Lever forms filled end to end; one stopped at a real image CAPTCHA.
+- Answer rules: country, state/province, F-1 status (preset `f1_status`), "file a petition ... employment-based visa" (sponsorship), current/former employee, referred by, expected annual compensation, current company (preset `current_company`). Yes/No into a free-text box is allowed when *any* sentence of the label is a yes/no question.
+
+### Fixed (seen on real forms)
+- "How did you hear about this job? (LinkedIn, Indeed, referral...)" received the LinkedIn URL because the link rule matched first; the how-heard rule now comes first.
+- Location autocomplete: "San Jose" alone resolved to San José, Costa Rica. Location questions now answer "City, State", and the Lever box only accepts a suggestion in your state or the US.
+- Core-stack gate matched "rust" inside "trust" (zero trust, public trust); stacks now match as whole words.
+- A job title naming a non-US city ("Team Lead - Lisbon, Portugal") listed as plain "Remote" is now filtered as non-US.
+
 ### Changed (from rejection analysis)
 Three rejections in two days were read against their job descriptions. Two jobs required 4+ years against 3 years of experience; one also centered on a stack the candidate doesn't list. The fast turnaround (34-45 h) points to automated knockout screens.
 - **Years gate uses your real number.** `fit()` now blocks any JD whose minimum years exceeds `years_experience` from the presets (it allowed up to 4 before).

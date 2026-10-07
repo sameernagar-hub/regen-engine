@@ -234,6 +234,7 @@ def test_core_stack_and_jd_spelling():
     from engine.tailoring import resume
     assert "core stack: rust" in fit("Strong Rust experience required.")
     assert not any(b.startswith("core stack") for b in fit("We mostly write Python; some Rust is a plus."))
+    assert not any(b.startswith("core stack") for b in fit("Strong understanding of zero trust; must obtain public trust."))
     line = "PostgreSQL, MySQL, REST APIs"
     assert resume.jd_spelling(line, "Postgres and RESTful services") == "PostgreSQL (Postgres), MySQL, REST APIs (RESTful)"
     assert resume.jd_spelling(line, "PostgreSQL and Postgres") == line            # JD already uses our spelling

@@ -44,12 +44,16 @@ RULES = [
     (r"address line 1|street address|^address$|mailing address", P.get("address_line1")),  # None unless you add it to presets
     (r"first name", P["first_name"]), (r"last name", P["last_name"]),
     (r"e-?mail", P["email"]), (r"phone", P["phone"]),
+    (r"hear about|how did you find|learned about|^source\b|(job|application|referral|candidate) source", "Company careers page"),  # before the link rules: these labels often list "LinkedIn"
     (r"linkedin", P["linkedin"]),
     (r"github|website|portfolio|other (web)?site|personal site", P["github"]),
     # Legal / status answers come ONLY from your presets (never hardcoded). An unset preset -> human queue.
     # "authorized ... WITHOUT sponsorship" is a different question from "will you need sponsorship", so it has its own key.
     (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
-    (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor", P.get("needs_sponsorship_now_or_future")),
+    (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor|(file|submit) a petition|employment.based (visa|immigration)", P.get("needs_sponsorship_now_or_future")),
+    (r"(currently|presently) (in|on|hold(ing)?) (an? )?f-?1( status| visa)?", P.get("f1_status")),
+    (r"^(what is )?your country\W*$|^country of residence", P["country"]),
+    (r"^(what is )?your state|state ?/ ?province", P["state"]),
     (r"authori[sz]ed to work|eligible to work|legally (authori|work|permitted)|work authori", P.get("work_authorized_us")),
     (r"(ever )?(been )?(previously )?employed (by|at)|worked (for|at) .{0,30} before|former employee|previous employee|(currently|previously|ever).{0,30}work(ed)? (at|for) (?!(a|an|any|or|with|the|one|another)\b)", P.get("previous_employer_of_company", "No")),
     (r"non-?compete|non-?solicit|subject to any agreement", P.get("non_compete")),
@@ -58,7 +62,9 @@ RULES = [
     (r"city,? (and|&|/) state|state (and|&|/) city", f"{P['city']}, {P['state']}"),  # before the state-only rule
     (r"(country|where).{0,40}(reside|based|located|live)|^country", P["country"]),
     (r"(state|province).{0,30}(reside|live|located|working from|work from)", P["state"]),
-    (r"city.{0,40}(reside|live|located)|current location|where are you located|^location", P["city"]),
+    (r"city.{0,40}(reside|live|located)", P["city"]),
+    # location boxes autocomplete worldwide: "San Jose" alone can resolve to San José, Costa Rica
+    (r"current location|where are you located|^location", f"{P['city']}, {P['state']}"),
     (r"current (or previous )?(employer|company)|current \(or most recent\) company|most recent (employer|company)|^company", P["current_employer"]),
     (r"address (from which|where) you (plan|will|intend)|where (will|do) you (plan to )?work from|work(ing)? location address", f"{P['city']}, {P['state']}"),
     (r"located in the united states|reside in the (united states|us)|currently live in the us|based in the (u\.?s\.?|united states|us)\b|(live|reside|located) in the (u\.?s\.?|us)\b", P.get("lives_in_us")),
@@ -67,7 +73,6 @@ RULES = [
     (r"(based|live|located|reside) (in|near) (or around )?the (san francisco )?bay area|in or around the (san francisco )?bay area",
      "Yes" if re.search(BAY_AREA, P.get("city", ""), re.I) else None),
     (r"current (or previous )?(job )?title", P["current_title"]),
-    (r"hear about|how did you find|learned about|^source\b|(job|application|referral|candidate) source", "Company careers page"),
     (r"zip|postal code", P["zip"]),
     (r"^city$", P["city"]), (r"^state$", P["state"]),
     (r"previously worked (at|for)|worked at .{0,30} (before|previously)", P.get("previous_employer_of_company")),
@@ -90,7 +95,9 @@ RULES = [
     (r"^end date month\W*$", EDU.get("end_month")), (r"^end date year\W*$", EDU.get("end_year")),
     (r"start date|when can you start|available to start|earliest.{0,30}start", P.get("start_date")),
     (r"preferred (office |work )?location|location preference|which (office|location)", P.get("preferred_location")),
-    (r"salary|compensation expectation|desired pay", P.get("salary_expectation")),
+    (r"salary|compensation expectation|desired pay|expected (annual |base |total )?(compensation|pay)|compensation (range|requirements?)", P.get("salary_expectation")),
+    (r"(current|former|previous) .{0,40}employee\?|employee of .{0,40}(current|former)", P.get("previous_employer_of_company", "No")),
+    (r"referred by|were you referred|referral from|who referred you", P.get("referred", "No")),  # the engine applies cold
     (r"privacy|consent|acknowledge|agree|certify|attest", "__ACK__"),
 ]
 DECLINE = re.compile(r"decline|prefer not|don.t wish|do not wish|not to (answer|disclose|say)|choose not", re.I)
@@ -125,7 +132,8 @@ YESNO_Q = re.compile(r"^\s*(are|do|does|did|will|would|have|has|had|is|was|can|c
 def text_ok(label, ans):
     """A free-text box only gets a bare Yes/No when its label is actually a yes/no question
     (keeps "Yes" out of e.g. "What address will you work from? If you'd relocate, ...")."""
-    return ans not in ("Yes", "No") or bool(YESNO_Q.search(label or ""))
+    sentences = re.split(r"(?<=[.?!])\s+", label or "")  # "This role is onsite Mon-Fri. Are you able to...?"
+    return ans not in ("Yes", "No") or any(YESNO_Q.search(x) for x in sentences)
 
 
 def answer_for(label, extra):
@@ -265,6 +273,85 @@ def submit_ashby(page):
             # bot detection: never worked around. You submit this one by hand (resume is ready).
             return False, "BOT-CHECK: Ashby flagged the automated submit; apply manually with the prepared resume"
     return False, "no confirmation seen (captcha?)"
+
+# ---------------- Lever (jobs.lever.co/<co>/<id>/apply) ----------------
+def lever_apply_url(url):
+    u = url.split("?")[0].rstrip("/")
+    return u if u.endswith("/apply") else u + "/apply"
+
+
+def set_select(sel, ans):
+    opts = [(o.inner_text().strip(), o) for o in sel.query_selector_all("option") if (o.get_attribute("value") or "").strip()]
+    h = pick_option(opts, ans)
+    if not h: return False
+    sel.select_option(value=h.get_attribute("value")); return True
+
+
+def fill_lever(page, job, log):
+    page.goto(lever_apply_url(job["url"])); page.wait_for_selector("form", timeout=30000)
+    time.sleep(1.5)
+    missing = []
+    page.set_input_files("input[name=resume], input#resume-upload-input, input[type=file]", job["resume"])
+    for _ in range(20):  # Lever parses the resume and pre-fills name/email; wait for the upload to land
+        time.sleep(0.5)
+        if re.search(r"success|uploaded|" + re.escape(os.path.basename(job["resume"])[:20]), page.inner_text(".application-form, form")[:4000], re.I): break
+    for f in page.query_selector_all("li.application-question, .application-question"):
+        lab_el = f.query_selector(".application-label, .text, label")
+        if not lab_el: continue
+        raw = lab_el.inner_text().strip()
+        req = "✱" in raw or "*" in raw or f.query_selector("[required]") is not None
+        label = re.sub(r"[✱*]", "", raw).strip()
+        if not label or re.match(r"(resume|cv)\b", label, re.I): continue
+        ans = answer_for(label, job.get("extra", {}))
+        if re.search(r"^current (company|employer)|^organization", label, re.I):
+            ans = P.get("current_company") or ans
+        if NOTE_Q.search(label) and job.get("note"):
+            ans = job["note"]
+        log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
+        try:
+            sel = f.query_selector("select")
+            loc = f.query_selector("input[name=location], #location-input")
+            if ans is None: ok = False
+            elif sel: ok = set_select(sel, ans)
+            elif loc:
+                # type "City, State" and only take a suggestion in that state/US ("San Jose" alone picked Costa Rica)
+                want = f"{P['city']}, {P['state']}"
+                loc.fill(""); loc.type(want, delay=20); time.sleep(2)
+                opts = page.query_selector_all(".dropdown-location, .dropdown-results div, [class*=dropdown] li")
+                us = re.escape(P["state"]) + r"|\b" + re.escape(P.get("state_abbr") or "##") + r"\b|United States|\bUSA?\b"
+                good = [o for o in opts if re.search(us, o.inner_text())]
+                if good: good[0].click(); ok = True
+                else:
+                    loc.fill(want); page.keyboard.press("Escape"); ok = not opts
+            elif f.query_selector("textarea") and not ans.startswith("__"):
+                if not text_ok(label, ans) and not (NOTE_Q.search(label) and job.get("note")): ok = False
+                else: f.query_selector("textarea").fill(ans); ok = True
+            else:
+                ok = set_field(page, f, label, ans)
+        except Exception as e:
+            ok = False; log(f"  ! {label[:60]}: {e}")
+        if not ok and req: missing.append(label[:90])
+    # EEO block: always decline
+    for sel in page.query_selector_all("select[name^='eeo']"):
+        try: set_select(sel, "__DECLINE__") or None
+        except Exception: pass
+    return missing
+
+
+def submit_lever(page):
+    page.click("#btn-submit, button[type=submit]:has-text('Submit')")
+    for _ in range(25):
+        time.sleep(1)
+        u = page.url; body = page.inner_text("body")
+        if "/thanks" in u or re.search(r"application (has been )?submitted|thank you for (applying|your application)", body, re.I):
+            return True, "success"
+        cap = page.query_selector("iframe[src*=hcaptcha]:visible, iframe[src*=recaptcha]:visible, .h-captcha:visible")
+        if cap and _ > 2:
+            # never solved or worked around: the form stays filled for you to finish
+            return False, "CAPTCHA: Lever asked for a human check; finish this one by hand (form filled, resume ready)"
+        errs = page.query_selector_all(".error-message:visible, .application-error:visible")
+        if errs and _ > 3: return False, "; ".join(e.inner_text()[:80] for e in errs[:5])
+    return False, "no confirmation seen"
 
 # ---------------- Greenhouse (job-boards.greenhouse.io) ----------------
 def gh_embed_url(url):
@@ -461,15 +548,15 @@ def run(jobs, dry=False):
             if safety.stop_requested():
                 log("STOP file present (workspace/STOP): halting before " + name); break
             log(f"== {name}")
-            ash = "ashbyhq" in job["url"]
-            if not ash and "greenhouse" not in job["url"]:
+            ash = "ashbyhq" in job["url"]; lev = "jobs.lever.co" in job["url"]
+            if not (ash or lev) and "greenhouse" not in job["url"]:
                 status = f"NEEDS YOU: no adapter for {job.get('ats') or 'this site'} yet; resume ready at {job.get('resume')}"
                 log(f"   -> {status}")
                 record("application", job=name, url=job["url"], status="NEEDS YOU", detail=status, proof="", resume=job.get("resume"), dry=dry)
                 results.append({"name": name, "url": job["url"], "status": status, "proof": "", "at": datetime.datetime.now().isoformat(timespec="seconds")})
                 continue
             try:
-                missing = fill_ashby(page, job, log) if ash else fill_gh(page, job, log)
+                missing = fill_ashby(page, job, log) if ash else fill_lever(page, job, log) if lev else fill_gh(page, job, log)
                 stamp = datetime.datetime.now().strftime("%m%d-%H%M%S")
                 shot = f"proof/{re.sub(r'[^A-Za-z0-9]+', '_', name)[:50]}_{stamp}.png"
                 # airbags: anything sensitive, unexpected or over the limits stops this job before submit
@@ -489,7 +576,7 @@ def run(jobs, dry=False):
                     page.screenshot(path=shot, full_page=True)
                     status = "NEEDS YOU: Ashby cooldown after a bot-check; form is filled, submit it by hand (resume ready)"
                 else:
-                    ok, msg = submit_ashby(page) if ash else submit_gh(page)
+                    ok, msg = submit_ashby(page) if ash else submit_lever(page) if lev else submit_gh(page)
                     page.screenshot(path=shot, full_page=True)
                     if not ok and msg.startswith("BOT-CHECK"):
                         open("ashby_cooldown", "w").write(datetime.datetime.now().isoformat())

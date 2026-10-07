@@ -122,7 +122,7 @@ def fit(jd, max_years=None):
     out = [name for name, pat in BLOCKERS if re.search(pat, low)]
     have = vocabulary()
     for name, s in CORE_STACKS.items():
-        if not any(re.fullmatch(s, t) or re.search(r"(?<![a-z0-9])" + s + r"(?![a-z0-9])", t) for t in have)                 and re.search(REQUIRED_CUE.replace("{s}", s), low):
+        if not any(re.fullmatch(s, t) or re.search(r"(?<![a-z0-9])" + s + r"(?![a-z0-9])", t) for t in have)                 and re.search(REQUIRED_CUE.replace("{s}", r"(?<![a-z0-9])(?:" + s + r")(?![a-z0-9])"), low):
             out.append(f"core stack: {name}")
     # "5+ years", "4-7 years", "5 to 15+ years": the lower bound is the requirement
     yrs = [int(m.group(1)) for m in re.finditer(r"(?<![\d.])(\d{1,2})\s*\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*\+?\s*)?years?(?: of)?[^.]{0,60}experience", low)]

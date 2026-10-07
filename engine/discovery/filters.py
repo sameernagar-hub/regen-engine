@@ -52,8 +52,8 @@ def keep(dom, title, location, company=""):
         return "company excluded"
     if dom.get("include_locations") and location and not dom["include_locations"].search(location) and not us_location(location):
         return "location"
-    if dom.get("require_us", True) and not us_location(location):
-        return "non-US"
+    if dom.get("require_us", True) and (not us_location(location) or (NON_US.search(title) and not US_WORDS.search(title))):
+        return "non-US"  # "Team Lead - Lisbon, Portugal" listed as plain "Remote"
     return None
 
 
