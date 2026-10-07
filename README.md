@@ -148,7 +148,7 @@ Built in the open, with every change itemized in **[CHANGELOG.md](CHANGELOG.md)*
 |---|---|
 | Discovery: Greenhouse · Ashby · Lever · Workable (~2,300 boards, ~45 s per pass) | ✅ |
 | `watch`: brand-new postings within minutes, webhook, always-on Docker service | ✅ |
-| Sources: board harvest from public GitHub job lists · newgrad-jobs.com leads resolved to the employer's own ATS | ✅ |
+| Sources: board harvest from public GitHub job lists · newgrad-jobs.com leads and job-alert emails (LinkedIn, Indeed, Glassdoor, ZipRecruiter, Handshake) resolved to the employer's own ATS | ✅ |
 | JD fit gate (eligibility, clearance, years, graduation window) | ✅ |
 | Per-job Fact-Bank tailoring + coverage + fact-id audit log | ✅ |
 | Greenhouse apply (email security-code step, proof screenshots) | ✅ |
@@ -174,6 +174,7 @@ cp -r profile.example profile           # fill in YOUR facts, presets, lanes, do
 python -m engine boards harvest         # grow the board registry from public GitHub job lists (daily is plenty)
 python -m engine scan 1                 # Greenhouse + Ashby + Lever + Workable, last 24 h -> workspace/queue.json
 python -m engine newgrad 1              # newgrad-jobs.com leads, resolved to the employer's own ATS
+python -m engine alerts workspace/alerts/<date>.txt   # job-alert emails (gmail_alerts.js), resolved the same way
 python -m engine watch 10               # or: poll every 10 min and print only brand-new matches
 python -m engine feed 7                 # SimplifyJobs new-grad feed -> workspace/feed_queue.json
 python -m engine batch b1 <id>,<id>     # fit gate + tailored resumes -> workspace/batches/b1.json
@@ -216,7 +217,7 @@ docker compose -f deploy/docker-compose.yml --env-file .env up -d
 ```
 regen-engine/
 ├── engine/                     the engine (Python package)
-│   ├── __main__.py             CLI: scan · newgrad · watch · boards · feed · batch · tailor · inspect · apply · status
+│   ├── __main__.py             CLI: scan · newgrad · alerts · watch · boards · feed · batch · tailor · inspect · apply · status
 │   ├── config.py               profile/ and workspace/ paths
 │   ├── discovery/              ① fuel: ats.py (4 ATS APIs + registry), scan, watch, newgrad, filters
 │   ├── tailoring/              ③ Fact-Bank resume builder, per-job tailor + fit gate, batch builder

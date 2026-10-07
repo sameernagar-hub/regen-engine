@@ -4,6 +4,18 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.6.4] - 2026-10-06 · "Your inbox is a job board"
+### Added
+- **Email job alerts as a lead source** (`python -m engine alerts <file>`, `engine/discovery/alerts.py`). LinkedIn, Indeed, Glassdoor, ZipRecruiter and Handshake alert emails list roles but hide the employer's posting behind their own apply flows. Each listing now becomes a lead: domain filter, staffing/aggregator drop, already-applied check, then the newgrad resolver finds the company's own Greenhouse / Ashby / Lever / Workable board and matches the title there. Resolved jobs go to `queue.json` and their boards join the registry; unresolved ones are merged into `workspace/alert_leads.json` (never overwritten).
+- **`engine/discovery/gmail_alerts.js`**: run in a signed-in Gmail tab. It reads alert emails through Gmail's own print view (same origin, no API key, nothing leaves the browser) and extracts only title / company / location per listing, with one parser per sender. No links, tracking ids or message bodies are kept.
+- `newgrad.resolve(..., source=)` so every resolved job records where it was found.
+
+### Why
+An active job seeker's inbox gets well over 100 matched listings every few days, and they were going unused. First run: 146 listings -> 93 leads -> **30 resolved to the employer's ATS (32%, vs ~10% for newgrad-jobs)**.
+
+### Verify
+`python -m pytest -q` (new `test_alert_parse_and_leads`: badge/header rows dropped, staffing filtered, Bay Area normalized). Then `python -m engine alerts workspace/alerts/<date>.txt` prints each resolved job and a summary line, and writes an `alerts` event with the counts.
+
 ## [0.6.3] - 2026-10-06 · "Private by construction"
 ### Security / privacy
 - **No personal defaults in code:** every eligibility and status answer (sponsorship, work authorization, clearance, relocation, onsite, degree, enrollment, start date, salary, location in US, relatives, non-compete…) now comes only from the git-ignored `profile/presets.json`. An unset preset or an unfilled `<placeholder>` goes to the human queue. A test forbids hardcoded Yes/No answers.

@@ -180,3 +180,19 @@ def test_no_personal_defaults_in_code():
 
 def test_placeholders_are_never_answers():
     assert answer_for("Are you a US citizen?", {"us citizen": "<Yes/No>"}) is None
+
+
+# ---- email job alerts ----
+def test_alert_parse_and_leads():
+    from engine.discovery.alerts import parse, leads_from
+    text = ("REGEN-ALERTS § linkedin ¦ Software Engineer ¦ Globex ¦ San Francisco Bay Area (On-site) ¦ Tue § "
+            "linkedin ¦ Manage alerts ¦ Initech ¦ New York, NY ¦ Tue § glassdoor ¦ Software Engineer ¦ You can edit "
+            "your job alert here. ¦ Tukwila, WA ¦ Tue § ziprecruiter ¦ Software Engineer ¦ Motion Recruitment ¦ "
+            "Sunnyvale, CA ¦ Tue § handshake ¦ Senior Software Engineer ¦ Hooli ¦ Austin, TX ¦ Tue § END-ALERTS")
+    rows = parse(text)
+    assert [r["company"] for r in rows] == ["Globex", "Motion Recruitment", "Hooli"]   # badge/header rows dropped
+    assert rows[0]["location"] == "San Francisco, CA"
+    assert parse("indeed\tSoftware Engineer\tUmbrella\tHayward, CA 94545")[0]["company"] == "Umbrella"
+    leads, dropped = leads_from(rows)
+    assert [l["company"] for l in leads] == ["Globex"]
+    assert dropped == {"staffing/aggregator": 1, "level/title excluded": 1}

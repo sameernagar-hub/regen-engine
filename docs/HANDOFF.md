@@ -17,6 +17,9 @@ Full list of changes, with how to verify each: **[CHANGELOG.md](../CHANGELOG.md)
 python -m engine boards harvest      # once a day: grow the board registry
 python -m engine scan 1              # ~2,300 boards (Greenhouse/Ashby/Lever/Workable), last 24 h
 python -m engine newgrad 1           # newgrad-jobs.com leads -> employer ATS (rest in workspace/leads.json)
+# job-alert emails: run engine/discovery/gmail_alerts.js in a Gmail tab (await it), save the article text to
+# workspace/alerts/<date>.txt, then:
+python -m engine alerts workspace/alerts/<date>.txt   # -> employer ATS (rest in workspace/alert_leads.json)
 python -m engine batch b8 <id,...>   # fit gate skips ineligible jobs; tailored, Fact-Bank-only resumes
 python -m engine apply batches/b8.json    # submits when every required answer is known
 python -m engine status

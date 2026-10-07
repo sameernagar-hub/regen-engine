@@ -2,6 +2,7 @@
 
   scan    [days] [--ats a,b]       Greenhouse + Ashby + Lever boards -> workspace/queue.json
   newgrad [days]                   newgrad-jobs.com leads, resolved to the employer's ATS -> queue.json / leads.json
+  alerts  <file>                   job-alert emails (gmail_alerts.js output) resolved to the employer's ATS -> queue.json
   watch   [min] [--once] [--newgrad] poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)
   feed    [days]                   SimplifyJobs new-grad feed -> workspace/feed_queue.json
   boards  [harvest|recheck]        grow the board registry / retry boards marked dead (workspace/boards.json)
@@ -79,6 +80,8 @@ def main():
         from engine.discovery.watch import main as m
     elif cmd == "newgrad":
         from engine.discovery.newgrad import main as m
+    elif cmd == "alerts":
+        from engine.discovery.alerts import main as m
     elif cmd == "boards":
         m = boards
     elif cmd == "feed":

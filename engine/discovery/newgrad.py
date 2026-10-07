@@ -68,7 +68,7 @@ def _match(jobs, title):
     return max(pool, key=lambda j: j.get("posted") or "") if pool else None
 
 
-def resolve(leads, miss_ttl_days=7):
+def resolve(leads, miss_ttl_days=7, source="newgrad-jobs"):
     """Find each lead on its employer's own ATS board.
 
     Cache (workspace/resolve_cache.json):  company -> {"board": [ats, token]}  only after a lead title matched there
@@ -110,7 +110,7 @@ def resolve(leads, miss_ttl_days=7):
             if hit:
                 cache[co] = {"board": list(board)}
                 resolved.append({**hit, "company": hit["company"] if hit["ats"] == "greenhouse" else co,
-                                 "source": "newgrad-jobs", "h1b": l["h1b"], "lead_url": l["lead_url"]})
+                                 "source": source, "h1b": l["h1b"], "lead_url": l["lead_url"]})
                 if board[1] not in boards[board[0]]:
                     boards[board[0]].append(board[1])
             else:

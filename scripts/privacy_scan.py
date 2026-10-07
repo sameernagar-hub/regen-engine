@@ -26,7 +26,11 @@ PUBLIC_OK = {"sameernagar hub", "regen engine", "united states", "computer scien
              "github", "linkedin", "master s", "bachelor s", "san francisco bay area", "https github com sameernagar hub"}
 SKIP_PRESET_KEYS = {"city", "state", "state_abbr", "country", "grad_year", "years_experience", "degree", "major", "how_heard",
                     "eeo", "submit_policy", "start_date", "salary_expectation", "preferred_location", "github"}
-ALLOW_FILES = {"engine/discovery/boards.example.txt"}  # a public list of company job boards, not applications
+# company names from the event log that are also everyday words ("applied" is an Ashby board slug); treating them as
+# private terms flags half the repo, which trains everyone to ignore the gate
+COMMON_WORD_COMPANIES = {"applied", "affirm", "ramp", "compass", "scale", "figure", "notion", "current", "atoms",
+                         "mercury", "anchor", "persona", "together", "modal", "pylon"}
+ALLOW_FILES ={"engine/discovery/boards.example.txt"}  # a public list of company job boards, not applications
 FORBIDDEN = re.compile(r"^(profile/|workspace/(?!\.gitkeep$)|\.env$|\.env\.local$|\.insforge/)|\.(pdf|docx)$", re.I)
 
 GENERIC = [  # (name, regex) for PII that must never be committed by anyone
@@ -95,7 +99,7 @@ def collect_terms():
             except ValueError:
                 continue
             co = (e.get("company") or (e.get("job") or "").partition(" - ")[0]).strip()
-            if len(co) >= 4:
+            if len(co) >= 4 and norm(co) not in COMMON_WORD_COMPANIES:
                 add(co)
     p = os.path.join(prof, "private_terms.txt")
     if os.path.exists(p):
