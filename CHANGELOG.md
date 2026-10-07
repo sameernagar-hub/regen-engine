@@ -4,6 +4,14 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.7.1] - 2026-10-07 · "Live, readable, reachable"
+### Added
+- **Motion on the live view, all from real data:** recent events play as a paced stream (each sentence sends a light to its station), the public site loops the last week of real activity (labelled "replaying"), a twinkling field of one point per ~25 watched boards, light flowing along the pipeline, and the lane tree grows on load with beads that breathe.
+- **Accessibility:** beads and graph nodes are keyboard buttons (Tab, Enter/Space, Escape closes panels and returns focus), visible focus rings, skip links to a screen-reader text version of the tree and graph, dialogs with labels, `prefers-reduced-motion` and `prefers-contrast` support.
+- **Trace:** every public feed push is a `published` event; the 30-minute publisher logs to `workspace/logs/publish.log`.
+### Changed
+- `site/` is no longer tracked: the feed is published to `gh-pages`, and Render serves the Next.js app from `main` (https://regen-engine.onrender.com).
+
 ## [0.6.4] - 2026-10-06 · "Your inbox is a job board"
 ### Added
 - **Email job alerts as a lead source** (`python -m engine alerts <file>`, `engine/discovery/alerts.py`). LinkedIn, Indeed, Glassdoor, ZipRecruiter and Handshake alert emails list roles but hide the employer's posting behind their own apply flows. Each listing now becomes a lead: domain filter, staffing/aggregator drop, already-applied check, then the newgrad resolver finds the company's own Greenhouse / Ashby / Lever / Workable board and matches the title there. Resolved jobs go to `queue.json` and their boards join the registry; unresolved ones are merged into `workspace/alert_leads.json` (never overwritten).

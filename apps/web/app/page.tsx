@@ -1,16 +1,31 @@
 "use client";
 // The engine, watched live. Not a dashboard: one line of stations, a tree of real applications growing from
 // "applying" (one stem per resume lane, one bead per proof-backed submission), a narrator, and what needs you.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PUBLIC, useEngine } from "@/lib/engine";
+import { pressable, usePanel } from "@/lib/a11y";
 import Link from "next/link";
 import { STAGES, get, type Application, type HumanItem } from "@/lib/types";
 
 const W = 1200, H = 620, LINE_Y = 470;
 const stationX = (i: number) => 120 + i * ((W - 240) / (STAGES.length - 1));
+const STAGE_I: Record<string, number> = { listen: 0, judge: 1, write: 2, apply: 3, hear: 4 };
+const TONE: Record<string, string> = { win: "#f2c14e", alarm: "#ff5a5f", you: "#ff9f43", quiet: "#7d8796", calm: "#6fb7ff" };
+// a fixed, seeded scatter so the board field doesn't jump between renders
+const rand = (i: number) => { const x = Math.sin(i * 12.9898) * 43758.5453; return x - Math.floor(x); };
 
 export default function Live() {
-  const { snap, apps, lines, pulse } = useEngine();
+  const { snap, apps, lines, pulse, replaying } = useEngine();
+  const [lights, setLights] = useState<{ id: number; from: number; to: number; color: string }[]>([]);
+  useEffect(() => {  // each event sends a light from the previous station to its own
+    if (!pulse) return;
+    const to = STAGE_I[pulse.stage] ?? 0, from = Math.max(0, to - 1);
+    setLights((l) => [...l.slice(-6), { id: pulse.id, from, to, color: TONE[pulse.tone] || "#6fb7ff" }]);
+  }, [pulse]);
+  const stars = useMemo(() => Array.from({ length: Math.min(120, Math.round((snap?.boards || 0) / 25)) }, (_, i) => {
+    const a = rand(i) * Math.PI * 2, r = 22 + rand(i + 99) * 70;
+    return { x: stationX(0) + Math.cos(a) * r, y: LINE_Y - 95 + Math.sin(a) * r * 0.7, d: (rand(i + 7) * 4).toFixed(2) };
+  }), [snap?.boards]);
   const [open, setOpen] = useState<Application | null>(null);
   const [human, setHuman] = useState<HumanItem[] | null>(null);
 
@@ -27,12 +42,14 @@ export default function Live() {
   const ax = stationX(3), trunkTop = 300, span = Math.min(110, 520 / Math.max(1, lanes.length));
 
   return (
-    <main className="stage">
+    <main className="stage" id="main">
+      <a className="skip" href="#text-view">Skip to the text version</a>
       <header className="top">
         <div className="brand">REGEN · LIVE <Link href="/graph" style={{ color: "var(--gold)", marginLeft: 16 }}>memory graph →</Link></div>
         <div className="count">
           <b>{snap?.verified ?? "·"}</b>
-          <span>applications sent with proof{snap && !PUBLIC ? ` · ${snap.verified_today} today` : ""}{PUBLIC ? " · live, names hidden" : ""}</span>
+          <span>applications sent with proof{snap && !PUBLIC ? ` · ${snap.verified_today} today` : ""}{PUBLIC ? " · names hidden" : ""}</span>
+          <span className="mode">{replaying ? "replaying the last week of real activity" : "live"}</span>
         </div>
       </header>
 
@@ -43,8 +60,18 @@ export default function Live() {
           <filter id="glow"><feGaussianBlur stdDeviation="3" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
 
-        {/* the pipeline: five stations on one line */}
+        {/* listening: one faint point per ~25 boards being watched */}
+        <g aria-hidden="true">{stars.map((p, i) => <circle key={i} className="star" cx={p.x} cy={p.y} r={1.4} style={{ animationDelay: `${p.d}s` }} />)}</g>
+
+        {/* the pipeline: five stations on one line, with light flowing along it */}
         <line x1={stationX(0)} x2={stationX(4)} y1={LINE_Y} y2={LINE_Y} stroke="url(#pipe)" strokeWidth={2} />
+        <line className="flow" x1={stationX(0)} x2={stationX(4)} y1={LINE_Y} y2={LINE_Y} stroke="#f2c14e" strokeOpacity={.35} strokeWidth={1} aria-hidden="true" />
+        {lights.map((l) => (
+          <circle key={l.id} r={4.5} cy={LINE_Y} fill={l.color} filter="url(#glow)" aria-hidden="true">
+            <animate attributeName="cx" from={stationX(l.from)} to={stationX(l.to)} dur="1.3s" fill="freeze" calcMode="spline" keySplines=".2 .8 .2 1" keyTimes="0;1" />
+            <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.15;.8;1" dur="1.5s" fill="freeze" />
+          </circle>
+        ))}
         {STAGES.map((s, i) => (
           <g key={s.key}>
             <circle cx={stationX(i)} cy={LINE_Y} r={7} fill="#0d1117" stroke={s.key === "apply" ? "#f2c14e" : "#6fb7ff"} strokeWidth={1.5} filter="url(#glow)" />
@@ -55,15 +82,16 @@ export default function Live() {
         <text className="station-label" x={stationX(0)} y={LINE_Y + 50} style={{ fontSize: 11 }}>{snap ? `${snap.boards.toLocaleString()} boards` : ""}</text>
 
         {/* the tree: trunk from "applying", one stem per lane, one bead per proof-backed application */}
-        {lanes.length > 0 && <line x1={ax} x2={ax} y1={LINE_Y - 8} y2={trunkTop} stroke="#f2c14e" strokeOpacity={.5} strokeWidth={2} />}
+        {lanes.length > 0 && <line className="grow" pathLength={1} x1={ax} x2={ax} y1={LINE_Y - 8} y2={trunkTop} stroke="#f2c14e" strokeOpacity={.5} strokeWidth={2} />}
         {lanes.map(([lane, list], li) => {
           const x = ax + (li - (lanes.length - 1) / 2) * span;
           const top = trunkTop - 20 - list.length * 14;
           return (
             <g key={lane}>
-              <path d={`M ${ax} ${trunkTop} Q ${ax} ${trunkTop - 18} ${x} ${trunkTop - 26} L ${x} ${top}`} fill="none" stroke="#f2c14e" strokeOpacity={.35} strokeWidth={1.5} />
+              <path className="grow" pathLength={1} d={`M ${ax} ${trunkTop} Q ${ax} ${trunkTop - 18} ${x} ${trunkTop - 26} L ${x} ${top}`} fill="none" stroke="#f2c14e" strokeOpacity={.35} strokeWidth={1.5} style={{ animationDelay: `${li * 120}ms` }} />
               {list.map((a, bi) => (
-                <circle key={a.job} className="bead" cx={x} cy={trunkTop - 34 - bi * 14} r={5} fill="#f2c14e" filter="url(#glow)" onClick={() => setOpen(a)}>
+                <circle key={a.job} className="bead" cx={x} cy={trunkTop - 34 - bi * 14} r={5} fill="#f2c14e" filter="url(#glow)" style={{ animationDelay: `${600 + li * 120 + bi * 45}ms, ${(bi % 7) * 0.4}s` }}
+                        {...pressable(`${PUBLIC ? "" : a.company + ", "}${a.role}, ${lane} lane: open details`, () => setOpen(a))}>
                   <title>{a.company} · {a.role}</title>
                 </circle>
               ))}
@@ -73,6 +101,15 @@ export default function Live() {
           );
         })}
       </svg>
+
+      <section id="text-view" className="sr-only" aria-label="Text version">
+        <h2>Applications sent with proof, by resume lane</h2>
+        {lanes.map(([lane, list]) => (
+          <div key={lane}><h3>{lane} ({list.length})</h3>
+            <ul>{list.map((a) => <li key={a.job}><button onClick={() => setOpen(a)}>{PUBLIC ? a.role : `${a.company}: ${a.role}`}</button></li>)}</ul>
+          </div>
+        ))}
+      </section>
 
       <footer className="bottom">
         <div className="narrator" aria-live="polite">
@@ -87,23 +124,29 @@ export default function Live() {
 
       {open && <Proof a={open} onClose={() => setOpen(null)} />}
       {human && (
-        <aside className="panel" aria-label="Waiting on you">
-          <button className="close" onClick={() => setHuman(null)} aria-label="close">×</button>
+        <HumanPanel onClose={() => setHuman(null)}>
+          <button className="close" onClick={() => setHuman(null)} aria-label="Close the waiting list">×</button>
           <h2>Waiting on you</h2>
           <div className="sub">Each job's latest state. Bot checks are never bypassed; the resume is ready for each.</div>
           <ul className="list">{human.map((h) => <li key={h.job}>{h.text}<small>{h.job}</small></li>)}</ul>
-        </aside>
+        </HumanPanel>
       )}
     </main>
   );
 }
 
+function HumanPanel({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  const ref = usePanel(onClose);
+  return <aside className="panel" aria-label="Waiting on you" ref={ref} tabIndex={-1} role="dialog">{children}</aside>;
+}
+
 function Proof({ a, onClose }: { a: Application; onClose: () => void }) {
+  const ref = usePanel(onClose);
   const file = a.proof?.split(/[\\/]/).pop();
   const facts = a.facts ?? [], answers = a.answers ?? [];
   return (
-    <aside className="panel" aria-label={`Proof for ${a.company}`}>
-      <button className="close" onClick={onClose} aria-label="close">×</button>
+    <aside className="panel" aria-label={`Details for ${PUBLIC ? a.role : a.company}`} ref={ref} tabIndex={-1} role="dialog">
+      <button className="close" onClick={onClose} aria-label="Close details">×</button>
       <h2>{PUBLIC ? a.role : a.company}</h2>
       <div className="sub">{a.role} · {a.lane || "earlier"} lane · {a.ts.replace("T", " ")}</div>
       {PUBLIC && <p style={{ color: "var(--dim)" }}>Sent with a saved confirmation page. On the public view the company, the resume and every answer stay private.</p>}

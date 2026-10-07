@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { loadGraph } from "@/lib/engine";
+import { pressable, usePanel } from "@/lib/a11y";
 
 type GNode = { id: string; type: string; label: string; data: Record<string, any> };
 type GEdge = { source: string; target: string; type: string; data?: Record<string, any> };
@@ -83,12 +84,13 @@ export default function Graph() {
   if (!g) return <main className="stage"><div className="top"><div className="brand">REGEN · MEMORY</div></div></main>;
 
   return (
-    <main className="stage">
+    <main className="stage" id="main">
+      <a className="skip" href="#graph-text">Skip to the text version</a>
       <header className="top">
         <div className="brand">REGEN · MEMORY <Link href="/" style={{ color: "var(--dim)", marginLeft: 16 }}>← live</Link></div>
         <div className="count"><b style={{ fontSize: 28 }}>{pos.size}</b><span>of {g.nodes.length} nodes open · click to expand a layer</span></div>
       </header>
-      <svg className="machine graph" viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} onWheel={onWheel}
+      <svg className="machine graph" role="group" aria-label="Memory graph: press Tab to move between nodes and Enter to expand one" viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} onWheel={onWheel}
            onMouseDown={(e) => (drag.current = { x: e.clientX, y: e.clientY })} onMouseUp={() => (drag.current = null)} onMouseLeave={() => (drag.current = null)}
            onMouseMove={(e) => {
              if (!drag.current) return;
@@ -111,7 +113,8 @@ export default function Graph() {
           const dim = lit && !lit.has(id);
           return (
             <g key={id} className="gnode" style={{ transform: `translate(${p.x}px, ${p.y}px)`, opacity: dim ? 0.18 : 1 }}
-               onClick={() => toggle(n)} onMouseEnter={() => setHover(id)} onMouseLeave={() => setHover(null)}>
+               {...pressable(`${n.type} ${n.type === "Application" ? (n.data.company || n.label) : n.label}${CHILD_TYPES[n.type] ? (isOpen ? ", expanded" : ", press to expand") : ""}`, () => toggle(n))}
+               onFocus={() => setHover(id)} onBlur={() => setHover(null)} onMouseEnter={() => setHover(id)} onMouseLeave={() => setHover(null)}>
               <circle r={r} fill={COLOR[n.type] || "#999"} filter="url(#g2)" />
               {isOpen && n.type !== "You" && <circle r={r + 6} fill="none" stroke={COLOR[n.type]} strokeOpacity={.5} />}
               {(n.type !== "Fact" || hover === id) && (
@@ -121,14 +124,20 @@ export default function Graph() {
           );
         })}
       </svg>
+      <section id="graph-text" className="sr-only" aria-label="Text version of the graph">
+        <h2>Open nodes</h2>
+        <ul>{[...pos.keys()].map((id) => { const n = byId.get(id)!; return (
+          <li key={id}><button onClick={() => toggle(n)}>{n.type}: {n.type === "Application" ? (n.data.company || n.label) : n.label}</button>
+            {" "}({(adj.get(id) || []).length} connections)</li>); })}</ul>
+      </section>
       <footer className="bottom">
         <div className="narrator legend">
           {Object.entries(COLOR).filter(([t]) => t !== "Question").map(([t, c]) => <span key={t} style={{ color: c, marginRight: 16 }}>● {t}</span>)}
         </div>
       </footer>
       {focus && focus.type !== "You" && (
-        <aside className="panel" aria-label={focus.label}>
-          <button className="close" onClick={() => setFocus(null)} aria-label="close">×</button>
+        <FocusPanel label={focus.label} onClose={() => setFocus(null)}>
+          <button className="close" onClick={() => setFocus(null)} aria-label="Close details">×</button>
           <h2>{focus.type === "Application" ? focus.data.company : focus.label}</h2>
           <div className="sub">{focus.type}{focus.type === "Application" ? ` · ${focus.label} · ${focus.data.status}` : ""}</div>
           {focus.data.text && <p style={{ lineHeight: 1.5 }}>{focus.data.text}</p>}
@@ -138,8 +147,13 @@ export default function Graph() {
             const o = byId.get(e.source === focus.id ? e.target : e.source);
             return o ? <li key={i}><span style={{ color: COLOR[o.type] }}>●</span> {o.type === "Application" ? `${o.data.company} · ${o.label}` : o.label}<small>{e.type}</small></li> : null;
           })}</ul>
-        </aside>
+        </FocusPanel>
       )}
     </main>
   );
+}
+
+function FocusPanel({ label, onClose, children }: { label: string; onClose: () => void; children: React.ReactNode }) {
+  const ref = usePanel(onClose);
+  return <aside className="panel" aria-label={label} ref={ref} tabIndex={-1} role="dialog">{children}</aside>;
 }

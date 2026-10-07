@@ -19,14 +19,34 @@ export function useEngine() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [apps, setApps] = useState<Application[]>([]);
   const [lines, setLines] = useState<Narration[]>([]);
-  const [pulse, setPulse] = useState<{ stage: string; id: number } | null>(null);
+  const [pulse, setPulse] = useState<{ stage: string; id: number; tone: string } | null>(null);
+  const [replaying, setReplaying] = useState(false);
   const seen = useRef(new Set<string>());
   const seq = useRef(0);
+  const queue = useRef<Narration[]>([]);     // new real events, played first
+  const recent = useRef<Narration[]>([]);    // the last real events, replayed when nothing new is happening
+
+  // one event every 1.6 s: the sentence appears and a light travels to its station
+  useEffect(() => {
+    const t = setInterval(() => {
+      let n = queue.current.shift();
+      let replay = false;
+      if (!n && recent.current.length) {
+        const i = seq.current % recent.current.length;
+        n = { ...recent.current[i] };
+        replay = true;
+      }
+      if (!n) return;
+      n = { ...n, id: ++seq.current };
+      setReplaying(replay);
+      setLines((l) => [...l.slice(-5), n!]);
+      setPulse({ stage: n.stage, id: n.id, tone: n.tone });
+    }, 1600);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     if (PUBLIC) {
-      let stop = false;
-      const queue: Narration[] = [];
       const pull = async () => {
         try {
           const f: Feed = await get("/api/public");
@@ -34,42 +54,36 @@ export function useEngine() {
                     by_lane: {}, outcomes: {}, backend: "jsonl" });
           setApps(f.verified_roles.map(([role, lane], i) => ({ job: `${i}`, company: "", role, lane, status: "SUBMITTED", ts: "", proof: "public" } as Application)));
           const first = seen.current.size === 0;
-          for (const e of f.events) {
-            const k = e.ts + e.text;
+          const evs = f.events.map((e) => ({ id: 0, ts: e.ts, stage: e.stage, tone: e.tone, text: e.text } as Narration));
+          recent.current = evs.slice(-40);
+          for (const n of evs) {
+            const k = n.ts + n.text;
             if (seen.current.has(k)) continue;
             seen.current.add(k);
-            const n = { id: ++seq.current, ts: e.ts, stage: e.stage, tone: e.tone, text: e.text } as Narration;
-            if (first) setLines((l) => [...l.slice(-5), n]); else queue.push(n);
+            if (!first) queue.current.push(n);
           }
         } catch { /* feed unreachable: keep showing what we have */ }
       };
-      // new events play one by one, so an update arrives as motion, not a jump
-      const play = setInterval(() => {
-        const n = queue.shift();
-        if (!n) return;
-        setLines((l) => [...l.slice(-5), n]);
-        setPulse({ stage: n.stage, id: n.id });
-      }, 1400);
       pull();
-      const poll = setInterval(() => !stop && pull(), 30000);
-      return () => { stop = true; clearInterval(play); clearInterval(poll); };
+      const poll = setInterval(pull, 30000);
+      return () => clearInterval(poll);
     }
     const refresh = () => get<Application[]>("/api/applications?status=SUBMITTED&limit=500").then(setApps).catch(() => {});
     refresh();
-    get<Narration[]>("/api/narration?limit=6").then(setLines).catch(() => {});
+    get<Narration[]>("/api/narration?limit=40").then((r) => { recent.current = r; }).catch(() => {});
     get<Snapshot>("/api/snapshot").then(setSnap).catch(() => {});
     const es = new EventSource("/api/stream?after=999999999");
     es.addEventListener("snapshot", (m) => setSnap(JSON.parse((m as MessageEvent).data)));
     es.addEventListener("narration", (m) => {
       const n: Narration = JSON.parse((m as MessageEvent).data);
-      setLines((l) => [...l.slice(-5), n]);
-      setPulse({ stage: n.stage, id: n.id });
+      queue.current.push(n);
+      recent.current = [...recent.current.slice(-39), n];
       if (n.stage === "apply" && n.tone === "win") refresh();
     });
     return () => es.close();
   }, []);
 
-  return { snap, apps, lines, pulse };
+  return { snap, apps, lines, pulse, replaying };
 }
 
 export async function loadGraph(): Promise<{ nodes: any[]; edges: any[] }> {
