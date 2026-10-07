@@ -15,6 +15,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 
 - **Rejections with truncated snippets are now caught.** Inbox snippets often stop mid-sentence ("...high volume of applicants for this role and unfortunately"), so a rejection was logged as "other". New patterns: "move ahead with other", "unfortunately have decided", "weren't selected", "high volume of applicants ... unfortunately". Test: `test_rejection_with_truncated_snippet`.
 
+- **"What city and state do you reside in?"** got only the state (the state rule matched first). A combined city + state rule now comes first. Test: `test_city_and_state_combined`.
+
 ### Why
 An active job seeker's inbox gets well over 100 matched listings every few days, and they were going unused. First run: 146 listings -> 93 leads -> **30 resolved to the employer's ATS (32%, vs ~10% for newgrad-jobs)**.
 

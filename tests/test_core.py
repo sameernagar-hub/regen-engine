@@ -217,3 +217,10 @@ def test_rejection_with_truncated_snippet():
     assert classify("Update", "Unfortunately have decided to move ahead with other candidates") == "rejection"
     assert classify("Acme application", "Unfortunately, you weren't selected for further consideration.") == "rejection"
     assert classify("Thank you for applying to Acme", "We will be in touch about next steps") == "confirmation"
+
+
+def test_city_and_state_combined():
+    from engine.apply import runner
+    want = f"{runner.P['city']}, {runner.P['state']}"
+    assert answer_for("What city and state do you currently reside in?", {}) == want
+    assert answer_for("Which state do you reside in?", {}) == runner.P["state"]
