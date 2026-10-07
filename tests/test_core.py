@@ -208,3 +208,12 @@ def test_education_dates_not_availability(tmp_path):
     for label in ("Start date month", "Start date year *", "End date year"):
         assert answer_for(label, {}) != runner.P.get("start_date")
     assert answer_for("When can you start?", {}) == runner.P.get("start_date")
+
+
+def test_rejection_with_truncated_snippet():
+    from engine.feedback.inbox import classify
+    assert classify("Important information about your application to Acme",
+                    "We received a high volume of applicants for this role and unfortunately") == "rejection"
+    assert classify("Update", "Unfortunately have decided to move ahead with other candidates") == "rejection"
+    assert classify("Acme application", "Unfortunately, you weren't selected for further consideration.") == "rejection"
+    assert classify("Thank you for applying to Acme", "We will be in touch about next steps") == "confirmation"

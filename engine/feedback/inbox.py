@@ -22,7 +22,9 @@ CLASSES = [  # first match wins. Order matters: scam > offer > rejection > OA > 
              r"send (us )?your (ssn|social security|bank)|check (will be )?deposit|telegram|whatsapp interview"),
     ("offer", r"offer letter|pleased to offer|extend(ing)? (you )?an offer|offer of employment"),
     ("rejection", r"not (be )?(moving|move) forward|other candidates|not selected|decided not to|regret to inform|"
-                  r"position has been filled|no longer (being )?considered|will not be (moving|proceeding)|unfortunately,? (we|after)"),
+                  r"position has been filled|no longer (being )?considered|will not be (moving|proceeding)|unfortunately,? (we|after)|"
+                  r"(move|moving|go|going) ahead with other|unfortunately,? (have |has )?(decided|chosen)|weren.t selected|"
+                  r"high volume of (applicants|applications).{0,40}unfortunately"),  # snippets often stop mid-sentence
     ("oa", r"online assessment|coding (challenge|assessment|test)|hackerrank|codesignal|codility|karat|take-?home|"
            r"assessment invitation|complete the (following )?assessment"),
     # strong signals only: confirmations often say "if selected, we'll reach out to schedule an interview"
