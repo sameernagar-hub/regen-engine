@@ -14,6 +14,10 @@ from engine.live.server import HERE, narrate, snapshot
 SITE = os.path.join(ROOT, "site")
 
 
+COMMON_WORD_NAMES = {"applied", "affirm", "ramp", "compass", "scale", "figure", "notion", "current", "atoms", "mercury",
+                     "anchor", "persona", "together", "modal", "pylon"}  # same list as scripts/privacy_scan.py
+
+
 def anonymize(text, company):
     if company:
         text = re.sub(re.escape(company), "a company", text, flags=re.I)
@@ -79,7 +83,11 @@ def build(days=7):
         c = (e.get("company") or (e.get("job") or "").partition(" - ")[0]).strip().lower()
         if len(c) >= 3:
             names.add(c)
-    leaks = sorted(c for c in names if re.search(r"(?<![a-z])" + re.escape(c) + r"(?![a-z])", raw))
+    # names that are everyday words ("applied" is an Ashby board slug) leak only in a name-shaped form:
+    # "applied - role", "at applied", "applied's"; the verb in "Applied to a fintech..." is not a leak
+    word = lambda c: r"(?:" + re.escape(c) + r" [-–:]|\bat " + re.escape(c) + r"\b|" + re.escape(c) + r"'s\b)"
+    any_ = lambda c: r"(?<![a-z])" + re.escape(c) + r"(?![a-z])"
+    leaks = sorted(c for c in names if re.search(word(c) if c in COMMON_WORD_NAMES else any_(c), raw))
     if leaks:
         raise SystemExit(f"refusing to build site/: company names would be public: {leaks}")
     os.makedirs(SITE, exist_ok=True)

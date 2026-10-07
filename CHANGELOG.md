@@ -11,6 +11,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - `newgrad.resolve(..., source=)` so every resolved job records where it was found.
 
 ### Added
+- **v0.7 platform, first cut** (`apps/`):
+  - `apps/api`: FastAPI + Pydantic, read-only (Snapshot, Application, HumanItem, Outcome, Event, Narration). Endpoints: `/api/snapshot`, `/api/applications`, `/api/human`, `/api/outcomes`, `/api/events`, `/api/narration`, `/api/proof/{png}`, `/api/stream` (SSE). Source is Postgres (`REGEN_DATABASE_URL`) or `events.jsonl`.
+  - `apps/api/migrate.py`: events.jsonl to an append-only Postgres table (trigger refuses UPDATE/DELETE; sha-deduped, so it's safe to re-run).
+  - `apps/web`: Next.js 15 + TypeScript with types generated from the API's OpenAPI. The live view has a pipeline of five stations and a lane tree of proof-backed applications. Clicking a bead opens the proof screenshot, the Fact Bank ids the resume was built from, and every question with the answer given. Narrator plus "waiting on you".
+  - `deploy/platform.compose.yml`: db + migrate + api + web, all on 127.0.0.1, workspace mounted read-only.
+- Answer rules: 18+, time zone, "how soon can you start", "first learn about X as an employer", AI dev tools (only from the Fact Bank line about daily Cursor/Claude Code use). A test fails if any rule matches an arbitrary label: a trailing `|` once made a pattern match everything, and the test caught it before any form did.
+- Public site: company names that are everyday words are checked only in name-shaped forms ("applied - role"), so "Applied to a company" no longer blocks the build.
 - **Workable apply adapter** (`fill_workable` / `submit_workable`): resume, name/email/phone, address as city/region/country (the form's own hint), free-text and Yes/No (`role=radio`) questions by `aria-labelledby`; cookie banner declined. Cloudflare Turnstile is detected by its text and goes to the human queue.
 - "Will you require work authorization of any kind?" is answered as the sponsorship question (it was matching "authorized to work").
 - **Lever apply adapter** (`fill_lever` / `submit_lever`): resume upload, standard fields, custom questions (text, textarea, radio, checkbox, select), location autocomplete restricted to your state/US, EEO selects declined. A visible hCaptcha/reCAPTCHA is never solved: the job goes to the human queue with the form filled. First run: 3 Lever forms filled end to end; one stopped at a real image CAPTCHA.

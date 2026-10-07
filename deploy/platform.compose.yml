@@ -1,0 +1,52 @@
+# v0.7 platform, local only: Postgres (event store) + FastAPI (read-only API) + Next.js (live view).
+#   docker compose -f deploy/platform.compose.yml up -d --build
+#   web: http://127.0.0.1:3000   api docs: http://127.0.0.1:8787/docs
+# Every port is published on 127.0.0.1 only. The workspace is mounted read-only: the engine stays the only writer,
+# and `migrate` copies new events.jsonl lines into Postgres (append-only table) every minute.
+name: regen-platform
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: regen
+      POSTGRES_PASSWORD: regen   # local-only database, never published beyond 127.0.0.1
+      POSTGRES_DB: regen
+    ports: ["127.0.0.1:5433:5432"]
+    volumes: [regen-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regen"]
+      interval: 5s
+      retries: 10
+    mem_limit: 256m
+
+  migrate:
+    build: { context: .., dockerfile: deploy/api.Dockerfile }
+    command: ["sh", "-c", "while true; do python -m apps.api.migrate; sleep 60; done"]
+    environment:
+      REGEN_DATABASE_URL: postgresql://regen:regen@db:5432/regen
+      REGEN_WORKSPACE: /work
+    volumes: ["../workspace:/work:ro"]
+    depends_on: { db: { condition: service_healthy } }
+    mem_limit: 128m
+
+  api:
+    build: { context: .., dockerfile: deploy/api.Dockerfile }
+    environment:
+      REGEN_DATABASE_URL: postgresql://regen:regen@db:5432/regen
+      REGEN_WORKSPACE: /work
+      REGEN_WEB_ORIGINS: http://127.0.0.1:3000,http://localhost:3000
+    volumes: ["../workspace:/work:ro"]
+    ports: ["127.0.0.1:8787:8787"]
+    depends_on: [migrate]
+    mem_limit: 192m
+
+  web:
+    build: { context: ../apps/web, dockerfile: ../../deploy/web.Dockerfile }
+    environment:
+      REGEN_API_URL: http://api:8787
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on: [api]
+    mem_limit: 256m
+
+volumes:
+  regen-db:

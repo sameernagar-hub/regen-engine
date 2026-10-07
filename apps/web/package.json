@@ -1,0 +1,24 @@
+{
+  "name": "regen-web",
+  "version": "0.7.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1 -p 3000",
+    "typecheck": "tsc --noEmit",
+    "gen:api": "openapi-typescript ../api/openapi.json -o lib/api.d.ts"
+  },
+  "dependencies": {
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "openapi-typescript": "^7.8.0",
+    "typescript": "^5.8.0"
+  }
+}

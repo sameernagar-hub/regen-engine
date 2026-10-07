@@ -1,0 +1,807 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "REGEN API",
+  "description": "Read-only API over the REGEN job engine's append-only event log.",
+  "version": "0.7.0"
+ },
+ "paths": {
+  "/api/health": {
+   "get": {
+    "summary": "Health",
+    "operationId": "health_api_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/snapshot": {
+   "get": {
+    "summary": "Snapshot",
+    "operationId": "snapshot_api_snapshot_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Snapshot"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/applications": {
+   "get": {
+    "summary": "Applications",
+    "operationId": "applications_api_applications_get",
+    "parameters": [
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "SUBMITTED, NEEDS YOU, FAILED, FLAGGED, SKIPPED",
+       "title": "Status"
+      },
+      "description": "SUBMITTED, NEEDS YOU, FAILED, FLAGGED, SKIPPED"
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 2000,
+       "default": 200,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Application"
+         },
+         "title": "Response Applications Api Applications Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/human": {
+   "get": {
+    "summary": "Human",
+    "operationId": "human_api_human_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/HumanItem"
+         },
+         "type": "array",
+         "title": "Response Human Api Human Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/outcomes": {
+   "get": {
+    "summary": "Outcomes",
+    "operationId": "outcomes_api_outcomes_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/Outcome"
+         },
+         "type": "array",
+         "title": "Response Outcomes Api Outcomes Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/events": {
+   "get": {
+    "summary": "Events",
+    "operationId": "events_api_events_get",
+    "parameters": [
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "default": 0,
+       "title": "After"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Kind"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 5000,
+       "default": 200,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Event"
+         },
+         "title": "Response Events Api Events Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/narration": {
+   "get": {
+    "summary": "Narration",
+    "operationId": "narration_api_narration_get",
+    "parameters": [
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "default": 0,
+       "title": "After"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "default": 40,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Narration"
+         },
+         "title": "Response Narration Api Narration Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/proof/{name}": {
+   "get": {
+    "summary": "Proof",
+    "description": "A proof screenshot, by file name only (no paths), from workspace/proof.",
+    "operationId": "proof_api_proof__name__get",
+    "parameters": [
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Name"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/stream": {
+   "get": {
+    "summary": "Stream",
+    "description": "SSE: `narration` for each new event, `snapshot` when anything changes (and every 15 s as a keep-alive).",
+    "operationId": "stream_api_stream_get",
+    "parameters": [
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "default": 0,
+       "title": "After"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Application": {
+    "properties": {
+     "job": {
+      "type": "string",
+      "title": "Job"
+     },
+     "company": {
+      "type": "string",
+      "title": "Company"
+     },
+     "role": {
+      "type": "string",
+      "title": "Role"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "ts": {
+      "type": "string",
+      "title": "Ts"
+     },
+     "url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Url"
+     },
+     "lane": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lane"
+     },
+     "proof": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Proof",
+      "description": "Proof screenshot path, only when the file exists on disk"
+     },
+     "resume": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Resume"
+     },
+     "facts": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Facts",
+      "description": "Fact Bank ids the resume was built from"
+     },
+     "answers": {
+      "items": {
+       "prefixItems": [
+        {
+         "type": "string"
+        },
+        {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ]
+        }
+       ],
+       "type": "array",
+       "maxItems": 2,
+       "minItems": 2
+      },
+      "type": "array",
+      "title": "Answers",
+      "description": "Question -> answer, as submitted"
+     },
+     "detail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "job",
+     "company",
+     "role",
+     "status",
+     "ts"
+    ],
+    "title": "Application",
+    "description": "Latest state of one job (later events win)."
+   },
+   "Event": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id",
+      "description": "Position in the log (1-based); stable because the log is append-only"
+     },
+     "ts": {
+      "type": "string",
+      "title": "Ts"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "job": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Job"
+     },
+     "status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status"
+     },
+     "data": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Data",
+      "description": "The full original event"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "ts",
+     "kind"
+    ],
+    "title": "Event",
+    "description": "One line of workspace/events.jsonl, with the fields every consumer relies on lifted out."
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "HumanItem": {
+    "properties": {
+     "job": {
+      "type": "string",
+      "title": "Job"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "text": {
+      "type": "string",
+      "title": "Text"
+     },
+     "url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Url"
+     },
+     "resume": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Resume"
+     }
+    },
+    "type": "object",
+    "required": [
+     "job",
+     "status",
+     "text"
+    ],
+    "title": "HumanItem",
+    "description": "Something only the user can do (each job's latest status, never stale history)."
+   },
+   "Narration": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "ts": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ts"
+     },
+     "stage": {
+      "type": "string",
+      "enum": [
+       "listen",
+       "judge",
+       "write",
+       "apply",
+       "hear"
+      ],
+      "title": "Stage"
+     },
+     "tone": {
+      "type": "string",
+      "enum": [
+       "calm",
+       "quiet",
+       "win",
+       "you",
+       "alarm"
+      ],
+      "title": "Tone"
+     },
+     "text": {
+      "type": "string",
+      "title": "Text"
+     },
+     "verified": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Verified"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "stage",
+     "tone",
+     "text"
+    ],
+    "title": "Narration",
+    "description": "An event as one plain-English sentence (engine.live.server.narrate)."
+   },
+   "Outcome": {
+    "properties": {
+     "ts": {
+      "type": "string",
+      "title": "Ts"
+     },
+     "company": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Company"
+     },
+     "outcome": {
+      "type": "string",
+      "title": "Outcome"
+     },
+     "subject": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Subject"
+     },
+     "jobs": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Jobs"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ts",
+     "outcome"
+    ],
+    "title": "Outcome"
+   },
+   "Snapshot": {
+    "properties": {
+     "verified": {
+      "type": "integer",
+      "title": "Verified"
+     },
+     "verified_today": {
+      "type": "integer",
+      "title": "Verified Today"
+     },
+     "waiting": {
+      "type": "integer",
+      "title": "Waiting"
+     },
+     "boards": {
+      "type": "integer",
+      "title": "Boards"
+     },
+     "last_poll": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Poll"
+     },
+     "by_lane": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "By Lane"
+     },
+     "outcomes": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Outcomes"
+     },
+     "backend": {
+      "type": "string",
+      "enum": [
+       "postgres",
+       "jsonl"
+      ],
+      "title": "Backend"
+     }
+    },
+    "type": "object",
+    "required": [
+     "verified",
+     "verified_today",
+     "waiting",
+     "boards",
+     "backend"
+    ],
+    "title": "Snapshot"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  }
+ }
+}

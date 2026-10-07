@@ -12,3 +12,8 @@ __pycache__/
 *.pyc
 .venv/
 *.egg-info/
+
+# web app
+apps/web/node_modules/
+apps/web/.next/
+apps/web/tsconfig.tsbuildinfo

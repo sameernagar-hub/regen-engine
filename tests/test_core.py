@@ -245,3 +245,10 @@ def test_require_work_authorization_is_the_sponsorship_question():
     from engine.apply import runner
     assert answer_for("Will you require work authorization of any kind?", {}) == runner.P.get("needs_sponsorship_now_or_future")
     assert answer_for("Are you legally authorized to work in the United States?", {}) == runner.P.get("work_authorized_us")
+
+
+def test_no_rule_matches_everything():
+    # a stray "|" at the end of a pattern makes it match every label; this once answered "18+?" with a start date
+    from engine.apply.runner import RULES
+    import re
+    assert [p for p, _ in RULES if re.search(p, "zzqx unrelated label zzqx")] == []

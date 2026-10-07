@@ -44,7 +44,7 @@ RULES = [
     (r"address line 1|street address|^address$|mailing address", P.get("address_line1")),  # None unless you add it to presets
     (r"first name", P["first_name"]), (r"last name", P["last_name"]),
     (r"e-?mail", P["email"]), (r"phone", P["phone"]),
-    (r"hear about|how did you find|learned about|^source\b|(job|application|referral|candidate) source", "Company careers page"),  # before the link rules: these labels often list "LinkedIn"
+    (r"hear about|how did you find|learned about|(first )?learn about .{0,40}(employer|us|company|role|position|job)|^source\b|(job|application|referral|candidate) source", "Company careers page"),  # before the link rules: these labels often list "LinkedIn"
     (r"linkedin", P["linkedin"]),
     (r"github|website|portfolio|other (web)?site|personal site", P["github"]),
     # Legal / status answers come ONLY from your presets (never hardcoded). An unset preset -> human queue.
@@ -94,8 +94,14 @@ RULES = [
     # education block dates (Greenhouse): must come before the availability "start date" rule below
     (r"^start date month\W*$", EDU.get("start_month")), (r"^start date year\W*$", EDU.get("start_year")),
     (r"^end date month\W*$", EDU.get("end_month")), (r"^end date year\W*$", EDU.get("end_year")),
+    (r"how soon .{0,40}start|able to start", P.get("start_date")),
     (r"start date|when can you start|available to start|earliest.{0,30}start", P.get("start_date")),
     (r"preferred (office |work )?location|location preference|which (office|location)", P.get("preferred_location")),
+    (r"(18|eighteen) ?\+? (years|or older)|(over|at least) (the age of )?18|18\+ years of age", P.get("over_18")),
+    (r"time ?zone", P.get("timezone")),
+    # AI dev tools: answered only from your own resume line (Fact Bank s_aitools), never embellished
+    (r"(which|what) ai (coding |dev(elopment)? )?tools|ai tools do you use", P.get("ai_tools")),
+    (r"(actively )?use ai tool(s|ing)|used ai tooling", P.get("uses_ai_tools")),
     (r"salary|compensation expectation|desired pay|expected (annual |base |total )?(compensation|pay)|compensation (range|requirements?)", P.get("salary_expectation")),
     (r"(current|former|previous) .{0,40}employee\?|employee of .{0,40}(current|former)", P.get("previous_employer_of_company", "No")),
     (r"referred by|were you referred|referral from|who referred you", P.get("referred", "No")),  # the engine applies cold
