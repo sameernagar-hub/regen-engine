@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REGEN · live</title>
+<style>
+  :root {
+    --bg: #0e0d0b; --ink: #ece6da; --dim: #7a7368; --faint: #2a2723;
+    --win: #e9b65c; --you: #f09a3e; --alarm: #e5574c; --calm: #cfc7b8; --quiet: #57524a;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: ui-sans-serif, "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f3efe6; --ink: #1d1b17; --dim: #8a8376; --faint: #ddd6c8; --calm: #3a362f; --quiet: #b3ab9c; }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; }
+  body { font-family: var(--sans); }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+  .mark { position: fixed; top: 22px; left: 26px; font-size: 13px; letter-spacing: .14em; text-transform: lowercase; color: var(--dim); }
+  .mark b { color: var(--ink); font-weight: 600; letter-spacing: .2em; }
+  .pulse { display: block; margin-top: 6px; letter-spacing: .02em; font-size: 12px; }
+  .count { position: fixed; top: 16px; right: 26px; text-align: right; }
+  .count .n { font: 200 64px/1 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .count .l { font-size: 12px; color: var(--dim); margin-top: 4px; }
+  .story { position: fixed; left: 26px; right: 26px; bottom: 34px; max-width: 900px; }
+  .story p { font-family: var(--serif); color: var(--dim); font-size: 15px; line-height: 1.5; opacity: .55; transition: opacity .6s; }
+  .story p.now { color: var(--ink); font-size: clamp(20px, 2.6vw, 30px); line-height: 1.3; opacity: 1; margin-top: 8px; min-height: 1.3em; }
+  .story p.now.win { color: var(--win); } .story p.now.you { color: var(--you); } .story p.now.alarm { color: var(--alarm); }
+  .waiting { position: fixed; right: 26px; top: 112px; background: none; border: 0; color: var(--you); font: 13px var(--sans);
+             cursor: pointer; padding: 6px 0; display: none; }
+  .waiting::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--you);
+                     margin-right: 8px; vertical-align: 1px; animation: beat 2.4s ease-in-out infinite; }
+  @keyframes beat { 50% { opacity: .25; } }
+  .drawer { position: fixed; right: 26px; top: 146px; max-width: min(380px, calc(100vw - 52px)); display: none; text-align: right;
+            font-family: var(--serif); font-size: 15px; line-height: 1.5; color: var(--ink); }
+  .drawer p { margin-top: 6px; }
+  .offline { color: var(--alarm); }
+  .about { position: fixed; left: 26px; top: 64px; max-width: 420px; font: 14px/1.5 var(--serif); color: var(--dim); display: none; }
+  .about a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--faint); }
+  @media (max-width: 640px) {
+    .count .n { font-size: 44px; } .count .l { max-width: 150px; margin-left: auto; }
+    .mark { max-width: calc(100vw - 190px); } .about { top: 96px; right: 26px; font-size: 13px; } .waiting { top: 104px; } .drawer { top: 136px; left: 26px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .waiting::before { animation: none; } }
+</style>
+</head>
+<body>
+<canvas id="c" aria-hidden="true"></canvas>
+<div class="mark"><b>regen</b> · live<span class="pulse" id="pulse">connecting…</span></div>
+<p class="about" id="about">An open-source engine that finds jobs at the source, minutes after they're posted,
+  and applies with truthful, proof-backed applications. This is it working, replayed. <a href="https://github.com/sameernagar-hub/regen-engine">See the code →</a></p>
+<div class="count" aria-live="polite"><div class="n" id="n">–</div><div class="l" id="nl">applications sent, each with proof</div></div>
+<div class="story" aria-live="polite"><div id="past"></div><p class="now" id="now"></p></div>
+<button class="waiting" id="waiting" aria-expanded="false"></button>
+<div class="drawer" id="drawer"></div>
+
+<script>window.REGEN_DEMO = true;</script>
+<script>
+(() => {
+  const cv = document.getElementById("c"), cx = cv.getContext("2d");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  let W = 0, H = 0, DPR = 1;
+  const STAGES = ["listen", "judge", "write", "apply", "hear"];
+  const LABEL = { listen: "listening", judge: "judging", write: "writing", apply: "applying", hear: "hearing back" };
+  const glow = Object.fromEntries(STAGES.map(s => [s, 0]));
+  let particles = [], embers = [], rings = [], boardsDots = [];
+
+  function resize() {
+    DPR = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR; cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    seedBoards(boardsDots.length || 600);
+  }
+  // stations sit on a gentle wave across the middle of the screen
+  function station(i) {                         // a straight, evenly spaced line: the pipeline is the trunk
+    const left = Math.max(40, W * 0.1), right = W - Math.max(40, W * 0.1);
+    return { x: left + (right - left) * i / 4, y: H * 0.62 };
+  }
+  const pos = (s) => station(STAGES.indexOf(s));
+  function pathPoint(a, b, t) {               // soft arc between two stations
+    const mx = (a.x + b.x) / 2, my = Math.min(a.y, b.y) - 40 - Math.abs(b.x - a.x) * 0.08;
+    const u = 1 - t;
+    return { x: u * u * a.x + 2 * u * t * mx + t * t * b.x, y: u * u * a.y + 2 * u * t * my + t * t * b.y };
+  }
+  function seedBoards(n) {                     // the boards we listen to: a quiet field around the first station
+    const c = station(0); boardsDots = [];
+    for (let i = 0; i < Math.min(n, 900); i++) {
+      const r = 28 + Math.pow(Math.random(), 0.7) * Math.min(W, H) * 0.16, a = Math.random() * Math.PI * 2;
+      boardsDots.push({ r, a, s: (Math.random() - .5) * 0.0006, tw: Math.random() * 6.28, cx: c.x, cy: c.y });
+    }
+  }
+  const tone = (t) => css({ win: "--win", you: "--you", alarm: "--alarm", quiet: "--quiet" }[t] || "--calm");
+
+  function launch(m, fast) {
+    const to = STAGES.indexOf(m.stage), from = m.stage === "hear" ? STAGES.indexOf("apply") : Math.max(0, to - 1);
+    if (reduce) { glow[m.stage] = 1; return; }
+    particles.push({ a: station(from), b: station(to), t: 0, v: fast ? 0.03 : 0.011, tone: m.tone, stage: m.stage,
+                     drop: m.tone === "quiet", verified: !!m.verified });
+  }
+  // ---- the tree: what was sent, and which resume lane sent it ----
+  // trunk = the pipeline; at "applying" it branches into resume lanes; each leaf = one application with proof on disk
+  let leafItems = [], hover = null, branches = [];
+  const bornAt = new Map();                                   // keep each leaf's birth time across re-layouts
+  function layoutTree(items, quiet) {
+    leafItems = items;
+    const root = pos("apply"), groups = new Map();
+    items.forEach((it, i) => { if (!groups.has(it.lane)) groups.set(it.lane, []); groups.get(it.lane).push(i); });
+    const lanes = [...groups.keys()].sort((a, b) => (a === "earlier") - (b === "earlier") || groups.get(b).length - groups.get(a).length);
+    const L = lanes.length, gap = Math.min(96, (W - 80) / Math.max(L, 1));
+    let x0 = root.x - gap * (L - 1) / 2;
+    x0 = Math.max(40, Math.min(x0, W - 40 - gap * (L - 1)));       // keep the whole crown on screen
+    const split = { x: root.x, y: root.y - 46 }, laneY = root.y - 92, step = Math.min(18, (laneY - 150) / 9);
+    branches = []; embers = [];
+    lanes.forEach((lane, k) => {
+      const idx = groups.get(lane), x = x0 + gap * k, n = idx.length;
+      const top = laneY - step * n;
+      branches.push({ x, lane, n, top });
+      idx.forEach((i, j) => {
+        const key = items[i].key;
+        if (!bornAt.has(key)) bornAt.set(key, quiet ? -1e6 : performance.now());
+        embers.push({ x, y: laneY - step * (j + 1), k: i, born: bornAt.get(key) });
+      });
+    });
+    tree = { root, split, laneY, cx: x0 + gap * (L - 1) / 2 };
+  }
+  let tree = null;
+  const laneName = (l) => ({ fullstack: "full-stack", ai: "AI" }[l] || l);
+
+  function frame(now) {
+    cx.clearRect(0, 0, W, H);
+    // the listening field
+    const dimC = css("--dim");
+    for (const d of boardsDots) {
+      d.a += d.s; const tw = 0.25 + 0.25 * Math.sin(now / 1400 + d.tw);
+      cx.globalAlpha = tw * 0.5; cx.fillStyle = dimC;
+      cx.fillRect(d.cx + Math.cos(d.a) * d.r, d.cy + Math.sin(d.a) * d.r * 0.7, 1.2, 1.2);
+    }
+    cx.globalAlpha = 1;
+    // threads between stations
+    cx.strokeStyle = css("--faint"); cx.lineWidth = 1;
+    for (let i = 0; i < STAGES.length - 1; i++) {
+      const a = station(i), b = station(i + 1); cx.beginPath();
+      for (let t = 0; t <= 1.001; t += 0.05) { const p = pathPoint(a, b, t); t ? cx.lineTo(p.x, p.y) : cx.moveTo(p.x, p.y); }
+      cx.stroke();
+    }
+    // heartbeat rings (each finished pass over all boards)
+    rings = rings.filter(r => (r.t += 0.008) < 1);
+    for (const r of rings) {
+      const c = station(0); cx.strokeStyle = css("--calm"); cx.globalAlpha = (1 - r.t) * 0.35;
+      cx.beginPath(); cx.ellipse(c.x, c.y, 20 + r.t * Math.min(W, H) * 0.2, (20 + r.t * Math.min(W, H) * 0.2) * 0.7, 0, 0, 6.283); cx.stroke();
+    }
+    cx.globalAlpha = 1;
+    // stations
+    STAGES.forEach((s, i) => {
+      const p = station(i); glow[s] *= 0.96;
+      cx.strokeStyle = css("--ink"); cx.globalAlpha = 0.35 + glow[s] * 0.65; cx.lineWidth = 1.2;
+      cx.beginPath(); cx.arc(p.x, p.y, 7 + glow[s] * 6, 0, 6.283); cx.stroke();
+      cx.globalAlpha = 0.55 + glow[s] * 0.45; cx.fillStyle = css("--dim");
+      cx.font = `12px ${css("--sans")}`; cx.textAlign = "center"; cx.fillText(LABEL[s], p.x, p.y + 30);
+    });
+    cx.globalAlpha = 1;
+    // the tree: trunk from "applying" -> split -> one tidy stem per resume lane, one bead per application with proof
+    if (embers.length && tree) {
+      const dimC = css("--dim"), winC = css("--win"), { root, split, laneY } = tree;
+      cx.strokeStyle = dimC; cx.lineWidth = 1; cx.globalAlpha = 0.45;
+      cx.beginPath(); cx.moveTo(root.x, root.y - 9); cx.lineTo(split.x, split.y); cx.stroke();          // trunk
+      for (const b of branches) {                                                                       // limbs + stems
+        cx.beginPath(); cx.moveTo(split.x, split.y);
+        cx.bezierCurveTo(split.x, split.y - 26, b.x, laneY + 26, b.x, laneY); cx.lineTo(b.x, b.top); cx.stroke();
+      }
+      cx.globalAlpha = 1;
+      for (const e of embers) {
+        const age = Math.min(1, (now - e.born) / 1200), on = hover === e;
+        cx.fillStyle = winC; cx.globalAlpha = on ? 1 : 0.45 + 0.55 * age;
+        cx.beginPath(); cx.arc(e.x, e.y, (on ? 4.4 : 3) + (1 - age) * 4, 0, 6.283); cx.fill();
+      }
+      cx.globalAlpha = 0.85; cx.fillStyle = dimC; cx.font = `10.5px ${css("--sans")}`; cx.textAlign = "center";
+      for (const b of branches) cx.fillText(`${laneName(b.lane)} ${b.n}`, b.x, b.top - 12);             // name on top of each stem
+      const it = hover && leafItems[hover.k], top = Math.min(...branches.map(b => b.top)) - 34;
+      cx.globalAlpha = 1; cx.font = `11px ${css("--sans")}`; cx.fillStyle = it ? css("--ink") : dimC;
+      const msg = it ? it.label : "each bead: an application sent, with proof · grouped by the resume lane that wrote it";
+      const half = cx.measureText(msg).width / 2, mx = Math.max(16 + half, Math.min(tree.cx, W - 16 - half));
+      cx.fillText(msg, mx, top);                                                                        // always fully on screen
+    }
+    cx.globalAlpha = 1;
+    // travelling work
+    particles = particles.filter(p => {
+      p.t += p.v; const q = pathPoint(p.a, p.b, Math.min(1, p.t));
+      let y = q.y; if (p.drop && p.t > 0.6) y += (p.t - 0.6) * 160;          // let-go jobs sink away quietly
+      cx.fillStyle = tone(p.tone); cx.globalAlpha = p.drop ? Math.max(0, 1 - p.t) : 1;
+      cx.beginPath(); cx.arc(q.x, y, p.tone === "win" ? 3.4 : 2.6, 0, 6.283); cx.fill();
+      cx.globalAlpha = 0.18; cx.beginPath(); cx.arc(q.x, y, 9, 0, 6.283); cx.fill(); cx.globalAlpha = 1;
+      if (p.t >= 1) { glow[p.stage] = 1; return false; }
+      return true;
+    });
+    requestAnimationFrame(frame);
+  }
+
+  // ---- story: one sentence at a time, typed, older lines fade up ----
+  const past = document.getElementById("past"), nowEl = document.getElementById("now");
+  let typing = null, queue = [], busy = false;
+  function tell(m) { queue.push(m); if (!busy) next(); }
+  function next() {
+    const m = queue.shift(); if (!m) { busy = false; return; }
+    busy = true;
+    if (nowEl.textContent) {
+      const p = document.createElement("p"); p.textContent = nowEl.textContent; past.appendChild(p);
+      while (past.children.length > 3) past.firstChild.remove();
+      [...past.children].forEach((c, i, a) => c.style.opacity = (0.25 + 0.3 * (i + 1) / a.length).toFixed(2));
+    }
+    nowEl.className = "now " + (m.tone || ""); nowEl.textContent = "";
+    const text = m.text, speed = m.replay ? 4 : 18; let i = 0;
+    clearInterval(typing);
+    if (reduce) { nowEl.textContent = text; setTimeout(next, m.replay ? 120 : 1200); return; }
+    typing = setInterval(() => {
+      nowEl.textContent = text.slice(0, ++i);
+      if (i >= text.length) { clearInterval(typing); setTimeout(next, m.replay ? 160 : 1600); }
+    }, speed);
+  }
+
+  // ---- what needs the human ----
+  const waitBtn = document.getElementById("waiting"), drawer = document.getElementById("drawer");
+  waitBtn.onclick = () => { const open = drawer.style.display !== "block"; drawer.style.display = open ? "block" : "none"; waitBtn.setAttribute("aria-expanded", open); };
+  function renderYours(n, items) {
+    waitBtn.style.display = n ? "block" : "none";
+    waitBtn.textContent = n === 1 ? "1 thing is waiting on you" : `${n} things are waiting on you`;
+    drawer.innerHTML = ""; (items || []).forEach(t => { const p = document.createElement("p"); p.textContent = t; drawer.appendChild(p); });
+  }
+
+  // ---- live connection ----
+  const nEl = document.getElementById("n"), nl = document.getElementById("nl"), pulse = document.getElementById("pulse");
+  let lastPoll = null, replayDelay = 0, knownVerified = null, replayed = 0;
+  function ago(t) { const m = Math.round((Date.now() / 1000 - t) / 60); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; }
+  function connect() {
+    const es = new EventSource("/stream");
+    es.addEventListener("state", ev => {
+      const s = JSON.parse(ev.data);
+      nEl.textContent = s.verified;
+      const first = knownVerified === null;                  // leaves = verified applications on disk, nothing else
+      layoutTree((s.verified_jobs || []).map(([co, role, lane]) => ({ key: co + "|" + role, label: `${co}, ${role}`, lane: lane || "earlier" })), first);
+      knownVerified = s.verified; nl.textContent = `applications sent, each with proof · ${s.verified_today} today`;
+      if (s.boards && Math.abs(boardsDots.length - Math.min(s.boards, 900)) > 50) seedBoards(s.boards);
+      pulse.className = "pulse";
+      pulse.textContent = `listening to ${s.boards.toLocaleString()} company boards` + (s.last_poll ? ` · last pass ${ago(s.last_poll)}` : "");
+      if (lastPoll && s.last_poll && s.last_poll !== lastPoll) rings.push({ t: 0 });
+      lastPoll = s.last_poll; renderYours(s.waiting, s.waiting_items);
+    });
+    es.addEventListener("event", ev => {
+      const m = JSON.parse(ev.data);
+      if (m.replay) { setTimeout(() => launch(m, true), (replayDelay += 140)); if (++replayed > 32) tell(m); }
+      else { launch(m, false); tell(m); }
+    });
+    es.onerror = () => { pulse.className = "pulse offline"; pulse.textContent = "engine not reachable — retrying"; };
+  }
+  cv.style.pointerEvents = "auto";
+  addEventListener("mousemove", ev => {
+    hover = embers.find(e => Math.hypot(e.x - ev.clientX, e.y - ev.clientY) < 9) || null;
+    cv.style.cursor = hover ? "default" : "";
+  });
+  window.__regen = { embers: () => embers.length, particles: () => particles.length };  // for debugging only
+  // ---- public demo: replay the engine's recent real activity, anonymized (built by `python -m engine site`) ----
+  async function demo() {
+    const d = await fetch("replay.json", { cache: "no-cache" }).then(r => r.json());
+    nEl.textContent = d.verified; nl.textContent = "applications sent, each with proof";
+    layoutTree((d.verified_roles || []).map(([role, lane], i) => ({ key: i + role, label: role, lane: lane || "earlier" })), true);
+    if (d.boards) seedBoards(d.boards);
+    pulse.textContent = `replaying the last ${d.days} days · ${d.boards.toLocaleString()} company boards · names hidden`;
+    waitBtn.style.display = "none"; document.getElementById("about").style.display = "block";
+    const ev = d.events; let i = 0;
+    if (!ev.length) { tell({ text: "Quiet right now. The engine is listening." }); return; }
+    const step = () => {
+      const m = ev[i++ % ev.length];
+      launch(m, false); tell(m);
+      if (i % 9 === 0) rings.push({ t: 0 });
+      setTimeout(step, reduce ? 2400 : 2600);
+    };
+    step();
+  }
+  addEventListener("resize", () => { resize(); layoutTree(leafItems, true); });
+  resize(); requestAnimationFrame(frame);
+  window.REGEN_DEMO ? demo() : connect();
+})();
+</script>
+</body>
+</html>
