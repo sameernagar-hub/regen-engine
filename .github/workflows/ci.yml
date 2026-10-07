@@ -29,7 +29,9 @@ jobs:
       - name: Public site rebuild check (site/ must contain no company names or status details)
         run: |
           python - <<'EOF'
-          import json, re, sys
+          import json, os, re, sys
+          if not os.path.exists("site/replay.json"):  # site/ is built locally and published to gh-pages, not tracked
+              print("site/ not tracked: the feed is leak-checked at build time (engine/live/export.py)"); sys.exit(0)
           d = json.load(open("site/replay.json", encoding="utf-8"))
           bad = [e["text"] for e in d["events"] if re.search(r"sponsor|citizen|visa|clearance|itar|\bopt\b|f-1|needs you", e["text"], re.I)]
           if bad:
