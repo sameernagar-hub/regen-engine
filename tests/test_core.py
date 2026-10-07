@@ -196,3 +196,15 @@ def test_alert_parse_and_leads():
     leads, dropped = leads_from(rows)
     assert [l["company"] for l in leads] == ["Globex"]
     assert dropped == {"staffing/aggregator": 1, "level/title excluded": 1}
+
+
+def test_education_dates_not_availability(tmp_path):
+    from engine.apply import runner
+    fb = tmp_path / "fb.json"
+    fb.write_text(json.dumps({"education": [["M.S. -- Initech University", "Aug 2024 - May 2026"]]}))
+    assert runner.edu_dates(str(fb)) == {"start_month": "August", "start_year": "2024", "end_month": "May", "end_year": "2026"}
+    assert runner.edu_dates(str(tmp_path / "missing.json")) == {}
+    # education month/year fields never receive the availability answer
+    for label in ("Start date month", "Start date year *", "End date year"):
+        assert answer_for(label, {}) != runner.P.get("start_date")
+    assert answer_for("When can you start?", {}) == runner.P.get("start_date")

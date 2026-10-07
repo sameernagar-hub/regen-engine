@@ -17,6 +17,21 @@ from engine.feedback.events import record
 from engine import safety
 
 P = json.load(open(os.environ.get("REGEN_PRESETS") or profile_file("presets.json")))
+
+
+def edu_dates(path=None):
+    """Highest degree's dates from the Fact Bank ("Aug 2024 - May 2026") -> {start_month, start_year, end_month, end_year}.
+    Greenhouse education blocks ask for these as "Start date month/year"; without a Fact Bank entry they go to the human queue."""
+    path = path or os.environ.get("REGEN_FACT_BANK") or profile_file("fact_bank.json")
+    try:
+        span = json.load(open(path, encoding="utf-8"))["education"][0][1]
+        a, b = (datetime.datetime.strptime(x.strip(), "%b %Y") for x in span.split(" - "))
+    except (OSError, KeyError, IndexError, ValueError):
+        return {}
+    return {"start_month": a.strftime("%B"), "start_year": str(a.year), "end_month": b.strftime("%B"), "end_year": str(b.year)}
+
+
+EDU = edu_dates()
 BAY_AREA = r"san francisco|san jose|oakland|berkeley|palo alto|mountain view|sunnyvale|santa clara|cupertino|fremont|menlo park|redwood city|san mateo|hayward|milpitas"
 # (label regex, answer). First match wins. Answers for yes/no/select are matched against option text.
 RULES = [
@@ -69,6 +84,9 @@ RULES = [
     (r"graduat.{0,20}(year|date)|year.{0,20}graduat|expected graduation", P["grad_year"]),
     (r"whatsapp|text message|sms", P.get("sms_opt_in")),
     (r"years of (professional |relevant )?experience|how many years", P["years_experience"]),
+    # education block dates (Greenhouse): must come before the availability "start date" rule below
+    (r"^start date month\W*$", EDU.get("start_month")), (r"^start date year\W*$", EDU.get("start_year")),
+    (r"^end date month\W*$", EDU.get("end_month")), (r"^end date year\W*$", EDU.get("end_year")),
     (r"start date|when can you start|available to start|earliest.{0,30}start", P.get("start_date")),
     (r"preferred (office |work )?location|location preference|which (office|location)", P.get("preferred_location")),
     (r"salary|compensation expectation|desired pay", P.get("salary_expectation")),

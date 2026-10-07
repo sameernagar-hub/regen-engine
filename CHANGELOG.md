@@ -10,6 +10,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - **`engine/discovery/gmail_alerts.js`**: run in a signed-in Gmail tab. It reads alert emails through Gmail's own print view (same origin, no API key, nothing leaves the browser) and extracts only title / company / location per listing, with one parser per sender. No links, tracking ids or message bodies are kept.
 - `newgrad.resolve(..., source=)` so every resolved job records where it was found.
 
+### Fixed
+- **Education dates no longer get the availability answer.** Greenhouse education blocks label their fields "Start date month / year" and "End date month / year", and the "when can you start" rule matched them, so a degree's start year was filled with the availability preset. A number input rejected it and the job went to the human queue. These fields now come from the Fact Bank's highest degree (`runner.edu_dates`), checked before the availability rule. With no Fact Bank entry they go to the human queue.
+
 ### Why
 An active job seeker's inbox gets well over 100 matched listings every few days, and they were going unused. First run: 146 listings -> 93 leads -> **30 resolved to the employer's ATS (32%, vs ~10% for newgrad-jobs)**.
 
