@@ -239,3 +239,9 @@ def test_core_stack_and_jd_spelling():
     assert resume.jd_spelling(line, "Postgres and RESTful services") == "PostgreSQL (Postgres), MySQL, REST APIs (RESTful)"
     assert resume.jd_spelling(line, "PostgreSQL and Postgres") == line            # JD already uses our spelling
     assert resume.strip_aliases(resume.jd_spelling(line, "Postgres")) == line
+
+
+def test_require_work_authorization_is_the_sponsorship_question():
+    from engine.apply import runner
+    assert answer_for("Will you require work authorization of any kind?", {}) == runner.P.get("needs_sponsorship_now_or_future")
+    assert answer_for("Are you legally authorized to work in the United States?", {}) == runner.P.get("work_authorized_us")

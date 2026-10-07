@@ -11,6 +11,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - `newgrad.resolve(..., source=)` so every resolved job records where it was found.
 
 ### Added
+- **Workable apply adapter** (`fill_workable` / `submit_workable`): resume, name/email/phone, address as city/region/country (the form's own hint), free-text and Yes/No (`role=radio`) questions by `aria-labelledby`; cookie banner declined. Cloudflare Turnstile is detected by its text and goes to the human queue.
+- "Will you require work authorization of any kind?" is answered as the sponsorship question (it was matching "authorized to work").
 - **Lever apply adapter** (`fill_lever` / `submit_lever`): resume upload, standard fields, custom questions (text, textarea, radio, checkbox, select), location autocomplete restricted to your state/US, EEO selects declined. A visible hCaptcha/reCAPTCHA is never solved: the job goes to the human queue with the form filled. First run: 3 Lever forms filled end to end; one stopped at a real image CAPTCHA.
 - Answer rules: country, state/province, F-1 status (preset `f1_status`), "file a petition ... employment-based visa" (sponsorship), current/former employee, referred by, expected annual compensation, current company (preset `current_company`). Yes/No into a free-text box is allowed when *any* sentence of the label is a yes/no question.
 

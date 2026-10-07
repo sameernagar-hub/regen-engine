@@ -50,6 +50,7 @@ RULES = [
     # Legal / status answers come ONLY from your presets (never hardcoded). An unset preset -> human queue.
     # "authorized ... WITHOUT sponsorship" is a different question from "will you need sponsorship", so it has its own key.
     (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
+    (r"(will|do) you (now or in the future )?(require|need) (any )?(work |employment )?(authori[sz]ation|permit)", P.get("needs_sponsorship_now_or_future")),
     (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor|(file|submit) a petition|employment.based (visa|immigration)", P.get("needs_sponsorship_now_or_future")),
     (r"(currently|presently) (in|on|hold(ing)?) (an? )?f-?1( status| visa)?", P.get("f1_status")),
     (r"^(what is )?your country\W*$|^country of residence", P["country"]),
@@ -353,6 +354,70 @@ def submit_lever(page):
         if errs and _ > 3: return False, "; ".join(e.inner_text()[:80] for e in errs[:5])
     return False, "no confirmation seen"
 
+# ---------------- Workable (apply.workable.com/<co>/j/<id>/apply) ----------------
+def workable_apply_url(url):
+    u = url.split("?")[0].rstrip("/")
+    return u if u.endswith("/apply") else u + "/apply"
+
+
+def fill_workable(page, job, log):
+    page.goto(workable_apply_url(job["url"]), wait_until="networkidle"); page.wait_for_selector("form", timeout=30000)
+    time.sleep(1.5)
+    for b in page.query_selector_all("button:has-text('Decline all')"):  # cookie banner: most private choice
+        try: b.click(timeout=2000)
+        except Exception: pass
+    missing = []
+    fi = page.query_selector("input[type=file][required]") or page.query_selector_all("input[type=file]")[-1]
+    fi.set_input_files(job["resume"]); time.sleep(4)
+    std = {"firstname": P["first_name"], "lastname": P["last_name"], "email": P["email"],
+           "phone": P["phone"].replace("+1 ", "").replace("+1", ""),
+           # Workable's own hint: "Include your city, region, and country" (no street address needed)
+           "address": f"{P['city']}, {P['state']}, {P['country']}"}
+    for name, val in std.items():
+        el = page.query_selector(f"input[name={name}]")
+        if el: el.fill(val)
+    # free-text questions
+    for el in page.query_selector_all("input[aria-labelledby]:not([type=radio]):not([type=checkbox]):not([type=file]), textarea[aria-labelledby]"):
+        if el.get_attribute("name") in std: continue
+        lab = page.query_selector("#" + el.get_attribute("aria-labelledby").split()[0])
+        label = (lab.inner_text() if lab else "").strip().rstrip("*").strip()
+        req = el.get_attribute("required") is not None or el.get_attribute("aria-required") == "true"
+        ans = answer_for(label, job.get("extra", {}))
+        if NOTE_Q.search(label) and job.get("note"): ans = job["note"]
+        log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
+        ok = bool(ans) and not ans.startswith("__") and text_ok(label, ans)
+        if ok: el.fill(ans)
+        if not ok and req: missing.append(label[:90])
+    # single / multiple choice
+    for grp in page.query_selector_all("fieldset[role=radiogroup][aria-labelledby], fieldset[role=group][aria-labelledby]"):
+        lab = page.query_selector("#" + grp.get_attribute("aria-labelledby").split()[0])
+        label = (lab.inner_text() if lab else "").strip().rstrip("*").strip()
+        req = grp.query_selector("[aria-required=true], [required]") is not None
+        ans = answer_for(label, job.get("extra", {}))
+        log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
+        opts = [(o.inner_text().strip(), o) for o in grp.query_selector_all("[role=radio], [role=checkbox]")]
+        h = pick_option(opts, ans) if ans and opts else None
+        if h:
+            if h.get_attribute("aria-checked") != "true": h.click()
+        elif req: missing.append(label[:90])
+    return missing
+
+
+def submit_workable(page):
+    page.click("button[type=submit]:has-text('Submit')")
+    for _ in range(25):
+        time.sleep(1)
+        body = page.inner_text("body")
+        if re.search(r"thank(s| you) for (applying|your application)|application (has been |was )?(submitted|received)", body, re.I):
+            return True, "success"
+        cap = page.query_selector("iframe[src*=hcaptcha]:visible, iframe[src*=recaptcha]:visible, iframe[src*=challenges]:visible") \
+            or re.search(r"verify you are human|i.m not a robot", body, re.I)
+        if cap and _ > 1:  # Cloudflare Turnstile lives in a closed shadow root: its text is the reliable signal
+            return False, "CAPTCHA: Workable asked for a human check (Cloudflare); apply by hand with the prepared resume"
+        errs = page.query_selector_all("[role=alert]:visible, [data-ui$=error]:visible")
+        if errs and _ > 3: return False, "; ".join(e.inner_text()[:80] for e in errs[:5])
+    return False, "no confirmation seen"
+
 # ---------------- Greenhouse (job-boards.greenhouse.io) ----------------
 def gh_embed_url(url):
     """The bare embedded application form is faster and has a stable DOM across company skins."""
@@ -548,15 +613,15 @@ def run(jobs, dry=False):
             if safety.stop_requested():
                 log("STOP file present (workspace/STOP): halting before " + name); break
             log(f"== {name}")
-            ash = "ashbyhq" in job["url"]; lev = "jobs.lever.co" in job["url"]
-            if not (ash or lev) and "greenhouse" not in job["url"]:
+            ash = "ashbyhq" in job["url"]; lev = "jobs.lever.co" in job["url"]; wk = "workable.com" in job["url"]
+            if not (ash or lev or wk) and "greenhouse" not in job["url"]:
                 status = f"NEEDS YOU: no adapter for {job.get('ats') or 'this site'} yet; resume ready at {job.get('resume')}"
                 log(f"   -> {status}")
                 record("application", job=name, url=job["url"], status="NEEDS YOU", detail=status, proof="", resume=job.get("resume"), dry=dry)
                 results.append({"name": name, "url": job["url"], "status": status, "proof": "", "at": datetime.datetime.now().isoformat(timespec="seconds")})
                 continue
             try:
-                missing = fill_ashby(page, job, log) if ash else fill_lever(page, job, log) if lev else fill_gh(page, job, log)
+                missing = fill_ashby(page, job, log) if ash else fill_lever(page, job, log) if lev else fill_workable(page, job, log) if wk else fill_gh(page, job, log)
                 stamp = datetime.datetime.now().strftime("%m%d-%H%M%S")
                 shot = f"proof/{re.sub(r'[^A-Za-z0-9]+', '_', name)[:50]}_{stamp}.png"
                 # airbags: anything sensitive, unexpected or over the limits stops this job before submit
@@ -576,7 +641,7 @@ def run(jobs, dry=False):
                     page.screenshot(path=shot, full_page=True)
                     status = "NEEDS YOU: Ashby cooldown after a bot-check; form is filled, submit it by hand (resume ready)"
                 else:
-                    ok, msg = submit_ashby(page) if ash else submit_lever(page) if lev else submit_gh(page)
+                    ok, msg = submit_ashby(page) if ash else submit_lever(page) if lev else submit_workable(page) if wk else submit_gh(page)
                     page.screenshot(path=shot, full_page=True)
                     if not ok and msg.startswith("BOT-CHECK"):
                         open("ashby_cooldown", "w").write(datetime.datetime.now().isoformat())
