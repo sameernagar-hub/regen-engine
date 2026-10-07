@@ -10,6 +10,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - **`engine/discovery/gmail_alerts.js`**: run in a signed-in Gmail tab. It reads alert emails through Gmail's own print view (same origin, no API key, nothing leaves the browser) and extracts only title / company / location per listing, with one parser per sender. No links, tracking ids or message bodies are kept.
 - `newgrad.resolve(..., source=)` so every resolved job records where it was found.
 
+### Changed (from rejection analysis)
+Three rejections in two days were read against their job descriptions. Two jobs required 4+ years against 3 years of experience; one also centered on a stack the candidate doesn't list. The fast turnaround (34-45 h) points to automated knockout screens.
+- **Years gate uses your real number.** `fit()` now blocks any JD whose minimum years exceeds `years_experience` from the presets (it allowed up to 4 before).
+- **Core-stack gate.** A JD that *requires* a language or stack (strong / proficiency / required / must) that the Fact Bank doesn't list (C#, Rust, Scala, Kotlin, Swift, Ruby, PHP, embedded, HDL) is skipped as `core stack: X`.
+- **JD spelling on the resume.** When the JD names a skill you have with a different spelling (Postgres, RESTful, Golang, K8s, large language models...), the skills line shows `PostgreSQL (Postgres)`, so ATS keyword matching hits. `validate()` only accepts a changed skills line when stripping the alias table gives back the original line exactly, so nothing new can be added. Coverage counts these spellings.
+- **No duplicate accomplishments.** Fact Bank `_overlaps` groups versions of the same accomplishment; tailoring picks at most one per group. One extra skills line (e.g. Salesforce, AI dev tools) is added when the JD clearly asks for it.
+
 ### Fixed
 - **Education dates no longer get the availability answer.** Greenhouse education blocks label their fields "Start date month / year" and "End date month / year", and the "when can you start" rule matched them, so a degree's start year was filled with the availability preset. A number input rejected it and the job went to the human queue. These fields now come from the Fact Bank's highest degree (`runner.edu_dates`), checked before the availability rule. With no Fact Bank entry they go to the human queue.
 

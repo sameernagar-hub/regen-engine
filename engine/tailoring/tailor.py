@@ -30,12 +30,27 @@ def vocabulary():
         for w in t.split():
             if len(w) >= 3 and w not in STOP and re.fullmatch(r"[a-z0-9+#.\-]+", w):
                 terms.add(w)
+    for canon, alts in resume.ALIASES.items():
+        if canon.lower() in terms:
+            terms |= {a.lower() for a in alts}
     return terms
 
 
 def _hits(text, terms):
     low = re.sub(r"<[^>]+>", " ", text).lower()
     return {t for t in terms if re.search(r"(?<![a-z0-9])" + re.escape(t) + r"(?![a-z0-9])", low)}
+
+
+def distinct(ranked, n):
+    """Top n facts, never two from the same overlap group (Fact Bank "_overlaps": versions of one accomplishment)."""
+    groups = [set(g) for g in resume.OVERLAPS]
+    out = []
+    for f in ranked:
+        if len(out) == n:
+            break
+        if not any(f in g and any(o in g for o in out) for g in groups):
+            out.append(f)
+    return out
 
 
 def tailor(spec, jd):
@@ -51,21 +66,26 @@ def tailor(spec, jd):
         prefix = fids[0].split("_")[0] if fids else rk[0]
         pool = list(dict.fromkeys(fids + by_role.get(prefix, [])))  # lane order first, then the rest of the role
         rank = sorted(pool, key=lambda f: (-score(resume.FACTS[f]), pool.index(f)))
-        roles.append([rk, rank[:len(fids)]])
+        roles.append([rk, distinct(rank, len(fids))])
     projects = spec.get("projects", [])
     if projects:
         allp = list(dict.fromkeys(projects + list(resume.PROJECTS)))
         ptxt = lambda p: " ".join([resume.PROJECTS[p][0]] + resume.PROJECTS[p][2])
         projects = sorted(allp, key=lambda p: (-score(ptxt(p)), allp.index(p)))[:len(projects)]
     skills = sorted(spec["skills"], key=lambda k: (-score(resume.SKILLS[k][1]), spec["skills"].index(k)))
-    out = dict(spec, roles=roles, projects=projects, skills=skills)
+    # one extra skills line the lane doesn't carry, when the JD clearly asks for it (e.g. Salesforce, AI dev tools)
+    extra = max((k for k in resume.SKILLS if k not in skills), key=lambda k: score(resume.SKILLS[k][1]), default=None)
+    if extra and score(resume.SKILLS[extra][1]) >= 2:
+        skills.append(extra)
+    skill_text = {k: t for k in skills if (t := resume.jd_spelling(resume.SKILLS[k][1], jd)) != resume.SKILLS[k][1]}
+    out = dict(spec, roles=roles, projects=projects, skills=skills, skill_text=skill_text)
     resume.validate(out)
     covered = set()
     for _, fids in roles:
         for f in fids:
             covered |= _hits(resume.FACTS[f], want)
     for k in skills:
-        covered |= _hits(resume.SKILLS[k][1], want)
+        covered |= _hits(skill_text.get(k, resume.SKILLS[k][1]), want)
     out["_coverage"] = {"jd_terms_you_have": sorted(want), "on_resume": sorted(covered), "missing_from_resume": sorted(want - covered)}
     return out
 
@@ -78,10 +98,32 @@ BLOCKERS = [
 ]
 
 
-def fit(jd, max_years=4):
+# Languages/stacks a JD can make the core of the job. If the JD *requires* one ("strong C++", "proficiency in Go",
+# "C# required") and the Fact Bank has no such skill, the screen rejects (seen: "Strong modern C++" -> rejected in 2 days).
+CORE_STACKS = {"c++": r"c\+\+", "c#": r"c#|\.net", "java": r"java(?!script)", "go": r"golang|go(?![a-z0-9]| to| above| beyond)",
+               "rust": r"rust", "scala": r"scala", "kotlin": r"kotlin", "swift": r"swift|ios", "ruby": r"ruby|rails",
+               "php": r"php", "embedded": r"embedded|firmware|rtos", "verilog": r"verilog|vhdl|fpga"}
+REQUIRED_CUE = r"(strong|deep|expert|extensive|solid|proficien\w*|fluen\w*|mastery|advanced|professional|production)[^.;]{0,40}(?:{s})|(?:{s})[^.;]{0,25}(required|must|is a must|proficiency|expertise|experience required)"
+
+
+def user_years():
+    """Years of experience from the presets (the number the forms are answered with)."""
+    try:
+        from engine.apply.runner import P
+        return int(P.get("years_experience") or 99)
+    except Exception:
+        return 99
+
+
+def fit(jd, max_years=None):
     """List of hard blockers found in the job description (empty = clear)."""
-    low = " ".join(jd.split()).lower()
+    max_years = user_years() if max_years is None else max_years
+    low = " ".join(re.sub(r"<[^>]+>", " ", jd).split()).lower()
     out = [name for name, pat in BLOCKERS if re.search(pat, low)]
+    have = vocabulary()
+    for name, s in CORE_STACKS.items():
+        if not any(re.fullmatch(s, t) or re.search(r"(?<![a-z0-9])" + s + r"(?![a-z0-9])", t) for t in have)                 and re.search(REQUIRED_CUE.replace("{s}", s), low):
+            out.append(f"core stack: {name}")
     # "5+ years", "4-7 years", "5 to 15+ years": the lower bound is the requirement
     yrs = [int(m.group(1)) for m in re.finditer(r"(?<![\d.])(\d{1,2})\s*\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*\+?\s*)?years?(?: of)?[^.]{0,60}experience", low)]
     yrs = [y for y in yrs if y < 20]

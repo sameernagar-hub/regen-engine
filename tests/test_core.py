@@ -48,7 +48,10 @@ def test_slugs():
 # ---- JD fit checks ----
 def test_fit_years():
     assert fit("5 to 15+ years of software engineering experience") == ["5+ yrs"]
-    assert fit("4–7 years of experience in technical roles") == []
+    # the limit is the presets' years_experience (3 in the fixture): "4+" was let through before and got auto-rejected
+    assert fit("4–7 years of experience in technical roles") == ["4+ yrs"]
+    assert fit("4+ years experience in a data engineering-focused role") == ["4+ yrs"]
+    assert fit("4–7 years of experience in technical roles", max_years=4) == []
     assert fit("2+ years of experience with Python") == []
     assert fit("3-5 years of professional experience") == []
 
@@ -224,3 +227,14 @@ def test_city_and_state_combined():
     want = f"{runner.P['city']}, {runner.P['state']}"
     assert answer_for("What city and state do you currently reside in?", {}) == want
     assert answer_for("Which state do you reside in?", {}) == runner.P["state"]
+
+
+
+def test_core_stack_and_jd_spelling():
+    from engine.tailoring import resume
+    assert "core stack: rust" in fit("Strong Rust experience required.")
+    assert not any(b.startswith("core stack") for b in fit("We mostly write Python; some Rust is a plus."))
+    line = "PostgreSQL, MySQL, REST APIs"
+    assert resume.jd_spelling(line, "Postgres and RESTful services") == "PostgreSQL (Postgres), MySQL, REST APIs (RESTful)"
+    assert resume.jd_spelling(line, "PostgreSQL and Postgres") == line            # JD already uses our spelling
+    assert resume.strip_aliases(resume.jd_spelling(line, "Postgres")) == line

@@ -6,7 +6,7 @@ references a fact, role, project or skill that is not in the bank, so nothing ca
 
 Usage: python -m engine tailor workspace/specs/acme.json   -> workspace/out/<file>.pdf
 """
-import json, sys, os
+import json, re, sys, os
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
@@ -18,17 +18,57 @@ from engine.config import WORKSPACE, profile_file
 FACTS = ROLES = PROJECTS = SKILLS = EDU = CONTACT = None
 
 
+OVERLAPS = []
+
+
 def load_bank():
-    global FACTS, ROLES, PROJECTS, SKILLS, EDU, CONTACT
+    global FACTS, ROLES, PROJECTS, SKILLS, EDU, CONTACT, OVERLAPS
     if FACTS is None:
         fb = json.load(open(os.environ.get("REGEN_FACTS", profile_file("fact_bank.json")), encoding="utf-8"))
         FACTS, ROLES, PROJECTS, SKILLS, EDU, CONTACT = fb["facts"], fb["roles"], fb["projects"], fb["skills"], fb["education"], fb["contact"]
+        OVERLAPS = fb.get("_overlaps", [])
+
+
+# Same skill, other spellings a JD (and its ATS keyword scan) may use. A skills line may show "Canonical (Alias)" only
+# for a canonical term already on that line, so the wording follows the JD without adding anything new.
+ALIASES = {
+    "PostgreSQL": ["Postgres"], "JavaScript": ["ECMAScript"], "Node.js": ["NodeJS"], "Kubernetes": ["K8s"],
+    "Go": ["Golang"], "REST APIs": ["RESTful APIs", "RESTful"], "React": ["React.js", "ReactJS"],
+    "Spring Boot 3": ["Spring Boot", "Spring"], "LLMs": ["large language models"], "CI/CD": ["continuous integration"],
+    "RAG": ["retrieval-augmented generation", "retrieval augmented generation"], "Kafka": ["Apache Kafka"],
+    "microservices": ["microservice architecture", "service-oriented architecture"],
+    "AWS": ["Amazon Web Services"], "embeddings and vector search": ["vector databases", "semantic search"],
+}
+
+
+def _term(t):
+    return r"(?<![A-Za-z0-9])" + re.escape(t) + r"(?![A-Za-z0-9])"
+
+
+def jd_spelling(line, jd):
+    """Skills line with the JD's spelling added next to each canonical term it names differently."""
+    low = " ".join(re.sub(r"<[^>]+>", " ", jd or "").split()).lower()
+    for canon, alts in ALIASES.items():
+        if not re.search(_term(canon), line) or re.search(_term(canon.lower()), low):
+            continue
+        hit = next((a for a in alts if not re.search(_term(a.lower()), canon.lower()) and re.search(_term(a.lower()), low)), None)
+        if hit:
+            line = re.sub(_term(canon), f"{canon} ({hit})", line, count=1)
+    return line
+
+
+def strip_aliases(line):
+    for canon, alts in ALIASES.items():
+        for a in alts:
+            line = line.replace(f"{canon} ({a})", canon)
+    return line
 
 
 def validate(spec):
     """Truthfulness gate: a spec may only reference entries that exist in the Fact Bank."""
     load_bank()
-    bad = [f"role:{r}" for r, _ in spec["roles"] if r not in ROLES]
+    bad = [f"skill_text:{k}" for k, v in spec.get("skill_text", {}).items() if k not in SKILLS or strip_aliases(v) != SKILLS[k][1]]
+    bad += [f"role:{r}" for r, _ in spec["roles"] if r not in ROLES]
     bad += [f"fact:{f}" for _, fids in spec["roles"] for f in fids if f not in FACTS]
     bad += [f"project:{p}" for p in spec.get("projects", []) if p not in PROJECTS]
     bad += [f"skill:{k}" for k in spec["skills"] if k not in SKILLS]
@@ -72,7 +112,8 @@ def build(spec):
             n, d, bs = PROJECTS[pk]
             st.append(row(n, d)); st += [Paragraph(b, BUL, bulletText="•") for b in bs]
     section(st, "TECHNICAL SKILLS")
-    st += [Paragraph(f"<b>{SKILLS[k][0]}:</b> {SKILLS[k][1]}", BUL, bulletText="•") for k in spec["skills"]]
+    st += [Paragraph(f"<b>{SKILLS[k][0]}:</b> {spec.get('skill_text', {}).get(k, SKILLS[k][1])}", BUL, bulletText="•")
+           for k in spec["skills"]]
     section(st, "EDUCATION")
     st += [row(e, d) for e, d in EDU]
     SimpleDocTemplate(out, pagesize=letter, leftMargin=0.5 * inch, rightMargin=0.5 * inch,
