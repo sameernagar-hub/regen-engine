@@ -183,7 +183,9 @@ def commit_emails(rev_range):
 def main(argv):
     if "--install-hook" in argv:
         hook = os.path.join(ROOT, ".git", "hooks", "pre-push")
-        open(hook, "w", newline="\n").write("#!/bin/sh\npython scripts/privacy_scan.py || { echo 'privacy_scan: push blocked'; exit 1; }\n")
+        open(hook, "w", newline="\n").write(  # resolve the main checkout, so pushes from linked worktrees are gated too
+            "#!/bin/sh\nROOT=\"$(cd \"$(git rev-parse --git-common-dir)/..\" && pwd)\"\n"
+            "(cd \"$ROOT\" && python scripts/privacy_scan.py) || { echo 'privacy_scan: push blocked'; exit 1; }\n")
         os.chmod(hook, 0o755); print("pre-push hook installed"); return 0
 
     if "--update-denylist" in argv:

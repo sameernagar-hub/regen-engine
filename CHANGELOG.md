@@ -11,6 +11,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - `newgrad.resolve(..., source=)` so every resolved job records where it was found.
 
 ### Added
+- **Live public face.** `apps/web` has a public mode (`NEXT_PUBLIC_REGEN_MODE=public`): a Next.js route (`/api/public`, cached 30 s) proxies the anonymized feed, and the live view and memory graph animate new events as they arrive. Deployed by `render.yaml` as a Node web service on Render; it never sees personal data.
+- **Public feed publisher.** `python -m engine site --push` builds the anonymized replay plus an anonymized graph (lanes, roles, ATS, outcome types with opaque ids; no companies, Fact Bank text or answers), runs the leak check, and pushes it to `gh-pages` through a git worktree. The pre-push privacy hook now resolves the main checkout, so worktree pushes are gated too.
+- **Current libraries.** Next.js 16.4, React 19.3, TypeScript 5.9 (7.0 waits on openapi-typescript), FastAPI 0.142, uvicorn 0.54, Pydantic 2.13, psycopg 3.3, Postgres 18, Node 24 and Python 3.13 images, MCP SDK 2.x (`MCPServer`).
 - **v0.7 platform, first cut** (`apps/`):
   - `apps/api`: FastAPI + Pydantic, read-only (Snapshot, Application, HumanItem, Outcome, Event, Narration). Endpoints: `/api/snapshot`, `/api/applications`, `/api/human`, `/api/outcomes`, `/api/events`, `/api/narration`, `/api/proof/{png}`, `/api/stream` (SSE). Source is Postgres (`REGEN_DATABASE_URL`) or `events.jsonl`.
   - `apps/api/migrate.py`: events.jsonl to an append-only Postgres table (trigger refuses UPDATE/DELETE; sha-deduped, so it's safe to re-run).

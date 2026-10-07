@@ -1,24 +1,20 @@
-# Render Blueprint: the public face of the project (static, free tier).
-# It publishes site/ (built by `python -m engine site`): the live view replaying anonymized recent activity.
-# No server, no secrets, no personal data; Render redeploys on every push to main.
+# Render Blueprint: the live public face of the engine.
+# A Next.js web service (apps/web) in public mode. It never sees personal data: it reads only the anonymized feed the
+# engine publishes to the gh-pages branch (`python -m engine site --push`), through a 30-second cached route.
 services:
   - type: web
-    runtime: static
+    runtime: node
     name: regen-engine
-    branch: main
-    buildCommand: echo "site/ is prebuilt and committed by python -m engine site"
-    staticPublishPath: ./site
-    pullRequestPreviewsEnabled: false
-    headers:
-      - path: /*
-        name: Content-Security-Policy
-        value: "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: Referrer-Policy
-        value: no-referrer
-      - path: /replay.json
-        name: Cache-Control
-        value: no-cache
+    plan: free
+    rootDir: apps/web
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:public
+    healthCheckPath: /api/public
+    autoDeploy: true
+    envVars:
+      - key: NEXT_PUBLIC_REGEN_MODE
+        value: public
+      - key: REGEN_FEED_URL
+        value: https://sameernagar-hub.github.io/regen-engine/replay.json
+      - key: NODE_VERSION
+        value: "22"

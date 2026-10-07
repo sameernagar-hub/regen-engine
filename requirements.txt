@@ -1,3 +1,9 @@
 playwright>=1.45
 reportlab>=4.0
 pypdf>=4.0
+# v0.7 platform (apps/api) and MCP server
+fastapi>=0.142
+uvicorn>=0.54
+pydantic>=2.13
+psycopg[binary]>=3.3
+mcp>=2.0

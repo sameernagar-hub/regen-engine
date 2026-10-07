@@ -36,6 +36,48 @@ def anonymize(text, company):
     return text[:1].upper() + text[1:]
 
 
+def public_graph():
+    """The memory graph with everything identifying removed: lanes, roles (no company), ATS and outcome types.
+    Company nodes, Fact Bank text and form answers never leave the machine."""
+    from engine.memory import graph as G
+    g = G.build(questions=False)
+    keep = {"You", "Lane", "Application", "ATS", "Outcome"}
+    ids, nodes = {}, []
+    for n in g["nodes"]:
+        if n["type"] not in keep:
+            continue
+        i = "n%d" % len(ids)                       # opaque ids: the originals contain company names
+        ids[n["id"]] = i
+        label = {"You": "the candidate"}.get(n["type"], n["label"])
+        data = {"status": n["data"].get("status")} if n["type"] == "Application" else {}
+        nodes.append({"id": i, "type": n["type"], "label": label, "data": data})
+    edges = [{"source": ids[e["source"]], "target": ids[e["target"]], "type": e["type"]}
+             for e in g["edges"] if e["source"] in ids and e["target"] in ids]
+    return {"nodes": nodes, "edges": edges}
+
+
+def publish():
+    """Push site/ to the gh-pages branch (the public feed). Uses a git worktree in workspace/.pages."""
+    import shutil, subprocess
+    root = os.path.dirname(SITE)
+    wt = os.path.join(WORKSPACE, ".pages")
+    git = lambda *a, cwd=root: subprocess.run(["git", *a], cwd=cwd, check=True, capture_output=True, text=True)
+    if not os.path.exists(os.path.join(wt, ".git")):
+        git("fetch", "origin", "gh-pages")
+        git("worktree", "add", "-f", wt, "origin/gh-pages")
+    git("fetch", "origin", "gh-pages", cwd=wt)
+    git("reset", "--hard", "origin/gh-pages", cwd=wt)
+    for f in ("index.html", "replay.json"):
+        shutil.copy(os.path.join(SITE, f), os.path.join(wt, f))
+    if not git("status", "--porcelain", cwd=wt).stdout.strip():
+        return "unchanged"
+    git("add", "-A", cwd=wt)
+    git("-c", "user.name=sameernagar-hub", "-c", "user.email=180349498+sameernagar-hub@users.noreply.github.com",
+        "commit", "-m", "public feed: anonymized replay " + time.strftime("%Y-%m-%d %H:%M"), cwd=wt)
+    git("push", "origin", "HEAD:gh-pages", cwd=wt)
+    return "pushed"
+
+
 def build(days=7):
     cut = (datetime.now() - timedelta(days=days)).isoformat()
     events = []
@@ -71,7 +113,8 @@ def build(days=7):
     s = snapshot()
     roles = [[role, lane] for _co, role, lane in s.get("verified_jobs", [])]  # role + lane only, never the company
     data = {"generated": time.strftime("%Y-%m-%d %H:%M"), "days": days, "verified": s["verified"],
-            "verified_roles": roles, "boards": s["boards"], "events": events[-160:]}
+            "verified_roles": roles, "boards": s["boards"], "last_poll": s.get("last_poll"),
+            "events": events[-160:], "graph": public_graph()}
     # airbag: refuse to publish if any company name we've ever touched would appear on the public page
     raw = json.dumps(data, ensure_ascii=False).lower()
     names = set()
@@ -100,8 +143,12 @@ def build(days=7):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    d = build(int(argv[0]) if argv else 7)
-    print(f"site/ ready: {len(d['events'])} anonymized events, {d['verified']} verified applications")
+    nums = [a for a in argv if a.isdigit()]
+    d = build(int(nums[0]) if nums else 7)
+    print(f"site/ ready: {len(d['events'])} anonymized events, {d['verified']} verified applications, "
+          f"graph {len(d['graph']['nodes'])} nodes")
+    if "--push" in argv:
+        print("public feed:", publish())
 
 
 if __name__ == "__main__":

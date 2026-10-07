@@ -1,37 +1,18 @@
 "use client";
 // The engine, watched live. Not a dashboard: one line of stations, a tree of real applications growing from
 // "applying" (one stem per resume lane, one bead per proof-backed submission), a narrator, and what needs you.
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { PUBLIC, useEngine } from "@/lib/engine";
 import Link from "next/link";
-import { STAGES, get, type Application, type HumanItem, type Narration, type Snapshot } from "@/lib/types";
+import { STAGES, get, type Application, type HumanItem } from "@/lib/types";
 
 const W = 1200, H = 620, LINE_Y = 470;
 const stationX = (i: number) => 120 + i * ((W - 240) / (STAGES.length - 1));
 
 export default function Live() {
-  const [snap, setSnap] = useState<Snapshot | null>(null);
-  const [apps, setApps] = useState<Application[]>([]);
-  const [lines, setLines] = useState<Narration[]>([]);
-  const [pulse, setPulse] = useState<{ stage: string; id: number } | null>(null);
+  const { snap, apps, lines, pulse } = useEngine();
   const [open, setOpen] = useState<Application | null>(null);
   const [human, setHuman] = useState<HumanItem[] | null>(null);
-
-  const refresh = () => get<Application[]>("/api/applications?status=SUBMITTED&limit=500").then(setApps).catch(() => {});
-
-  useEffect(() => {
-    refresh();
-    get<Narration[]>("/api/narration?limit=6").then(setLines).catch(() => {});
-    const es = new EventSource("/api/stream?after=999999999");  // live only; the replay above already set the scene
-    es.addEventListener("snapshot", (m) => setSnap(JSON.parse((m as MessageEvent).data)));
-    es.addEventListener("narration", (m) => {
-      const n: Narration = JSON.parse((m as MessageEvent).data);
-      setLines((l) => [...l.slice(-5), n]);
-      setPulse({ stage: n.stage, id: n.id });
-      if (n.stage === "apply" && n.tone === "win") refresh();
-    });
-    get<Snapshot>("/api/snapshot").then(setSnap).catch(() => {});
-    return () => es.close();
-  }, []);
 
   // the tree: lanes ordered by size, each a straight stem rising from "applying"
   const lanes = useMemo(() => {
@@ -51,7 +32,7 @@ export default function Live() {
         <div className="brand">REGEN · LIVE <Link href="/graph" style={{ color: "var(--gold)", marginLeft: 16 }}>memory graph →</Link></div>
         <div className="count">
           <b>{snap?.verified ?? "·"}</b>
-          <span>applications sent with proof{snap ? ` · ${snap.verified_today} today` : ""}</span>
+          <span>applications sent with proof{snap && !PUBLIC ? ` · ${snap.verified_today} today` : ""}{PUBLIC ? " · live, names hidden" : ""}</span>
         </div>
       </header>
 
@@ -97,7 +78,7 @@ export default function Live() {
         <div className="narrator" aria-live="polite">
           {lines.map((l, i) => <p key={l.id} className={l.tone} style={{ opacity: .35 + (i + 1) / lines.length * .65 }}>{l.text}</p>)}
         </div>
-        {snap && snap.waiting > 0 && (
+        {!PUBLIC && snap && snap.waiting > 0 && (
           <button className="waiting" onClick={() => get<HumanItem[]>("/api/human").then(setHuman)}>
             {snap.waiting} {snap.waiting === 1 ? "thing is" : "things are"} waiting on you →
           </button>
@@ -123,9 +104,10 @@ function Proof({ a, onClose }: { a: Application; onClose: () => void }) {
   return (
     <aside className="panel" aria-label={`Proof for ${a.company}`}>
       <button className="close" onClick={onClose} aria-label="close">×</button>
-      <h2>{a.company}</h2>
+      <h2>{PUBLIC ? a.role : a.company}</h2>
       <div className="sub">{a.role} · {a.lane || "earlier"} lane · {a.ts.replace("T", " ")}</div>
-      {file && <img src={`/api/proof/${file}`} alt={`Confirmation page for ${a.company}`} />}
+      {PUBLIC && <p style={{ color: "var(--dim)" }}>Sent with a saved confirmation page. On the public view the company, the resume and every answer stay private.</p>}
+      {!PUBLIC && file && <img src={`/api/proof/${file}`} alt={`Confirmation page for ${a.company}`} />}
       {facts.length > 0 && (<><h3>BUILT FROM THESE FACTS</h3><div className="chips">{facts.map((f) => <span className="chip" key={f}>{f}</span>)}</div></>)}
       {answers.length > 0 && (<><h3>WHAT THE FORM ASKED, WHAT WE ANSWERED</h3>
         {answers.map(([q, ans], i) => <div className="qa" key={i}><span>{q}</span><span>{ans === "__DECLINE__" ? "declined" : ans === "__ACK__" ? "acknowledged" : ans ?? "—"}</span></div>)}</>)}

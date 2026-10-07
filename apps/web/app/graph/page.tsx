@@ -4,6 +4,7 @@
 // applications stay one shared node, so reused knowledge is visible. Everything comes from /api/graph (evidence only).
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { loadGraph } from "@/lib/engine";
 
 type GNode = { id: string; type: string; label: string; data: Record<string, any> };
 type GEdge = { source: string; target: string; type: string; data?: Record<string, any> };
@@ -15,7 +16,7 @@ const COLOR: Record<string, string> = {
 };
 const RING = [0, 170, 330, 500, 640];
 const CHILD_TYPES: Record<string, string[]> = {
-  You: ["Lane"], Lane: ["Application"], Application: ["Fact", "Company", "ATS", "Outcome"],
+  You: ["Lane"], Lane: ["Application"], Application: ["Fact", "Company", "ATS", "Outcome"], ATS: ["Application"],
   Fact: ["Application"], Company: ["Application"],
 };
 
@@ -27,7 +28,7 @@ export default function Graph() {
   const [view, setView] = useState({ x: -560, y: -400, w: 1120, h: 800 });
   const drag = useRef<{ x: number; y: number } | null>(null);
 
-  useEffect(() => { fetch("/api/graph?questions=false").then((r) => r.json()).then(setG).catch(() => {}); }, []);
+  useEffect(() => { loadGraph().then(setG).catch(() => {}); }, []);
 
   const byId = useMemo(() => new Map((g?.nodes || []).map((n) => [n.id, n])), [g]);
   const adj = useMemo(() => {
@@ -114,7 +115,7 @@ export default function Graph() {
               <circle r={r} fill={COLOR[n.type] || "#999"} filter="url(#g2)" />
               {isOpen && n.type !== "You" && <circle r={r + 6} fill="none" stroke={COLOR[n.type]} strokeOpacity={.5} />}
               {(n.type !== "Fact" || hover === id) && (
-                <text y={-r - 6} textAnchor="middle" className="glabel">{n.type === "Application" ? `${n.data.company}` : n.label}</text>
+                <text y={-r - 6} textAnchor="middle" className="glabel">{n.type === "Application" ? (n.data.company || n.label) : n.label}</text>
               )}
             </g>
           );

@@ -6,13 +6,13 @@
 name: regen-platform
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: regen
       POSTGRES_PASSWORD: regen   # local-only database, never published beyond 127.0.0.1
       POSTGRES_DB: regen
     ports: ["127.0.0.1:5433:5432"]
-    volumes: [regen-db:/var/lib/postgresql/data]
+    volumes: [regen-db:/var/lib/postgresql]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U regen"]
       interval: 5s
