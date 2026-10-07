@@ -2,15 +2,16 @@
 
 Full list of changes, with how to verify each: **[CHANGELOG.md](../CHANGELOG.md)**.
 
-## ▶ Resume here (last stop: 2026-10-06)
-**State:** `main` = v0.6.3 with a clean public history. The privacy gate and tests run in CI on every PR and push, and `main` is protected (admins included). Docker: `regen-watcher` + `regen-live` (http://127.0.0.1:7777). Daily scheduled task `regen-daily-inbox-and-apply` at 8:13 AM.
-**Privacy workflow:** after adding private terms (`profile/private_terms.txt`), run `python scripts/privacy_scan.py --update-denylist` and commit `.privacy/denylist.json`. Merge PRs with a noreply author: `gh pr merge N --merge --author-email 180349498+sameernagar-hub@users.noreply.github.com`, never a plain web merge.
+## ▶ Resume here (last stop: 2026-10-06, late)
+**State:** branch `v0.6.4-alerts` = PR #8 (CI green, **not merged**: merge only with a noreply author once GitHub "Keep my email private" is confirmed). It carries v0.6.4 + the v0.7 platform first cut. Public demo is live at https://sameernagar-hub.github.io/regen-engine/ (`gh-pages` branch, anonymized; rebuild with `python -m engine site` and push `site/` to `gh-pages`).
+**New tonight:** job-alert email source (`gmail_alerts.js` + `engine alerts`), Lever + Workable adapters, fit gate from rejection analysis (years from presets, core stack), JD spelling aliases + overlap groups in tailoring, ~15 answer rules, FastAPI API (`apps/api`), Postgres migration, Next.js live view + memory graph (`apps/web`), knowledge graph (`engine/memory/graph.py`), MCP server (`python -m engine mcp`, `.mcp.json`).
+**Run the platform:** `python -m uvicorn apps.api.main:app --port 8787` and `cd apps/web && npm run dev` (or `docker compose -f deploy/platform.compose.yml up -d --build`).
+**Scheduled:** daily routine 8:13 AM (now includes alert emails); one-time `regen-ashby-after-cooldown` 2026-10-07 21:45 runs `batches/e20261007_ashby.json` (+ `retry_ashby_20261007.json`).
 **Next, in order:**
-1. **Render:** the user clicks "Deploy to Render" in the README. Then add the URL to the README and the repo homepage (`gh repo edit --homepage <url>`).
-2. **v0.7 Platform** (user request): move the live view to **Next.js + TypeScript** (App Router, SSE client, Canvas/WebGL), and put a **FastAPI + Pydantic** API over the engine (typed models for events, jobs, applications, outcomes and the human queue). **Postgres** for events and jobs, with a migration from events.jsonl (keep the append-only semantics), and `docker compose` for web + api + db + watcher. Generate the TS client from OpenAPI. Keep the anonymized public export and the leak airbag.
-3. Engine room (GPU) on top of the Next.js view: docs/FRONTEND.md.
-4. Lean engine: conditional requests, adaptive concurrency.
-5. Lever + Workable apply adapters.
+1. Answer-from-the-page (write path for the human queue, behind airbags).
+2. Ashby "CV" label as resume upload; Workable required "Summary" from the lane summary (needs user OK).
+3. pgvector retrieval memory; MCP tools for discovery/tailoring.
+4. Engine room (GPU) view on top of the Next.js app.
 
 ## Daily loop (about 10 minutes of your attention)
 ```bash
