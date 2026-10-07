@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "regen-engine": {
+      "command": "python",
+      "args": ["-m", "engine", "mcp"],
+      "env": { "PYTHONIOENCODING": "utf-8" }
+    }
+  }
+}

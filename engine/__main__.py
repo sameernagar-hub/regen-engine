@@ -14,11 +14,23 @@
   inbox   <msgs.json> | --imap [d] classify recruiting email -> outcome events (OA / interview / rejection / offer / scam)
   learn                            response rates by lane and ATS -> workspace/learnings.md
   sos-test                         send a test SOS alert (engine/notify.py; .env SMTP app password)
+  mcp                              the engine as an MCP server (stdio; read-only memory tools)
+  graph   [term]                   the knowledge graph (counts, or one node and its neighbors)
   live    [port]                   the engine, watched live (localhost page; read-only)
   site    [days]                   build the public face (site/): the live view replaying anonymized recent activity
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
 """
 import collections, sys
+
+
+def graph_cmd(argv):
+    import collections, json
+    from engine.memory import graph as G
+    g = G.build()
+    if argv:
+        from engine.connectors.mcp_server import memory_query
+        print(json.dumps(memory_query(" ".join(argv)), indent=1, ensure_ascii=False)[:4000]); return
+    print("nodes:", dict(collections.Counter(n["type"] for n in g["nodes"])), "| edges:", dict(collections.Counter(e["type"] for e in g["edges"])))
 
 
 def status(_argv):
@@ -82,6 +94,10 @@ def main():
         from engine.discovery.newgrad import main as m
     elif cmd == "alerts":
         from engine.discovery.alerts import main as m
+    elif cmd == "mcp":
+        from engine.connectors.mcp_server import main as m
+    elif cmd == "graph":
+        m = graph_cmd
     elif cmd == "boards":
         m = boards
     elif cmd == "feed":

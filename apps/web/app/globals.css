@@ -57,3 +57,18 @@ svg.machine { width: 100%; height: 100%; }
 
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 @media (max-width: 700px) { .top, .bottom { padding-left: 16px; padding-right: 16px; } .count b { font-size: 32px; } .bottom { flex-direction: column; align-items: flex-start; } }
+
+/* memory graph layer */
+svg.graph { cursor: grab; }
+svg.graph:active { cursor: grabbing; }
+.gnode { cursor: pointer; transition: transform .7s cubic-bezier(.2,.8,.2,1), opacity .3s; animation: bloom .7s cubic-bezier(.2,.8,.2,1); }
+.gnode:hover circle:first-child { filter: drop-shadow(0 0 10px currentColor); }
+@keyframes bloom { from { opacity: 0; } to { opacity: 1; } }
+.glabel { fill: var(--ink); font-size: 12px; pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
+line.flow { stroke-dasharray: 6 10; animation: flow 1.8s linear infinite; transition: stroke-opacity .3s; }
+@keyframes flow { to { stroke-dashoffset: -32; } }
+.legend { font-size: 12px; min-height: 0; }
+.nav { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); font-size: 12px; letter-spacing: .12em; color: var(--dim); }
+.nav a { color: var(--dim); text-decoration: none; margin: 0 10px; }
+.nav a:hover { color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .gnode, line.flow { animation: none; transition: none; } }

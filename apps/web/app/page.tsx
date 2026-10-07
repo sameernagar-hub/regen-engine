@@ -2,6 +2,7 @@
 // The engine, watched live. Not a dashboard: one line of stations, a tree of real applications growing from
 // "applying" (one stem per resume lane, one bead per proof-backed submission), a narrator, and what needs you.
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { STAGES, get, type Application, type HumanItem, type Narration, type Snapshot } from "@/lib/types";
 
 const W = 1200, H = 620, LINE_Y = 470;
@@ -47,7 +48,7 @@ export default function Live() {
   return (
     <main className="stage">
       <header className="top">
-        <div className="brand">REGEN · LIVE</div>
+        <div className="brand">REGEN · LIVE <Link href="/graph" style={{ color: "var(--gold)", marginLeft: 16 }}>memory graph →</Link></div>
         <div className="count">
           <b>{snap?.verified ?? "·"}</b>
           <span>applications sent with proof{snap ? ` · ${snap.verified_today} today` : ""}</span>

@@ -149,3 +149,11 @@ async def stream(after: int = 0):
                 yield f"event: snapshot\ndata: {snapshot().model_dump_json()}\n\n"; beat = time.time()
             await asyncio.sleep(1)
     return StreamingResponse(gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/api/graph")
+def graph(questions: bool = True):
+    """The engine's memory as a graph: You -> lanes -> applications -> companies, facts used, questions answered,
+    outcomes, ATS (engine/memory/graph.py; same model as engine/memory/schema.cypher)."""
+    from engine.memory import graph as G
+    return G.build(questions=questions)
