@@ -311,3 +311,39 @@ def test_codes_only_go_to_the_named_company(tmp_path):
     assert got == {"initech_1": "Q1w2E3r4", "acme_3": "AbCd1234"}   # malformed code ignored, answered job untouched
     assert (d / "done_4.txt").read_text() == "ALREADY1"
     assert [s for s, _ in codes.waiting(str(tmp_path))] == ["globex_2"]
+
+
+def test_examples_of_ml_experience_is_a_built_question_not_learning():
+    assert drafts.is_open("Please briefly provide examples of professional experience with Machine Learning")
+    assert drafts.kind_of("Please briefly provide examples of professional experience with Machine Learning") == "built"
+    assert drafts.kind_of("If you had one month to learn anything, what would it be?") == "learn"
+
+
+def test_relatives_or_friends_and_background_check():
+    from engine.apply.runner import answer_for, P
+    assert answer_for("Do you have any relatives or friends currently working at the company?", {}) == P.get("relatives_at_company")
+
+
+def test_stale_codes_are_never_used(tmp_path):
+    import datetime as dt
+    from engine.apply import codes
+    d = tmp_path / "codes"
+    d.mkdir()
+    w = d / "globex_9.wait"
+    w.write_text("Globex - SWE\nhttps://x")
+    t = dt.datetime(2026, 10, 7, 22, 30)
+    os.utime(w, (t.timestamp(), t.timestamp()))
+    day = dt.date(2026, 10, 7)
+    assert codes.fresh({"when": "22:31"}, t.timestamp(), day)
+    assert codes.fresh({"when": "10:31 PM"}, t.timestamp(), day)
+    assert not codes.fresh({"when": "22:17"}, t.timestamp(), day)      # sent before the job started waiting
+    assert not codes.fresh({"when": "Oct 6"}, t.timestamp(), day)      # an older day
+    assert codes.fresh({}, t.timestamp(), day)                          # no time given: caller vouched
+
+
+def test_preferred_language_comes_from_the_fact_bank():
+    from engine.apply.runner import answer_for, preferred_language
+    from engine.tailoring.tailor import vocabulary
+    lang = preferred_language()
+    assert lang is None or lang.lower() in vocabulary()
+    assert answer_for("What is your preferred coding language?", {}) == lang

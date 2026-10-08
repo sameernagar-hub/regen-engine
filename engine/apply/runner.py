@@ -24,6 +24,19 @@ P = json.load(open(os.environ.get("REGEN_PRESETS") or profile_file("presets.json
 # whoever will need sponsorship in the future can't work long-term without it.
 if P.get("needs_sponsorship_now_or_future") in ("Yes", "No"):
     P.setdefault("authorized_without_sponsorship_long_term", "No" if P["needs_sponsorship_now_or_future"] == "Yes" else "Yes")
+
+
+def preferred_language():
+    """The first general-purpose language your Fact Bank skills name (derived from facts, never invented)."""
+    try:
+        from engine.tailoring.tailor import vocabulary
+        v = vocabulary()
+    except (SystemExit, Exception):
+        return None
+    return next((name for name in ("Python", "Java", "TypeScript", "JavaScript", "Go", "C++", "C#") if name.lower() in v), None)
+
+
+PREFERRED_LANGUAGE = P.get("preferred_language") or preferred_language()
 LONG_TERM = r"without .{0,40}sponsorship.{0,60}(next \d+|\d+ years|long.?term|future|foreseeable|indefinitely|duration)|(next \d+ years|long.?term|indefinitely).{0,60}without .{0,40}sponsorship"
 
 
@@ -54,7 +67,8 @@ RULES = [
     (r"e-?mail", P["email"]), (r"phone", P["phone"]),
     (r"hear about|how did you find|learned about|(first )?learn about .{0,40}(employer|us|company|role|position|job)|^source\b|(job|application|referral|candidate) source", "Company careers page"),  # before the link rules: these labels often list "LinkedIn"
     (r"linkedin", P["linkedin"]),
-    (r"github|website|portfolio|other (web)?site|personal site", P["github"]),
+    (r"github|website|portfolio|other (web)?site|personal site|other url|additional (url|link)|^url$", P["github"]),
+    (r"(preferred|favou?rite|strongest|primary) (programming |coding )?language", PREFERRED_LANGUAGE),
     # Legal / status answers come ONLY from your presets (never hardcoded). An unset preset -> human queue.
     # "authorized ... WITHOUT sponsorship" is a different question from "will you need sponsorship", so it has its own key.
     (LONG_TERM, P.get("authorized_without_sponsorship_long_term")),  # before the plain "without sponsorship" rule
@@ -83,7 +97,8 @@ RULES = [
     (r"address (from which|where) you (plan|will|intend)|where (will|do) you (plan to )?work from|work(ing)? location address", f"{P['city']}, {P['state']}"),
     (r"located in the united states|reside in the (united states|us)|currently live in the us|based in the (u\.?s\.?|united states|us)\b|(live|reside|located) in the (u\.?s\.?|us)\b", P.get("lives_in_us")),
     (r"(ever )?worked for .{0,40}(company|previously|before)|interviewed (at|with) .{0,30} before", P.get("previous_employer_of_company")),
-    (r"related to|close personal relationship|relatives? (who |that )?(currently )?work|(personal|familial|family).{0,3}(/familial )?relationships?", P.get("relatives_at_company")),
+    (r"related to|close personal relationship|relatives? (who |that )?(currently )?work|(personal|familial|family).{0,3}(/familial )?relationships?|(relatives?|friends?|family members?)( or (relatives?|friends?|family))? .{0,30}(work|employ)", P.get("relatives_at_company")),
+    (r"(willing|consent|agree) to (undergo |complete |a )*(a )?background (check|screen)", P.get("willing_background_check")),
     (r"(based|live|located|reside) (in|near) (or around )?the (san francisco )?bay area|in or around the (san francisco )?bay area",
      "Yes" if re.search(BAY_AREA, P.get("city", ""), re.I) else None),
     (r"current (or previous )?(job )?title", P["current_title"]),

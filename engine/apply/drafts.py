@@ -15,17 +15,18 @@ so drafting is microseconds next to a page load.
 """
 import datetime, json, os, re
 
-OPEN = re.compile(r"\b(why|what|describe|tell us|tell me|how (do|did|would|have)|share|explain|walk us|anything else|"
+OPEN = re.compile(r"\b(why|what|describe|tell us|tell me|how (do|did|would|have)|share|explain|walk us|anything else|provide (some |a few )?examples?|examples? of|"
                   r"cover letter|if you had|give an example|example of|talk about|proud|built|interest(ed|s)? you|excit)", re.I)
 NEVER = re.compile(r"sponsor|authori[sz]|visa|citizen|immigration|arbitrat|salary|compensation|pay\b|gender|race|ethnic|"
                    r"veteran|disab|pronoun|ssn|social security|date of birth|criminal|convict|background check|clearance|"
                    r"reference|phone|e-?mail|address|linkedin|github|website|url|\bname\b", re.I)
 
 KINDS = [  # (kind, label regex) first match wins
+    ("built", r"examples? of|provide (some |a few )?examples|experience (with|in)"),  # before "learn": "Machine Learning"
     ("persist", r"kept pushing|persist|challenge|difficult|obstacle|setback|fail|hard problem|stuck|gave up|stopped"),
     ("learn", r"learn|one month|no obligations|curious|outside of work|free time|spend (it|a month)"),
     ("ai", r"\bai\b|llm|chatgpt|claude|copilot|cursor"),
-    ("built", r"built|build|proud|project|accomplish|achievement|shipped|created|impact"),
+    ("built", r"built|build|proud|project|accomplish|achievement|shipped|created|impact|examples? of|experience with"),
     ("why", r"why|excit|interest|motivat|draw|attract|cover letter|join"),
 ]
 PERSIST_FACT = re.compile(r"rebuil|failing|failure|incident|silent|root cause|outage", re.I)

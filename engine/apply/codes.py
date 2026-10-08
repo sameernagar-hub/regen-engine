@@ -7,7 +7,7 @@ A code is written to <board>_<id>.txt only when the email names that same compan
 code is never typed into another company's form. Several codes for one company: the newest (first row) wins.
 Already-answered or stale codes are left alone. O(waiting x codes), both tiny.
 """
-import json, os, re, sys
+import datetime, json, os, re, sys
 
 from engine.config import WORKSPACE
 
@@ -28,13 +28,32 @@ def waiting(workspace=None):
     return out
 
 
+def fresh(code, since, today=None):
+    """Was this code sent after the job started waiting? Gmail shows "22:17" for today and "Oct 6" for older mail.
+    No time given -> accepted (the caller vouched for it). A one-minute margin covers clock rounding."""
+    when = (code.get("when") or "").strip()
+    if not when:
+        return True
+    m = re.fullmatch(r"(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?", when)
+    if not m:
+        return False  # a date, not a time: older than today
+    h, mi = int(m.group(1)), int(m.group(2))
+    if m.group(3):
+        h = h % 12 + (12 if m.group(3).lower() == "pm" else 0)
+    today = today or datetime.date.today()
+    sent = datetime.datetime.combine(today, datetime.time(h, mi))
+    return sent >= datetime.datetime.fromtimestamp(since) - datetime.timedelta(minutes=1)
+
+
 def match(codes, workspace=None):
-    """codes: [{"company", "code"}] newest first -> {slug: code} written to disk."""
+    """codes: [{"company", "code", "when"?}] newest first -> {slug: code} written to disk."""
     d = os.path.join(workspace or WORKSPACE, "codes")
     written = {}
     for slug, company in waiting(workspace):
         want = _norm(company) or _norm(slug.split("_")[0])
-        hit = next((c for c in codes if _norm(c.get("company")) == want and re.fullmatch(r"[A-Za-z0-9]{8}", c.get("code", ""))), None)
+        since = os.path.getmtime(os.path.join(d, slug + ".wait"))
+        hit = next((c for c in codes if _norm(c.get("company")) == want and re.fullmatch(r"[A-Za-z0-9]{8}", c.get("code", ""))
+                    and fresh(c, since)), None)
         if hit:
             open(os.path.join(d, slug + ".txt"), "w").write(hit["code"])
             written[slug] = hit["code"]
