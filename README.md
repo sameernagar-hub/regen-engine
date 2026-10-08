@@ -358,8 +358,8 @@ Every change is itemized in [CHANGELOG.md](CHANGELOG.md) with what changed, why,
 | v0.1–0.6 ✅ | Engine | Discovery, Fact-Bank tailoring, Greenhouse/Ashby apply with proof, safety, inbox loop, live view, privacy gate |
 | **v0.7** ✅ first cut | Platform | FastAPI + Pydantic API, Postgres event store, Next.js live view, memory graph, MCP server, Lever and Workable adapters, job-alert emails |
 | **v0.8** ✅ | Throughput, truthfully | Round-robin scheduler with adaptive time slices, parallel appliers, `engine run`, drafted answers from the Fact Bank, salary from the posted range, answer from the page, locked event log, ×3 faster tailoring, browser tests and coverage |
-| v0.9 | Engine room | GPU-rendered live view: instanced board field, glowing pipeline, 3D lane tree, render-on-demand ([research](docs/FRONTEND.md)). Moved from v0.8 so v0.8 could ship throughput first |
-| v0.9 | Retrieval memory | pgvector over facts and job descriptions; facts-for-JD retrieval; MCP tools for discovery and tailoring |
+| v0.9 | Reach and polish | Ashby queue after the bot-check pause, Gmail labels per platform, inbox cleanup on request, remaining form gaps, async Playwright for in-process overlap, Workday / iCIMS adapters |
+| v0.9 | Engine room and memory | GPU live view (instanced board field, glowing pipeline, 3D lane tree, [research](docs/FRONTEND.md)); pgvector retrieval over facts and job descriptions |
 | v1.0 | Public release | One-command setup, docs site, stable APIs |
 
 ## Repository layout

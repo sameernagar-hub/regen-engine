@@ -61,6 +61,11 @@ The goal for v0.8: at least 10 applications a day with less waiting, and no new 
 - **Citizenship and address from presets** (user facts, 2026-10-07): "country of citizenship", "Are you a U.S. citizen?",
   "citizen or resident of any of the following countries: ..." (answered by checking the list against your
   citizenship and US residence), and "Address Line 1".
+- **More alert sources**: `gmail_alerts.js` reads Monster ("Title" / "Company - City - ST" / "VIEW JOB" or "QUICK APPLY")
+  and Ladders (two layouts) alerts. Jobot is skipped: it is a staffing agency and its alerts don't name the employer.
+- **Gmail label** `Jobs/Alerts/LinkedIn` created and applied to existing LinkedIn alert mail (first of the per-platform
+  labels; the rest are tracked for v0.9).
+- **Multi-select skills dropdowns**: "Which X have you worked with?" picks only options your Fact Bank skills name.
 - **Evidence tooling.** `scripts/bench_tailor.py` (old vs new tailoring: identical output, speed), `scripts/bench_scheduler.py`,
   headless Playwright tests of the real filler against local Greenhouse / Ashby / Lever look-alike forms
   (`tests/test_forms.py`), coverage in CI.
@@ -80,6 +85,13 @@ The goal for v0.8: at least 10 applications a day with less waiting, and no new 
   *Verify:* `test_ashby_late_required_question_goes_to_you`.
 - **A backspace character inside a rule.** A shell heredoc had turned `\b` into `\x08` in the state rule, so it never
   matched. *Verify:* `test_state_rule_regex_is_clean` (no control characters in runner.py).
+- **Dropdowns lost their value under round-robin.** After the field helpers began yielding, another tab could act while
+  a dropdown menu was open and close it, leaving work-authorization, sponsorship and EEO selects on "Select...". The
+  helpers now yield only before a field; inside a widget they use bounded sleeps. *Verify:* the 10-07 re-run filled
+  those selects.
+- **Phone country picker.** Options read "United States +1"; the check for a successful pick looked at the wrong
+  element and the retry pressed ArrowDown, moving off United States. The check now reads the react-select control and
+  the retry uses Enter. Verified on a live Greenhouse form (control shows "+1"), no submission.
 - "What company are you currently employed at?" was answered "No" by the previous-employer rule; it now gets your
   current employer. Office-location lists pick a Bay Area office, else remote. Phone country picks "United States +1"
   explicitly (a form failed with "Select a country"). A drafted paragraph is never typed into a dropdown (one run stalled on it).
@@ -92,6 +104,10 @@ The goal for v0.8: at least 10 applications a day with less waiting, and no new 
 - `events.read()` is incremental (parses only new bytes), so the per-job rate cap and duplicate check are O(new lines)
   instead of re-reading the whole log; the knowledge graph uses the same reader and no longer scans every edge per
   application (O(A·E) → O(A + E)).
+
+### Changed (CI)
+- Branch protection no longer applies to admin pushes: `main` can be fast-forwarded right away (user request). CI
+  still runs on every push and pull request, and the local pre-push privacy hook still blocks leaks.
 
 ### Removed
 - **No scheduled runs.** The Windows task "REGEN public feed" and the daily Claude routine are disabled; the engine runs
