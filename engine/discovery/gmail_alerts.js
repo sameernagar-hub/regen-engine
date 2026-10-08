@@ -1,6 +1,6 @@
 // REGEN: job-alert emails -> leads (run inside a signed-in Gmail tab, e.g. via the Claude in Chrome javascript tool;
 // prefix the expression with `await` so the tool waits for it, and pass the day window in the last line).
-// Reads LinkedIn / Indeed / Glassdoor / ZipRecruiter / Handshake alert emails from the last DAYS days through
+// Reads LinkedIn / Indeed / Glassdoor / ZipRecruiter / Handshake / Monster / Ladders alert emails from the last DAYS days through
 // Gmail's own print view (same origin, no API keys, nothing leaves the browser) and writes one row per listing
 // into an <article id="regen-alerts"> on the page:  source ¦ title ¦ company ¦ location ¦ email date, rows split by §
 // (visible separators, because page-text readers collapse tabs and newlines).
@@ -10,8 +10,9 @@
 (async (DAYS = 2) => {
   // Gmail matches these fragments against the sender address: LinkedIn job alerts + "jobs similar to",
   // Indeed job matches, ZipRecruiter, Glassdoor and Handshake (non-listing emails just parse to nothing)
+  // Jobot is a staffing agency (its alerts don't name the employer), so it isn't read.
   const SENDERS = ['jobalerts-noreply', 'jobs-noreply', 'match.indeed.com', 'ziprecruiter.com', 'glassdoor.com',
-    'joinhandshake.com'];
+    'joinhandshake.com', 'notifications.monster.com', 'theladders.com'];
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const pol = window._regenPol || (window._regenPol = trustedTypes.createPolicy('regen' + Date.now(), { createHTML: s => s }));
   const ik = window.GLOBALS && GLOBALS[9];
@@ -69,6 +70,27 @@
       }
       return r;
     },
+    // Monster: "Title" / "Company  -  City  -  ST" / "VIEW JOB" or "QUICK APPLY"
+    monster(L) {
+      const r = [];
+      for (let i = 2; i < L.length; i++) {
+        if (!/^(VIEW JOB|QUICK APPLY)$/i.test(L[i])) continue;
+        const p = L[i - 1].split(/\s+-\s+/);
+        if (p.length >= 2) r.push([L[i - 2], p[0], p.slice(1).join(', ')]);
+      }
+      return r;
+    },
+    // Ladders, two layouts: "Title" / "$120K - $145K* | Company | City, ST"  or  "Title $120K - $145K*" / "Company" / "City"
+    ladders(L) {
+      const r = [];
+      for (let i = 0; i < L.length; i++) {
+        let m = L[i].match(/^\$\d+K - \$\d+K\*\s*\|\s*(.+?)\s*\|\s*(.+)$/);
+        if (m && i > 0) { r.push([L[i - 1], m[1], /Virtual/.test(m[2]) ? 'Remote' : m[2]]); continue; }
+        m = L[i].match(/^(.+?) \$\d+K - \$\d+K\*$/);
+        if (m && i + 2 < L.length) r.push([m[1], L[i + 1], /Virtual/.test(L[i + 2]) ? 'Remote' : L[i + 2]]);
+      }
+      return r;
+    },
     indeed(L, subject) {
       const m = subject.match(/^(.+) @ (.+)$/);
       if (!m) return [];
@@ -77,7 +99,8 @@
     },
   };
   const src = e => /linkedin/.test(e) ? 'linkedin' : /handshake/.test(e) ? 'handshake' : /glassdoor/.test(e) ? 'glassdoor'
-    : /ziprecruiter/.test(e) ? 'ziprecruiter' : /indeed/.test(e) ? 'indeed' : null;
+    : /ziprecruiter/.test(e) ? 'ziprecruiter' : /indeed/.test(e) ? 'indeed' : /monster/.test(e) ? 'monster'
+    : /ladders/.test(e) ? 'ladders' : null;
 
   location.hash = '#search/' + encodeURIComponent(`newer_than:${DAYS}d from:(${SENDERS.join(' OR ')})`);
   await sleep(5000);

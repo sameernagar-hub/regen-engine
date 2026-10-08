@@ -139,7 +139,8 @@ RULES = [
     (r"(current|former|previous) .{0,40}employee\?|employee of .{0,40}(current|former)", P.get("previous_employer_of_company", "No")),
     (r"referred by|were you referred|referral from|who referred you", P.get("referred", "No")),  # the engine applies cold
     # "Which of these have you used? Select all that apply" -> tick only the options your Fact Bank skills name
-    (r"which of the following .{0,80}(used|worked with|experience|familiar|proficient)|select all .{0,40}(used|worked with|experience)", "__SKILLS__"),
+    (r"which of the following .{0,80}(used|worked with|experience|familiar|proficient)|select all .{0,40}(used|worked with|experience)|"
+     r"^which .{0,80}(have you|do you) (worked|used|integrated|built|deployed)|^which .{0,60}(have you|do you) .{0,20}(hands.on )?experience", "__SKILLS__"),
     (r"privacy|consent|acknowledge|agree|certify|attest", "__ACK__"),
 ]
 DECLINE = re.compile(r"decline|prefer not|don.t wish|do not wish|not to (answer|disclose|say)|choose not|do not want to answer|don.t want to (answer|disclose)", re.I)
@@ -453,7 +454,10 @@ def ashby_fields(page, job, log, first=True):
     return missing
 
 def set_field(page, f, label, ans):
-    """Generator: `ok = yield from set_field(...)`. Its waits yield, so other tabs work meanwhile."""
+    """Generator: `ok = yield from set_field(...)`. It yields once, before touching the field; inside a widget it
+    never yields: switching tabs while a dropdown is open lets the other tab's clicks close it (seen 10-07: work
+    authorization, sponsorship and EEO selects left on "Select..."). The short waits inside are bounded sleeps."""
+    yield  # checkpoint: a safe place to switch tabs
     if ans is None: return False
     txt = f.query_selector("input[type=text]:not([role=combobox]), input[type=email], input[type=tel], input[type=url], input[type=number], input:not([type]), textarea")
     combo = f.query_selector("input[role=combobox]")
@@ -499,17 +503,17 @@ def set_field(page, f, label, ans):
         if ans.startswith("__"): return False
         cur = combo.input_value()
         if cur and (cur == ans or cur.lower().startswith(ans.lower())): return True
-        combo.click(); combo.fill(""); combo.type(ans); yield 1.5  # location boxes search remotely
+        combo.click(); combo.fill(""); combo.type(ans); time.sleep(1.5)  # location boxes search remotely
         opts = page.query_selector_all("[role=option]")
         names = [o.inner_text().strip() for o in opts]
         h = pick_option(list(zip(names, opts)), ans)
         if h:
             want = names[opts.index(h)]
-            h.click(); yield 0.5
+            h.click(); time.sleep(0.5)
             if combo.input_value() == want: return True
-            combo.click(); combo.fill(""); combo.type(ans); yield 1.5
+            combo.click(); combo.fill(""); combo.type(ans); time.sleep(1.5)
             for _ in range(names.index(want) + 1): page.keyboard.press("ArrowDown")
-            page.keyboard.press("Enter"); yield 0.5
+            page.keyboard.press("Enter"); time.sleep(0.5)
             if combo.input_value() == want: return True
         page.keyboard.press("Escape"); return False
     if txt:
@@ -698,16 +702,16 @@ def fill_gh(page, job, log):
         cc = page.query_selector("#country, .phone-input input[role=combobox], [id*=phone] input[role=combobox]")
         if cc:
             try:
-                cc.click(timeout=3000); cc.type("United States"); yield 0.8
+                cc.click(timeout=3000); cc.type("United States"); time.sleep(0.8)
                 # options read "United States+1"; Enter alone picked whatever was highlighted (seen: "Select a country")
                 opts = page.query_selector_all("[role=option], .select__option, [class*=option]")
                 us = next((o for o in opts if re.match(r"\s*United States(?! Minor)\s*(\(?\+?\s*1\)?)?\s*$", o.inner_text())), None)
                 if us: us.click()
                 else: page.keyboard.press("ArrowDown"); page.keyboard.press("Enter")
-                yield 0.4
+                time.sleep(0.4)
                 box = cc.evaluate("e => (e.closest('.select__container, .phone-input, div') || e).innerText") or ""
                 if "United States" not in box and "+1" not in box:  # still empty: one keyboard retry
-                    cc.click(timeout=3000); cc.fill("United States"); yield 0.8
+                    cc.click(timeout=3000); cc.fill("United States"); time.sleep(0.8)
                     page.keyboard.press("ArrowDown"); page.keyboard.press("Enter")
             except Exception: pass
     seen = set()
@@ -737,7 +741,8 @@ def fill_gh(page, job, log):
     return missing
 
 def set_gh(page, f, ans, label=""):
-    """Generator: `ok = yield from set_gh(...)` (see set_field)."""
+    """Generator: `ok = yield from set_gh(...)`; yields only before the field (see set_field)."""
+    yield  # checkpoint
     if ans is None: return False
     sel = f.query_selector("input[role=combobox], .select__input input, [class*=select__control]")
     choices = f.query_selector_all("input[type=checkbox], input[type=radio]")
@@ -751,12 +756,24 @@ def set_gh(page, f, ans, label=""):
             if h: h.check(force=True); return True
             return False
         inp = f.query_selector("input[role=combobox]") or sel
-        inp.click(timeout=4000); yield 0.5
+        inp.click(timeout=4000); time.sleep(0.5)
         real = [o for o in page.query_selector_all("[role=option], .select__option") if not re.search(r"no options|loading", o.inner_text(), re.I)]
         h = best_by_overlap([(o.inner_text(), o) for o in real], ans)
         if not h:
             page.keyboard.press("Escape"); return False
-        h.click(force=True); yield 0.3; return True
+        h.click(force=True); time.sleep(0.3); return True
+    if sel and ans == "__SKILLS__":
+        inp = f.query_selector("input[role=combobox]") or sel
+        picked = 0
+        for _ in range(8):  # one pick per round: react-select may close the menu after each click
+            inp.click(timeout=4000); time.sleep(0.5)
+            real = [o for o in page.query_selector_all("[role=option], .select__option") if not re.search(r"no options|loading", o.inner_text(), re.I)]
+            hs = skill_options([(o.inner_text(), o) for o in real])
+            if not hs:
+                break
+            hs[0].click(force=True); time.sleep(0.3); picked += 1
+        page.keyboard.press("Escape")
+        return picked > 0
     if sel:
         inp = f.query_selector("input[role=combobox]") or sel
         terms = {"__DECLINE__": ["decline", "prefer not", "don't wish", "not wish"], "__ACK__": ["yes", "i acknowledge", "acknowledge", "agree", "understand", "read"],
@@ -766,10 +783,10 @@ def set_gh(page, f, ans, label=""):
             return [o for o in opts if not re.search(r"no options|loading", o.inner_text(), re.I)]
 
         # fast path: open the menu once and choose from the full list (most selects have < 15 options)
-        inp.click(timeout=4000); yield 0.5
+        inp.click(timeout=4000); time.sleep(0.5)
         real = options()
         if not real:  # click focused the box without opening the menu
-            page.keyboard.press("ArrowDown"); yield 0.4; real = options()
+            page.keyboard.press("ArrowDown"); time.sleep(0.4); real = options()
         h = None
         if real:
             labeled = [(o.inner_text(), o) for o in real]
@@ -777,7 +794,7 @@ def set_gh(page, f, ans, label=""):
                 h = pick_option(labeled, term)
                 if h: break
         for term in ([] if h else terms):
-            inp.click(timeout=4000); inp.fill(""); inp.type(term); yield 0.9
+            inp.click(timeout=4000); inp.fill(""); inp.type(term); time.sleep(0.9)
             real = options()
             labeled = [(o.inner_text(), o) for o in real]
             h = pick_option(labeled, term) if ans == "Company careers page" else next(
@@ -792,7 +809,7 @@ def set_gh(page, f, ans, label=""):
         except Exception:
             for _ in range(real.index(h)): page.keyboard.press("ArrowDown")
             page.keyboard.press("Enter")
-        yield 0.3; return True
+        time.sleep(0.3); return True
     if choices:
         opts = [(c.evaluate("e => (e.closest('label') || document.querySelector(`label[for='${e.id}']`) || e.parentElement).innerText"), c) for c in choices]
         if ans == "__SKILLS__":
