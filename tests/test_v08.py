@@ -360,7 +360,7 @@ def test_preferred_language_comes_from_the_fact_bank():
 def test_autofill_policy_never_overclaims_or_touches_status(monkeypatch):
     from engine.apply import runner as R
     monkeypatch.setattr(R, "_FB", FB)  # two-role fixture bank so rotation has something to rotate
-    job = {"name": "Initech - Backend Engineer", "resume": "out/Resume_Initech_1.pdf"}
+    job = {"name": "Initech - Backend Engineer", "resume": "out/Resume_NoSpec_0.pdf"}  # no spec: draws from the whole fixture bank
     assert R.answer("Have you shipped a product used by 1 million users?", dict(job)) == "No"   # no fact backs it
     assert R.answer("Are you willing to work from our office 5 days a week?", dict(job)) == R.P.get("open_to_onsite_or_relocation", "Yes")
     assert R.answer("Do you have a portfolio that includes shipped consumer products?", dict(job)) in ("Yes", "No")
