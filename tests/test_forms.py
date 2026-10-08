@@ -14,7 +14,7 @@ from engine.config import WORKSPACE, in_workspace
 from engine.feedback import events
 
 FORMS = os.path.join(os.path.dirname(__file__), "fixtures", "forms")
-ATS = re.compile(r"^https://(job-boards\.greenhouse\.io|jobs\.ashbyhq\.com|jobs\.lever\.co)/")
+ATS = re.compile(r"^https://(job-boards\.greenhouse\.io|jobs\.ashbyhq\.com|jobs\.lever\.co|apply\.workable\.com)/")
 
 
 @pytest.fixture(scope="module")
@@ -47,7 +47,7 @@ def apply_one(browser, fixture, job, dry=False):
     with in_workspace():
         rr = RoundRobin(Quantum(), concurrency=1)
         done = rr.run([Task(job["name"], R.ats_key(job["url"]), lambda pg: R.job_task(pg, job, dry, results))], [page])
-        state = page.evaluate("() => ({submitted: window.__submitted || null, spons: window.__spons || null, eeo: window.__eeo || null, auth: window.__auth || null})")
+        state = page.evaluate("() => ({submitted: window.__submitted || null, spons: window.__spons || null, eeo: window.__eeo || null, auth: window.__auth || null, w: window.__w || null})")
     page.close()
     assert not done[0].error, done[0].error
     return done[0].result, results[0], state
@@ -115,3 +115,13 @@ def test_unknown_site_goes_to_you(browser):
 def test_interleave_spreads_companies():
     jobs = [{"name": f"{c} - r{i}", "url": f"u{c}{i}"} for c, i in [("A", 1), ("A", 2), ("A", 3), ("B", 1), ("C", 1)]]
     assert [j["name"][0] for j in R.interleave(jobs)] == ["A", "B", "C", "A", "A"]
+
+
+def test_workable_end_to_end(browser):
+    job = {"name": "Hooli - Backend Engineer", "url": "https://apply.workable.com/hooli/j/ABC123/", "resume": "out/Resume_Initech_1.pdf"}
+    status, _, state = apply_one(browser, "workable.html", job)
+    assert status == "SUBMITTED", status
+    w = state["w"]
+    assert w["first"] == R.P["first_name"] and w["address"].startswith(R.P["city"])
+    assert w["spons"] == R.P["needs_sponsorship_now_or_future"]
+    assert "I built 12 production REST APIs" in w["why"]

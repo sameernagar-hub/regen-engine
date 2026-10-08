@@ -1,0 +1,25 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Hooli - Backend Engineer</title></head>
+<body>
+<!-- A minimal stand-in for a Workable /apply page: named standard inputs, aria-labelledby questions, radio groups. -->
+<div id="cookie"><button type="button" onclick="this.parentElement.remove()">Decline all</button></div>
+<form onsubmit="return false">
+  <input type="text" name="firstname"><input type="text" name="lastname"><input type="email" name="email">
+  <input type="tel" name="phone"><input type="text" name="address">
+  <input type="file" name="resume" required>
+  <span id="q1">Why do you want to work at Hooli? *</span><textarea aria-labelledby="q1" required name="why"></textarea>
+  <fieldset role="radiogroup" aria-labelledby="q2"><span id="q2">Will you require visa sponsorship? *</span>
+    <div role="radio" aria-checked="false" aria-required="true" onclick="pick(this)">Yes</div>
+    <div role="radio" aria-checked="false" onclick="pick(this)">No</div></fieldset>
+  <button type="submit">Submit application</button>
+</form>
+<script>
+  function pick(el) { el.parentElement.querySelectorAll('[role=radio]').forEach(r => r.setAttribute('aria-checked', 'false')); el.setAttribute('aria-checked', 'true'); }
+  document.querySelector('button[type=submit]').addEventListener('click', () => {
+    window.__w = { first: document.querySelector('[name=firstname]').value, address: document.querySelector('[name=address]').value,
+                   why: document.querySelector('[name=why]').value,
+                   spons: (document.querySelector('[role=radio][aria-checked=true]') || {}).textContent || null };
+    document.body.innerHTML = '<h1>Thank you for applying!</h1>';
+  });
+</script>
+</body></html>
