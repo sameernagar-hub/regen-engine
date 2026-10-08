@@ -55,6 +55,12 @@ The goal for v0.8: at least 10 applications a day with less waiting, and no new 
   `pipeline_run` and `submit_codes` (both need `REGEN_MCP_WRITE=1`).
 - **GitHub job lists into the queue**: `python -m engine feed 3 --queue` parses ATS, board and id from each
   SimplifyJobs posting URL and merges the Greenhouse / Ashby / Lever / Workable ones into `queue.json`.
+- **Salary from the posting** (`engine/tailoring/salary.py`, user policy): the batch builder records each posting's pay
+  range ("$135,000 to $164,000", "$135K-$164K"; hourly figures ignored) and salary questions get its midpoint as plain
+  digits; with no range, the `market_salary` preset. *Verify:* `test_salary_*`.
+- **Citizenship and address from presets** (user facts, 2026-10-07): "country of citizenship", "Are you a U.S. citizen?",
+  "citizen or resident of any of the following countries: ..." (answered by checking the list against your
+  citizenship and US residence), and "Address Line 1".
 - **Evidence tooling.** `scripts/bench_tailor.py` (old vs new tailoring: identical output, speed), `scripts/bench_scheduler.py`,
   headless Playwright tests of the real filler against local Greenhouse / Ashby / Lever look-alike forms
   (`tests/test_forms.py`), coverage in CI.

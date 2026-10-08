@@ -24,7 +24,7 @@ SHOW = "--show" in sys.argv  # local terminal only: print matches unmasked to re
 # public by design (the account and repo), or too generic to be personal
 PUBLIC_OK = {"sameernagar hub", "regen engine", "united states", "computer science", "california", "remote", "software engineer",
              "github", "linkedin", "master s", "bachelor s", "san francisco bay area", "https github com sameernagar hub"}
-SKIP_PRESET_KEYS = {"city", "state", "state_abbr", "country", "grad_year", "years_experience", "degree", "major", "how_heard",
+SKIP_PRESET_KEYS = {"citizenship_country", "_market_salary_source", "city", "state", "state_abbr", "country", "grad_year", "years_experience", "degree", "major", "how_heard",
                     "eeo", "submit_policy", "start_date", "salary_expectation", "preferred_location", "github"}
 # company names from the event log that are also everyday words ("applied" is an Ashby board slug); treating them as
 # private terms flags half the repo, which trains everyone to ignore the gate

@@ -71,6 +71,8 @@ RULES = [
     (r"(preferred|favou?rite|strongest|primary) (programming |coding )?language", PREFERRED_LANGUAGE),
     # Legal / status answers come ONLY from your presets (never hardcoded). An unset preset -> human queue.
     # "authorized ... WITHOUT sponsorship" is a different question from "will you need sponsorship", so it has its own key.
+    (r"are you a (u\.?s\.?|united states) citizen|(u\.?s\.?|united states) citizenship\?", "No" if P.get("citizenship_country") and P.get("citizenship_country") != "United States" else None),
+    (r"countr(y|ies)( or countries)? of citizenship|which countr(y|ies)\W.{0,30}citizen|citizenship (country|countries)|what is your citizenship|^citizenship\W*$", P.get("citizenship_country")),
     (LONG_TERM, P.get("authorized_without_sponsorship_long_term")),  # before the plain "without sponsorship" rule
     (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
     (r"(will|do) you (now or in the future )?(require|need) (any )?(work |employment )?(authori[sz]ation|permit)", P.get("needs_sponsorship_now_or_future")),
@@ -290,12 +292,34 @@ def derived(label):
     return None
 
 
+SALARY_Q = re.compile(r"(desired|expected|target|base|annual).{0,30}(salary|compensation|pay)|salary (expectation|requirement|range)|"
+                      r"compensation (expectation|requirement)|what are your salary", re.I)
+LISTED = re.compile(r"(citizen|national|resident)s? (or (a )?(citizen|national|resident) )?of (any of )?the following countr", re.I)
+
+
+def country_list_answer(label):
+    """"Are you a citizen or resident of any of the following countries: Cuba, Iran, ...?" -> Yes/No from your
+    citizenship (presets) and US residence: answered only when both are known."""
+    l = " ".join(label.split())
+    if not LISTED.search(l) or not P.get("citizenship_country"):
+        return None
+    listed = l.split(":", 1)[-1].lower()
+    mine = [P["citizenship_country"].lower()] + (["united states", "u.s."] if P.get("lives_in_us", "Yes") == "Yes" else [])
+    return "Yes" if any(c in listed for c in mine) else "No"
+
+
 def answer(label, job, field=None):
     """Presets / approved answers / rules, the job's note for "why us", derived facts, a Fact Bank draft for open
     questions, then (autofill) yes/no defaults and drafts for any remaining non-sensitive text box."""
     ans = answer_for(label, job.get("extra", {}))
     if NOTE_Q.search(label) and job.get("note"):
         return job["note"]
+    if SALARY_Q.search(label) and not job.get("extra"):
+        from engine.tailoring.salary import expected
+        ans = expected(job, P) or ans  # midpoint of the posted range, else the market rate (user policy)
+    lists = country_list_answer(label)
+    if lists:
+        return lists
     if ans and ans.startswith("http") and YESNO_Q.search(label) and AUTOFILL:
         ans = autofill_yesno(label)  # "Do you have a portfolio that includes...?" is a yes/no question, not a link box
     if ans and ans == P.get("start_date") and re.search(r"\bdate\b", label, re.I) and re.search(r"\d+ ?weeks?", ans):

@@ -13,6 +13,7 @@ from engine.discovery.ats import job_description
 from engine.feedback.events import record
 from engine.tailoring import resume
 from engine.tailoring.tailor import tailor, fit
+from engine.tailoring.salary import parse_range
 
 FLAG = re.compile(r"years|possess|experience with|clearance|citizen|export|relocat|salary|why|arbitrat", re.I)
 
@@ -91,7 +92,7 @@ def build(name, ids, force=False):
             record("resume", job=label, url=j["url"], lane=ln, file=spec["file"], facts=spec["roles"],
                    projects=spec.get("projects", []), skills=spec["skills"], coverage=cov)
             batch.append({"name": label, "url": j["url"], "ats": j["ats"], "resume": os.path.relpath(pdf, WORKSPACE),
-                          "lane": ln, "extra": {}})
+                          "lane": ln, "extra": {}, "salary_range": parse_range(jd)})
         path = f"batches/{name}.json"
         json.dump(batch, open(path, "w"), indent=1)
     print(f"-> workspace/{path}: {len(batch)} jobs" + (f", {len(skipped)} skipped for JD blockers" if skipped else ""))

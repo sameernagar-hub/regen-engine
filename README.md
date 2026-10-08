@@ -31,7 +31,7 @@ REGEN does the opposite, and it does it on your own computer:
 1. **It watches the source.** It checks the careers pages of about 2,100 companies directly, every few minutes, and notices new roles soon after they go up. It also reads the job alerts already landing in your inbox and traces each one back to the company's own page.
 2. **It decides honestly.** Before spending any effort, it reads the job description and skips roles you can't get: ones that need citizenship or a clearance, refuse visa sponsorship, want more years than you have, or are built on a language you don't list.
 3. **It writes one resume per job, from your facts only.** You keep a "Fact Bank": every true line about your work, each with an id. For each job, REGEN picks and orders the lines that match what the job asks for. It cannot write a new claim; a checker rejects anything that isn't in your Fact Bank.
-4. **It fills in the application.** It opens the company's form, answers each question from your saved answers, uploads that job's resume, and submits only if every required answer is known. Anything personal, anything legal, and every "are you human?" check stops and comes to you.
+4. **It fills in the application.** It opens the company's form, uploads that job's resume and answers each question. Legal and personal questions (work authorization, sponsorship, citizenship) are answered only from what you saved. Open questions ("Why us?") get answers built from your Fact Bank, and every one is logged. An "are you human?" check always comes to you.
 5. **It keeps the receipt.** Every submission saves a screenshot of the company's "thank you" page. The count you see only includes applications with a receipt.
 6. **It listens for replies.** It reads your inbox for confirmations, rejections, assessments and interviews, links each one back to the application and the resume that earned it, and learns which approach works.
 
@@ -52,6 +52,7 @@ Everything below is shipped and lives in this repository. Paths point to the cod
 | Board registry | **2,363 company boards** registered, dead ones (currently 259) skipped automatically; grows daily by harvesting public GitHub job lists. | `python -m engine boards harvest` |
 | Always-on watcher | Polls every board on an interval and announces only brand-new postings, with the minutes since they went live. Runs as a small Docker service. | `engine/discovery/watch.py`, `deploy/watcher.compose.yml` |
 | Job-alert emails | Reads LinkedIn, Indeed, Glassdoor, ZipRecruiter and Handshake alert emails inside your signed-in Gmail tab (no API key; only title, company and location are extracted) and resolves each listing to the employer's own board. First run: 146 listings → 30 found at the source. | `engine/discovery/gmail_alerts.js`, `alerts.py` |
+| GitHub job lists | Pulls the SimplifyJobs new-grad list and adds its Greenhouse, Ashby, Lever and Workable postings to the queue. | `python -m engine feed 3 --queue` |
 | Lead resolution | Turns aggregator leads (newgrad-jobs.com, alert emails) into the real posting by matching the company's own ATS board and the job title; results are cached. | `engine/discovery/newgrad.py` |
 | Domain filter | Your target titles, seniority, excluded employers and US-only rules, with location checks that catch "Remote" roles whose title names a non-US city. | `engine/discovery/filters.py`, `profile/domains.json` |
 
@@ -80,16 +81,16 @@ Code: `engine/tailoring/` · Tests: `tests/test_core.py`
 | Feature | Detail |
 |---|---|
 | Four apply adapters | **Greenhouse** (including the emailed security-code step), **Ashby**, **Lever** and **Workable**, driven by page structure, not screenshots. |
-| 75 answer rules | Contact, location, work authorization, sponsorship (today and long-term), education dates, salary, start date, relocation, referral, prior employment and more, all filled from your presets, never hard-coded. EEO questions are always declined. |
+| 80 answer rules | Contact, address, location, work authorization, sponsorship (today and long-term), citizenship, education dates, start date, relocation, referral, prior employment and more, all filled from your presets, never hard-coded. EEO questions are always declined. |
+| Salary | The midpoint of the range the posting shows; if it shows none, your market-rate preset. |
 | Approved-answer bank | An answer you approve once (`profile/answers.json`) is reused on every form, with its source recorded. |
 | Form inspector | `python -m engine inspect <url>` lists every question and the answer the engine would give, without filling anything. |
 | Human checks respected | hCaptcha, reCAPTCHA, Cloudflare Turnstile and Ashby's bot check are detected and handed to you with the form filled and the resume ready. They are never solved or bypassed. |
 | Airbags | Sensitive fields (SSN, bank, passwords), fee requests, unexpected sites, answers that drift from your presets, and per-company and daily rate caps stop the run and flag it. A `workspace/STOP` file halts everything. |
 | Proof | A full-page screenshot of the confirmation page for every submission; already-submitted jobs are skipped. |
-| Round-robin over tabs (v0.8) | Several applications run at once, one per tab. Each gets a time quantum, then the next one runs; while one waits on the site (resume parsing, email code, confirmation) the others keep filling. See [Algorithms and complexity](#algorithms-and-complexity). |
-| Drafted answers (v0.8) | Open-ended questions ("Why us?", "Describe a time…") are answered with sentences built only from Fact Bank entries chosen for that job, logged with their fact ids in `workspace/drafts_review.md`. Legal, EEO and salary questions are never drafted. |
-| Autofill policy (v0.8) | No manual stops: yes/no capability questions are Yes only with a backing fact, else No; text boxes get Fact Bank drafts; status questions (sponsorship, citizenship, salary, EEO) are never defaulted. |
-| One-command pipeline (v0.8) | `python -m engine run` discovers, selects, builds and applies with parallel appliers, then reports; also drivable from MCP (`pipeline_run`, `pipeline_status`, `submit_codes`). |
+| Round-robin over tabs (v0.8) | Several applications run at once, one per tab. Each gets a time slice, then the next one runs; while one waits on the site, the others keep filling. See [Algorithms and complexity](#algorithms-and-complexity). |
+| Drafted answers (v0.8) | Questions no rule covers are answered without stopping. Text questions get sentences built only from Fact Bank entries chosen for that job. "Have you done X?" is Yes only when a fact shows it, otherwise No. Every drafted answer and its fact ids go to `workspace/drafts_review.md`. Legal and EEO questions are never drafted. |
+| One-command pipeline (v0.8) | `python -m engine run` scans, picks jobs, writes resumes, applies with parallel browser processes, and reports. |
 | Answer from the page (v0.8) | Answer a "waiting on you" question once in the live view; it's saved with its source, reused on every form, and the job is re-queued. |
 
 Code: `engine/apply/runner.py`, `engine/apply/scheduler.py`, `engine/apply/drafts.py`, `engine/safety.py`
@@ -114,7 +115,7 @@ Code: `engine/apply/runner.py`, `engine/apply/scheduler.py`, `engine/apply/draft
 A fact used by many applications is one node with many edges, so you can see which parts of your experience carry your search. `python -m engine graph` prints node and edge counts; `python -m engine graph s_rag` shows one node and everything connected to it.
 
 ### 7. MCP server: let any agent use the engine
-`python -m engine mcp` runs REGEN as a [Model Context Protocol](https://modelcontextprotocol.io) server (stdio), and `.mcp.json` registers it for Claude Code. Tools are read-only:
+`python -m engine mcp` runs REGEN as a [Model Context Protocol](https://modelcontextprotocol.io) server (stdio), and `.mcp.json` registers it for Claude Code.
 
 | Tool | Returns |
 |---|---|
@@ -124,8 +125,11 @@ A fact used by many applications is one node with many edges, so you can see whi
 | `outcomes` | Classified replies from your inbox |
 | `memory_query` | A company, Fact Bank id or lane, and everything connected to it in the graph |
 | `job_queue` | Discovered jobs not yet applied to |
+| `pipeline_status` | Each running applier's latest results, jobs waiting for an email code, today's verified count |
+| `pipeline_run` | Starts `engine run` in the background (needs `REGEN_MCP_WRITE=1`) |
+| `submit_codes` | Hands Greenhouse email codes to the jobs waiting for them (needs `REGEN_MCP_WRITE=1`) |
 
-Applying stays in the CLI, where every action is logged and guarded by the airbags.
+The two write tools only start the same CLI commands you would run, with the same airbags and log.
 
 ---
 
@@ -136,7 +140,7 @@ flowchart LR
     E[Engine CLI<br/>the only writer] -->|append-only| L[(events.jsonl)]
     L -->|migrate, idempotent| P[(Postgres<br/>append-only table)]
     L --> API
-    P --> API[FastAPI + Pydantic<br/>read-only · OpenAPI]
+    P --> API[FastAPI + Pydantic<br/>reads · one guarded write · OpenAPI]
     API -->|SSE /api/stream| WEB[Next.js + TypeScript<br/>live view · memory graph]
     API --> MCP[MCP server<br/>agents]
     W[(proof screenshots)] --> API
@@ -174,7 +178,8 @@ python -m engine alerts workspace/alerts/<date>.txt   # job-alert emails (gmail_
 python -m engine batch b1 <id>,<id>     # fit gate + one tailored resume per job
 python -m engine inspect <job url>      # optional: every question + the engine's answer, nothing filled
 python -m engine apply batches/b1.json --dry   # fill only, screenshots in workspace/proof/
-python -m engine apply batches/b1.json         # fill + submit when every required answer is known
+python -m engine apply batches/b1.json         # fill + submit
+python -m engine run                    # or all of the above in one command (scan, pick, resumes, apply, report)
 python -m engine report                 # verified submissions only
 python -m pytest -q                     # tests run on profile.example/, never your data
 ```
@@ -188,7 +193,7 @@ docker compose -f deploy/watcher.compose.yml up -d --build   # watcher + live vi
 | File | Purpose |
 |---|---|
 | `fact_bank.json` | The only source of resume content: facts with ids, roles, projects, skills lines, education, and overlap groups. |
-| `presets.json` | Standing answers: contact, location, work authorization, sponsorship, EEO (decline), education, start date, salary wording. |
+| `presets.json` | Standing answers: contact, address, location, work authorization, sponsorship, citizenship, EEO (decline), education, start date, market salary. |
 | `lanes.json` | Resume lanes: headline, summary and default fact order per domain. |
 | `domains.json` | Discovery filters: titles, seniority, excluded employers, US-only. |
 | `answers.json` | Optional: answers you approved once, reused everywhere with their source. |
@@ -264,10 +269,9 @@ Stats persist in `workspace/sched_stats.json`, so the engine learns each ATS's r
 | 20 jobs, 3 tabs | 500 s, 144 jobs/h | 244 s, 295 jobs/h | ×2.05 | 29% → 60% |
 | 40 jobs, 4 tabs | 989 s, 146 jobs/h | 395 s, 365 jobs/h | ×2.50 | 32% → 80% |
 
-Real forms are slower than the simulation (searchable dropdowns, email codes), so treat these as the ratio, not the
-absolute rate; the `schedule` event records the real numbers for every run.
-
-**Measured on real forms:** each applier process stayed ~95% active, because synchronous browser calls block; parallel applier processes (`engine run --appliers N`) give the real multiplier. See the wiki's Algorithms page.
+On real forms each applier process stayed about 95% busy, because every browser call blocks until the page answers.
+Round-robin inside one process only reclaims the explicit waits, so `engine run` also runs several applier processes in
+parallel (`--appliers N`). Every run logs its real wall time, busy time and switches as a `schedule` event.
 
 **Company interleaving.** Before scheduling, a batch is reordered round-robin over companies (a dict of deques, O(J)),
 so per-company caps and bot checks see spread-out traffic.
@@ -301,7 +305,8 @@ No model and no network: O(F) to load the job's resume spec and a few regexes ov
 costs microseconds next to a page load. The facts it uses are the ones the tailored resume already ranked for the JD.
 
 ### Greenhouse email codes (`engine/apply/codes.py`)
-Waiting jobs × codes in the inbox, both tiny; a code is only written for the job whose company the email names.
+Waiting jobs × codes in the inbox, both tiny. A code is only written for the job whose company the email names, and only
+if the email arrived after that job started waiting.
 
 ## Principles
 
@@ -314,7 +319,7 @@ Waiting jobs × codes in the inbox, both tiny; a code is only written for the jo
 | **Local-first** | `profile/` and `workspace/` stay on your machine and out of git. Network use is limited to public job APIs and the forms you apply to. Every service binds to 127.0.0.1. |
 | **Transparent** | Each resume lists its fact ids, each skip its reason, each submission its proof, each form every question and answer, and each drafted answer the facts it came from. |
 | **You start it** | No background schedules (removed in v0.8). The engine runs when you run it. |
-| **Lean** | Dead boards skipped, lookups cached, the first watcher pass only seeds state, and the API is read-only. |
+| **Lean** | Dead boards skipped, lookups cached, the event log read incrementally, the first watcher pass only seeds state. |
 
 ## Privacy and security
 Your data never belongs in this repository, and CI enforces it. Every pull request and every push to `main` runs a **privacy gate**: PII patterns, forbidden paths, noreply-only commit emails, and keyed fingerprints of the maintainer's private terms. The public demo is built from anonymized events and refuses to publish if a company name would appear. See [SECURITY.md](SECURITY.md).
@@ -340,7 +345,7 @@ Every change is itemized in [CHANGELOG.md](CHANGELOG.md) with what changed, why,
 | Round-robin applying over tabs with adaptive quantum | ✅ v0.8 |
 | Drafted open-ended answers from the Fact Bank, reviewable | ✅ v0.8 |
 | Tests: unit, API, and headless form tests against local ATS look-alikes; coverage in CI | ✅ v0.8 |
-| MCP server (read-only tools) | ✅ |
+| MCP server: read tools, plus pipeline tools behind `REGEN_MCP_WRITE=1` | ✅ v0.8 |
 | Privacy gate in CI, anonymized public site | ✅ |
 | Vector memory (pgvector) and facts-for-JD retrieval | 🔜 |
 | Write path from the web app (answer the human queue in the page) | ✅ v0.8 (`REGEN_API_WRITE=1`, localhost only) |
@@ -352,7 +357,7 @@ Every change is itemized in [CHANGELOG.md](CHANGELOG.md) with what changed, why,
 |---|---|---|
 | v0.1–0.6 ✅ | Engine | Discovery, Fact-Bank tailoring, Greenhouse/Ashby apply with proof, safety, inbox loop, live view, privacy gate |
 | **v0.7** ✅ first cut | Platform | FastAPI + Pydantic API, Postgres event store, Next.js live view, memory graph, MCP server, Lever and Workable adapters, job-alert emails |
-| **v0.8** ✅ | Throughput, truthfully | Round-robin scheduler with adaptive quantum, drafted answers from the Fact Bank, answer from the page, locked incremental event log, ×3 faster tailoring, form tests and coverage |
+| **v0.8** ✅ | Throughput, truthfully | Round-robin scheduler with adaptive time slices, parallel appliers, `engine run`, drafted answers from the Fact Bank, salary from the posted range, answer from the page, locked event log, ×3 faster tailoring, browser tests and coverage |
 | v0.9 | Engine room | GPU-rendered live view: instanced board field, glowing pipeline, 3D lane tree, render-on-demand ([research](docs/FRONTEND.md)). Moved from v0.8 so v0.8 could ship throughput first |
 | v0.9 | Retrieval memory | pgvector over facts and job descriptions; facts-for-JD retrieval; MCP tools for discovery and tailoring |
 | v1.0 | Public release | One-command setup, docs site, stable APIs |
@@ -361,7 +366,7 @@ Every change is itemized in [CHANGELOG.md](CHANGELOG.md) with what changed, why,
 ```
 regen-engine/
 ├── engine/            the engine (Python): discovery · tailoring · apply · feedback · memory · connectors · live
-├── apps/api/          FastAPI + Pydantic read-only API, Postgres migration
+├── apps/api/          FastAPI + Pydantic API (reads, plus answers you type), Postgres migration
 ├── apps/web/          Next.js + TypeScript: live view (/) and memory graph (/graph)
 ├── deploy/            watcher, platform (db + api + web) and memory compose files
 ├── profile.example/   templates for your private profile/

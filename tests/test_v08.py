@@ -400,3 +400,21 @@ def test_start_date_boxes_get_a_date_not_yes():
     if _re.search(r"\d+ ?weeks?", P.get("start_date") or ""):
         assert _re.fullmatch(r"\d{2}/\d{2}/\d{4}", a) and datetime.datetime.strptime(a, "%m/%d/%Y").date() > datetime.date.today()
     assert answer_for("Start date month", {}) != P.get("start_date") or not P.get("start_date")   # education block untouched
+
+
+def test_salary_range_parsing_and_midpoint():
+    from engine.tailoring.salary import parse_range, expected
+    assert parse_range("Salary Range: $135,000 to $164,000 USD per year") == (135000, 164000)
+    assert parse_range("Base pay $135K–$164K plus equity") == (135000, 164000)
+    assert parse_range("$45 - $60 per hour") is None
+    assert parse_range("no numbers here") is None
+    assert expected({"salary_range": [135000, 164000]}, {}) == "150000"
+    assert expected({}, {"market_salary": "140000"}) == "140000"
+
+
+def test_country_list_question_checks_the_list(monkeypatch):
+    from engine.apply import runner as R
+    monkeypatch.setitem(R.P, "citizenship_country", "Testland")
+    assert R.country_list_answer("Are you a citizen or resident of any of the following countries: Cuba, Iran, Syria") == "No"
+    assert R.country_list_answer("Are you a citizen or national of any of the following countries: Cuba, Testland") == "Yes"
+    assert R.country_list_answer("What is your favorite color?") is None
