@@ -391,3 +391,12 @@ def test_best_by_overlap_picks_fact_backed_option():
     known = next(iter(sorted(t for t in vocabulary() if t.isalpha() and len(t) > 3)))
     assert best_by_overlap([("Mobile games", 1), (f"Web apps with {known}", 2)], f"I built systems with {known}.") == 2
     assert best_by_overlap([("Mobile games", 1)], "nothing relevant") is None
+
+
+def test_start_date_boxes_get_a_date_not_yes():
+    import datetime, re as _re
+    from engine.apply.runner import answer, answer_for, P
+    a = answer("Ideal start date in office", {"name": "X - Y"})
+    if _re.search(r"\d+ ?weeks?", P.get("start_date") or ""):
+        assert _re.fullmatch(r"\d{2}/\d{2}/\d{4}", a) and datetime.datetime.strptime(a, "%m/%d/%Y").date() > datetime.date.today()
+    assert answer_for("Start date month", {}) != P.get("start_date") or not P.get("start_date")   # education block untouched

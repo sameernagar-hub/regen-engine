@@ -109,6 +109,7 @@ RULES = [
     (r"relocation assistance|require relocation|need relocation", P.get("needs_relocation_assistance")),
     (r"accept the (listed )?salary|comfortable with the (salary|pay|compensation) range", P.get("accept_posted_salary_range")),
     (r"at least 18|18 years of age|over 18", P.get("over_18")),
+    (r"(ideal|earliest|preferred|desired|expected|possible|available|target) start date|start date (in|at) (the )?office", P.get("start_date")),  # before "office" yes/no
     (r"(office|location)s? .{0,40}(would|do) you (prefer|like)|prefer.{0,40}(office|location)", P.get("preferred_location")),  # before the onsite yes/no rule
     (r"(office|in-person|onsite|on-site|hybrid|relocat|commut|remote-eligible states)", P.get("open_to_onsite_or_relocation")),
     (r"do you have an? (college|university|bachelor.?s?|undergraduate)? ?degree|completed an? (bachelor|college|university)", P.get("has_degree")),
@@ -297,6 +298,10 @@ def answer(label, job, field=None):
         return job["note"]
     if ans and ans.startswith("http") and YESNO_Q.search(label) and AUTOFILL:
         ans = autofill_yesno(label)  # "Do you have a portfolio that includes...?" is a yes/no question, not a link box
+    if ans and ans == P.get("start_date") and re.search(r"\bdate\b", label, re.I) and re.search(r"\d+ ?weeks?", ans):
+        # a date box can't take "Immediately (2 weeks notice)": give the date that notice period lands on
+        wk = int(re.search(r"(\d+) ?weeks?", ans).group(1))
+        ans = (datetime.date.today() + datetime.timedelta(weeks=wk)).strftime("%m/%d/%Y")
     if ans is None:
         ans = derived(label)
     if ans is None and DRAFT:
@@ -671,9 +676,15 @@ def fill_gh(page, job, log):
             try:
                 cc.click(timeout=3000); cc.type("United States"); yield 0.8
                 # options read "United States+1"; Enter alone picked whatever was highlighted (seen: "Select a country")
-                us = next((o for o in page.query_selector_all("[role=option]") if re.match(r"\s*United States\s*\+?\s*1\b", o.inner_text())), None)
+                opts = page.query_selector_all("[role=option], .select__option, [class*=option]")
+                us = next((o for o in opts if re.match(r"\s*United States(?! Minor)\s*(\(?\+?\s*1\)?)?\s*$", o.inner_text())), None)
                 if us: us.click()
-                else: page.keyboard.press("Enter")
+                else: page.keyboard.press("ArrowDown"); page.keyboard.press("Enter")
+                yield 0.4
+                box = cc.evaluate("e => (e.closest('.select__container, .phone-input, div') || e).innerText") or ""
+                if "United States" not in box and "+1" not in box:  # still empty: one keyboard retry
+                    cc.click(timeout=3000); cc.fill("United States"); yield 0.8
+                    page.keyboard.press("ArrowDown"); page.keyboard.press("Enter")
             except Exception: pass
     seen = set()
     for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question, .education--form .select__container, .education--form .text-input-wrapper"):
