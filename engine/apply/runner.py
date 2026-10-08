@@ -139,7 +139,7 @@ RULES = [
     (r"which of the following .{0,80}(used|worked with|experience|familiar|proficient)|select all .{0,40}(used|worked with|experience)", "__SKILLS__"),
     (r"privacy|consent|acknowledge|agree|certify|attest", "__ACK__"),
 ]
-DECLINE = re.compile(r"decline|prefer not|don.t wish|do not wish|not to (answer|disclose|say)|choose not", re.I)
+DECLINE = re.compile(r"decline|prefer not|don.t wish|do not wish|not to (answer|disclose|say)|choose not|do not want to answer|don.t want to (answer|disclose)", re.I)
 ACK = re.compile(r"^(yes|i agree|i acknowledge|i consent|i accept|i have read|i will read|i understand|i confirm|i certify|i attest|acknowledged?|agreed?|accepted?|confirm(ed)?|understood)\b", re.I)
 NACK = re.compile(r"\b(do not|don.t|disagree|decline|not|no|reject)\b", re.I)
 
@@ -229,17 +229,88 @@ def fact_bank():
 DRAFT = os.environ.get("REGEN_DRAFT", "1") != "0"  # draft open-ended answers from the Fact Bank instead of waiting
 
 
-def answer(label, job):
-    """Presets / approved answers / rules first, then the job's note for "why us", then a Fact Bank draft."""
+AUTOFILL = os.environ.get("REGEN_AUTOFILL", "1") != "0"  # user, 2026-10-07: "no manual input, just draft and fill"
+# questions whose answer is a legal or personal status: never defaulted, only presets / derived facts
+STATUS_Q = re.compile(r"sponsor|authori[sz]|visa|citizen|resident|immigration|export|sanction|cuba|iran|north korea|syria|crimea|"
+                      r"arbitrat|salary|compensation|gender|race|ethnic|veteran|military|disab|criminal|convict|felony|"
+                      r"clearance|government|related to|relatives?|family|employee of|employed (by|at)|worked (at|for)|"
+                      r"non-?compete|agreement|over 18|age\b|lived in|reside|located", re.I)
+WILLING_Q = re.compile(r"^\s*(are|would) you (willing|comfortable|able|open|ok|okay|happy|available)\b", re.I)
+HAVE_Q = re.compile(r"^\s*(have you|do you have|did you|have you ever|are you (familiar|experienced|proficient))\b", re.I)
+
+
+def _fact_text():
+    fb = fact_bank()
+    return " ".join([v for v in fb.get("facts", {}).values()] + [p[0] + " " + " ".join(p[2]) for p in fb.get("projects", {}).values()]).lower()
+
+
+def autofill_yesno(label):
+    """Yes/no questions no rule answered. Willingness (relocate, onsite, travel...) -> Yes, matching the presets'
+    open-to-onsite stance. "Have you / do you have / did you" -> Yes only when a Fact Bank entry backs the claim
+    (experience_answer), otherwise No: a No can understate you, it never claims something unproven."""
+    l = " ".join(label.split())
+    if STATUS_Q.search(l):
+        return None
+    if WILLING_Q.search(l):
+        return P.get("open_to_onsite_or_relocation") or "Yes"
+    if HAVE_Q.search(l):
+        return experience_answer(l) or "No"
+    return None
+
+
+def us_years():
+    """Years lived in the US, derived from the Fact Bank: the earliest US-located role or US degree start."""
+    fb = fact_bank()
+    starts = []
+    for name, span in fb.get("education", []):
+        if not re.search(r"india|china|canada|uk\b|united kingdom", name, re.I):
+            starts.append(span.split(" - ")[0])
+    for r in fb.get("roles", {}).values():
+        if re.search(r", [A-Z]{2}$|united states|usa", r[2] or ""):
+            starts.append(r[3].split(" - ")[0])
+    dates = []
+    for x in starts:
+        for fmt in ("%b %Y", "%B %Y"):
+            try:
+                dates.append(datetime.datetime.strptime(x.strip(), fmt)); break
+            except ValueError:
+                pass
+    return (datetime.datetime.now() - min(dates)).days / 365.25 if dates else None
+
+
+def derived(label):
+    """Answers computed from Fact Bank dates (never guessed)."""
+    l = " ".join(label.split()).lower()
+    m = re.search(r"lived in the (united states|us|u\.s\.) for (at least )?(\d+) (of|out of|in) the (past|last) (\d+) years", l)
+    if m:
+        y = us_years()
+        if y is not None:
+            return "Yes" if y >= int(m.group(3)) else "No"
+    return None
+
+
+def answer(label, job, field=None):
+    """Presets / approved answers / rules, the job's note for "why us", derived facts, a Fact Bank draft for open
+    questions, then (autofill) yes/no defaults and drafts for any remaining non-sensitive text box."""
     ans = answer_for(label, job.get("extra", {}))
     if NOTE_Q.search(label) and job.get("note"):
         return job["note"]
+    if ans and ans.startswith("http") and YESNO_Q.search(label) and AUTOFILL:
+        ans = autofill_yesno(label)  # "Do you have a portfolio that includes...?" is a yes/no question, not a link box
+    if ans is None:
+        ans = derived(label)
     if ans is None and DRAFT:
         d = drafts.draft(label, job, fact_bank(), WORKSPACE, P)
+        if d is None and AUTOFILL and not STATUS_Q.search(label):
+            ans = autofill_yesno(label)
+            if ans is None:
+                d = drafts.draft(label, job, fact_bank(), WORKSPACE, P, force=True)
         if d:
             ans, fids = d
             job.setdefault("_drafted", []).append([" ".join(label.split())[:200], ans, fids])
             drafts.log_review(WORKSPACE, job, label, ans, fids)
+        elif ans is not None and AUTOFILL:
+            job.setdefault("_drafted", []).append([" ".join(label.split())[:200], ans, ["autofill: yes/no policy"]])
     return ans
 
 def _norm_opt(t):
@@ -253,6 +324,19 @@ def skill_options(options):
     from engine.tailoring.tailor import vocabulary, _hits
     vocab = vocabulary()
     return [h for t, h in options if _hits(t, vocab)]
+
+
+def best_by_overlap(options, text):
+    """For single-choice questions the engine drafted: the option sharing the most of your skill terms with the
+    drafted (Fact Bank) text. None when nothing overlaps, so it never picks at random."""
+    from engine.tailoring.tailor import vocabulary, _hits
+    want = _hits(text, vocabulary())
+    best, score = None, 0
+    for t, h in options:
+        n = len(_hits(t, want)) if want else 0
+        if n > score:
+            best, score = h, n
+    return best
 
 
 def pick_option(options, ans):
@@ -332,7 +416,7 @@ def ashby_fields(page, job, log, first=True):
         try:
             if first or label[:200] not in seen:  # log follow-up questions that appear on later passes too
                 log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
-            ok = set_field(page, f, label, ans)
+            ok = yield from set_field(page, f, label, ans)
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
         if not ok and req: missing.append(label[:90])
@@ -340,15 +424,24 @@ def ashby_fields(page, job, log, first=True):
     return missing
 
 def set_field(page, f, label, ans):
+    """Generator: `ok = yield from set_field(...)`. Its waits yield, so other tabs work meanwhile."""
     if ans is None: return False
     txt = f.query_selector("input[type=text]:not([role=combobox]), input[type=email], input[type=tel], input[type=url], input[type=number], input:not([type]), textarea")
     combo = f.query_selector("input[role=combobox]")
     btns = [b for b in f.query_selector_all("button") if b.inner_text().strip() in ("Yes", "No")]
     choices = f.query_selector_all("input[type=radio], input[type=checkbox]")
     if len(ans) > MAX_OPTION and not txt:
-        return False  # a drafted paragraph never goes into a button, choice or dropdown (it would be typed letter by letter)
+        # a drafted paragraph is never typed into a button, choice or dropdown; for radio/checkbox choices it picks the
+        # option that best matches the drafted facts
+        if choices and AUTOFILL:
+            opts = [(c.evaluate("e => (e.closest('label') || document.querySelector(`label[for='${e.id}']`) || e.parentElement).innerText"), c) for c in choices]
+            h = best_by_overlap(opts, ans)
+            if h:
+                h.check(force=True)
+                return h.is_checked()
+        return False
     if txt and not ans.startswith("__") and ans not in ("Yes", "No"):
-        txt.fill(""); txt.type(ans, delay=2); return True
+        txt.fill(ans); return True
     if btns:
         h = pick_option([(b.inner_text(), b) for b in btns], "Yes" if ans in ("__ACK__",) else ans)
         if not h: return False
@@ -377,22 +470,22 @@ def set_field(page, f, label, ans):
         if ans.startswith("__"): return False
         cur = combo.input_value()
         if cur and (cur == ans or cur.lower().startswith(ans.lower())): return True
-        combo.click(); combo.fill(""); combo.type(ans, delay=15); time.sleep(1.5)  # location boxes search remotely
+        combo.click(); combo.fill(""); combo.type(ans); yield 1.5  # location boxes search remotely
         opts = page.query_selector_all("[role=option]")
         names = [o.inner_text().strip() for o in opts]
         h = pick_option(list(zip(names, opts)), ans)
         if h:
             want = names[opts.index(h)]
-            h.click(); time.sleep(0.5)
+            h.click(); yield 0.5
             if combo.input_value() == want: return True
-            combo.click(); combo.fill(""); combo.type(ans, delay=15); time.sleep(1.5)
+            combo.click(); combo.fill(""); combo.type(ans); yield 1.5
             for _ in range(names.index(want) + 1): page.keyboard.press("ArrowDown")
-            page.keyboard.press("Enter"); time.sleep(0.5)
+            page.keyboard.press("Enter"); yield 0.5
             if combo.input_value() == want: return True
         page.keyboard.press("Escape"); return False
     if txt:
         if ans.startswith("__") or not text_ok(label, ans): return False
-        txt.fill(""); txt.type(ans, delay=2); return True
+        txt.fill(ans); return True
     return False
 
 def submit_ashby(page):
@@ -459,7 +552,7 @@ def fill_lever(page, job, log):
                 if not text_ok(label, ans) and not (NOTE_Q.search(label) and job.get("note")) and not drafts.is_open(label): ok = False
                 else: f.query_selector("textarea").fill(ans); ok = True
             else:
-                ok = set_field(page, f, label, ans)
+                ok = yield from set_field(page, f, label, ans)
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
         if not ok and req: missing.append(label[:90])
@@ -576,7 +669,7 @@ def fill_gh(page, job, log):
         cc = page.query_selector("#country, .phone-input input[role=combobox], [id*=phone] input[role=combobox]")
         if cc:
             try:
-                cc.click(timeout=3000); cc.type("United States", delay=10); yield 0.8
+                cc.click(timeout=3000); cc.type("United States"); yield 0.8
                 # options read "United States+1"; Enter alone picked whatever was highlighted (seen: "Select a country")
                 us = next((o for o in page.query_selector_all("[role=option]") if re.match(r"\s*United States\s*\+?\s*1\b", o.inner_text())), None)
                 if us: us.click()
@@ -601,7 +694,7 @@ def fill_gh(page, job, log):
                 ta.fill(ans); log(f"   . {label[:60]} -> {ans[:30]}"); job.setdefault("_answers", []).append([label[:200], ans]); continue
         try:
             log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
-            ok = set_gh(page, f, ans, label)
+            ok = yield from set_gh(page, f, ans, label)
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
         if not ok and req: missing.append(label[:90])
@@ -609,12 +702,26 @@ def fill_gh(page, job, log):
     return missing
 
 def set_gh(page, f, ans, label=""):
+    """Generator: `ok = yield from set_gh(...)` (see set_field)."""
     if ans is None: return False
     sel = f.query_selector("input[role=combobox], .select__input input, [class*=select__control]")
     choices = f.query_selector_all("input[type=checkbox], input[type=radio]")
     txt = f.query_selector("input[type=text]:not([role=combobox]), input[type=email], input[type=tel], input[type=url], input[type=number], textarea")
     if len(ans) > MAX_OPTION and (sel or choices):
-        return False  # see set_field: drafts are for free-text boxes only
+        if not AUTOFILL:
+            return False  # see set_field: drafts are for free-text boxes only
+        if choices:
+            opts = [(c.evaluate("e => (e.closest('label') || document.querySelector(`label[for='${e.id}']`) || e.parentElement).innerText"), c) for c in choices]
+            h = best_by_overlap(opts, ans)
+            if h: h.check(force=True); return True
+            return False
+        inp = f.query_selector("input[role=combobox]") or sel
+        inp.click(timeout=4000); yield 0.5
+        real = [o for o in page.query_selector_all("[role=option], .select__option") if not re.search(r"no options|loading", o.inner_text(), re.I)]
+        h = best_by_overlap([(o.inner_text(), o) for o in real], ans)
+        if not h:
+            page.keyboard.press("Escape"); return False
+        h.click(force=True); yield 0.3; return True
     if sel:
         inp = f.query_selector("input[role=combobox]") or sel
         terms = {"__DECLINE__": ["decline", "prefer not", "don't wish", "not wish"], "__ACK__": ["yes", "i acknowledge", "acknowledge", "agree", "understand", "read"],
@@ -624,10 +731,10 @@ def set_gh(page, f, ans, label=""):
             return [o for o in opts if not re.search(r"no options|loading", o.inner_text(), re.I)]
 
         # fast path: open the menu once and choose from the full list (most selects have < 15 options)
-        inp.click(timeout=4000); time.sleep(0.5)
+        inp.click(timeout=4000); yield 0.5
         real = options()
         if not real:  # click focused the box without opening the menu
-            page.keyboard.press("ArrowDown"); time.sleep(0.4); real = options()
+            page.keyboard.press("ArrowDown"); yield 0.4; real = options()
         h = None
         if real:
             labeled = [(o.inner_text(), o) for o in real]
@@ -635,7 +742,7 @@ def set_gh(page, f, ans, label=""):
                 h = pick_option(labeled, term)
                 if h: break
         for term in ([] if h else terms):
-            inp.click(timeout=4000); inp.fill(""); inp.type(term, delay=15); time.sleep(0.9)
+            inp.click(timeout=4000); inp.fill(""); inp.type(term); yield 0.9
             real = options()
             labeled = [(o.inner_text(), o) for o in real]
             h = pick_option(labeled, term) if ans == "Company careers page" else next(
@@ -650,7 +757,7 @@ def set_gh(page, f, ans, label=""):
         except Exception:
             for _ in range(real.index(h)): page.keyboard.press("ArrowDown")
             page.keyboard.press("Enter")
-        time.sleep(0.3); return True
+        yield 0.3; return True
     if choices:
         opts = [(c.evaluate("e => (e.closest('label') || document.querySelector(`label[for='${e.id}']`) || e.parentElement).innerText"), c) for c in choices]
         if ans == "__SKILLS__":

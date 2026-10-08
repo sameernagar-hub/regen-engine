@@ -86,19 +86,24 @@ def kind_of(label):
     return "why"
 
 
-def draft(label, job, fb, workspace, presets=None):
-    """-> (answer text, [fact ids]) for an open-ended question, or None when it must not be drafted."""
-    if not is_open(label):
+def draft(label, job, fb, workspace, presets=None, force=False):
+    """-> (answer text, [fact ids]) for an open-ended question, or None when it must not be drafted.
+    force=True (autofill policy): any non-sensitive text box gets a draft, even a terse label ("Second example:").
+    Facts already used in this job's earlier drafts are skipped first, so answers don't repeat each other."""
+    l = " ".join((label or "").split())
+    if not l or NEVER.search(l) or not (force or is_open(l)):
         return None
+    used = {f for _, _, fids in job.get("_drafted", []) for f in fids}
     facts = ranked_facts(job, fb, workspace)
+    facts = [f for f in facts if f not in used] + [f for f in facts if f in used]
     if not facts:
         return None
     company, _, title = (job.get("name") or "").partition(" - ")
     company, title = company.strip() or "your team", title.strip() or "this role"
-    k = kind_of(label)
+    k = kind_of(label) if is_open(l) else "built"  # a terse forced label ("Second example:") gets facts, no framing
     persist_fact = None
     if k == "persist":
-        persist_fact = next((f for f in facts if PERSIST_FACT.search(fb["facts"][f])), None)
+        persist_fact = next((f for f in facts if PERSIST_FACT.search(fb["facts"][f]) and f not in used), None)
         if not persist_fact:  # the resume for this job has none: look in the whole bank
             persist_fact = next((f for f in fb["facts"] if PERSIST_FACT.search(fb["facts"][f])), None)
         pick = [persist_fact] if persist_fact else facts[:1]

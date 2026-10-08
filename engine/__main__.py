@@ -20,6 +20,7 @@
   live    [port]                   the engine, watched live (localhost page; read-only)
   site    [days]                   build the public face (site/): the live view replaying anonymized recent activity
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
+  run     [--days 1 --max 30 --appliers 2 --tabs 3 --no-scan --dry]   the whole pipeline: discover, select, build, apply, report
 """
 import collections, sys
 
@@ -109,6 +110,8 @@ def main():
         from engine.tailoring.resume import main as m
     elif cmd == "apply":
         from engine.apply.runner import main as m
+    elif cmd == "run":
+        from engine.pipeline import main as m
     elif cmd == "codes":
         from engine.apply.codes import main as m
     elif cmd == "inspect":

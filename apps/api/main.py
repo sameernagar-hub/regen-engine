@@ -39,7 +39,7 @@ def fold():
         if k == "resume" and e.get("job"):
             resumes[e["job"]] = e
         elif k == "application" and not e.get("dry") and e.get("job"):
-            latest[" ".join(e["job"].lower().split())] = e
+            latest[e.get("url") or " ".join(e["job"].lower().split())] = e  # by URL: two roles can share a name
         elif k == "outcome":
             outcomes.append(e)
     apps = []

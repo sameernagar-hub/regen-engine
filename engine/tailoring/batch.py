@@ -39,6 +39,14 @@ def load_queue():
     return q
 
 
+def _safe_fetch(j):
+    try:
+        return job_description(j)
+    except Exception as e:  # one dead posting must not sink the batch
+        print(f"  ! {j.get('company')} | {j.get('title')}: {e}")
+        return {}, "", []
+
+
 def build(name, ids, force=False):
     cfg = load_lanes()
     with in_workspace():
@@ -46,11 +54,17 @@ def build(name, ids, force=False):
         for d in ("specs", "batches", "jd"):
             os.makedirs(d, exist_ok=True)
         batch, skipped = [], []
+        # JD fetches are pure network wait: fetch them all in parallel threads (one HTTP call each), then tailor in
+        # order. Wall time ~ the slowest fetch instead of the sum; tailoring itself stays sequential and CPU-cheap.
+        from concurrent.futures import ThreadPoolExecutor
+        known = [i for i in ids if i in q]
+        with ThreadPoolExecutor(max_workers=min(8, len(known) or 1)) as pool:
+            fetched = dict(zip(known, pool.map(lambda i: _safe_fetch(q[i]), known)))
         for i in ids:
             if i not in q:
                 print(f"  ! {i} not in queue.json (run scan / newgrad first)"); continue
             j = q[i]
-            raw, jd, questions = job_description(j)
+            raw, jd, questions = fetched[i]
             if not jd:
                 print(f"  ! {j['company']} | {j['title']}: posting is gone"); continue
             co = re.sub(r"[^A-Za-z0-9]", "", j["company"])[:20]

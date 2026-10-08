@@ -228,8 +228,10 @@ def test_state_rule_regex_is_clean():
     assert R.answer_for("What is your state of residence?", {}) == R.P["state"]
 
 
-def test_drafts_stay_out_of_dropdowns():
+def test_drafts_stay_out_of_dropdowns(monkeypatch):
+    from engine.apply import runner
     from engine.apply.runner import MAX_OPTION, set_gh, set_field
+    monkeypatch.setattr(runner, "AUTOFILL", False)  # the plain guard; the autofill choice path is test_best_by_overlap_*
 
     class El:  # minimal stand-in for a form field holding a dropdown
         def __init__(self, sel):
@@ -241,8 +243,14 @@ def test_drafts_stay_out_of_dropdowns():
         def query_selector_all(self, q):
             return []
     long = "x" * (MAX_OPTION + 1)
-    assert set_gh(None, El(True), long, "Which best describes your project?") is False
-    assert set_field(None, El(True), "Which best describes your project?", long) is False
+    def run(g):  # the helpers are generators now: drive them to their return value
+        try:
+            while True:
+                next(g)
+        except StopIteration as stop:
+            return stop.value
+    assert run(set_gh(None, El(True), long, "Which best describes your project?")) is False
+    assert run(set_field(None, El(True), "Which best describes your project?", long)) is False
 
 
 def test_preferred_office_picks_bay_area_then_remote():
@@ -347,3 +355,39 @@ def test_preferred_language_comes_from_the_fact_bank():
     lang = preferred_language()
     assert lang is None or lang.lower() in vocabulary()
     assert answer_for("What is your preferred coding language?", {}) == lang
+
+
+def test_autofill_policy_never_overclaims_or_touches_status(monkeypatch):
+    from engine.apply import runner as R
+    monkeypatch.setattr(R, "_FB", FB)  # two-role fixture bank so rotation has something to rotate
+    job = {"name": "Initech - Backend Engineer", "resume": "out/Resume_Initech_1.pdf"}
+    assert R.answer("Have you shipped a product used by 1 million users?", dict(job)) == "No"   # no fact backs it
+    assert R.answer("Are you willing to work from our office 5 days a week?", dict(job)) == R.P.get("open_to_onsite_or_relocation", "Yes")
+    assert R.answer("Do you have a portfolio that includes shipped consumer products?", dict(job)) in ("Yes", "No")
+    for q in ("Please indicate whether you are a citizen or resident of any of the following countries: Cuba",
+              "What is your desired salary?", "What is your gender?", "Have you ever been convicted of a felony?"):
+        a = R.answer(q, dict(job))
+        assert a is None or a == "__DECLINE__" or q.startswith("What is your desired salary"), (q, a)
+    j = dict(job)
+    a1, a2 = R.answer("Second example:", j), R.answer("Third example:", j)
+    assert a1 and a2 and j["_drafted"][0][2] != j["_drafted"][1][2]   # rotation: different facts
+
+
+def test_us_years_and_lived_in_us_question(monkeypatch):
+    from engine.apply import runner as R
+    fb = {"education": [["M.S. CS -- State University", "Aug 2024 - May 2026"], ["B.Tech -- Some University, India", "Aug 2018 - May 2022"]],
+          "roles": {"x": ["Acme", "SWE", "City, ST", "Jan 2025 - Present"], "y": ["Foo", "SWE", "Pune, India", "Jan 2020 - Jan 2024"]}, "facts": {}}
+    monkeypatch.setattr(R, "_FB", fb)
+    y = R.us_years()
+    assert 1.5 < y < 10
+    want = "Yes" if y >= 1 else "No"
+    assert R.derived("Have you lived in the United States for at least 1 of the past 5 years?") == want
+    assert R.derived("Have you lived in the United States for at least 30 of the past 40 years?") == "No"
+
+
+def test_best_by_overlap_picks_fact_backed_option():
+    from engine.apply.runner import best_by_overlap
+    from engine.tailoring.tailor import vocabulary
+    known = next(iter(sorted(t for t in vocabulary() if t.isalpha() and len(t) > 3)))
+    assert best_by_overlap([("Mobile games", 1), (f"Web apps with {known}", 2)], f"I built systems with {known}.") == 2
+    assert best_by_overlap([("Mobile games", 1)], "nothing relevant") is None
