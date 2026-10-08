@@ -329,6 +329,8 @@ def answer(label, job, field=None):
         ans = (datetime.date.today() + datetime.timedelta(weeks=wk)).strftime("%m/%d/%Y")
     if ans is None:
         ans = derived(label)
+    if ans is None and re.fullmatch(r"\s*(attach|upload|dropbox|google drive|enter manually|browse)\s*", label, re.I):
+        return None  # a file-upload control, not a question
     if ans is None and DRAFT:
         d = drafts.draft(label, job, fact_bank(), WORKSPACE, P)
         if d is None and AUTOFILL and not STATUS_Q.search(label):
@@ -714,9 +716,9 @@ def fill_gh(page, job, log):
                 shown = cc.evaluate("e => (e.closest('.select__control') || e.closest('[class*=control]') || e.parentElement).innerText") or ""
                 if "United States" not in shown and "+1" not in shown:  # retry once; never ArrowDown (it moves off US)
                     cc.click(timeout=3000); cc.type("United States"); time.sleep(0.8); page.keyboard.press("Enter")
-            except Exception: pass
+            except Exception as e: log(f"  ! phone country: {str(e)[:160]}")
     seen = set()
-    for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question, .education--form .select__container, .education--form .text-input-wrapper"):
+    for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question, .eeoc__question__wrapper, .education--form .select__container, .education--form .text-input-wrapper"):
         key = f.evaluate("e => e.innerText.slice(0,120)")
         if key in seen: continue
         seen.add(key)
@@ -1055,10 +1057,18 @@ def run(jobs, dry=False, concurrency=None):
                 return job_task(page, job, dry, results)
             return make
 
+        def front(task, pg):
+            # dropdown menus don't render in a background tab (10-07: phone country and selects left empty with
+            # 3 tabs, fine with 1), so the tab that gets the slice is brought to the front: a few ms per switch
+            try:
+                if pg and len(pages) > 1: pg.bring_to_front()
+            except Exception:
+                pass
+
         from engine.apply.scheduler import Task
         tasks = [Task(j.get("name") or j["url"], ats_key(j["url"]), factory(j)) for j in jobs]
         rr = RoundRobin(Quantum(os.path.join(WORKSPACE, "sched_stats.json")), concurrency=concurrency,
-                        on_switch=lambda t: None)
+                        on_switch=front)
         finished = rr.run(tasks, pages)
         ctx.close()
     wall = time.monotonic() - t0

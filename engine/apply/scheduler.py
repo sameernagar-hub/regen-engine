@@ -123,7 +123,7 @@ class RoundRobin:
                 continue
             t = ready.popleft()
             if self.on_switch:
-                self.on_switch(t)
+                self.on_switch(t, held.get(id(t)))  # e.g. bring the job's tab to the front
             self.switches += 1
             t.slices += 1
             q, start = self.q.get(t.key), self.clock()
