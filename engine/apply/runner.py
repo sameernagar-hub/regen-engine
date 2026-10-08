@@ -704,15 +704,16 @@ def fill_gh(page, job, log):
             try:
                 cc.click(timeout=3000); cc.type("United States"); time.sleep(0.8)
                 # options read "United States+1"; Enter alone picked whatever was highlighted (seen: "Select a country")
-                opts = page.query_selector_all("[role=option], .select__option, [class*=option]")
+                # react-select options read "United States +1"; [class*=option] would also catch the hidden
+                # intl-tel-input list, so only real react-select options are considered
+                opts = page.query_selector_all("[role=option], .select__option")
                 us = next((o for o in opts if re.match(r"\s*United States(?! Minor)\s*(\(?\+?\s*1\)?)?\s*$", o.inner_text())), None)
                 if us: us.click()
-                else: page.keyboard.press("ArrowDown"); page.keyboard.press("Enter")
+                else: page.keyboard.press("Enter")  # typing "United States" leaves it highlighted first
                 time.sleep(0.4)
-                box = cc.evaluate("e => (e.closest('.select__container, .phone-input, div') || e).innerText") or ""
-                if "United States" not in box and "+1" not in box:  # still empty: one keyboard retry
-                    cc.click(timeout=3000); cc.fill("United States"); time.sleep(0.8)
-                    page.keyboard.press("ArrowDown"); page.keyboard.press("Enter")
+                shown = cc.evaluate("e => (e.closest('.select__control') || e.closest('[class*=control]') || e.parentElement).innerText") or ""
+                if "United States" not in shown and "+1" not in shown:  # retry once; never ArrowDown (it moves off US)
+                    cc.click(timeout=3000); cc.type("United States"); time.sleep(0.8); page.keyboard.press("Enter")
             except Exception: pass
     seen = set()
     for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question, .education--form .select__container, .education--form .text-input-wrapper"):
