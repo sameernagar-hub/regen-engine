@@ -88,6 +88,8 @@ Code: `engine/tailoring/` · Tests: `tests/test_core.py`
 | Proof | A full-page screenshot of the confirmation page for every submission; already-submitted jobs are skipped. |
 | Round-robin over tabs (v0.8) | Several applications run at once, one per tab. Each gets a time quantum, then the next one runs; while one waits on the site (resume parsing, email code, confirmation) the others keep filling. See [Algorithms and complexity](#algorithms-and-complexity). |
 | Drafted answers (v0.8) | Open-ended questions ("Why us?", "Describe a time…") are answered with sentences built only from Fact Bank entries chosen for that job, logged with their fact ids in `workspace/drafts_review.md`. Legal, EEO and salary questions are never drafted. |
+| Autofill policy (v0.8) | No manual stops: yes/no capability questions are Yes only with a backing fact, else No; text boxes get Fact Bank drafts; status questions (sponsorship, citizenship, salary, EEO) are never defaulted. |
+| One-command pipeline (v0.8) | `python -m engine run` discovers, selects, builds and applies with parallel appliers, then reports; also drivable from MCP (`pipeline_run`, `pipeline_status`, `submit_codes`). |
 | Answer from the page (v0.8) | Answer a "waiting on you" question once in the live view; it's saved with its source, reused on every form, and the job is re-queued. |
 
 Code: `engine/apply/runner.py`, `engine/apply/scheduler.py`, `engine/apply/drafts.py`, `engine/safety.py`

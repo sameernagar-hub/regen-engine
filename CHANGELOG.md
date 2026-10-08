@@ -36,6 +36,25 @@ The goal for v0.8: at least 10 applications a day with less waiting, and no new 
 - **Greenhouse codes for several jobs at once.** Each waiting job has `codes/<board>_<id>.wait`;
   `engine/discovery/gmail_codes.js` reads codes from Gmail rows and `python -m engine codes '<json>'` writes a code only
   to the job whose company the email names. *Verify:* `test_codes_only_go_to_the_named_company`.
+- **Autofill policy: no manual stops** (user decision 2026-10-07: "no manual input, just draft and fill").
+  Yes/no capability questions ("Have you shipped…", "Did you attend…") → Yes only when a Fact Bank entry backs it,
+  otherwise No (it can understate you, it never claims something unproven); willingness questions → the presets'
+  onsite/relocation stance; any non-sensitive text box → a Fact Bank draft, rotating facts within a job; single-choice
+  questions → the option sharing the most skill terms with the drafted facts; "lived in the US N of the past M years" →
+  computed from Fact Bank dates; date boxes for "start date" → the date your notice period lands on. Status questions
+  (sponsorship, citizenship, sanctions, salary, EEO, criminal history, relatives, prior employment) are never defaulted.
+  `REGEN_AUTOFILL=0` turns it off. *Verify:* `test_autofill_policy_*`, `test_us_years_*`, `test_best_by_overlap_*`.
+- **Non-blocking field helpers.** `set_field` / `set_gh` are generators too, so dropdown searches and autocomplete waits
+  yield to other tabs, and typing has no per-key delay. A run before this logged 949 s active of 957 s wall: the tabs
+  were barely overlapping because the waits were inside these helpers.
+- **Orchestration pipeline** `python -m engine run [--days --max --appliers --tabs --no-scan --dry]`
+  (`engine/pipeline.py`): discover → select (never-tried jobs, ≤3 per company, interleaved) → build (JD fetches in
+  parallel threads) → apply (the batch split across P applier processes, each with its own browser profile and T
+  round-robin tabs) → report. Every stage logs a `pipeline` event.
+- **MCP orchestration tools**: `pipeline_status` (live applier results, jobs waiting for a code, verified today),
+  `pipeline_run` and `submit_codes` (both need `REGEN_MCP_WRITE=1`).
+- **GitHub job lists into the queue**: `python -m engine feed 3 --queue` parses ATS, board and id from each
+  SimplifyJobs posting URL and merges the Greenhouse / Ashby / Lever / Workable ones into `queue.json`.
 - **Evidence tooling.** `scripts/bench_tailor.py` (old vs new tailoring: identical output, speed), `scripts/bench_scheduler.py`,
   headless Playwright tests of the real filler against local Greenhouse / Ashby / Lever look-alike forms
   (`tests/test_forms.py`), coverage in CI.

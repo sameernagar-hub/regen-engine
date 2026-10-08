@@ -63,12 +63,51 @@ def pull(days=7, feed="simplify-newgrad", needs_sponsorship=None):
     return out
 
 
+ATS_URL = [("greenhouse", r"greenhouse\.io/(?:embed/job_app\?for=)?([^/?&]+)(?:/jobs/|&token=)(\d+)"),
+           ("greenhouse", r"[?&]for=([^&]+)&token=(\d+)"),
+           ("ashby", r"jobs\.ashbyhq\.com/([^/?]+)/([0-9a-f-]{36})"),
+           ("lever", r"jobs\.lever\.co/([^/?]+)/([0-9a-f-]{36})"),
+           ("workable", r"apply\.workable\.com/([^/?]+)/j/([0-9A-F]{10})")]
+
+
+def to_queue(rows):
+    """Feed rows -> queue.json records (ats, token, id parsed from the URL), so `engine batch` can use them.
+    Rows whose URL isn't a supported ATS posting are left out (they stay in feed_queue.json for you). O(rows)."""
+    out = []
+    for r in rows:
+        for ats, rx in ATS_URL:
+            m = re.search(rx, r.get("url", ""))
+            if m:
+                out.append(dict(source=r.get("source", "simplify"), ats=ats, token=m.group(1), id=m.group(2), company=r["company"],
+                                title=r["title"], location=r.get("location", ""), posted=r.get("posted"),
+                                url=r["url"].split("/application")[0].split("?")[0] if ats != "greenhouse" or "/jobs/" in r["url"] else
+                                f"https://job-boards.greenhouse.io/{m.group(1)}/jobs/{m.group(2)}"))
+                break
+    return out
+
+
 def main(argv=None):
+    """feed [days] [--queue]   --queue also merges the ATS postings into workspace/queue.json for `engine batch`."""
     argv = sys.argv[1:] if argv is None else argv
-    out = pull(float(argv[0]) if argv else 7)
+    days = next((a for a in argv if not a.startswith("--")), None)
+    out = pull(float(days) if days else 7)
     for r in out:
         print(r["posted"], r["ats"], "|", r["company"], "|", r["title"][:60], "|", r["location"][:30], "|", r["url"][:80])
     print(len(out), "jobs -> workspace/feed_queue.json")
+    if "--queue" in argv:
+        import os
+        from engine.config import WORKSPACE
+        from engine.discovery.filters import keep, load_domain
+        dom = load_domain()
+        rows = [r for r in to_queue(out) if not keep(dom, r["title"], r["location"], r["company"])]
+        qp = os.path.join(WORKSPACE, "queue.json")
+        q = json.load(open(qp, encoding="utf-8")) if os.path.exists(qp) else []
+        have = {(j.get("ats"), str(j.get("id"))) for j in q}
+        new = [r for r in rows if (r["ats"], r["id"]) not in have]
+        json.dump(new + q, open(qp, "w", encoding="utf-8"), indent=1)
+        print(f"{len(new)} feed postings merged into queue.json")
+        for r in new:
+            print("  ", r["id"], "|", r["ats"], "|", r["company"], "|", r["title"][:60])
 
 
 if __name__ == "__main__":

@@ -32,7 +32,18 @@ save them as `[{id,date,from,subject,snippet}]` and run `python -m engine inbox 
 **Answer waiting questions in the page:** `REGEN_API_WRITE=1 python -m uvicorn apps.api.main:app --port 8787` and
 `cd apps/web && npm run dev`, open "waiting on you", type the answer. Then `python -m engine apply batches/requeue.json`.
 
+**One command:** `python -m engine run --days 1 --max 30 --appliers 2 --tabs 3` (or MCP `pipeline_run` with
+`REGEN_MCP_WRITE=1`). GitHub lists: `python -m engine feed 3 --queue`. Autofill is on (`REGEN_AUTOFILL=0` to stop it).
+
 ## Next, in order
+0. **10-08 after ~22:30 (Ashby cooldown ends):** apply the Ashby jobs waiting in `queue.json` (alert-resolved and GitHub-feed jobs
+   (`python -c "import json;[print(j['company'],j['title']) for j in json.load(open('workspace/queue.json')) if j['ats']=='ashby']"`),
+   at most a few per hour.
+0. **Gmail labels** (user request): label alert emails, codes and replies (e.g. `REGEN/Alerts`, `REGEN/Codes`,
+   `REGEN/Replies`) so the engine searches by label instead of by sender lists. Add Monster, Ladders and Jobot
+   alert parsers to `gmail_alerts.js` (their senders are already in the inbox).
+0. One-time facts that would unblock more forms automatically: country of citizenship (sanctions/export
+   questions), street address (some forms require "Address Line 1"), a numeric salary expectation.
 1. Workday / iCIMS adapters (most unresolved leads are there).
 2. Engine room (GPU view), moved to v0.9.
 3. pgvector retrieval memory; MCP tools for discovery and tailoring.
