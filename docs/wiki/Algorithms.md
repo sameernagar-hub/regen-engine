@@ -55,6 +55,14 @@ on a deterministic clock (no browser), so the numbers are exact and reproducible
 Real forms are slower than the simulation in absolute terms; the ratio is what the scheduler buys. Every real run logs
 a `schedule` event (wall time, active time, switches, per-job slices, quanta), so real throughput is on record too.
 
+### What the real runs showed (2026-10-07)
+Real `schedule` events logged ~95% active time per applier (e.g. 863 s active of 907 s wall), even after the field
+helpers began yielding their waits. Every synchronous Playwright call is a blocking browser round trip, and that is
+counted as active time; round-robin inside one process only recovers the explicit waits (resume parsing, submit
+polling, email codes). The larger multiplier is **several applier processes**, each with its own browser profile,
+which `python -m engine run --appliers N` does by default (3 appliers x 3 tabs ran in parallel on 10-07). Next step for
+in-process overlap: Playwright's async API, so a tab's browser round trips themselves overlap.
+
 ### Company interleaving
 Before scheduling, the batch is reordered round-robin over companies (a dict of deques, O(J)): `A1 A2 A3 B1 C1` →
 `A1 B1 C1 A2 A3`. Per-company caps and bot detectors then see spread-out traffic.

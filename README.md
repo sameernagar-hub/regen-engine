@@ -267,6 +267,8 @@ Stats persist in `workspace/sched_stats.json`, so the engine learns each ATS's r
 Real forms are slower than the simulation (searchable dropdowns, email codes), so treat these as the ratio, not the
 absolute rate; the `schedule` event records the real numbers for every run.
 
+**Measured on real forms:** each applier process stayed ~95% active, because synchronous browser calls block; parallel applier processes (`engine run --appliers N`) give the real multiplier. See the wiki's Algorithms page.
+
 **Company interleaving.** Before scheduling, a batch is reordered round-robin over companies (a dict of deques, O(J)),
 so per-company caps and bot checks see spread-out traffic.
 
