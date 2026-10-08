@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Umbrella - Software Engineer</title></head>
+<body>
+<!-- A minimal stand-in for a Lever /apply page. -->
+<form class="application-form" onsubmit="return false">
+  <ul>
+    <li class="application-question"><div class="application-label">Resume/CV ✱</div><input type="file" name="resume" id="resume"><span id="up"></span></li>
+    <li class="application-question"><div class="application-label">Full name ✱</div><input type="text" name="name"></li>
+    <li class="application-question"><div class="application-label">Email ✱</div><input type="email" name="email"></li>
+    <li class="application-question"><div class="application-label">Current company</div><input type="text" name="org"></li>
+    <li class="application-question"><div class="application-label">Additional information</div><textarea name="comments"></textarea></li>
+    <li class="application-question"><div class="application-label">Are you authorized to work in the US? ✱</div>
+      <select name="auth"><option value="">Select</option><option value="y">Yes</option><option value="n">No</option></select></li>
+  </ul>
+  <select name="eeo[gender]"><option value="">Select</option><option value="m">Male</option><option value="d">Decline to self-identify</option></select>
+  <button id="btn-submit" type="submit">Submit application</button>
+</form>
+<script>
+  document.getElementById('resume').addEventListener('change', () => document.getElementById('up').textContent = 'Success! uploaded');
+  document.getElementById('btn-submit').addEventListener('click', () => {
+    window.__eeo = document.querySelector('select[name="eeo[gender]"]').value;
+    window.__auth = document.querySelector('select[name=auth]').value;
+    document.body.innerHTML = '<h2>Application submitted</h2><p>Thank you for applying.</p>';
+  });
+</script>
+</body></html>

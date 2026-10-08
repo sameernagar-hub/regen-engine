@@ -77,6 +77,8 @@ def check_rate(company, max_per_day=None, max_per_company=3):
 
 
 LEGAL = [  # question regex -> preset key whose value the answer must equal
+    (re.compile(r"without .{0,40}sponsorship.{0,60}(next \d+|\d+ years|long.?term|future|foreseeable|indefinitely|duration)|"
+                r"(next \d+ years|long.?term|indefinitely).{0,60}without .{0,40}sponsorship", re.I), "authorized_without_sponsorship_long_term"),
     (re.compile(r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", re.I), "authorized_without_sponsorship"),
     (re.compile(r"(require|need).{0,60}sponsor", re.I), "needs_sponsorship_now_or_future"),
     (re.compile(r"authori[sz]ed to work|legally (authori|permitted)", re.I), "work_authorized_us"),

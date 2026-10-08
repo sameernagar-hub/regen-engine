@@ -7,6 +7,17 @@ the result.
 
 fit(jd) reads the job description for hard blockers (citizenship, clearance, no sponsorship,
 grad windows you're outside of, years of experience above your level).
+
+Complexity (v0.8). T = vocabulary terms (~200), F = Fact Bank entries, n = JD length, k = facts in a pool.
+  vocabulary()   built once per loaded Fact Bank and cached: O(1) after the first call (was rebuilt on every call)
+  _hits(text)    one compiled boundary regex per term, cached; a C-speed `term in text` substring test runs first
+                 and the regex only confirms the word boundary. Same O(T*n) bound, but most terms are rejected
+                 by one memchr-style scan instead of a regex compile-cache lookup plus a full regex scan
+  tailor()       each fact / project / skills text is matched once per JD (memo), then scoring is len(set);
+                 ordering uses precomputed positions instead of list.index inside the sort key
+                 (O(k^2 log k) -> O(k log k)); distinct() maps fact -> overlap groups in a dict: O(k)
+  fit()          blocker and stack patterns compiled once; "does the Fact Bank have stack X" is computed once
+                 per vocabulary instead of once per JD
 """
 import re
 
@@ -16,9 +27,22 @@ STOP = {"and", "or", "the", "a", "of", "with", "for", "in", "to", "on", "develop
         "data", "cloud", "testing", "linux", "git", "html/css", "monitoring", "alerting", "responsive"}
 
 
+_VOCAB = {"key": None, "terms": frozenset()}
+_PAT = {}
+
+
+def _pat(t):
+    p = _PAT.get(t)
+    if p is None:
+        p = _PAT[t] = re.compile(r"(?<![a-z0-9])" + re.escape(t) + r"(?![a-z0-9])")
+    return p
+
+
 def vocabulary():
-    """Technology terms the candidate actually has, taken from the Fact Bank skills lines."""
+    """Technology terms the candidate actually has, taken from the Fact Bank skills lines (cached per bank)."""
     resume.load_bank()
+    if _VOCAB["key"] is resume.SKILLS:
+        return _VOCAB["terms"]
     terms = set()
     for _, line in resume.SKILLS.values():
         for t in re.split(r",|/|\(|\)|--", line):
@@ -33,23 +57,29 @@ def vocabulary():
     for canon, alts in resume.ALIASES.items():
         if canon.lower() in terms:
             terms |= {a.lower() for a in alts}
-    return terms
+    _VOCAB.update(key=resume.SKILLS, terms=frozenset(terms))
+    return _VOCAB["terms"]
 
 
 def _hits(text, terms):
     low = re.sub(r"<[^>]+>", " ", text).lower()
-    return {t for t in terms if re.search(r"(?<![a-z0-9])" + re.escape(t) + r"(?![a-z0-9])", low)}
+    return {t for t in terms if t in low and _pat(t).search(low)}  # substring prefilter, then the boundary check
 
 
 def distinct(ranked, n):
     """Top n facts, never two from the same overlap group (Fact Bank "_overlaps": versions of one accomplishment)."""
-    groups = [set(g) for g in resume.OVERLAPS]
-    out = []
+    group_of = {}
+    for i, g in enumerate(resume.OVERLAPS):
+        for f in g:
+            group_of.setdefault(f, set()).add(i)
+    out, used = [], set()
     for f in ranked:
         if len(out) == n:
             break
-        if not any(f in g and any(o in g for o in out) for g in groups):
+        gs = group_of.get(f, ())
+        if not used.intersection(gs):
             out.append(f)
+            used.update(gs)
     return out
 
 
@@ -57,7 +87,14 @@ def tailor(spec, jd):
     resume.load_bank()
     terms = vocabulary()
     want = _hits(jd, terms)
-    score = lambda text: len(_hits(text, want))
+    memo = {}
+
+    def hits(text):  # each fact / project / skills text is matched once per JD
+        h = memo.get(text)
+        if h is None:
+            h = memo[text] = _hits(text, want)
+        return h
+    score = lambda text: len(hits(text))
     by_role = {}
     for fid, text in resume.FACTS.items():
         by_role.setdefault(fid.split("_")[0], []).append(fid)
@@ -65,14 +102,17 @@ def tailor(spec, jd):
     for rk, fids in spec["roles"]:
         prefix = fids[0].split("_")[0] if fids else rk[0]
         pool = list(dict.fromkeys(fids + by_role.get(prefix, [])))  # lane order first, then the rest of the role
-        rank = sorted(pool, key=lambda f: (-score(resume.FACTS[f]), pool.index(f)))
+        pos = {f: i for i, f in enumerate(pool)}
+        rank = sorted(pool, key=lambda f: (-score(resume.FACTS[f]), pos[f]))
         roles.append([rk, distinct(rank, len(fids))])
     projects = spec.get("projects", [])
     if projects:
         allp = list(dict.fromkeys(projects + list(resume.PROJECTS)))
         ptxt = lambda p: " ".join([resume.PROJECTS[p][0]] + resume.PROJECTS[p][2])
-        projects = sorted(allp, key=lambda p: (-score(ptxt(p)), allp.index(p)))[:len(projects)]
-    skills = sorted(spec["skills"], key=lambda k: (-score(resume.SKILLS[k][1]), spec["skills"].index(k)))
+        ppos = {p: i for i, p in enumerate(allp)}
+        projects = sorted(allp, key=lambda p: (-score(ptxt(p)), ppos[p]))[:len(projects)]
+    spos = {k: i for i, k in enumerate(spec["skills"])}
+    skills = sorted(spec["skills"], key=lambda k: (-score(resume.SKILLS[k][1]), spos[k]))
     # one extra skills line the lane doesn't carry, when the JD clearly asks for it (e.g. Salesforce, AI dev tools)
     extra = max((k for k in resume.SKILLS if k not in skills), key=lambda k: score(resume.SKILLS[k][1]), default=None)
     if extra and score(resume.SKILLS[extra][1]) >= 2:
@@ -83,9 +123,9 @@ def tailor(spec, jd):
     covered = set()
     for _, fids in roles:
         for f in fids:
-            covered |= _hits(resume.FACTS[f], want)
+            covered |= hits(resume.FACTS[f])
     for k in skills:
-        covered |= _hits(skill_text.get(k, resume.SKILLS[k][1]), want)
+        covered |= hits(skill_text.get(k, resume.SKILLS[k][1]))
     out["_coverage"] = {"jd_terms_you_have": sorted(want), "on_resume": sorted(covered), "missing_from_resume": sorted(want - covered)}
     return out
 
@@ -115,17 +155,33 @@ def user_years():
         return 99
 
 
+_BLOCKERS_RX = [(name, re.compile(pat)) for name, pat in BLOCKERS]
+_STACK_RX = {name: (re.compile(r"(?<![a-z0-9])" + s + r"(?![a-z0-9])"),
+                    re.compile(REQUIRED_CUE.replace("{s}", r"(?<![a-z0-9])(?:" + s + r")(?![a-z0-9])")),
+                    re.compile(s)) for name, s in CORE_STACKS.items()}
+_MISSING = {"key": None, "stacks": ()}
+# "5+ years", "4-7 years", "5 to 15+ years": the lower bound is the requirement
+_YEARS = re.compile(r"(?<![\d.])(\d{1,2})\s*\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*\+?\s*)?years?(?: of)?[^.]{0,60}experience")
+
+
+def missing_stacks():
+    """Core stacks the Fact Bank doesn't list: O(stacks * T) once per vocabulary, then O(1)."""
+    have = vocabulary()
+    if _MISSING["key"] is not have:
+        _MISSING.update(key=have, stacks=tuple(name for name, (word, _, full) in _STACK_RX.items()
+                                               if not any(full.fullmatch(t) or word.search(t) for t in have)))
+    return _MISSING["stacks"]
+
+
 def fit(jd, max_years=None):
     """List of hard blockers found in the job description (empty = clear)."""
     max_years = user_years() if max_years is None else max_years
     low = " ".join(re.sub(r"<[^>]+>", " ", jd).split()).lower()
-    out = [name for name, pat in BLOCKERS if re.search(pat, low)]
-    have = vocabulary()
-    for name, s in CORE_STACKS.items():
-        if not any(re.fullmatch(s, t) or re.search(r"(?<![a-z0-9])" + s + r"(?![a-z0-9])", t) for t in have)                 and re.search(REQUIRED_CUE.replace("{s}", r"(?<![a-z0-9])(?:" + s + r")(?![a-z0-9])"), low):
+    out = [name for name, rx in _BLOCKERS_RX if rx.search(low)]
+    for name in missing_stacks():
+        if _STACK_RX[name][1].search(low):
             out.append(f"core stack: {name}")
-    # "5+ years", "4-7 years", "5 to 15+ years": the lower bound is the requirement
-    yrs = [int(m.group(1)) for m in re.finditer(r"(?<![\d.])(\d{1,2})\s*\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*\+?\s*)?years?(?: of)?[^.]{0,60}experience", low)]
+    yrs = [int(m.group(1)) for m in _YEARS.finditer(low)]
     yrs = [y for y in yrs if y < 20]
     if yrs and min(yrs) > max_years:
         out.append(f"{min(yrs)}+ yrs")

@@ -52,19 +52,41 @@ Past application IDs (`workspace/ids.txt`, appended automatically after each sub
 - `resume.py` has `validate()`, which **rejects any spec that references something not in the Fact Bank**, and `fit()`, which auto-fits the resume to one page.
 
 ### 4. Apply: `engine/apply/`
-`runner.py` is a headed Playwright filler with one adapter per ATS:
+`runner.py` is a headed Playwright filler with one adapter per ATS, run by a round-robin scheduler (`scheduler.py`).
 
 | ATS | Status | Notes |
 |---|---|---|
-| Greenhouse (`job-boards` + embed) | ✅ production | react-select dropdowns, phone/country widget, demographic decline, consent checkboxes, **email security code pause** |
-| Ashby | ⚠️ beta | Text and Yes/No work; radio and combobox state is flaky on some boards |
-| Lever, Workday, iCIMS | planned | For Workday and iCIMS the **user creates the account** and the engine fills the forms |
+| Greenhouse (`job-boards` + embed) | ✅ production | react-select dropdowns, phone country (“United States +1”), demographic decline, consent checkboxes, **email security codes per job** (`codes/<board>_<id>.wait`) |
+| Ashby | ⚠️ beta | Yes/No buttons, CSS-only required markers, follow-up questions (second pass), resubmit once on “Missing entry”; 24 h cooldown after a bot flag |
+| Lever | ⚠️ beta | Location autocomplete limited to your state/US, EEO selects declined, CAPTCHA → you |
+| Workable | ⚠️ beta | Cloudflare Turnstile detected → you |
+| Workday, iCIMS | planned | The user creates the account; the engine fills the forms |
 
-Answers come from `profile/presets.json` through ordered label→answer rules. **If a required field doesn't match a rule, the job goes to the human queue and is never guessed.** Every attempt saves a full-page proof screenshot.
+```
+            batch (interleaved by company)
+                 │
+        ┌────────▼────────┐   admit while a tab is free
+        │  pending deque  │──────────────┐
+        └─────────────────┘              ▼
+   ┌──────────── ready deque ◄──── wake (heap pop, O(log S))
+   │  popleft O(1)                      ▲
+   ▼                                    │ yield <seconds>  (site is working)
+ run job's generator in its tab ────────┤
+   │  yield (checkpoint) and quantum used → append O(1) back to ready
+   │  return → record event, free the tab, admit next
+```
+
+Answer order for every field: per-job extras → your approved answers (`profile/answers.json`) → the ordered rules
+(presets only, 75 rules) → experience questions from your Fact Bank skills → **a drafted answer** for open-ended
+questions (`drafts.py`, Fact Bank sentences only, logged with fact ids). Legal, EEO, salary and sensitive questions are
+never drafted: unknown → the human queue. Before any submit the airbags run (sensitive fields, payments, unexpected
+site, legal answers that drift from presets, rate caps). Every attempt saves a full-page proof screenshot.
 
 ### 5. Feedback: `engine/feedback/`
-`events.py` is an append-only event log (`workspace/events.jsonl`). Each event records a discovery, resume, application or outcome, and the event log is the raw signal for learning.
-*Planned:* a Gmail reader that (a) supplies Greenhouse security codes automatically and (b) classifies replies into confirmation, OA, interview, rejection and offer, written back as `Outcome` events.
+`events.py` is the append-only event log (`workspace/events.jsonl`): discovery, resume, application, outcome, answer,
+schedule and flag events. Writes are locked across processes; reads are incremental. `inbox.py` classifies replies
+(confirmation, OA, interview, rejection, offer, scam) into `outcome` events; `answers.py` is the one write path from
+the web app (answer from the page). `engine/discovery/gmail_codes.js` + `engine/apply/codes.py` supply Greenhouse codes.
 
 ## Memory: `engine/memory/` + `deploy/docker-compose.yml`
 
@@ -102,16 +124,16 @@ sequenceDiagram
 
 | Interface | Status |
 |---|---|
-| CLI: `python -m engine scan / feed / batch / tailor / apply / status` | ✅ |
-| Python library: `from engine.discovery.greenhouse import scan` | ✅ |
-| MCP server: tools `discover_jobs`, `tailor_resume`, `apply`, `queue_status`, `memory_query`, `engine_control` | planned v0.5 |
-| REST API + webhooks: `application.submitted`, `outcome.received` | planned v0.5 |
-| Claude Code plugin packaging | planned v0.5 |
+| CLI: `python -m engine scan / newgrad / alerts / batch / apply / codes / inbox / learn / report / status` | ✅ |
+| REST API (`apps/api`, FastAPI): read endpoints + `POST /api/answers` (opt-in, localhost) | ✅ v0.8 |
+| Web app (`apps/web`, Next.js): live view, memory graph, answer box | ✅ v0.8 |
+| MCP server: read-only memory tools (`python -m engine mcp`) | ✅ |
+| Webhooks: `REGEN_WEBHOOK` for new matches from `watch` | ✅ |
 
 ## Guardrails (enforced in code, not policy)
 
 1. `resume.validate()`: no resume content outside the Fact Bank.
-2. Legal and attestation answers only come from presets. Unknown → human queue.
+2. Legal and attestation answers only come from presets. Unknown → human queue. Drafts never touch them.
 3. No CAPTCHA solving and no account creation by the engine.
 4. LinkedIn, Indeed and Handshake are discovery only.
 5. Personal data (`profile/`, `workspace/`) is git-ignored. The repo ships templates only.

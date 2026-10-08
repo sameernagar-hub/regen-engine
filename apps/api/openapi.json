@@ -2,8 +2,8 @@
  "openapi": "3.1.0",
  "info": {
   "title": "REGEN API",
-  "description": "Read-only API over the REGEN job engine's append-only event log.",
-  "version": "0.7.0"
+  "description": "API over the REGEN job engine's append-only event log (read-only, plus POST /api/answers when enabled).",
+  "version": "0.8.0"
  },
  "paths": {
   "/api/health": {
@@ -118,6 +118,91 @@
          },
          "type": "array",
          "title": "Response Human Api Human Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/answers": {
+   "post": {
+    "summary": "Answer",
+    "description": "Answer a waiting question once; the engine reuses it on every form and re-queues the job.",
+    "operationId": "answer_api_answers_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnswerIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnswerOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/drafts": {
+   "get": {
+    "summary": "Drafts",
+    "description": "Answers the engine drafted from the Fact Bank and sent without waiting, newest first.",
+    "operationId": "drafts_api_drafts_get",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 2000,
+       "default": 200,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Drafted"
+         },
+         "title": "Response Drafts Api Drafts Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
         }
        }
       }
@@ -349,10 +434,98 @@
      }
     }
    }
+  },
+  "/api/graph": {
+   "get": {
+    "summary": "Graph",
+    "description": "The engine's memory as a graph: You -> lanes -> applications -> companies, facts used, questions answered,\noutcomes, ATS (engine/memory/graph.py; same model as engine/memory/schema.cypher).",
+    "operationId": "graph_api_graph_get",
+    "parameters": [
+     {
+      "name": "questions",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": true,
+       "title": "Questions"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
   "schemas": {
+   "AnswerIn": {
+    "properties": {
+     "job": {
+      "type": "string",
+      "title": "Job"
+     },
+     "question": {
+      "type": "string",
+      "maxLength": 500,
+      "title": "Question"
+     },
+     "answer": {
+      "type": "string",
+      "maxLength": 2000,
+      "title": "Answer"
+     }
+    },
+    "type": "object",
+    "required": [
+     "job",
+     "question",
+     "answer"
+    ],
+    "title": "AnswerIn",
+    "description": "One answer typed in the web app for a question the engine could not answer."
+   },
+   "AnswerOut": {
+    "properties": {
+     "pattern": {
+      "type": "string",
+      "title": "Pattern"
+     },
+     "answer": {
+      "type": "string",
+      "title": "Answer"
+     },
+     "source": {
+      "type": "string",
+      "title": "Source"
+     }
+    },
+    "type": "object",
+    "required": [
+     "pattern",
+     "answer",
+     "source"
+    ],
+    "title": "AnswerOut"
+   },
    "Application": {
     "properties": {
      "job": {
@@ -476,6 +649,53 @@
     "title": "Application",
     "description": "Latest state of one job (later events win)."
    },
+   "Drafted": {
+    "properties": {
+     "ts": {
+      "type": "string",
+      "title": "Ts"
+     },
+     "job": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Job"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "question": {
+      "type": "string",
+      "title": "Question"
+     },
+     "answer": {
+      "type": "string",
+      "title": "Answer"
+     },
+     "facts": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Facts"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ts",
+     "status",
+     "question",
+     "answer"
+    ],
+    "title": "Drafted",
+    "description": "An answer the engine drafted from Fact Bank entries and sent without waiting (for review)."
+   },
    "Event": {
     "properties": {
      "id": {
@@ -577,6 +797,14 @@
        }
       ],
       "title": "Resume"
+     },
+     "missing": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Missing",
+      "description": "Questions the engine could not answer (answer them via POST /api/answers)"
      }
     },
     "type": "object",

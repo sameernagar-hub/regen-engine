@@ -28,7 +28,7 @@ SKIP_PRESET_KEYS = {"city", "state", "state_abbr", "country", "grad_year", "year
                     "eeo", "submit_policy", "start_date", "salary_expectation", "preferred_location", "github"}
 # company names from the event log that are also everyday words ("applied" is an Ashby board slug); treating them as
 # private terms flags half the repo, which trains everyone to ignore the gate
-COMMON_WORD_COMPANIES = {"applied", "affirm", "ramp", "compass", "scale", "figure", "notion", "current", "atoms",
+COMMON_WORD_COMPANIES = {"clear", "handshake", "chalk", "applied", "affirm", "ramp", "compass", "scale", "figure", "notion", "current", "atoms",
                          "mercury", "anchor", "persona", "together", "modal", "pylon"}
 ALLOW_FILES ={"engine/discovery/boards.example.txt"}  # a public list of company job boards, not applications
 FORBIDDEN = re.compile(r"^(profile/|workspace/(?!\.gitkeep$)|\.env$|\.env\.local$|\.insforge/)|\.(pdf|docx)$", re.I)

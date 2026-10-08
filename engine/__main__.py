@@ -10,6 +10,7 @@
   tailor <spec.json>               build one Fact-Bank-only resume
   apply  <batches/x.json> [--dry]  fill (and submit) every job in a batch
   inspect <job url> [--show]       list a form's fields + the engine's answers, without filling it
+  codes   '<json>'                 Greenhouse email codes (engine/discovery/gmail_codes.js output) -> waiting jobs
   status                           application outcomes from the event log
   inbox   <msgs.json> | --imap [d] classify recruiting email -> outcome events (OA / interview / rejection / offer / scam)
   learn                            response rates by lane and ATS -> workspace/learnings.md
@@ -108,6 +109,8 @@ def main():
         from engine.tailoring.resume import main as m
     elif cmd == "apply":
         from engine.apply.runner import main as m
+    elif cmd == "codes":
+        from engine.apply.codes import main as m
     elif cmd == "inspect":
         from engine.apply.inspect_form import main as m
     elif cmd == "status":

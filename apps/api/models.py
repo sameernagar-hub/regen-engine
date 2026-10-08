@@ -59,6 +59,30 @@ class HumanItem(BaseModel):
     text: str
     url: Optional[str] = None
     resume: Optional[str] = None
+    missing: list[str] = Field(default_factory=list, description="Questions the engine could not answer (answer them via POST /api/answers)")
+
+
+class AnswerIn(BaseModel):
+    """One answer typed in the web app for a question the engine could not answer."""
+    job: str
+    question: str = Field(max_length=500)
+    answer: str = Field(max_length=2000)
+
+
+class AnswerOut(BaseModel):
+    pattern: str
+    answer: str
+    source: str
+
+
+class Drafted(BaseModel):
+    """An answer the engine drafted from Fact Bank entries and sent without waiting (for review)."""
+    ts: str
+    job: Optional[str] = None
+    status: str
+    question: str
+    answer: str
+    facts: list[str] = Field(default_factory=list)
 
 
 class Snapshot(BaseModel):

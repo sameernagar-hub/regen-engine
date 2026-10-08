@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PUBLIC, useEngine } from "@/lib/engine";
 import { pressable, usePanel } from "@/lib/a11y";
 import Link from "next/link";
-import { STAGES, get, type Application, type HumanItem } from "@/lib/types";
+import { STAGES, get, post, type Application, type HumanItem } from "@/lib/types";
 
 const W = 1200, H = 620, LINE_Y = 470;
 const stationX = (i: number) => 120 + i * ((W - 240) / (STAGES.length - 1));
@@ -128,7 +128,11 @@ export default function Live() {
           <button className="close" onClick={() => setHuman(null)} aria-label="Close the waiting list">×</button>
           <h2>Waiting on you</h2>
           <div className="sub">Each job's latest state. Bot checks are never bypassed; the resume is ready for each.</div>
-          <ul className="list">{human.map((h) => <li key={h.job}>{h.text}<small>{h.job}</small></li>)}</ul>
+          <ul className="list">{human.map((h) => (
+            <li key={h.job}>{h.text}<small>{h.job}</small>
+              {(h.missing ?? []).map((q) => <AnswerBox key={q} job={h.job} question={q} />)}
+            </li>))}
+          </ul>
         </HumanPanel>
       )}
     </main>
@@ -155,5 +159,28 @@ function Proof({ a, onClose }: { a: Application; onClose: () => void }) {
       {answers.length > 0 && (<><h3>WHAT THE FORM ASKED, WHAT WE ANSWERED</h3>
         {answers.map(([q, ans], i) => <div className="qa" key={i}><span>{q}</span><span>{ans === "__DECLINE__" ? "declined" : ans === "__ACK__" ? "acknowledged" : ans ?? "—"}</span></div>)}</>)}
     </aside>
+  );
+}
+
+// Answer once here; the engine saves it to answers.json (with its source), reuses it on every form and re-queues the job.
+// Legal, sponsorship and EEO questions are refused by the API: those come from your presets only.
+function AnswerBox({ job, question }: { job: string; question: string }) {
+  const [text, setText] = useState("");
+  const [state, setState] = useState<"idle" | "saving" | "saved" | string>("idle");
+  const id = `ans-${job}-${question}`.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 80);
+  const save = async () => {
+    setState("saving");
+    try { await post("/api/answers", { job, question, answer: text }); setState("saved"); }
+    catch (e) { setState(e instanceof Error ? e.message : "could not save"); }
+  };
+  return (
+    <form className="answer" onSubmit={(e) => { e.preventDefault(); if (text.trim()) save(); }}>
+      <label htmlFor={id}>{question}</label>
+      <textarea id={id} rows={2} value={text} onChange={(e) => setText(e.target.value)} disabled={state === "saved"} />
+      <button type="submit" disabled={!text.trim() || state === "saving" || state === "saved"}>
+        {state === "saved" ? "Saved, job re-queued" : state === "saving" ? "Saving…" : "Save answer"}
+      </button>
+      {!["idle", "saving", "saved"].includes(state) && <small role="alert">{state}</small>}
+    </form>
   );
 }

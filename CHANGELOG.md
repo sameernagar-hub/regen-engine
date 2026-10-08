@@ -4,6 +4,74 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.8.0] - 2026-10-07 · "Throughput, truthfully"
+The goal for v0.8: at least 10 applications a day with less waiting, and no new loopholes. Every item lists how to check it.
+
+### Added
+- **Round-robin scheduler** (`engine/apply/scheduler.py`). An application spends most of its time waiting for the site
+  (resume parsing, autocomplete, submit confirmation, email codes). Each job is now a generator in its own tab that
+  `yield`s at every field (a checkpoint) and every wait. A job runs until its time quantum is used up (preempted, back of
+  the ready queue) or it starts waiting (sleeps on a heap until its wake time), so the other tabs keep working.
+  Pick O(1), preempt O(1), block/wake O(log S); only `REGEN_TABS` tabs are open (default 3).
+  *Verify:* `python scripts/bench_scheduler.py 20 3` (seeded simulation from the real flows): 500 s → 244 s,
+  144 → 295 jobs/h, browser busy 29% → 60% (x2.05); 40 jobs on 4 tabs: x2.50. `tests/test_v08.py::test_rr_*`.
+- **Adaptive quantum per ATS.** EWMA mean and variance of each ATS's CPU bursts (West's one-pass update, O(1) memory);
+  quantum = mean + 0.84 σ (80th percentile, the textbook RR rule), clamped to 2–20 s, persisted in
+  `workspace/sched_stats.json`. *Verify:* `test_quantum_ewma_and_clamp`.
+- **Company interleaving.** A batch is reordered round-robin over companies, so the per-company cap and Ashby's bot
+  checks see spread-out traffic. *Verify:* `test_interleave_spreads_companies`.
+- **Drafted answers instead of waiting** (`engine/apply/drafts.py`, user decision 2026-10-07). Open-ended questions
+  ("Why us?", "Describe a time…", "What have you built?", "How do you use AI?") are answered with sentences built only
+  from Fact Bank entries the job's tailored resume already chose ("Built X" → "At Acme, I built X"). No LLM, no network.
+  Never drafted: sponsorship, authorization, arbitration, EEO, salary, sensitive data. Every draft is in the event log
+  (`drafted`: question, answer, fact ids) and in `workspace/drafts_review.md`. *Verify:* `test_draft_*`.
+- **Experience questions from the Fact Bank.** "Do you have experience with X?" is answered "Yes" only when X (or what it
+  means, e.g. single-page apps → React) is in your skills; otherwise it goes to you, never a guessed "No".
+  "Which of these have you used? Select all" ticks only the options your skills name.
+- **Answer from the page** (v0.8 roadmap item). `POST /api/answers` saves an answer to `profile/answers.json` with its
+  source, logs an `answer` event and re-queues the job (`batches/requeue.json`). Off unless `REGEN_API_WRITE=1`,
+  localhost only, legal/EEO/sensitive questions refused. `GET /api/human` lists each job's unanswered questions;
+  `GET /api/drafts` lists what was drafted. The live view's "waiting on you" panel has an answer box per question.
+  *Verify:* `tests/test_api.py`.
+- **Greenhouse codes for several jobs at once.** Each waiting job has `codes/<board>_<id>.wait`;
+  `engine/discovery/gmail_codes.js` reads codes from Gmail rows and `python -m engine codes '<json>'` writes a code only
+  to the job whose company the email names. *Verify:* `test_codes_only_go_to_the_named_company`.
+- **Evidence tooling.** `scripts/bench_tailor.py` (old vs new tailoring: identical output, speed), `scripts/bench_scheduler.py`,
+  headless Playwright tests of the real filler against local Greenhouse / Ashby / Lever look-alike forms
+  (`tests/test_forms.py`), coverage in CI.
+
+### Fixed (all seen on 2026-10-07)
+- **Event log corruption.** The batch builder and the applier appended to `events.jsonl` at the same time; on Windows,
+  append mode is "seek to end, then write", so two records were overwritten mid-line and every later job in the Ashby
+  batch crashed with `Expecting value`. Writes now hold a cross-process lock (`msvcrt`/`fcntl`) and go out in one
+  `os.write`; reads skip malformed lines. The two damaged records were rebuilt from `specs/`. *Verify:*
+  `test_concurrent_writers_never_tear_lines` (3 processes × 200 lines of 3 KB, every line parses).
+- **"Without sponsorship for the next 5 years?"** was matched by the plain "authorized without sponsorship" rule and
+  would have been answered Yes. A long-term variant now answers from a value derived from your presets (needs
+  sponsorship in future → No), and the airbag checks it. *Verify:* `test_long_term_sponsorship_is_not_the_today_question`.
+- **Ashby required fields drawn by CSS.** One board's asterisks were CSS-only, so blank required fields reached submit.
+  Required now also means a `required` class, `aria-required`, or `*` in `::after`/`::before`. Follow-up questions that
+  appear after an answer are filled on a second pass, and an Ashby "Missing entry" triggers one more pass and resubmit.
+  *Verify:* `test_ashby_late_required_question_goes_to_you`.
+- **A backspace character inside a rule.** A shell heredoc had turned `\b` into `\x08` in the state rule, so it never
+  matched. *Verify:* `test_state_rule_regex_is_clean` (no control characters in runner.py).
+- "What company are you currently employed at?" was answered "No" by the previous-employer rule; it now gets your
+  current employer. Office-location lists pick a Bay Area office, else remote. Phone country picks "United States +1"
+  explicitly (a form failed with "Select a country"). A drafted paragraph is never typed into a dropdown (one run stalled on it).
+
+### Changed (performance; outputs identical)
+- `tailor()` 74.3 → 24.3 ms per JD (x3.1), `fit()` 21.8 → 15.1 ms (x1.4) on 155 saved JDs, with identical output on
+  all of them (`python scripts/bench_tailor.py <old tailor.py>`). Cached vocabulary and compiled patterns, a substring
+  prefilter before each boundary regex, per-fact hit memo, positions instead of `list.index` in sort keys
+  (O(k² log k) → O(k log k)), overlap groups as a dict (O(k)).
+- `events.read()` is incremental (parses only new bytes), so the per-job rate cap and duplicate check are O(new lines)
+  instead of re-reading the whole log; the knowledge graph uses the same reader and no longer scans every edge per
+  application (O(A·E) → O(A + E)).
+
+### Removed
+- **No scheduled runs.** The Windows task "REGEN public feed" and the daily Claude routine are disabled; the engine runs
+  when you start it (user decision 2026-10-07).
+
 ## [0.7.1] - 2026-10-07 · "Live, readable, reachable"
 ### Added
 - **Motion on the live view, all from real data:** recent events play as a paced stream (each sentence sends a light to its station), the public site loops the last week of real activity (labelled "replaying"), a twinkling field of one point per ~25 watched boards, light flowing along the pipeline, and the lane tree grows on load with beads that breathe.

@@ -72,6 +72,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer
+         * @description Answer a waiting question once; the engine reuses it on every form and re-queues the job.
+         */
+        post: operations["answer_api_answers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Drafts
+         * @description Answers the engine drafted from the Fact Bank and sent without waiting, newest first.
+         */
+        get: operations["drafts_api_drafts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/outcomes": {
         parameters: {
             query?: never;
@@ -163,10 +203,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Graph
+         * @description The engine's memory as a graph: You -> lanes -> applications -> companies, facts used, questions answered,
+         *     outcomes, ATS (engine/memory/graph.py; same model as engine/memory/schema.cypher).
+         */
+        get: operations["graph_api_graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AnswerIn
+         * @description One answer typed in the web app for a question the engine could not answer.
+         */
+        AnswerIn: {
+            /** Job */
+            job: string;
+            /** Question */
+            question: string;
+            /** Answer */
+            answer: string;
+        };
+        /** AnswerOut */
+        AnswerOut: {
+            /** Pattern */
+            pattern: string;
+            /** Answer */
+            answer: string;
+            /** Source */
+            source: string;
+        };
         /**
          * Application
          * @description Latest state of one job (later events win).
@@ -208,6 +290,24 @@ export interface components {
             ][];
             /** Detail */
             detail?: string | null;
+        };
+        /**
+         * Drafted
+         * @description An answer the engine drafted from Fact Bank entries and sent without waiting (for review).
+         */
+        Drafted: {
+            /** Ts */
+            ts: string;
+            /** Job */
+            job?: string | null;
+            /** Status */
+            status: string;
+            /** Question */
+            question: string;
+            /** Answer */
+            answer: string;
+            /** Facts */
+            facts?: string[];
         };
         /**
          * Event
@@ -255,6 +355,11 @@ export interface components {
             url?: string | null;
             /** Resume */
             resume?: string | null;
+            /**
+             * Missing
+             * @description Questions the engine could not answer (answer them via POST /api/answers)
+             */
+            missing?: string[];
         };
         /**
          * Narration
@@ -434,6 +539,70 @@ export interface operations {
             };
         };
     };
+    answer_api_answers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnswerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    drafts_api_drafts_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Drafted"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     outcomes_api_outcomes_get: {
         parameters: {
             query?: never;
@@ -554,6 +723,37 @@ export interface operations {
         parameters: {
             query?: {
                 after?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    graph_api_graph_get: {
+        parameters: {
+            query?: {
+                questions?: boolean;
             };
             header?: never;
             path?: never;

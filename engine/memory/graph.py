@@ -16,14 +16,9 @@ ATS = (("greenhouse", "Greenhouse"), ("ashbyhq", "Ashby"), ("lever.co", "Lever")
 
 
 def _events():
-    p = os.path.join(WORKSPACE, "events.jsonl")
-    if not os.path.exists(p):
-        return
-    for line in open(p, encoding="utf-8"):
-        try:
-            yield json.loads(line)
-        except ValueError:
-            continue
+    """The shared incremental reader (engine/feedback/events.py): parsed once, only new lines on later calls."""
+    from engine.feedback.events import read
+    return read()
 
 
 def _fact_text():
@@ -55,13 +50,15 @@ def build(submitted_only=True, questions=True):
         edges.append({"source": a, "target": b, "type": t, **({"data": data} if data else {})})
 
     you = node("you", "You", "You")
+    lanes_linked = set()
     for job, e in latest.items():
         st = (e.get("status") or "").split(":")[0]
         if submitted_only and st != "SUBMITTED":
             continue
         r = resumes.get(job, {})
         lane = node("lane:" + (r.get("lane") or "earlier"), "Lane", r.get("lane") or "earlier")
-        if not any(x["source"] == you and x["target"] == lane for x in edges):
+        if lane not in lanes_linked:  # set membership: O(1) per application (was a scan of every edge: O(A*E))
+            lanes_linked.add(lane)
             edge(you, lane, "WRITES_AS")
         co, _, role = job.partition(" - ")
         app = node("app:" + job, "Application", role.strip() or job, company=co.strip(), status=st, ts=e.get("ts"),
@@ -92,6 +89,7 @@ def build(submitted_only=True, questions=True):
 
 
 def neighbors(node_id, graph=None):
+    """One node and its neighbors: a single O(N + E) pass."""
     g = graph or build()
     ids = {e["target"] for e in g["edges"] if e["source"] == node_id} | {e["source"] for e in g["edges"] if e["target"] == node_id}
     return {"node": next((n for n in g["nodes"] if n["id"] == node_id), None),

@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Globex - AI Engineer</title>
+<style>._required_q::after { content: "*"; color: red; }</style></head>
+<body>
+<!-- A minimal stand-in for an Ashby application page: same class names, Yes/No buttons, CSS-only asterisks. -->
+<div class="ashby-application-form-field-entry"><label>Name*</label><input type="text" id="name"></div>
+<div class="ashby-application-form-field-entry"><label>Email*</label><input type="email" id="email"></div>
+<div class="ashby-application-form-field-entry"><label>Resume*</label><input type="file" name="_systemfield_resume" id="resume"></div>
+<div class="ashby-application-form-field-entry"><label class="_required_q">Do you now or in the future require visa sponsorship?</label>
+  <div><button type="button" class="yn">Yes</button><button type="button" class="yn">No</button></div></div>
+<div class="ashby-application-form-field-entry"><label class="_required_q">What excites you about Globex?</label><textarea id="excite"></textarea></div>
+<div id="extra"></div>
+<button id="submit">Submit Application</button>
+<script>
+  document.getElementById('resume').addEventListener('change', () => document.body.insertAdjacentHTML('beforeend', '<span>Replace</span>'));
+  document.querySelectorAll('.yn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.yn').forEach(x => x.classList.remove('_active'));
+    b.classList.add('_active'); window.__spons = b.textContent;
+    // a follow-up question that only appears after the first answer (a 10-07 case)
+    if (!document.getElementById('travel')) document.getElementById('extra').innerHTML =
+      '<div class="ashby-application-form-field-entry"><label class="_required_q">Do you have experience with an obscure mainframe language?</label><input type="text" id="travel"></div>';
+  }));
+  document.getElementById('submit').addEventListener('click', () => {
+    const t = document.getElementById('travel');
+    if (t && !t.value) { document.body.insertAdjacentHTML('beforeend', '<p>Missing entry for required field: Do you have experience with an obscure mainframe language?</p>'); return; }
+    document.body.innerHTML = '<p>Your application was successfully submitted.</p>';
+  });
+</script>
+</body></html>

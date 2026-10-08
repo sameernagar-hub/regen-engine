@@ -1,48 +1,51 @@
-# Handoff: where the engine stands (v0.4, 2026-10-05)
+# Handoff: where the engine stands (v0.8, 2026-10-07)
 
-Full list of changes, with how to verify each: **[CHANGELOG.md](../CHANGELOG.md)**.
+Every change, with how to verify it: **[CHANGELOG.md](../CHANGELOG.md)**. Ideas and design notes: **[the wiki](wiki/Home.md)**.
 
-## ▶ Resume here (last stop: 2026-10-06, late)
-**State:** branch `v0.6.4-alerts` = PR #8 (CI green, **not merged**: merge only with a noreply author once GitHub "Keep my email private" is confirmed). It carries v0.6.4 + the v0.7 platform first cut. Public demo is live at https://sameernagar-hub.github.io/regen-engine/ (`gh-pages` branch, anonymized; rebuild with `python -m engine site` and push `site/` to `gh-pages`).
-**New tonight:** job-alert email source (`gmail_alerts.js` + `engine alerts`), Lever + Workable adapters, fit gate from rejection analysis (years from presets, core stack), JD spelling aliases + overlap groups in tailoring, ~15 answer rules, FastAPI API (`apps/api`), Postgres migration, Next.js live view + memory graph (`apps/web`), knowledge graph (`engine/memory/graph.py`), MCP server (`python -m engine mcp`, `.mcp.json`).
-**Run the platform:** `python -m uvicorn apps.api.main:app --port 8787` and `cd apps/web && npm run dev` (or `docker compose -f deploy/platform.compose.yml up -d --build`).
-**Scheduled:** daily routine 8:13 AM (now includes alert emails); one-time `regen-ashby-after-cooldown` 2026-10-07 21:45 runs `batches/e20261007_ashby.json` (+ `retry_ashby_20261007.json`).
-**Next, in order:**
-1. Answer-from-the-page (write path for the human queue, behind airbags).
-2. Ashby "CV" label as resume upload; Workable required "Summary" from the lane summary (needs user OK).
-3. pgvector retrieval memory; MCP tools for discovery/tailoring.
-4. Engine room (GPU) view on top of the Next.js app.
+## ▶ Resume here (last stop: 2026-10-07, night)
+**State:** branch `v0.8` (PR open, CI must be green). v0.8 = round-robin scheduler, drafted answers from the Fact Bank,
+answer from the page, locked + incremental event log, ×3 faster tailoring, form tests + coverage, wiki.
+**No schedules.** The Windows task "REGEN public feed" and the daily Claude routine are disabled (user decision): the
+engine runs only when you start it. Re-enable nothing without asking.
 
-## Daily loop (about 10 minutes of your attention)
+**Run a day (about 10 minutes of attention):**
 ```bash
-python -m engine boards harvest      # once a day: grow the board registry
-python -m engine scan 1              # ~2,300 boards (Greenhouse/Ashby/Lever/Workable), last 24 h
-python -m engine newgrad 1           # newgrad-jobs.com leads -> employer ATS (rest in workspace/leads.json)
-# job-alert emails: run engine/discovery/gmail_alerts.js in a Gmail tab (await it), save the article text to
-# workspace/alerts/<date>.txt, then:
-python -m engine alerts workspace/alerts/<date>.txt   # -> employer ATS (rest in workspace/alert_leads.json)
-python -m engine batch b8 <id,...>   # fit gate skips ineligible jobs; tailored, Fact-Bank-only resumes
-python -m engine apply batches/b8.json    # submits when every required answer is known
-python -m engine status
+python -m engine scan 1                     # ~2,300 boards, last 24 h  -> workspace/queue.json
+python -m engine newgrad 1                  # new-grad leads -> employer ATS
+python -m engine batch b1 <id,id,...>       # fit gate + tailored Fact-Bank resumes -> batches/b1.json
+REGEN_TABS=3 python -m engine apply batches/b1.json      # round-robin over 3 tabs
 ```
-Or leave `python -m engine watch 10` running and batch whatever it announces.
+A second applier can run next to the first with its own browser profile:
+`REGEN_PW_PROFILE=pw-profile-2 python -m engine apply batches/b2.json` (the event log is locked, so this is safe).
 
-**Greenhouse email codes:** at the code step the runner writes `workspace/WAITING_FOR_CODE` (the form URL) and waits for `workspace/code.txt`. The operator (an agent with Gmail open in Chrome, or you) searches `security code newer_than:10m` and writes the 8-character code.
+**Greenhouse email codes:** a waiting job writes `workspace/codes/<board>_<id>.wait`. Run
+`engine/discovery/gmail_codes.js` in a signed-in Gmail tab and pass its output to `python -m engine codes '<json>'`;
+a code only goes to the job whose company the email names. (`code.txt` still works when one job is waiting.)
 
-**Human queue:** `workspace/human_queue.md` lists only questions the engine can't answer from presets or the Fact Bank, with drafts that cite fact ids. Answers you approve can go into `profile/answers.json` and are reused on every form.
+**Inbox:** read job replies (Gmail search `newer_than:2d (application OR interview OR assessment OR unfortunately)`),
+save them as `[{id,date,from,subject,snippet}]` and run `python -m engine inbox <file>`, then `python -m engine learn`.
+
+**Review what was drafted:** `workspace/drafts_review.md` (every drafted answer, with the fact ids it came from), or
+`GET /api/drafts`. Presets the agent filled on the user's "draft ideal answers" instruction are listed in
+`profile/presets.json` under `_drafted_by_claude_2026_10_07` (open_to_travel, plans_to_work_remotely).
+
+**Answer waiting questions in the page:** `REGEN_API_WRITE=1 python -m uvicorn apps.api.main:app --port 8787` and
+`cd apps/web && npm run dev`, open "waiting on you", type the answer. Then `python -m engine apply batches/requeue.json`.
+
+## Next, in order
+1. Workday / iCIMS adapters (most unresolved leads are there).
+2. Engine room (GPU view), moved to v0.9.
+3. pgvector retrieval memory; MCP tools for discovery and tailoring.
+4. Companies that host their own Greenhouse-backed form: resume upload failed once on 10-07 (different DOM from the embed).
 
 ## What works
-- Discovery: 4 ATS APIs, board registry with harvest and dead-board skipping, `watch` with webhook, newgrad-jobs resolution, SimplifyJobs feed.
-- Fit gate: citizenship/ITAR, clearance, no-sponsorship, grad window, years above level. Skips are logged as `SKIPPED` events and never re-queued.
-- Tailoring: per-job selection and ordering of Fact Bank entries. The `resume` event lists fact ids and JD-term coverage.
-- Apply: Greenhouse reliable; Ashby works for most boards. Each field is logged, actions time out, already-submitted jobs are skipped.
-- `inspect <url>` shows every field and the engine's answer before applying.
+- Discovery: 4 ATS APIs, board registry, `watch`, new-grad and alert-email lead resolution.
+- Fit gate: citizenship/ITAR, clearance, no-sponsorship, grad window, years, core stack.
+- Tailoring: Fact-Bank-only, JD spelling, overlap groups, audit log (fact ids per resume).
+- Apply: Greenhouse reliable; Ashby, Lever, Workable beta. Round-robin over tabs, drafted answers, airbags, proof.
+- Feedback: inbox classifier, `learn`, verified-only `report`.
 
-## Known gaps / next fixes (priority order)
-1. **Lever + Workable apply adapters.** Discovery and resumes exist; these jobs currently go to the human queue.
-2. **YC Work at a Startup.** Discovery works in-browser (your session; the key never leaves the page). Applying sends a founder message, so it needs your approval per batch (drafts in `workspace/outreach/`).
-3. **newgrad-jobs resolution rate (~10%).** Most unresolved leads are Workday/iCIMS/custom portals. Next: add SmartRecruiters/Recruitee fetchers and a company→ATS hint table.
-4. **Gmail code step** is still operator-driven. A local IMAP reader with your app password, kept in `.env`, would close it without any third-party API.
-5. **Memory ingesters** (`fact_bank.json` + `events.jsonl` → Neo4j/pgvector).
-6. **Watcher memory:** stream each board through the filter instead of holding ~110k postings (now ~750 MB in Docker).
-7. **Scheduler:** run `watch` as a service and auto-build batches for jobs that pass the fit gate.
+## Known gaps
+- Single-choice "pick the best description" questions still go to you.
+- Questions about citizenship country (export licensing) go to you by design.
+- Ashby may flag automation; after a flag, Ashby submits pause for 24 h (`workspace/ashby_cooldown`).

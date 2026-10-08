@@ -48,5 +48,11 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -r requirements.txt pytest
-      - run: python -m pytest -q
+      - run: pip install -r requirements.txt pytest pytest-cov httpx
+      # headless Chromium so tests/test_forms.py runs the real form filler against the local ATS look-alikes
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m pytest -q --cov=engine --cov=apps/api --cov-report=term --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.xml

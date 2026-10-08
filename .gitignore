@@ -21,3 +21,8 @@ workspace/.pages/
 
 # public feed: built by `python -m engine site`, published to the gh-pages branch
 site/
+
+# coverage output
+.coverage
+coverage.xml
+htmlcov/

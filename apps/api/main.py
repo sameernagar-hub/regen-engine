@@ -1,25 +1,28 @@
-"""REGEN API (v0.7): a typed, read-only window over the engine's evidence.
+"""REGEN API (v0.8): a typed window over the engine's evidence, plus one guarded write (answers).
 
   uvicorn apps.api.main:app --host 127.0.0.1 --port 8787        (OpenAPI docs at /docs)
 
 Everything is derived from the append-only event log (Postgres or events.jsonl, see store.py) plus files the engine
-already wrote (proof screenshots). Nothing here writes to the engine; the web app can only read.
+already wrote (proof screenshots). The only write is POST /api/answers (v0.8, "answer from the page"): enabled only
+when REGEN_API_WRITE=1, only from localhost, never for legal / EEO / sensitive questions (engine/feedback/answers.py).
 """
 import asyncio, collections, json, os, re, time
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
 from apps.api import store
-from apps.api.models import Application, Event, HumanItem, Narration, Outcome, Snapshot
+from apps.api.models import AnswerIn, AnswerOut, Application, Drafted, Event, HumanItem, Narration, Outcome, Snapshot
 from engine.config import WORKSPACE
+from engine.feedback import answers as A
 from engine.live.server import narrate, who
 
-app = FastAPI(title="REGEN API", version="0.7.0",
-              description="Read-only API over the REGEN job engine's append-only event log.")
+WRITE = os.environ.get("REGEN_API_WRITE") == "1"
+app = FastAPI(title="REGEN API", version="0.8.0",
+              description="API over the REGEN job engine's append-only event log (read-only, plus POST /api/answers when enabled).")
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("REGEN_WEB_ORIGINS", "http://127.0.0.1:3000,http://localhost:3000").split(","),
-                   allow_methods=["GET"], allow_headers=["*"])
+                   allow_methods=["GET", "POST"] if WRITE else ["GET"], allow_headers=["*"])
 
 WAITING = ("NEEDS YOU", "FAILED", "FLAGGED")
 
@@ -91,8 +94,28 @@ def human():
     for a in apps:
         if a.status in WAITING:
             n = narrate({"kind": "application", "job": a.job, "status": "NEEDS YOU", "detail": a.detail or ""})
-            out.append(HumanItem(job=a.job, status=a.status, text=n["text"] if n else a.job, url=a.url, resume=a.resume))
+            out.append(HumanItem(job=a.job, status=a.status, text=n["text"] if n else a.job, url=a.url, resume=a.resume,
+                                 missing=A.missing_questions(a.detail)))
     return out
+
+
+@app.post("/api/answers", response_model=AnswerOut)
+def answer(body: AnswerIn, request: Request):
+    """Answer a waiting question once; the engine reuses it on every form and re-queues the job."""
+    if not WRITE:
+        raise HTTPException(403, "writes are disabled (set REGEN_API_WRITE=1 on your own machine)")
+    if (request.client.host if request.client else "") not in ("127.0.0.1", "::1", "localhost", "testclient"):
+        raise HTTPException(403, "answers can only be written from this computer")
+    try:
+        return AnswerOut(**A.save(body.job, body.question, body.answer))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@app.get("/api/drafts", response_model=list[Drafted])
+def drafts(limit: int = Query(200, le=2000)):
+    """Answers the engine drafted from the Fact Bank and sent without waiting, newest first."""
+    return [Drafted(**d) for d in A.drafted(limit)]
 
 
 @app.get("/api/outcomes", response_model=list[Outcome])

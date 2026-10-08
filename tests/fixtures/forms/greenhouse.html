@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Initech - Backend Engineer</title></head>
+<body>
+<!-- A minimal stand-in for Greenhouse's embedded job_app form: same selectors the runner relies on. -->
+<form id="application-form">
+  <div class="field-wrapper"><label for="first_name">First Name*</label><input type="text" id="first_name"></div>
+  <div class="field-wrapper"><label for="last_name">Last Name*</label><input type="text" id="last_name"></div>
+  <div class="field-wrapper"><label for="email">Email*</label><input type="email" id="email"></div>
+  <div class="field-wrapper"><label for="phone">Phone*</label><input type="tel" id="phone"></div>
+  <div class="field-wrapper"><label for="resume">Resume*</label><input type="file" id="resume"><span id="fname"></span></div>
+  <div class="field-wrapper"><label for="li">LinkedIn Profile</label><input type="text" id="li"></div>
+  <div class="field-wrapper"><label for="why">Why do you want to join Initech?*</label><textarea id="why"></textarea></div>
+  <fieldset><legend>Will you now or in the future require visa sponsorship?*</legend>
+    <label><input type="radio" name="spons" value="Yes">Yes</label><label><input type="radio" name="spons" value="No">No</label></fieldset>
+  <div class="checkbox"><label><input type="checkbox" id="ack">I acknowledge the candidate privacy notice*</label></div>
+  <button type="submit">Submit application</button>
+</form>
+<script>
+  document.getElementById('resume').addEventListener('change', e => { document.getElementById('fname').textContent = e.target.files[0].name; });
+  document.getElementById('application-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const missing = ['first_name', 'email', 'why'].filter(id => !document.getElementById(id).value)
+      .concat(document.querySelector('input[name=spons]:checked') ? [] : ['spons'])
+      .concat(document.getElementById('ack').checked ? [] : ['ack']);
+    if (missing.length) { document.body.insertAdjacentHTML('beforeend', '<div class="helper-text--error">missing ' + missing.join(',') + '</div>'); return; }
+    window.__submitted = { why: document.getElementById('why').value, spons: document.querySelector('input[name=spons]:checked').value };
+    document.body.innerHTML = '<h1>Thank you for applying</h1><p>Your application has been received.</p>';
+  });
+</script>
+</body></html>

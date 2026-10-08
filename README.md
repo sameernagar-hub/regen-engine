@@ -80,14 +80,17 @@ Code: `engine/tailoring/` · Tests: `tests/test_core.py`
 | Feature | Detail |
 |---|---|
 | Four apply adapters | **Greenhouse** (including the emailed security-code step), **Ashby**, **Lever** and **Workable**, driven by page structure, not screenshots. |
-| 63 answer rules | Contact, location, work authorization, sponsorship, education dates, salary, start date, relocation, referral, prior employment and more, all filled from your presets, never hard-coded. EEO questions are always declined. |
+| 75 answer rules | Contact, location, work authorization, sponsorship (today and long-term), education dates, salary, start date, relocation, referral, prior employment and more, all filled from your presets, never hard-coded. EEO questions are always declined. |
 | Approved-answer bank | An answer you approve once (`profile/answers.json`) is reused on every form, with its source recorded. |
 | Form inspector | `python -m engine inspect <url>` lists every question and the answer the engine would give, without filling anything. |
 | Human checks respected | hCaptcha, reCAPTCHA, Cloudflare Turnstile and Ashby's bot check are detected and handed to you with the form filled and the resume ready. They are never solved or bypassed. |
 | Airbags | Sensitive fields (SSN, bank, passwords), fee requests, unexpected sites, answers that drift from your presets, and per-company and daily rate caps stop the run and flag it. A `workspace/STOP` file halts everything. |
 | Proof | A full-page screenshot of the confirmation page for every submission; already-submitted jobs are skipped. |
+| Round-robin over tabs (v0.8) | Several applications run at once, one per tab. Each gets a time quantum, then the next one runs; while one waits on the site (resume parsing, email code, confirmation) the others keep filling. See [Algorithms and complexity](#algorithms-and-complexity). |
+| Drafted answers (v0.8) | Open-ended questions ("Why us?", "Describe a time…") are answered with sentences built only from Fact Bank entries chosen for that job, logged with their fact ids in `workspace/drafts_review.md`. Legal, EEO and salary questions are never drafted. |
+| Answer from the page (v0.8) | Answer a "waiting on you" question once in the live view; it's saved with its source, reused on every form, and the job is re-queued. |
 
-Code: `engine/apply/runner.py`, `engine/safety.py`
+Code: `engine/apply/runner.py`, `engine/apply/scheduler.py`, `engine/apply/drafts.py`, `engine/safety.py`
 
 ### 5. Feedback: learn from what comes back
 - **Inbox classifier.** Confirmation, rejection, online assessment, interview, offer, or scam, including previews that stop mid-sentence. Each outcome is linked to the applications it refers to. (`engine/feedback/inbox.py`)
@@ -221,6 +224,81 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · original design: [d
 
 ---
 
+## Algorithms and complexity
+
+The engine runs on a laptop, so every hot path is measured and kept near-linear. Symbols: J jobs in a batch,
+S jobs sleeping, T vocabulary terms (~200), F Fact Bank entries, k facts in a pool, n characters in a JD,
+E events in the log, A applications.
+
+### Round-robin scheduler (`engine/apply/scheduler.py`)
+Each application is a Python generator that `yield`s at every field (a checkpoint) and `yield seconds` at every
+wait. The scheduler keeps a ready queue (deque) and a sleep heap:
+
+| Operation | Structure | Cost |
+|---|---|---|
+| pick the next job | `deque.popleft` | O(1) |
+| quantum used up at a checkpoint → back of the queue | `deque.append` | O(1) |
+| job starts waiting → sleeps until its wake time | `heapq.heappush` | O(log S) |
+| wake jobs whose time has come | `heapq.heappop` | O(log S) each |
+| whole batch | | O(B log J) time for B bursts, O(J) memory; only `REGEN_TABS` tabs open |
+
+It is cooperative (a browser call can't be interrupted halfway), so the quantum is checked at checkpoints.
+One job's exception is recorded and the others continue.
+
+**Adaptive quantum.** Too small and switching overhead dominates; too large and round-robin degrades into
+first-come-first-served. The textbook rule is that about 80% of CPU bursts should finish within one quantum. For
+each ATS the scheduler keeps an exponentially weighted mean and variance of burst length (West's one-pass update,
+α = 0.2, O(1) time and memory, no history stored) and sets
+
+`quantum = mean + 0.84 · stddev`  (the 80th percentile of a normal), clamped to 2–20 s, default 6 s until 3 samples.
+
+Stats persist in `workspace/sched_stats.json`, so the engine learns each ATS's rhythm across runs. Every run logs a
+`schedule` event with wall time, active time, switches, per-job slices and the quanta used.
+
+**Evidence** (`python scripts/bench_scheduler.py`, deterministic simulation of the real Ashby / Greenhouse / Lever flows):
+
+| Batch | Sequential | Round-robin | Speed-up | Browser busy |
+|---|---|---|---|---|
+| 20 jobs, 3 tabs | 500 s, 144 jobs/h | 244 s, 295 jobs/h | ×2.05 | 29% → 60% |
+| 40 jobs, 4 tabs | 989 s, 146 jobs/h | 395 s, 365 jobs/h | ×2.50 | 32% → 80% |
+
+Real forms are slower than the simulation (searchable dropdowns, email codes), so treat these as the ratio, not the
+absolute rate; the `schedule` event records the real numbers for every run.
+
+**Company interleaving.** Before scheduling, a batch is reordered round-robin over companies (a dict of deques, O(J)),
+so per-company caps and bot checks see spread-out traffic.
+
+### Tailoring and the fit gate (`engine/tailoring/tailor.py`)
+
+| Step | Before | Now |
+|---|---|---|
+| Candidate vocabulary | rebuilt from the Fact Bank on every call | built once per loaded bank, cached: O(1) |
+| Term hits in a text | for each term: escape, regex cache lookup, full scan | compiled pattern per term (cached) and a `term in text` substring test first; the regex only confirms word boundaries. Same O(T·n) bound, far fewer regex scans |
+| Ranking a role's facts | `list.index` inside the sort key: O(k² log k) | precomputed positions: O(k log k); each fact text matched once per JD (memo) |
+| Overlap groups | O(k · groups · picked) | fact → group ids dict: O(k) |
+| "Does the bank have stack X?" | per JD | once per vocabulary |
+
+Measured on 155 real saved JDs with identical output (`python scripts/bench_tailor.py <old tailor.py>`):
+`tailor()` 74.3 → 24.3 ms (×3.1), `fit()` 21.8 → 15.1 ms (×1.4).
+
+### Event log (`engine/feedback/events.py`)
+Append-only JSON lines. Writers take a cross-process lock and write each line with one `os.write` on an `O_APPEND`
+descriptor, so concurrent engine processes can't tear lines. `read()` is incremental: it keeps the parsed events and
+the byte offset, and parses only bytes appended since the last call (O(new lines) per call instead of O(E)); a line
+still being written is left for the next call, a malformed line is skipped and counted. The rate cap and duplicate
+checks run per job on top of it, and the knowledge graph uses the same reader.
+
+### Knowledge graph (`engine/memory/graph.py`)
+One pass over the log builds nodes and edges in dicts: O(E) time and memory. Linking each lane once uses a set
+(the old per-application scan of every edge was O(A·E)). `neighbors()` is a single O(N + E) pass.
+
+### Drafted answers (`engine/apply/drafts.py`)
+No model and no network: O(F) to load the job's resume spec and a few regexes over the question label, so drafting
+costs microseconds next to a page load. The facts it uses are the ones the tailored resume already ranked for the JD.
+
+### Greenhouse email codes (`engine/apply/codes.py`)
+Waiting jobs × codes in the inbox, both tiny; a code is only written for the job whose company the email names.
+
 ## Principles
 
 | Principle | How it's enforced |
@@ -230,7 +308,8 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · original design: [d
 | **No bypassing human checks** | CAPTCHAs, Turnstile and bot checks are detected and handed over. No accounts are created on your behalf. |
 | **Discovery only on job boards** | LinkedIn, Indeed, Glassdoor, ZipRecruiter and Handshake are read for leads; applications go to the employer's own site. |
 | **Local-first** | `profile/` and `workspace/` stay on your machine and out of git. Network use is limited to public job APIs and the forms you apply to. Every service binds to 127.0.0.1. |
-| **Transparent** | Each resume lists its fact ids, each skip its reason, each submission its proof, and each form every question and answer. |
+| **Transparent** | Each resume lists its fact ids, each skip its reason, each submission its proof, each form every question and answer, and each drafted answer the facts it came from. |
+| **You start it** | No background schedules (removed in v0.8). The engine runs when you run it. |
 | **Lean** | Dead boards skipped, lookups cached, the first watcher pass only seeds state, and the API is read-only. |
 
 ## Privacy and security
@@ -254,10 +333,14 @@ Every change is itemized in [CHANGELOG.md](CHANGELOG.md) with what changed, why,
 | Airbags, kill switch, SOS email | ✅ |
 | Inbox outcomes, `learn`, verified-only `report` | ✅ |
 | Platform: FastAPI API, Postgres store, Next.js live view and memory graph | ✅ v0.7 first cut |
+| Round-robin applying over tabs with adaptive quantum | ✅ v0.8 |
+| Drafted open-ended answers from the Fact Bank, reviewable | ✅ v0.8 |
+| Tests: unit, API, and headless form tests against local ATS look-alikes; coverage in CI | ✅ v0.8 |
 | MCP server (read-only tools) | ✅ |
 | Privacy gate in CI, anonymized public site | ✅ |
 | Vector memory (pgvector) and facts-for-JD retrieval | 🔜 |
-| Write path from the web app (answer the human queue in the page) | 🔜 |
+| Write path from the web app (answer the human queue in the page) | ✅ v0.8 (`REGEN_API_WRITE=1`, localhost only) |
+| GPU "engine room" view | 🔜 v0.9 |
 
 ## Roadmap
 
@@ -265,8 +348,8 @@ Every change is itemized in [CHANGELOG.md](CHANGELOG.md) with what changed, why,
 |---|---|---|
 | v0.1–0.6 ✅ | Engine | Discovery, Fact-Bank tailoring, Greenhouse/Ashby apply with proof, safety, inbox loop, live view, privacy gate |
 | **v0.7** ✅ first cut | Platform | FastAPI + Pydantic API, Postgres event store, Next.js live view, memory graph, MCP server, Lever and Workable adapters, job-alert emails |
-| v0.8 | Answer from the page | Reply to "waiting on you" items in the web app; answers saved to `answers.json` with their source and the job re-run, behind the same airbags |
-| v0.8 | Engine room | GPU-rendered live view: instanced board field, glowing pipeline, 3D lane tree, render-on-demand ([research](docs/FRONTEND.md)) |
+| **v0.8** ✅ | Throughput, truthfully | Round-robin scheduler with adaptive quantum, drafted answers from the Fact Bank, answer from the page, locked incremental event log, ×3 faster tailoring, form tests and coverage |
+| v0.9 | Engine room | GPU-rendered live view: instanced board field, glowing pipeline, 3D lane tree, render-on-demand ([research](docs/FRONTEND.md)). Moved from v0.8 so v0.8 could ship throughput first |
 | v0.9 | Retrieval memory | pgvector over facts and job descriptions; facts-for-JD retrieval; MCP tools for discovery and tailoring |
 | v1.0 | Public release | One-command setup, docs site, stable APIs |
 
@@ -279,7 +362,7 @@ regen-engine/
 ├── deploy/            watcher, platform (db + api + web) and memory compose files
 ├── profile.example/   templates for your private profile/
 ├── tests/             pytest suite (fictional persona, never real data)
-├── scripts/           privacy gate
+├── scripts/           privacy gate, benchmarks (bench_scheduler.py, bench_tailor.py)
 ├── site/              anonymized public demo (built by `python -m engine site`)
 └── docs/              architecture, original plan, frontend research, handoff
 ```
