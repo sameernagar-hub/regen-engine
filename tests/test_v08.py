@@ -418,3 +418,18 @@ def test_country_list_question_checks_the_list(monkeypatch):
     assert R.country_list_answer("Are you a citizen or resident of any of the following countries: Cuba, Iran, Syria") == "No"
     assert R.country_list_answer("Are you a citizen or national of any of the following countries: Cuba, Testland") == "Yes"
     assert R.country_list_answer("What is your favorite color?") is None
+
+
+def test_no_as_a_sentence_and_hidden_country_list_ignored():
+    from engine.apply.runner import pick_option, menu_options
+    opts = [("I am currently a full/part-time employee for Initech", 1), ("I have never been employed by Initech", 2)]
+    assert pick_option(opts, "No") == 2
+    assert pick_option([("Yes", 1), ("No", 2)], "No") == 2
+
+    class O:
+        def __init__(self, cls): self.cls = cls
+        def get_attribute(self, _): return self.cls
+
+    class Page:
+        def query_selector_all(self, _): return [O("iti__country"), O("select__option"), O(None)]
+    assert len(menu_options(Page())) == 2

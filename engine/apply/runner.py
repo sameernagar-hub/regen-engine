@@ -394,6 +394,10 @@ def pick_option(options, ans):
     for t, h in options:  # short option inside a longer answer ("San Francisco" for "San Francisco Bay Area")
         o = t
         if len(o) >= 4 and re.search(r"(?<![a-z0-9])" + re.escape(o) + r"(?![a-z0-9])", a): return h
+    if ans == "No":  # "No" phrased as a sentence: "I have never been employed by X", "I am not ...", "None"
+        for t, h in options:
+            if re.match(r"(i have never|i've never|never|i am not|i'm not|i do not|i don't|not |none\b)", t):
+                return h
     if ans == P.get("preferred_location") and re.search(BAY_AREA, ans, re.I):
         # an office list ("San Mateo", "Raleigh", ...): any Bay Area office is the preferred location, else remote
         for rx in (BAY_AREA, r"\bremote\b"):
@@ -506,7 +510,7 @@ def set_field(page, f, label, ans):
         cur = combo.input_value()
         if cur and (cur == ans or cur.lower().startswith(ans.lower())): return True
         combo.click(); combo.fill(""); combo.type(ans); time.sleep(1.5)  # location boxes search remotely
-        opts = page.query_selector_all("[role=option]")
+        opts = menu_options(page)
         names = [o.inner_text().strip() for o in opts]
         h = pick_option(list(zip(names, opts)), ans)
         if h:
@@ -708,7 +712,7 @@ def fill_gh(page, job, log):
                 # options read "United States+1"; Enter alone picked whatever was highlighted (seen: "Select a country")
                 # react-select options read "United States +1"; [class*=option] would also catch the hidden
                 # intl-tel-input list, so only real react-select options are considered
-                opts = page.query_selector_all("[role=option], .select__option")
+                opts = menu_options(page)
                 us = next((o for o in opts if re.match(r"\s*United States(?! Minor)\s*(\(?\+?\s*1\)?)?\s*$", o.inner_text())), None)
                 if us: us.click()
                 else: page.keyboard.press("Enter")  # typing "United States" leaves it highlighted first
@@ -743,6 +747,13 @@ def fill_gh(page, job, log):
         yield  # checkpoint
     return missing
 
+def menu_options(page):
+    """Options of the open dropdown. Greenhouse pages also carry the phone widget's hidden country list
+    (intl-tel-input, class iti__country, also role=option): without this filter a Yes/No question saw
+    "Afghanistan, Aland Islands, ..." and nothing matched (10-07: Rubrik)."""
+    return [o for o in page.query_selector_all("[role=option], .select__option") if "iti__" not in (o.get_attribute("class") or "")]
+
+
 def set_gh(page, f, ans, label=""):
     """Generator: `ok = yield from set_gh(...)`; yields only before the field (see set_field)."""
     yield  # checkpoint
@@ -760,7 +771,7 @@ def set_gh(page, f, ans, label=""):
             return False
         inp = f.query_selector("input[role=combobox]") or sel
         inp.click(timeout=4000); time.sleep(0.5)
-        real = [o for o in page.query_selector_all("[role=option], .select__option") if not re.search(r"no options|loading", o.inner_text(), re.I)]
+        real = [o for o in menu_options(page) if not re.search(r"no options|loading", o.inner_text(), re.I)]
         h = best_by_overlap([(o.inner_text(), o) for o in real], ans)
         if not h:
             page.keyboard.press("Escape"); return False
@@ -770,7 +781,7 @@ def set_gh(page, f, ans, label=""):
         picked = 0
         for _ in range(8):  # one pick per round: react-select may close the menu after each click
             inp.click(timeout=4000); time.sleep(0.5)
-            real = [o for o in page.query_selector_all("[role=option], .select__option") if not re.search(r"no options|loading", o.inner_text(), re.I)]
+            real = [o for o in menu_options(page) if not re.search(r"no options|loading", o.inner_text(), re.I)]
             hs = skill_options([(o.inner_text(), o) for o in real])
             if not hs:
                 break
@@ -782,7 +793,7 @@ def set_gh(page, f, ans, label=""):
         terms = {"__DECLINE__": ["decline", "prefer not", "don't wish", "not wish"], "__ACK__": ["yes", "i acknowledge", "acknowledge", "agree", "understand", "read"],
                  "Company careers page": ["Company Website", "Company website", "Careers", "Website", "Job Board", "Other"]}.get(ans, [ans, ans[:12]])
         def options():
-            opts = page.query_selector_all("[role=option], .select__option")
+            opts = menu_options(page)
             return [o for o in opts if not re.search(r"no options|loading", o.inner_text(), re.I)]
 
         # fast path: open the menu once and choose from the full list (most selects have < 15 options)
