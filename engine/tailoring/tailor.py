@@ -19,9 +19,10 @@ Complexity (v0.8). T = vocabulary terms (~200), F = Fact Bank entries, n = JD le
   fit()          blocker and stack patterns compiled once; "does the Fact Bank have stack X" is computed once
                  per vocabulary instead of once per JD
 """
+import html
 import re
 
-from engine.tailoring import resume
+from engine.tailoring import compose, resume
 
 STOP = {"and", "or", "the", "a", "of", "with", "for", "in", "to", "on", "development", "ui", "design", "systems",
         "data", "cloud", "testing", "linux", "git", "html/css", "monitoring", "alerting", "responsive"}
@@ -83,7 +84,7 @@ def distinct(ranked, n):
     return out
 
 
-def tailor(spec, jd):
+def tailor(spec, jd, title=None, lanes=None):
     resume.load_bank()
     terms = vocabulary()
     want = _hits(jd, terms)
@@ -117,8 +118,14 @@ def tailor(spec, jd):
     extra = max((k for k in resume.SKILLS if k not in skills), key=lambda k: score(resume.SKILLS[k][1]), default=None)
     if extra and score(resume.SKILLS[extra][1]) >= 2:
         skills.append(extra)
-    skill_text = {k: t for k in skills if (t := resume.jd_spelling(resume.SKILLS[k][1], jd)) != resume.SKILLS[k][1]}
+    # v0.9 JD-first composition: each skills line leads with the posting's terms, in the posting's spelling
+    skill_text = {k: t for k in skills
+                  if (t := resume.jd_spelling(compose.order_skill_line(resume.SKILLS[k][1], want), jd)) != resume.SKILLS[k][1]}
     out = dict(spec, roles=roles, projects=projects, skills=skills, skill_text=skill_text)
+    if title is not None:  # headline names the role + the posting's top terms; summary leads with what answers it
+        out["headline"] = compose.headline(title, jd, want, resume.SKILLS, spec["headline"])
+        out["summary"] = compose.summary(jd, spec, lanes or {}, hits)
+    out.pop("projects_title", None) if not projects else None
     resume.validate(out)
     covered = set()
     for _, fids in roles:
@@ -134,7 +141,9 @@ BLOCKERS = [
     ("citizenship", r"u\.?s\.? citizen(ship)? (is )?(required|only)|must be (a )?u\.?s\.? citizen|requires? u\.?s\.? citizenship|us persons? only|\bitar\b|export control|green card holders? only"),
     ("clearance", r"(active|current|obtain|eligib\w+ for)( a)? (secret|ts|top secret|security) clearance|polygraph"),
     ("no sponsorship", r"(unable|not able|will not|won.t|cannot|can.t|do(es)? not|no longer)( be able to)? (to )?(provide |offer )?(visa )?sponsor|sponsorship (is )?not (available|provided|offered)|without (the need for )?(current or future )?(visa )?sponsorship|not eligible for (visa )?sponsorship"),
-    ("grad window", r"(graduating|graduation date|expected to graduate|graduate) (in|between|from|during)[^.]{0,40}(2027|2028)|class of (2027|2028)|(2027|2028) (start|new grads?|graduates)"),
+    ("grad window", r"(graduating|graduation date|expected to graduate|graduate) (in|between|from|during)[^.]{0,40}(2027|2028)|class of (2027|2028)|(2027|2028) (start|new grads?|graduates)|"
+                    r"degree (by|in|before|no later than) [^.]{0,30}(2027|2028)|(currently|actively) (enrolled|pursuing)[^.]{0,60}(degree|program|university)|"
+                    r"rising (junior|senior)|returning to school"),  # 10-07 Constant Contact SEDP: "Bachelor's Degree by May/June 2027"
 ]
 
 
@@ -176,7 +185,9 @@ def missing_stacks():
 def fit(jd, max_years=None):
     """List of hard blockers found in the job description (empty = clear)."""
     max_years = user_years() if max_years is None else max_years
-    low = " ".join(re.sub(r"<[^>]+>", " ", jd).split()).lower()
+    # Greenhouse JDs arrive HTML-escaped (&lt;li&gt;Bachelor&#39;s...): unescape first, or tags and apostrophes hide
+    # the requirement from every pattern below (found from the 10-07 Constant Contact rejection)
+    low = " ".join(re.sub(r"<[^>]+>", " ", html.unescape(html.unescape(jd))).split()).lower()
     out = [name for name, rx in _BLOCKERS_RX if rx.search(low)]
     for name in missing_stacks():
         if _STACK_RX[name][1].search(low):

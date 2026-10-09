@@ -60,12 +60,20 @@ RULES = [
     (r"arbitrat", None),
     # demographic / EEO questions are always declined, and checked before anything else can match their long labels
     (r"gender|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun|chronic condition|armed forces|military status", "__DECLINE__"),
+    # "If you were referred, the referring individual's first and last name": the engine applies cold, so this is never
+    # the candidate's own name (v0.8 bug: matched "last name" below)
+    (r"(?<![a-z])referr(ed|ing|er|al)\b.{0,80}(name|individual)|name of .{0,30}referr", "N/A"),  # (?<![a-z]): not "preferred"
     (r"preferred (first )?name", P["first_name"]),
     (r"^(full )?name|legal (full )?name|full (legal )?name", P["first_name"] + " " + P["last_name"]),
     (r"address line 1|street address|^address$|mailing address", P.get("address_line1")),  # None unless you add it to presets
     (r"first name", P["first_name"]), (r"last name", P["last_name"]),
     (r"e-?mail", P["email"]), (r"phone", P["phone"]),
-    (r"hear about|how did you find|learned about|(first )?learn about .{0,40}(employer|us|company|role|position|job)|^source\b|(job|application|referral|candidate) source", "Company careers page"),  # before the link rules: these labels often list "LinkedIn"
+    (r"(current|former|previous|ever been an?) (contractor|consultant|intern|temp)" + r"\b", P.get("former_contractor_of_company")),  # 10-08 Lucid: got a drafted paragraph
+    (r"(list|share|provide).{0,40}(professional )?certifications?", P.get("certifications")),
+    (r"which .{0,40}(location|office|site)s? .{0,30}(closest|nearest|near)", P.get("preferred_location")),
+    (r"are you (currently )?(based|located|living) in (the )?(" + BAY_AREA + r"|bay area|silicon valley|california)", P.get("based_in_bay_area")),
+    (r"are you (currently )?(based|located|living) in (?!(the )?(u\.?s\.?|us|usa|united|america|and)\b)[a-z][a-z .,]{1,30}\?", P.get("based_in_other_city")),  # another city: No (relocation is asked separately)
+    (r"hear about|how did you find|learned about|(first )?learn about .{0,40}(employer|us|company|role|position|job|opportunity)|^source\b|(job|application|referral|candidate) source", "Company careers page"),  # before the link rules: these labels often list "LinkedIn"
     (r"linkedin", P["linkedin"]),
     (r"github|website|portfolio|other (web)?site|personal site|other url|additional (url|link)|^url$", P["github"]),
     (r"(preferred|favou?rite|strongest|primary) (programming |coding )?language", PREFERRED_LANGUAGE),
@@ -100,7 +108,7 @@ RULES = [
     (r"located in the united states|reside in the (united states|us)|currently live in the us|based in the (u\.?s\.?|united states|us)\b|(live|reside|located) in the (u\.?s\.?|us)\b", P.get("lives_in_us")),
     (r"(ever )?worked for .{0,40}(company|previously|before)|interviewed (at|with) .{0,30} before", P.get("previous_employer_of_company")),
     (r"related to|close personal relationship|relatives? (who |that )?(currently )?work|(personal|familial|family).{0,3}(/familial )?relationships?|(relatives?|friends?|family members?)( or (relatives?|friends?|family))? .{0,30}(work|employ)", P.get("relatives_at_company")),
-    (r"(willing|consent|agree) to (undergo |complete |a )*(a )?background (check|screen)", P.get("willing_background_check")),
+    (r"(willing|consent|agree)[^?.]{0,30}background (check|screen|investigation)", P.get("willing_background_check")),
     (r"(based|live|located|reside) (in|near) (or around )?the (san francisco )?bay area|in or around the (san francisco )?bay area",
      "Yes" if re.search(BAY_AREA, P.get("city", ""), re.I) else None),
     (r"current (or previous )?(job )?title", P["current_title"]),

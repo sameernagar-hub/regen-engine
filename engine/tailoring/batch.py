@@ -80,13 +80,15 @@ def build(name, ids, force=False):
                     record("application", job=label, url=j["url"], status="SKIPPED", detail="JD: " + ", ".join(blockers), dry=False)
                     continue
             ln = route(cfg, j["title"], jd)
-            spec = tailor(cfg["lanes"][ln], jd)
+            spec = tailor(cfg["lanes"][ln], jd, title=j["title"], lanes=cfg["lanes"])
             cov = spec.pop("_coverage")
             spec["file"] = f"Resume_{co}_{short}.pdf"
             json.dump(spec, open(f"specs/{co}_{short}.json", "w"), indent=1)
             pdf = resume.fit(spec)
+            from engine.tailoring.compose import ats_check
+            cov["ats"] = ats_check(pdf, set(cov["jd_terms_you_have"]))  # what a parser reads back out of the PDF
             flagged = [qq["label"][:100] for qq in questions if qq.get("required") and FLAG.search(qq["label"])]
-            print(f"{label} | {j['ats']} | lane={ln} | resume covers {len(cov['on_resume'])}/{len(cov['jd_terms_you_have'])} JD terms"
+            print(f"{label} | {j['ats']} | lane={ln} | resume covers {len(cov['on_resume'])}/{len(cov['jd_terms_you_have'])} JD terms, ATS text {cov['ats']['score']}%"
                   + (f" | flagged: {flagged}" if flagged else ""))
             # transparency: the exact Fact Bank entries this resume used, so every claim is traceable
             record("resume", job=label, url=j["url"], lane=ln, file=spec["file"], facts=spec["roles"],

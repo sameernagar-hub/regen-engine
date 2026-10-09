@@ -180,3 +180,47 @@ def graph(questions: bool = True):
     outcomes, ATS (engine/memory/graph.py; same model as engine/memory/schema.cypher)."""
     from engine.memory import graph as G
     return G.build(questions=questions)
+
+
+# v0.9 engine room: every station is a page, every job is a page, and they link to each other the way the engine does.
+STATIONS = [  # (key, name, what happens here, the stations it feeds)
+    ("listen", "Discover", "Polls ~2,400 company ATS boards and job-alert emails for postings that just went live.", ["judge"]),
+    ("judge", "Fit gate", "Reads each job description for hard blockers (sponsorship, clearance, years, grad window, core stack).", ["write"]),
+    ("write", "Compose", "Builds a one-page resume for this posting from Fact Bank entries only, then checks what an ATS parser reads back.", ["apply"]),
+    ("apply", "Apply", "Round-robin form filling across parallel browsers; airbags stop anything unexpected before submit.", ["hear"]),
+    ("hear", "Inbox", "Reads replies, matches them to applications, and turns rejections into new fit-gate rules.", ["listen", "judge"]),
+]
+
+
+@app.get("/api/stations")
+def stations(recent: int = Query(8, le=50)):
+    """Per-station totals, today's count and the latest lines, from one pass over the log: O(E)."""
+    today = time.strftime("%Y-%m-%d")
+    agg = {k: {"total": 0, "today": 0, "tones": collections.Counter(), "recent": []} for k, *_ in STATIONS}
+    for i, e in store.read():
+        n = narrate(e)
+        if not n or n["stage"] not in agg:
+            continue
+        a = agg[n["stage"]]
+        a["total"] += 1
+        a["today"] += (e.get("ts") or "").startswith(today)
+        a["tones"][n["tone"]] += 1
+        a["recent"].append({"id": i, "ts": e.get("ts"), "tone": n["tone"], "text": n["text"], "url": e.get("url"), "job": e.get("job")})
+        del a["recent"][:-recent]
+    return [{"key": k, "name": name, "about": about, "feeds": feeds, "total": agg[k]["total"], "today": agg[k]["today"],
+             "tones": dict(agg[k]["tones"]), "recent": list(reversed(agg[k]["recent"]))} for k, name, about, feeds in STATIONS]
+
+
+@app.get("/api/job")
+def job(url: str = Query(..., max_length=500)):
+    """Everything the engine did for one posting, in order: resume (facts, coverage, ATS score), attempts, outcome."""
+    rows = []
+    for i, e in store.read():
+        if e.get("url") == url or (e.get("kind") == "outcome" and url in (e.get("jobs") or [])):
+            n = narrate(e) or {}
+            rows.append({"id": i, "ts": e.get("ts"), "kind": e.get("kind"), "status": e.get("status"), "stage": n.get("stage"),
+                         "tone": n.get("tone"), "text": n.get("text"), "data": {k: v for k, v in e.items() if k not in ("answers",)},
+                         "answers": e.get("answers") or []})
+    if not rows:
+        raise HTTPException(404, "no events for that URL")
+    return {"url": url, "job": next((r["data"].get("job") for r in rows if r["data"].get("job")), url), "events": rows}

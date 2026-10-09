@@ -33,7 +33,7 @@ def flag(kind, job, detail, url=""):
     ev = {"ts": datetime.datetime.now().isoformat(timespec="seconds"), "kind": kind, "job": job, "url": url, "detail": detail}
     with open(os.path.join(WORKSPACE, "flags.jsonl"), "a", encoding="utf-8") as fh:
         fh.write(json.dumps(ev, ensure_ascii=False) + "\n")
-    record("flag", **{k: v for k, v in ev.items() if k != "ts"})
+    record("flag", flag_kind=kind, **{k: v for k, v in ev.items() if k not in ("ts", "kind")})  # "kind" is record()'s own arg
     try:
         from engine.notify import sos
         sos(f"[REGEN airbag] {kind}: {job}", f"{detail}\n\n{url}\n\nThe job was NOT submitted. Review it, then re-run or skip.")

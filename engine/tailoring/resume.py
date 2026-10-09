@@ -67,7 +67,8 @@ def strip_aliases(line):
 def validate(spec):
     """Truthfulness gate: a spec may only reference entries that exist in the Fact Bank."""
     load_bank()
-    bad = [f"skill_text:{k}" for k, v in spec.get("skill_text", {}).items() if k not in SKILLS or strip_aliases(v) != SKILLS[k][1]]
+    from engine.tailoring.compose import same_items  # v0.9: a line may be reordered for the JD, never changed
+    bad = [f"skill_text:{k}" for k, v in spec.get("skill_text", {}).items() if k not in SKILLS or not same_items(strip_aliases(v), SKILLS[k][1])]
     bad += [f"role:{r}" for r, _ in spec["roles"] if r not in ROLES]
     bad += [f"fact:{f}" for _, fids in spec["roles"] for f in fids if f not in FACTS]
     bad += [f"project:{p}" for p in spec.get("projects", []) if p not in PROJECTS]
@@ -107,10 +108,10 @@ def build(spec):
         st.append(row(f"{c} -- {t}, {loc}", d))
         st += [Paragraph(FACTS[f], BUL, bulletText="•") for f in fids]
     if spec.get("projects"):
-        section(st, "PROJECTS")
+        section(st, spec.get("projects_title", "PROJECTS"))
         for pk in spec["projects"]:
             n, d, bs = PROJECTS[pk]
-            st.append(row(n, d)); st += [Paragraph(b, BUL, bulletText="•") for b in bs]
+            st.append(row(n, d or "")); st += [Paragraph(b, BUL, bulletText="•") for b in bs]
     section(st, "TECHNICAL SKILLS")
     st += [Paragraph(f"<b>{SKILLS[k][0]}:</b> {spec.get('skill_text', {}).get(k, SKILLS[k][1])}", BUL, bulletText="•")
            for k in spec["skills"]]

@@ -1,24 +1,32 @@
-# Handoff: v0.8 shipped, v0.9 next (2026-10-08)
+# Handoff: v0.9 in progress (2026-10-08 night, session limit)
 
-Every change, with how to verify it: **[CHANGELOG.md](../CHANGELOG.md)**. Ideas and design notes: **[the wiki](wiki/Home.md)**.
+## Resume here
+- Branch `v0.9` (pushed, not merged). New this session:
+  - **JD-first resume composer** (`engine/tailoring/compose.py`): headline = role + the 3 skill items the posting mentions
+    most; summary = lane opener + best-matching user-written sentences (one voice); skills lines reordered JD-first;
+    per-lane projects title; **ATS read-back** (pypdf text extraction, % of JD terms readable) logged per resume.
+  - Fact Bank +14 facts, 3 projects, 6 skill lines from the user's own Zoox Embedded + Google SRE resumes; new
+    `embedded` and `sre` lanes; embedded/firmware titles now allowed, CNC/machinist excluded.
+  - Fit gate: JDs are HTML-unescaped first (hid "no sponsorship" etc.); grad window catches "degree by 2027".
+  - Fixes: airbag `flag()` crashed (`kind` passed twice); referral-name rule (and not "preferred"); contractor,
+    certifications, "closest location", "based in <city>", "learn about this opportunity", background-check wording.
+  - **Engine room** (Next.js): `/room` (5 live rooms, SSE), `/room/[stage]` (live log, doors to linked rooms),
+    `/job?u=` (full timeline: facts, coverage, ATS %, Q&A, proof). API: `/api/stations`, `/api/job`.
+- Wave 2 apply (`run_20261008_2335`) may still be running; check `python -m engine report`.
+- Codes: open a FRESH Gmail tab per lookup (old tabs freeze), read rows, `python -m engine codes '<json>'`.
 
-## State
-- `main` = v0.8 (round-robin applying, parallel appliers, `engine run`, autofill from the Fact Bank, salary from the
-  posted range, answer from the page, locked event log, faster tailoring, browser tests). CI runs on every push;
-  admin pushes to `main` no longer wait for it. The local pre-push privacy hook still blocks leaks.
-- No schedules: the engine runs only when started.
-- First day of v0.8 in use: 9 verified submissions on 10-07.
+## Needs the user
+- **Roblox Online Assessment** (first OA): the invite expired/unfinished; ask Roblox Early Career for a new link.
+- Roblox arbitration agreement (per-company approval).
+- Gmail labels: not done this session. Filters (auto-label) need the user's OK; or IMAP app password.
+- Ashby bot-flagged again 10-08 ~23:24 -> paused 24h; 9 Ashby jobs have resumes ready.
 
-## Run a day
-```bash
-python -m engine run --days 1 --max 30 --appliers 2 --tabs 3   # scan, pick, resumes, apply, report
-python -m engine feed 3 --queue                                # GitHub new-grad lists into the queue
-python -m engine report                                        # verified submissions only
-```
-Greenhouse email codes: run `engine/discovery/gmail_codes.js` in a Gmail tab (open a fresh tab if Gmail stalls),
-then `python -m engine codes '<json>'`. Alert emails: `engine/discovery/gmail_alerts.js`, save the article text to
-`workspace/alerts/<date>.txt`, `python -m engine alerts <file>`.
+## Next
+1. Merge v0.9 (fast-forward), CHANGELOG entry, wiki page for the composer.
+2. Gmail labels; dropdown/radio fill failures (Lucid SMS, Bot Auto onsite answered but NEEDS YOU).
+3. Engine room: animated flow between rooms on each event, resume preview per job.
 
+## Older plan
 ## v0.9: tracked work, in order
 1. **Ashby jobs after the bot-check pause** (ends about 2026-10-08 22:27): 14 queued Ashby jobs (alert-resolved and
    GitHub-feed), a few per hour.
