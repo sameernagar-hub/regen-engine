@@ -1,19 +1,42 @@
-# Handoff: v0.9 (2026-10-09 midday)
+# Handoff: v0.9.1 on main (2026-10-09 ~13:10, stopped by the user)
 
-## Resume here
-- Branch `v0.9` (pushed, not merged; merge is the user's call, fast-forward only). 24 verified submissions on 10-09.
-- Run: `REGEN_SKIP_ATS=workable python -m engine run --days 5 --max 40 --appliers 3 --tabs 3`. Workable pages time
-  out / never confirm today (bot wall); Lever shows hCaptcha on most jobs (human queue).
-- Ashby cooldown ends about 2026-10-09 23:22: then run the Ashby jobs (alert + feed leads are queued).
-- Codes: still relayed from Gmail by hand unless the user adds a Gmail app password to `.env`; then run
-  `python -m engine codes --watch` next to the appliers.
+## State
+- `main` = `v0.9` = 43a22e4 (fast-forward merges only; never merge on GitHub: it stamps a personal email).
+- 28 verified submissions on 10-09 (`python -m engine report 2026-10-09`). All appliers stopped, no job waiting.
+- Daily safety cap: default `REGEN_MAX_PER_DAY=25`; the user approved 40 for 10-09 (pass it per run, it is not in code).
+- Ashby bot-check pause ends about **2026-10-09 23:22** (`workspace/ashby_cooldown` + 24 h). After that, Ashby leads
+  (OpenAI and others) can go out again, a few per hour. queue.json was rescanned without Ashby: run a scan + `newgrad`
+  + `alerts` again first so the Ashby leads are back in the queue.
+
+## Resume here (in order)
+1. Fix the title gate: "Transportation Engineering Leader" (a civil-engineering role) passed as software and was
+   submitted. Require software context for "engineering leader/lead" titles (`engine/discovery/filters.py`,
+   `profile/domains.json`), add a test, note it in the rejection log.
+2. Run: `REGEN_MAX_PER_DAY=40 REGEN_SKIP_ATS=workable python -m engine run --days 2 --max 40 --appliers 3 --tabs 3`
+   (launch with the Bash tool's run_in_background; a plain `&` in a finished shell got reaped once).
+3. Codes: in the Gmail tab define `window.regenCodes` (reads every code in each thread, see the 10-09 session) or use
+   `engine/discovery/gmail_codes.js`, then `python -m engine codes '<json>'`. Hands-free if the user adds a Gmail app
+   password to `.env`: `python -m engine codes --watch`.
+4. Big tech: `python -m engine bigtech 3` lists Amazon + NVIDIA roles with tailored resumes in
+   `workspace/bigtech.md` (43 on 10-09). Those portals need the user's own account: the user submits.
+   Not covered yet: Apple (search API returned nothing with the tried payload), Netflix (endpoint 404), Google and
+   Meta (no public JSON API found). OpenAI is on Ashby (normal pipeline).
+5. Form gaps still seen: some Greenhouse "How did you hear" selects (one large API company), "Stay connected" SMS
+   blocks (a life-sciences SaaS), an "ever employed by us" select left empty, Workable fill timeouts.
+
+## Environment gotchas
+- Python: `/c/Users/nagar/AppData/Local/Programs/Python/Python314/python` (the WindowsApps alias fails, including in
+  the pre-push privacy hook: prepend that folder to PATH before `git push`).
+- Git Bash heredocs turn `\b` into a backspace byte: write edit scripts with the Write tool; the control-char test catches it.
+- Workable is bot-walling (pages time out / no confirmation). Lever shows hCaptcha on most jobs (left for the user).
+- Gmail tabs freeze after long scripts: open a fresh tab.
 
 ## Needs the user
-- Arbitration agreements other than the approved one (a game company: 2 roles waiting).
-- Self-certifications the engine won't make: "do you meet all basic qualifications", skill-specific years
-  (e.g. "2 years with Terraform"), export-control questions, deferred compensation.
-- Lever hCaptcha jobs (form filled, resume ready): listed by `python -m engine status`.
-- Gmail app password (hands-free codes + IMAP inbox), new online-assessment link (game company).
+- Arbitration agreements (a game company: 2 roles). Online-assessment link request (same company).
+- Self-certifications the engine won't make: "meet all basic qualifications", skill-specific years, export control,
+  deferred compensation, legal-right-to-work proof wording.
+- Lever hCaptcha jobs (forms filled, resumes ready): `python -m engine status`.
+- Big-tech portal applications from `workspace/bigtech.md`.
 
 ## Earlier (2026-10-08)
 
