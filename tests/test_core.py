@@ -316,3 +316,10 @@ def test_codes_one_per_job_and_skip_bounced(tmp_path):
     assert w == {"acme_1": "AAAAAAAA", "acme_2": "BBBBBBBB"}
     os.remove(d / "acme_1.txt")  # job 1 bounced its code and waits again
     assert codes.match(rows, str(tmp_path)) == {"acme_1": "BBBBBBBB"}
+
+
+def test_bigtech_posted_parsing():
+    from engine.discovery.bigtech import _nv_days, _text
+    assert _nv_days("Posted Today") == 0 and _nv_days("Posted Yesterday") == 1
+    assert _nv_days("Posted 3 Days Ago") == 3 and _nv_days("Posted 30+ Days Ago") == 30
+    assert _text("<p>Build &amp; ship</p>") == "Build & ship"
