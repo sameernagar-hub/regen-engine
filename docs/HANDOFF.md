@@ -5,7 +5,7 @@
 - 28 verified submissions on 10-09 (`python -m engine report 2026-10-09`). All appliers stopped, no job waiting.
 - Daily safety cap: default `REGEN_MAX_PER_DAY=25`; the user approved 40 for 10-09 (pass it per run, it is not in code).
 - Ashby bot-check pause ends about **2026-10-09 23:22** (`workspace/ashby_cooldown` + 24 h). After that, Ashby leads
-  (OpenAI and others) can go out again, a few per hour. queue.json was rescanned without Ashby: run a scan + `newgrad`
+  (an AI lab and others) can go out again, a few per hour. queue.json was rescanned without Ashby: run a scan + `newgrad`
   + `alerts` again first so the Ashby leads are back in the queue.
 
 ## Resume here (in order)
@@ -20,7 +20,7 @@
 4. Big tech: `python -m engine bigtech 3` lists Amazon + NVIDIA roles with tailored resumes in
    `workspace/bigtech.md` (43 on 10-09). Those portals need the user's own account: the user submits.
    Not covered yet: Apple (search API returned nothing with the tried payload), Netflix (endpoint 404), Google and
-   Meta (no public JSON API found). OpenAI is on Ashby (normal pipeline).
+   Meta (no public JSON API found). The AI lab in that group is on Ashby (normal pipeline).
 5. Form gaps still seen: some Greenhouse "How did you hear" selects (one large API company), "Stay connected" SMS
    blocks (a life-sciences SaaS), an "ever employed by us" select left empty, Workable fill timeouts.
 
