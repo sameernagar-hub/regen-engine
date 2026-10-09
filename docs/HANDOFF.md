@@ -1,6 +1,22 @@
-# Handoff: v0.9 in progress (2026-10-08 night, session limit)
+# Handoff: v0.9 (2026-10-09 midday)
 
 ## Resume here
+- Branch `v0.9` (pushed, not merged; merge is the user's call, fast-forward only). 24 verified submissions on 10-09.
+- Run: `REGEN_SKIP_ATS=workable python -m engine run --days 5 --max 40 --appliers 3 --tabs 3`. Workable pages time
+  out / never confirm today (bot wall); Lever shows hCaptcha on most jobs (human queue).
+- Ashby cooldown ends about 2026-10-09 23:22: then run the Ashby jobs (alert + feed leads are queued).
+- Codes: still relayed from Gmail by hand unless the user adds a Gmail app password to `.env`; then run
+  `python -m engine codes --watch` next to the appliers.
+
+## Needs the user
+- Arbitration agreements other than the approved one (a game company: 2 roles waiting).
+- Self-certifications the engine won't make: "do you meet all basic qualifications", skill-specific years
+  (e.g. "2 years with Terraform"), export-control questions, deferred compensation.
+- Lever hCaptcha jobs (form filled, resume ready): listed by `python -m engine status`.
+- Gmail app password (hands-free codes + IMAP inbox), new online-assessment link (game company).
+
+## Earlier (2026-10-08)
+
 - Branch `v0.9` (pushed, not merged). New this session:
   - **JD-first resume composer** (`engine/tailoring/compose.py`): headline = role + the 3 skill items the posting mentions
     most; summary = lane opener + best-matching user-written sentences (one voice); skills lines reordered JD-first;
@@ -15,11 +31,6 @@
 - Wave 2 apply (`run_20261008_2335`) may still be running; check `python -m engine report`.
 - Codes: open a FRESH Gmail tab per lookup (old tabs freeze), read rows, `python -m engine codes '<json>'`.
 
-## Needs the user
-- **Online Assessment (first OA, a game company, 10-06)** (first OA): the invite expired/unfinished; ask that company's early-career team for a new link.
-- That company's arbitration agreement (per-company approval).
-- Gmail labels: not done this session. Filters (auto-label) need the user's OK; or IMAP app password.
-- Ashby bot-flagged again 10-08 ~23:24 -> paused 24h; 9 Ashby jobs have resumes ready.
 
 ## Next
 1. Merge v0.9 (fast-forward), CHANGELOG entry, wiki page for the composer.

@@ -4,6 +4,31 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.9.1] - 2026-10-09 · "Fewer stops"
+Found while applying: each fix came from a form that stopped a real application. 24 verified submissions on 2026-10-09.
+
+### Fixed
+- **Sponsorship safety:** an H-1B history rule matched "require sponsorship (e.g., H-1B visa)" and answered No. It was
+  caught before any submit (audit: no past submission ever answered a sponsorship question No); the rule now matches
+  only "have you held H-1B / petition approved". *Verify:* `test_new_rules_2026_10_09`.
+- **"N or more years of experience?"** is answered from your total years only when the question is generic; a
+  skill-specific one ("2 years with AWS and Terraform") is never claimed from total years. *Verify:* `test_years_rule_is_generic_only`.
+- **One oversized resume no longer stops the whole pipeline:** the composer drops the least relevant project and
+  retries, and a resume that still won't fit skips just that job.
+- **Email codes:** a three-minute margin for round-robin delay; one code per waiting job (oldest waiter first); a code
+  a job already bounced is never sent to it again (two applications to one company can thread both codes together).
+  *Verify:* `test_codes_one_per_job_and_skip_bounced`.
+- SMS opt-in labels that mention email, "Have you worked at X?", "currently an X employee", "legally eligible to start",
+  yes/no clauses inside a longer sentence, acknowledgement checkboxes that mention compensation, "(City, State)".
+
+### Added
+- `python -m engine codes --watch`: hands-free codes over read-only IMAP (needs a Gmail app password in `.env`).
+- Salary dropdowns with range buckets: the computed salary picks the bucket that contains it.
+- Derived answers: time-zone questions and "able to start within N days" from your presets.
+- Presets (yours, git-ignored): work authorization status and its dropdown spellings, unrestricted authorization (No,
+  time-limited), H-1B history, future opportunities.
+- `REGEN_SKIP_ATS=workable` for the pipeline while an ATS is bot-walling; federal contractors excluded by default.
+
 ## [0.8.0] - 2026-10-07 · "Throughput, truthfully"
 The goal for v0.8: at least 10 applications a day with less waiting, and no new loopholes. Every item lists how to check it.
 
