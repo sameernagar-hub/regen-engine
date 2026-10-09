@@ -30,3 +30,6 @@ CI runs the same command on every pull request (the form tests are skipped there
 - `python -m engine report`: only submissions whose proof screenshot exists.
 - `schedule` events: real wall time, active time and switches for each run.
 - `workspace/drafts_review.md`: every drafted answer with its fact ids.
+
+
+Related: [Home](Home.md) · [Architecture](Architecture.md) · [Discovery](Discovery.md) · [Fit gate](Fit-Gate.md) · [Tailoring](Tailoring.md) · [Apply engine](Apply-Engine.md) · [Email codes](Email-Codes.md) · [Outcomes](Outcomes-and-Learning.md) · [Platform](Platform.md) · [Metrics](Metrics.md)

@@ -1,0 +1,1 @@
+REGEN · source-first discovery, proof-backed tailoring, receipts for every submit · [Home](Home) · [Architecture](Architecture) · [Metrics](Metrics) · pages live in `docs/wiki/` and are reviewed like code

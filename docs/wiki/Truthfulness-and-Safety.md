@@ -41,3 +41,6 @@ the form filled and the resume ready. After an Ashby flag, Ashby submissions pau
 `profile/` and `workspace/` are git-ignored. CI runs a privacy gate on every pull request and push (PII patterns,
 forbidden paths, noreply-only commit emails, keyed fingerprints of private terms). The public demo is built from
 anonymized events and refuses to publish if a company name would leak.
+
+
+Related: [Home](Home.md) · [Architecture](Architecture.md) · [Discovery](Discovery.md) · [Fit gate](Fit-Gate.md) · [Tailoring](Tailoring.md) · [Apply engine](Apply-Engine.md) · [Email codes](Email-Codes.md) · [Outcomes](Outcomes-and-Learning.md) · [Platform](Platform.md) · [Metrics](Metrics.md)

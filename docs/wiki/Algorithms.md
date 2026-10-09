@@ -101,3 +101,6 @@ edge for every application, O(A·E)). `neighbors()` is one O(N + E) pass.
 ## Drafted answers (`engine/apply/drafts.py`)
 No model, no network: load the job's resume spec (O(F)), classify the question with a few regexes, assemble Fact Bank
 sentences. Microseconds, against seconds for a page load.
+
+
+Related: [Home](Home.md) · [Architecture](Architecture.md) · [Discovery](Discovery.md) · [Fit gate](Fit-Gate.md) · [Tailoring](Tailoring.md) · [Apply engine](Apply-Engine.md) · [Email codes](Email-Codes.md) · [Outcomes](Outcomes-and-Learning.md) · [Platform](Platform.md) · [Metrics](Metrics.md)

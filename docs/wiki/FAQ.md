@@ -26,3 +26,6 @@ Yes: the confirmation screenshot, every question and answer, the facts each resu
 
 **Does it run on its own?**
 Not since v0.8. You start it; `workspace/STOP` stops it.
+
+
+Related: [Home](Home.md) · [Architecture](Architecture.md) · [Discovery](Discovery.md) · [Fit gate](Fit-Gate.md) · [Tailoring](Tailoring.md) · [Apply engine](Apply-Engine.md) · [Email codes](Email-Codes.md) · [Outcomes](Outcomes-and-Learning.md) · [Platform](Platform.md) · [Metrics](Metrics.md)

@@ -23,6 +23,13 @@
    Meta (no public JSON API found). The AI lab in that group is on Ashby (normal pipeline).
 5. Form gaps still seen: some Greenhouse "How did you hear" selects (one large API company), "Stay connected" SMS
    blocks (a life-sciences SaaS), an "ever employed by us" select left empty, Workable fill timeouts.
+6. Docs: README was rewritten (Why REGEN, By the numbers, How it works) and the wiki now has 20 cross-linked pages
+   (Home hub, Architecture, Discovery, Fit gate, Tailoring, Apply engine, Email codes, Outcomes and learning, Platform,
+   Configuration, Metrics, Roadmap, sidebar and footer). Keep it current: when a subsystem changes, update its page,
+   the Metrics table (from `engine report`) and the CHANGELOG in the same commit. Publish with the wiki clone:
+   copy `docs/wiki/*` into a clone of `regen-engine.wiki.git`, commit, push. Next pages to add: per-ATS adapter
+   pages, a data-model page with full event schemas, a Security page (threat model, privacy gate internals) and a
+   Benchmarks page with charts.
 
 ## Environment gotchas
 - Python: `%LOCALAPPDATA%\Programs\Python\Python314\python.exe` (the WindowsApps alias fails, including in

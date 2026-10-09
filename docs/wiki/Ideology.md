@@ -40,3 +40,6 @@ the traffic of one careful person.
 ## 7. You start it
 Since v0.8 there are no background schedules. The engine runs when the candidate starts it, and a `STOP` file halts
 it at once.
+
+
+Related: [Home](Home.md) · [Architecture](Architecture.md) · [Discovery](Discovery.md) · [Fit gate](Fit-Gate.md) · [Tailoring](Tailoring.md) · [Apply engine](Apply-Engine.md) · [Email codes](Email-Codes.md) · [Outcomes](Outcomes-and-Learning.md) · [Platform](Platform.md) · [Metrics](Metrics.md)

@@ -41,3 +41,6 @@ descriptions and turned into new fit-gate rules.
 ## The evidence
 Everything above writes to one append-only event log. The API, the live view, the memory graph and the public demo
 are all derived from it; nothing else is a source of truth.
+
+
+Related: [Home](Home.md) · [Architecture](Architecture.md) · [Discovery](Discovery.md) · [Fit gate](Fit-Gate.md) · [Tailoring](Tailoring.md) · [Apply engine](Apply-Engine.md) · [Email codes](Email-Codes.md) · [Outcomes](Outcomes-and-Learning.md) · [Platform](Platform.md) · [Metrics](Metrics.md)

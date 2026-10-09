@@ -28,3 +28,6 @@ Dated design decisions, newest first. Each says what was decided and why.
 - **Fact Bank + validator** as the only source of resume content.
 - **LinkedIn, Indeed, Handshake: discovery only.** Applications go to the employer.
 - **CAPTCHAs and bot checks go to a human.** Never solved or bypassed.
+
+
+Related: [Home](Home.md) · [Architecture](Architecture.md) · [Discovery](Discovery.md) · [Fit gate](Fit-Gate.md) · [Tailoring](Tailoring.md) · [Apply engine](Apply-Engine.md) · [Email codes](Email-Codes.md) · [Outcomes](Outcomes-and-Learning.md) · [Platform](Platform.md) · [Metrics](Metrics.md)

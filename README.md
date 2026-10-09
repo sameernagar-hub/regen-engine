@@ -2,7 +2,9 @@
 
 # REGEN
 
-### An open-source job engine that finds roles minutes after they're posted, writes a resume for each one from facts you can prove, applies at the company's own site, and shows you the evidence.
+### The autonomous job engine. Source-first discovery, proof-backed tailoring, receipts for every submit.
+
+**Hit the role in its first hour, not its first week, with a resume that can't lie.**
 
 [![ci](https://github.com/sameernagar-hub/regen-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/sameernagar-hub/regen-engine/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -16,28 +18,60 @@
 
 <sub>The live view replaying real activity, company names hidden. Each gold bead is an application with a saved confirmation page, grouped by the resume lane that wrote it.</sub>
 
-**[Live demo](https://sameernagar-hub.github.io/regen-engine/)** · **[In plain English](#in-plain-english)** · **[Features](#features)** · **[Quick start](#quick-start)** · **[Architecture](#architecture)** · **[Platform](#the-platform-v07)** · **[Roadmap](#roadmap)**
+**[Live demo](https://sameernagar-hub.github.io/regen-engine/)** · **[Why REGEN](#why-regen)** · **[Features](#features)** · **[Quick start](#quick-start)** · **[Architecture](#architecture)** · **[Platform](#the-platform-v07)** · **[Roadmap](#roadmap)**
 
 </div>
 
 ---
 
-## In plain English
+## Why REGEN
 
-Looking for a job usually goes like this: a company posts a role on its own careers page, it shows up on LinkedIn a day or two later, and by then hundreds of people have applied. Most of them sent the same resume to every job.
+**The problem.** A role goes up on a company's own careers page. It reaches LinkedIn a day or two later, and by then
+hundreds of near-identical resumes are already in the queue. Auto-apply tools make this worse: they send the same
+resume to every posting and make up answers to fill the gaps.
 
-REGEN does the opposite, and it does it on your own computer:
+**The wedge.** REGEN works at the source and refuses to bluff:
 
-1. **It watches the source.** It checks the careers pages of about 2,100 companies directly, every few minutes, and notices new roles soon after they go up. It also reads the job alerts already landing in your inbox and traces each one back to the company's own page.
-2. **It decides honestly.** Before spending any effort, it reads the job description and skips roles you can't get: ones that need citizenship or a clearance, refuse visa sponsorship, want more years than you have, or are built on a language you don't list.
-3. **It writes one resume per job, from your facts only.** You keep a "Fact Bank": every true line about your work, each with an id. For each job, REGEN picks and orders the lines that match what the job asks for. It cannot write a new claim; a checker rejects anything that isn't in your Fact Bank.
-4. **It fills in the application.** It opens the company's form, uploads that job's resume and answers each question. Legal and personal questions (work authorization, sponsorship, citizenship) are answered only from what you saved. Open questions ("Why us?") get answers built from your Fact Bank, and every one is logged. An "are you human?" check always comes to you.
-5. **It keeps the receipt.** Every submission saves a screenshot of the company's "thank you" page. The count you see only includes applications with a receipt.
-6. **It listens for replies.** It reads your inbox for confirmations, rejections, assessments and interviews, links each one back to the application and the resume that earned it, and learns which approach works.
+- **Source-first discovery.** It polls ~2,370 company boards across four ATS APIs directly, resolves job-alert emails
+  and new-grad lists back to the employer's own posting, and queues roles within minutes of going live.
+- **A fit gate before any effort.** Citizenship, clearance, no-sponsorship, graduation windows, years required and core
+  stack are checked against the JD first. Roles you'd be screened out of never cost a resume or a form.
+- **One resume per job, built only from facts you can prove.** A Fact Bank of verifiable lines, a JD-first composer that
+  ranks and orders them, a validator that rejects any claim not in the bank, and an ATS read-back that measures what
+  a parser actually extracts from the PDF (typically 85–100% of the JD terms you have).
+- **Applying at machine speed, with your judgment on the decisions that matter.** Round-robin scheduling across tabs and
+  parallel appliers. Legal and status answers come only from your presets. Open questions are drafted from your facts
+  and logged. CAPTCHAs, arbitration agreements and self-certifications always come to you.
+- **Receipts, not claims.** A submission counts only when the company's confirmation page is saved as proof. Every
+  answer, every fact id and every skip reason is in an append-only event log.
 
-You watch all of this on one live page, and you can open any application to see exactly which facts its resume used and every question it answered.
+## By the numbers
 
-Job hunting is an old problem. This project keeps trying new approaches to it, and each one ships only when it can be checked: a test, a log line, or a receipt.
+| | |
+|---|---|
+| Verified applications (confirmation page on disk) | **69** to date; **28 in one day** (2026-10-09) |
+| Company boards polled directly | **~2,370** on Greenhouse, Ashby, Lever, Workable |
+| Sources resolved back to the employer | Job-alert emails (7 platforms), newgrad-jobs.com, SimplifyJobs, big-tech careers APIs |
+| Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF |
+| Scheduler | ×2.05 throughput vs sequential (seeded benchmark, `scripts/bench_scheduler.py`) |
+| Tests | **95** passing (unit, API, headless form tests against local ATS look-alikes), coverage in CI |
+| Resume claims outside your Fact Bank | **Rejected** by the validator before any PDF is written |
+
+All numbers come from this repo's own logs and benchmarks. Run `python -m engine report` to check the verified count.
+
+## How it works
+
+```
+ listen ──► judge ──► write ──► apply ──► hear back
+   │          │         │         │          │
+ 4 ATS APIs  fit gate  Fact Bank  round-robin  inbox → outcomes
+ alerts      (JD-only  composer   appliers,    (OA / interview /
+ lists       rules)    + validator presets,     rejection) → learn
+ big tech              + ATS check proof shots
+```
+
+Everything runs on your machine. Your profile, Fact Bank and workspace never leave it, and CI blocks any commit that
+would leak them.
 
 ---
 

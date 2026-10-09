@@ -37,3 +37,6 @@ python -m pytest -q --cov=engine --cov=apps/api        # unit, API and headless 
 python scripts/bench_scheduler.py 20 3                 # scheduler speed-up (deterministic)
 python scripts/bench_tailor.py <old tailor.py>         # identical output + speed vs an older version
 ```
+
+
+Related: [Home](Home.md) · [Architecture](Architecture.md) · [Discovery](Discovery.md) · [Fit gate](Fit-Gate.md) · [Tailoring](Tailoring.md) · [Apply engine](Apply-Engine.md) · [Email codes](Email-Codes.md) · [Outcomes](Outcomes-and-Learning.md) · [Platform](Platform.md) · [Metrics](Metrics.md)
