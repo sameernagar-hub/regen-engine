@@ -10,7 +10,7 @@
   tailor <spec.json>               build one Fact-Bank-only resume
   apply  <batches/x.json> [--dry]  fill (and submit) every job in a batch
   inspect <job url> [--show]       list a form's fields + the engine's answers, without filling it
-  codes   '<json>'                 Greenhouse email codes (engine/discovery/gmail_codes.js output) -> waiting jobs
+  codes   '<json>' | --watch [s]   Greenhouse email codes (gmail_codes.js output, or IMAP hands-free) -> waiting jobs
   status                           application outcomes from the event log
   inbox   <msgs.json> | --imap [d] classify recruiting email -> outcome events (OA / interview / rejection / offer / scam)
   learn                            response rates by lane and ATS -> workspace/learnings.md

@@ -90,7 +90,8 @@ RULES = [
     (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
     (r"(will|do) you (now or in the future )?(require|need) (any )?(work |employment )?(authori[sz]ation|permit)", P.get("needs_sponsorship_now_or_future")),
     (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor|(file|submit) a petition|employment.based (visa|immigration)", P.get("needs_sponsorship_now_or_future")),
-    (r"(currently|presently) (in|on|hold(ing)?) (an? )?f-?1( status| visa)?", P.get("f1_status")),
+    (r"(what is|describe|state) (your )?(current )?(us |u\.s\. )?(work authori[sz]ation|immigration status|visa (status|type))|(current|present) (work authori[sz]ation|visa|immigration) status|(please )?(enter|specify|list) (the )?visa type|what (kind|type) of visa", P.get("work_auth_status")),
+    (r"(currently|presently) (in|on|hold(ing)?) (an? )?f-?1( status| visa)?|(currently )?on (optional practical training|\(?opt\)?)\b", P.get("f1_status")),  # student-visa practical training
     (r"^(what is )?your country\W*$|^country of residence", P["country"]),
     (r"^(what is )?your state\b|state ?/ ?province", P["state"]),
     (r"authori[sz]ed to work|eligible to work|legally (authori|work|permitted)|work authori", P.get("work_authorized_us")),

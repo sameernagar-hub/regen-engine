@@ -281,3 +281,9 @@ def test_years_rule_is_generic_only():
     assert r.derived("Do you possess 1 year of experience in Ruby programming language?") is None
     assert r.derived("Do you possess 2 years of experience with AWS cloud infrastructure and Terraform infrastructure automation?") is None
     assert r.derived("Do you have 1 or greater years of experience?") in ("Yes", "No")
+
+
+def test_imap_code_regex():
+    from engine.apply.codes import CODE_RX
+    m = CODE_RX.search("Security code for your application to Acme Robotics - Software Engineer Copy and paste this code into the security code field on your application: 1JhA8Jjb")
+    assert m.groups() == ("Acme Robotics", "1JhA8Jjb")
