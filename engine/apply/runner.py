@@ -416,6 +416,12 @@ def pick_option(options, ans):
         for t, h in options:
             if ACK.search(t.strip()) and not NACK.search(t): return h
         return options[0][1] if len(options) == 1 and not NACK.search(options[0][0]) else None
+    if re.fullmatch(r"\d{4,7}", ans or ""):  # a salary number against range buckets ("$80,000 - $100,000", "120,000+")
+        n = int(ans)
+        for t, h in options:
+            nums = [int(x.replace(",", "")) * (1000 if k else 1) for x, k in re.findall(r"(\d[\d,]*)\s*(k\b)?", t, re.I)]
+            if len(nums) >= 2 and nums[0] <= n < nums[1] or len(nums) == 1 and "+" in t and n >= nums[0]:
+                return h
     a = _norm_opt(ans)
     options = [(_norm_opt(t), h) for t, h in options]
     for t, h in options:

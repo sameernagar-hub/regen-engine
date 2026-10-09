@@ -295,3 +295,11 @@ def test_rules_wave5():
     assert r.answer_for("Do you have unlimited and unrestricted authorization to work in the United States?", {}) == r.P.get("unrestricted_work_authorization")
     assert r.derived("Are you based in the Central Time Zone or Eastern Time Zone?") in ("Yes", "No", None)
     assert r.derived("Are you able to start working within 30-60 days of applying? (If you are close to completing a degree...)") in ("Yes", "No", None)
+
+
+def test_salary_range_bucket():
+    from engine.apply.runner import pick_option
+    opts = [(x, x) for x in ["$37,000 - $45,000", "$80,000 - $100,000", "$100,000 - $120,000", "120,000+"]]
+    assert pick_option(opts, "92000") == "$80,000 - $100,000"
+    assert pick_option(opts, "140000") == "120,000+"
+    assert pick_option([(x, x) for x in ["$130,000 – $140,000", "$140,000 – $150,000"]], "140000") == "$140,000 – $150,000"
