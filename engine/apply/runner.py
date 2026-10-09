@@ -67,6 +67,11 @@ RULES = [
     (r"^(full )?name|legal (full )?name|full (legal )?name", P["first_name"] + " " + P["last_name"]),
     (r"address line 1|street address|^address$|mailing address", P.get("address_line1")),  # None unless you add it to presets
     (r"first name", P["first_name"]), (r"last name", P["last_name"]),
+    (r"(receive|opt.?in|consent).{0,60}(whatsapp|text message|sms)|(whatsapp|sms|text message)s? .{0,40}(communication|update|notification)", P.get("sms_opt_in")),  # 10-08: SMS opt-in labels mention email
+    (r"^have you (ever )?(previously )?worked (at|for)\b|(currently|presently) an? .{0,40}employee\?|(an? )?current(ly)? (an? )?employee (with|of|at)\b", P.get("previous_employer_of_company")),
+    (r"legally eligible to (begin|start) (employment|work)", P.get("work_authorized_us")),
+    (r"considered for (future|other) (opportunities|roles|positions)", P.get("future_opportunities")),
+    (r"^have you (ever )?held h-?1b|h-?1b petition (been )?approved", P.get("held_h1b")),  # not "require ... (e.g., H-1B visa)": sponsorship rules own those
     (r"e-?mail", P["email"]), (r"phone", P["phone"]),
     (r"(current|former|previous|ever been an?) (contractor|consultant|intern|temp)" + r"\b", P.get("former_contractor_of_company")),  # 10-08 Lucid: got a drafted paragraph
     (r"(list|share|provide).{0,40}(professional )?certifications?", P.get("certifications")),
@@ -247,7 +252,7 @@ STATUS_Q = re.compile(r"sponsor|authori[sz]|visa|citizen|resident|immigration|ex
                       r"arbitrat|salary|compensation|gender|race|ethnic|veteran|military|disab|criminal|convict|felony|"
                       r"clearance|government|related to|relatives?|family|employee of|employed (by|at)|worked (at|for)|"
                       r"non-?compete|agreement|over 18|age\b|lived in|reside|located", re.I)
-WILLING_Q = re.compile(r"^\s*(are|would) you (willing|comfortable|able|open|ok|okay|happy|available)\b", re.I)
+WILLING_Q = re.compile(r"^\s*(are|would|will) you (be )?(willing|comfortable|able|open|ok|okay|happy|available)\b", re.I)
 HAVE_Q = re.compile(r"^\s*(have you|do you have|did you|have you ever|are you (familiar|experienced|proficient))\b", re.I)
 
 
@@ -293,6 +298,9 @@ def us_years():
 def derived(label):
     """Answers computed from Fact Bank dates (never guessed)."""
     l = " ".join(label.split()).lower()
+    m = re.search(r"(\d+)\+? (or (greater|more) |\+ )?years? (of )?(professional |relevant |industry )?experience", l)
+    if m and YESNO_Q.search(l) and str(P.get("years_experience", "")).isdigit():
+        return "Yes" if int(P["years_experience"]) >= int(m.group(1)) else "No"  # "Do you have 2 or more years...?"
     m = re.search(r"lived in the (united states|us|u\.s\.) for (at least )?(\d+) (of|out of|in) the (past|last) (\d+) years", l)
     if m:
         y = us_years()
@@ -335,8 +343,7 @@ def answer(label, job, field=None):
         # a date box can't take "Immediately (2 weeks notice)": give the date that notice period lands on
         wk = int(re.search(r"(\d+) ?weeks?", ans).group(1))
         ans = (datetime.date.today() + datetime.timedelta(weeks=wk)).strftime("%m/%d/%Y")
-    if ans is None:
-        ans = derived(label)
+    ans = derived(label) or ans  # computed from Fact Bank dates/years: beats the generic years rule
     if ans is None and re.fullmatch(r"\s*(attach|upload|dropbox|google drive|enter manually|browse)\s*", label, re.I):
         return None  # a file-upload control, not a question
     if ans is None and DRAFT:

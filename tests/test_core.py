@@ -256,3 +256,15 @@ def test_no_rule_matches_everything():
     from engine.apply.runner import RULES
     import re
     assert [p for p, _ in RULES if re.search(p, "zzqx unrelated label zzqx")] == []
+
+
+def test_new_rules_2026_10_09():
+    from engine.apply import runner as r
+    P = r.P
+    assert r.answer_for("Do you now, or will you in the future, require immigration sponsorship for work authorization (e.g., H-1B visa status)?", {}) == P.get("needs_sponsorship_now_or_future")
+    assert r.answer_for("Have you held H-1B status, or had an H-1B petition approved on your behalf, within the previous six years?", {}) == P.get("held_h1b")
+    assert r.answer_for("Would you like to receive communications via SMS and/or WhatsApp to the number provided [and email]?", {}) == P.get("sms_opt_in")
+    assert r.answer_for("Have you worked at Acme?", {}) == P.get("previous_employer_of_company")
+    assert r.answer_for("Are you currently a Acme employee?", {}) == P.get("previous_employer_of_company")
+    assert r.derived("Do you have 2 or more years of experience in the job listed?") in ("Yes", "No")
+    assert r.derived("How many years of experience do you have?") is None

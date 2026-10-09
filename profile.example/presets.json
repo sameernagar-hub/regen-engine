@@ -43,5 +43,7 @@
  "over_18": "<Yes/No>",
  "has_degree": "<Yes/No>",
  "currently_enrolled": "<Yes/No>",
- "sms_opt_in": "<Yes/No>"
+ "sms_opt_in": "<Yes/No>",
+ "held_h1b": "No",
+ "future_opportunities": "Yes"
 }
