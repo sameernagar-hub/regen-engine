@@ -4,7 +4,7 @@
 
 Each waiting job has workspace/codes/<board>_<id>.wait (first line: "Company - Role", second: the form URL).
 A code is written to <board>_<id>.txt only when the email names that same company (normalized compare), so a
-code is never typed into another company's form. Several codes for one company: the newest (first row) wins.
+code is never typed into another company's form. Several codes for one company: oldest waiter gets the oldest unused code; a bounced code is never reused for that job.
 Already-answered or stale codes are left alone. O(waiting x codes), both tiny.
 """
 import datetime, json, os, re, sys
@@ -49,13 +49,20 @@ def match(codes, workspace=None):
     """codes: [{"company", "code", "when"?}] newest first -> {slug: code} written to disk."""
     d = os.path.join(workspace or WORKSPACE, "codes")
     written = {}
-    for slug, company in waiting(workspace):
+    # oldest waiter first; each code goes to one job only, and a job never gets a code it already bounced
+    # (two applications to one company wait at once: Gmail may thread both codes, so the order alone can't be trusted)
+    for slug, company in sorted(waiting(workspace), key=lambda w: os.path.getmtime(os.path.join(d, w[0] + ".wait"))):
         want = _norm(company) or _norm(slug.split("_")[0])
+        tried_f = os.path.join(d, slug + ".tried")
+        tried = set(open(tried_f).read().split()) if os.path.exists(tried_f) else set()
         since = os.path.getmtime(os.path.join(d, slug + ".wait"))
-        hit = next((c for c in codes if _norm(c.get("company")) == want and re.fullmatch(r"[A-Za-z0-9]{8}", c.get("code", ""))
-                    and fresh(c, since)), None)
+        if tried:
+            since -= 600  # a re-wait after a bounced code: the right code arrived before this .wait was rewritten
+        hit = next((c for c in reversed(codes) if _norm(c.get("company")) == want and re.fullmatch(r"[A-Za-z0-9]{8}", c.get("code", ""))
+                    and c["code"] not in tried and c["code"] not in written.values() and fresh(c, since)), None)
         if hit:
             open(os.path.join(d, slug + ".txt"), "w").write(hit["code"])
+            open(tried_f, "a").write(hit["code"] + "\n")
             written[slug] = hit["code"]
     return written
 

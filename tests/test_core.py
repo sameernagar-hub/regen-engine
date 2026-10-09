@@ -303,3 +303,16 @@ def test_salary_range_bucket():
     assert pick_option(opts, "92000") == "$80,000 - $100,000"
     assert pick_option(opts, "140000") == "120,000+"
     assert pick_option([(x, x) for x in ["$130,000 – $140,000", "$140,000 – $150,000"]], "140000") == "$140,000 – $150,000"
+
+
+def test_codes_one_per_job_and_skip_bounced(tmp_path):
+    import os, time
+    from engine.apply import codes
+    d = tmp_path / "codes"; d.mkdir()
+    (d / "acme_1.wait").write_text("Acme - A\nu1"); time.sleep(0.05)
+    (d / "acme_2.wait").write_text("Acme - B\nu2")
+    rows = [{"company": "Acme", "code": "BBBBBBBB"}, {"company": "Acme", "code": "AAAAAAAA"}]  # newest first
+    w = codes.match(rows, str(tmp_path))
+    assert w == {"acme_1": "AAAAAAAA", "acme_2": "BBBBBBBB"}
+    os.remove(d / "acme_1.txt")  # job 1 bounced its code and waits again
+    assert codes.match(rows, str(tmp_path)) == {"acme_1": "BBBBBBBB"}

@@ -103,7 +103,7 @@ RULES = [
     (r"non-?compete|non-?solicit|subject to any agreement", P.get("non_compete")),
     (r"government|public official|family members", P.get("government_official_or_family")),
     (r"security clearance|active clearance", P.get("security_clearance")),
-    (r"city,? (and|&|/) state|state (and|&|/) city", f"{P['city']}, {P['state']}"),  # before the state-only rule
+    (r"city,? (and |& |/ ?)?state|state (and|&|/) city", f"{P['city']}, {P['state']}"),  # before the state-only rule
     (r"(country|where).{0,40}(reside|based|located|live)|^country", P["country"]),
     (r"countr(y|ies) .{0,30}(anticipate|plan|expect|intend|would like) (to )?work", P["country"]),
     (r"(plan|intend|want|prefer) to work remotely|do you plan to work (from a )?remote", P.get("plans_to_work_remotely")),
