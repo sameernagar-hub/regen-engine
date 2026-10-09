@@ -394,7 +394,7 @@ Thousands of jobs per day come in, but Claude only sees the promising ones.
 | PDF parse check | `pdftotext` / pypdf |
 | Secrets | OS keychain via `keyring` |
 | Notifications | ntfy.sh / Telegram bot / Discord webhook |
-| Dashboard | FastAPI + HTMX (or Next.js on InsForge / Vercel free) |
+| Dashboard | FastAPI + HTMX (or Next.js on InsForge or a free static host) |
 | Scheduler | The daemon itself; Windows Task Scheduler to auto-start on boot |
 | MCP | MCP Python SDK |
 

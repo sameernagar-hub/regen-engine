@@ -67,7 +67,7 @@ def test_fit_legal_blockers():
 def test_fit_grad_window():
     assert "grad window" in fit("Open to candidates graduating in 2027.")
     assert "grad window" in fit("Class of 2027 only.")
-    # changed 10-08 on evidence: "degree by May/June 2027" marks a campus program for 2027 grads (Constant Contact SEDP
+    # changed 10-08 on evidence: "degree by May/June 2027" marks a campus program for 2027 grads (a rotational program
     # rejected a 2026 M.S. grad with 2.5 yrs experience the next day), and Greenhouse sends it HTML-escaped
     assert "grad window" in fit("&lt;li&gt;Bachelor&#39;s Degree by May/June 2027 in computer science&lt;/li&gt;")
     assert "grad window" in fit("Currently pursuing a degree at an accredited university.")

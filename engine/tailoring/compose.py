@@ -52,7 +52,7 @@ def role_name(title):
 
 
 GENERIC = {"platform", "process", "engineering", "hardware", "software", "systems", "data", "cloud", "testing", "design",
-           "development", "production", "linux", "git", "api", "apis", "security", "openai", "claude", "gemini", "documentation",
+           "development", "production", "linux", "git", "api", "apis", "security", "claude", "gemini", "documentation",
            "mentoring", "code review", "debugging", "automation", "unit testing", "monitoring", "sql"}
 
 

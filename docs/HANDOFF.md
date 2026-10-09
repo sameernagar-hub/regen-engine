@@ -16,14 +16,14 @@
 - Codes: open a FRESH Gmail tab per lookup (old tabs freeze), read rows, `python -m engine codes '<json>'`.
 
 ## Needs the user
-- **Roblox Online Assessment** (first OA): the invite expired/unfinished; ask Roblox Early Career for a new link.
-- Roblox arbitration agreement (per-company approval).
+- **Online Assessment (first OA, a game company, 10-06)** (first OA): the invite expired/unfinished; ask that company's early-career team for a new link.
+- That company's arbitration agreement (per-company approval).
 - Gmail labels: not done this session. Filters (auto-label) need the user's OK; or IMAP app password.
 - Ashby bot-flagged again 10-08 ~23:24 -> paused 24h; 9 Ashby jobs have resumes ready.
 
 ## Next
 1. Merge v0.9 (fast-forward), CHANGELOG entry, wiki page for the composer.
-2. Gmail labels; dropdown/radio fill failures (Lucid SMS, Bot Auto onsite answered but NEEDS YOU).
+2. Gmail labels; dropdown/radio fill failures (SMS opt-in and onsite selects answered but left NEEDS YOU).
 3. Engine room: animated flow between rooms on each event, resume preview per job.
 
 ## Older plan
