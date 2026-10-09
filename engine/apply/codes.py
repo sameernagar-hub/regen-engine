@@ -30,7 +30,7 @@ def waiting(workspace=None):
 
 def fresh(code, since, today=None):
     """Was this code sent after the job started waiting? Gmail shows "22:17" for today and "Oct 6" for older mail.
-    No time given -> accepted (the caller vouched for it). A one-minute margin covers clock rounding."""
+    No time given -> accepted (the caller vouched for it). A three-minute margin covers clock rounding and round-robin delay before .wait is written."""
     when = (code.get("when") or "").strip()
     if not when:
         return True
@@ -42,7 +42,7 @@ def fresh(code, since, today=None):
         h = h % 12 + (12 if m.group(3).lower() == "pm" else 0)
     today = today or datetime.date.today()
     sent = datetime.datetime.combine(today, datetime.time(h, mi))
-    return sent >= datetime.datetime.fromtimestamp(since) - datetime.timedelta(minutes=1)
+    return sent >= datetime.datetime.fromtimestamp(since) - datetime.timedelta(minutes=3)  # round-robin: the email can land before the tab writes .wait
 
 
 def match(codes, workspace=None):

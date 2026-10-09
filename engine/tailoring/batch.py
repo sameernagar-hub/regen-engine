@@ -84,7 +84,10 @@ def build(name, ids, force=False):
             cov = spec.pop("_coverage")
             spec["file"] = f"Resume_{co}_{short}.pdf"
             json.dump(spec, open(f"specs/{co}_{short}.json", "w"), indent=1)
-            pdf = resume.fit(spec)
+            try:
+                pdf = resume.fit(spec)
+            except SystemExit as e:  # one resume that won't fit never stops the whole batch
+                print(f"  x {label}: resume: {e}"); skipped.append(label); continue
             from engine.tailoring.compose import ats_check
             cov["ats"] = ats_check(pdf, set(cov["jd_terms_you_have"]))  # what a parser reads back out of the PDF
             flagged = [qq["label"][:100] for qq in questions if qq.get("required") and FLAG.search(qq["label"])]

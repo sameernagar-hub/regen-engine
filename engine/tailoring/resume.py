@@ -131,6 +131,9 @@ def fit(spec):
         BODY = S("b", s=size, l=lead); BUL = S("bul", s=size, l=lead, leftIndent=10, bulletIndent=1, spaceAfter=1)
         out = build(spec)
         if len(PdfReader(out).pages) == 1: return out
+    if len(spec.get("projects") or []) > 1:
+        # still two pages at the smallest type: drop the last (least JD-relevant) project and try again
+        return fit(dict(spec, projects=spec["projects"][:-1]))
     raise SystemExit("still 2 pages: drop a bullet from the spec")
 
 def main(argv=None):

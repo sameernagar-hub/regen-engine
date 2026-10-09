@@ -189,7 +189,7 @@ YESNO_Q = re.compile(r"^\s*(are|do|does|did|will|would|have|has|had|is|was|can|c
 def text_ok(label, ans):
     """A free-text box only gets a bare Yes/No when its label is actually a yes/no question
     (keeps "Yes" out of e.g. "What address will you work from? If you'd relocate, ...")."""
-    sentences = re.split(r"(?<=[.?!])\s+", label or "")  # "This role is onsite Mon-Fri. Are you able to...?"
+    sentences = re.split(r"(?<=[.?!,;:])\s+", label or "")  # "This role is onsite Mon-Fri. Are you able to...?" / "..., are you able to...?"
     return ans not in ("Yes", "No") or any(YESNO_Q.search(x) for x in sentences)
 
 
@@ -298,7 +298,9 @@ def us_years():
 def derived(label):
     """Answers computed from Fact Bank dates (never guessed)."""
     l = " ".join(label.split()).lower()
-    m = re.search(r"(\d+)\+? (or (greater|more) |\+ )?years? (of )?(professional |relevant |industry )?experience", l)
+    # generic only ("...in the job listed?"): "2 years with AWS and Terraform" is a skill claim, not total years
+    m = re.search(r"(\d+)\+? (or (greater|more) |\+ )?years? (of )?(professional |relevant |industry |work |software engineering )?experience"
+                  r"( in (the|a|this|similar) (job|role|position|field)[^?]*| as an? [a-z ]*(engineer|developer))?\s*\??\s*$", l)
     if m and YESNO_Q.search(l) and str(P.get("years_experience", "")).isdigit():
         return "Yes" if int(P["years_experience"]) >= int(m.group(1)) else "No"  # "Do you have 2 or more years...?"
     m = re.search(r"lived in the (united states|us|u\.s\.) for (at least )?(\d+) (of|out of|in) the (past|last) (\d+) years", l)

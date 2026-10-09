@@ -268,3 +268,16 @@ def test_new_rules_2026_10_09():
     assert r.answer_for("Are you currently a Acme employee?", {}) == P.get("previous_employer_of_company")
     assert r.derived("Do you have 2 or more years of experience in the job listed?") in ("Yes", "No")
     assert r.derived("How many years of experience do you have?") is None
+
+
+def test_text_ok_clause_question():
+    from engine.apply import runner as r
+    assert r.text_ok("This role might require to be onsite at Houston, TX office, are you able to work onsite at Houston, TX office location? Please specify below:", "Yes")
+    assert not r.text_ok("What address will you work from? If you'd relocate, say where", "Yes")
+
+
+def test_years_rule_is_generic_only():
+    from engine.apply import runner as r
+    assert r.derived("Do you possess 1 year of experience in Ruby programming language?") is None
+    assert r.derived("Do you possess 2 years of experience with AWS cloud infrastructure and Terraform infrastructure automation?") is None
+    assert r.derived("Do you have 1 or greater years of experience?") in ("Yes", "No")
