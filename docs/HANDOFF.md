@@ -25,7 +25,7 @@
    blocks (a life-sciences SaaS), an "ever employed by us" select left empty, Workable fill timeouts.
 
 ## Environment gotchas
-- Python: `/c/Users/nagar/AppData/Local/Programs/Python/Python314/python` (the WindowsApps alias fails, including in
+- Python: `%LOCALAPPDATA%\Programs\Python\Python314\python.exe` (the WindowsApps alias fails, including in
   the pre-push privacy hook: prepend that folder to PATH before `git push`).
 - Git Bash heredocs turn `\b` into a backspace byte: write edit scripts with the Write tool; the control-char test catches it.
 - Workable is bot-walling (pages time out / no confirmation). Lever shows hCaptcha on most jobs (left for the user).

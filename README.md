@@ -175,11 +175,14 @@ python -m engine boards harvest         # grow the board registry from public jo
 python -m engine scan 1                 # all four ATSs, last 24 h -> workspace/queue.json
 python -m engine newgrad 1              # newgrad-jobs.com leads, resolved to the employer's ATS
 python -m engine alerts workspace/alerts/<date>.txt   # job-alert emails (gmail_alerts.js), resolved the same way
+python -m engine bigtech 3              # big-tech careers APIs: fit-gated roles + resumes in workspace/bigtech.md (you submit)
 python -m engine batch b1 <id>,<id>     # fit gate + one tailored resume per job
 python -m engine inspect <job url>      # optional: every question + the engine's answer, nothing filled
 python -m engine apply batches/b1.json --dry   # fill only, screenshots in workspace/proof/
 python -m engine apply batches/b1.json         # fill + submit
 python -m engine run                    # or all of the above in one command (scan, pick, resumes, apply, report)
+python -m engine codes --watch          # hands-free Greenhouse email codes over read-only IMAP (Gmail app password in .env)
+# knobs: REGEN_MAX_PER_DAY (safety cap, default 25), REGEN_SKIP_ATS=workable (skip an ATS that is bot-walling)
 python -m engine report                 # verified submissions only
 python -m pytest -q                     # tests run on profile.example/, never your data
 ```
@@ -306,7 +309,10 @@ costs microseconds next to a page load. The facts it uses are the ones the tailo
 
 ### Greenhouse email codes (`engine/apply/codes.py`)
 Waiting jobs × codes in the inbox, both tiny. A code is only written for the job whose company the email names, and only
-if the email arrived after that job started waiting.
+if the email arrived after that job started waiting (three-minute margin for round-robin delay). Each code goes to one
+job, oldest waiter first, and a code a job already bounced is never sent to it again: two applications to one company
+can have both codes threaded into one conversation, so arrival order alone is not trusted. `--watch` does the same over
+IMAP: one SEARCH per poll, only while a job waits.
 
 ## Principles
 
@@ -349,7 +355,10 @@ Every change is itemized in [CHANGELOG.md](CHANGELOG.md) with what changed, why,
 | Privacy gate in CI, anonymized public site | ✅ |
 | Vector memory (pgvector) and facts-for-JD retrieval | 🔜 |
 | Write path from the web app (answer the human queue in the page) | ✅ v0.8 (`REGEN_API_WRITE=1`, localhost only) |
-| GPU "engine room" view | 🔜 v0.9 |
+| Engine room (Next.js `/room`, `/room/[stage]`, `/job`) | ✅ v0.9 first cut |
+| JD-first resume composer with ATS read-back | ✅ v0.9 |
+| Big-tech discovery (two careers APIs) with resumes ready; you submit on their portal | ✅ v0.9.1 |
+| Hands-free email codes over IMAP (`codes --watch`) | ✅ v0.9.1 (needs your app password) |
 
 ## Roadmap
 
@@ -358,7 +367,8 @@ Every change is itemized in [CHANGELOG.md](CHANGELOG.md) with what changed, why,
 | v0.1–0.6 ✅ | Engine | Discovery, Fact-Bank tailoring, Greenhouse/Ashby apply with proof, safety, inbox loop, live view, privacy gate |
 | **v0.7** ✅ first cut | Platform | FastAPI + Pydantic API, Postgres event store, Next.js live view, memory graph, MCP server, Lever and Workable adapters, job-alert emails |
 | **v0.8** ✅ | Throughput, truthfully | Round-robin scheduler with adaptive time slices, parallel appliers, `engine run`, drafted answers from the Fact Bank, salary from the posted range, answer from the page, locked event log, ×3 faster tailoring, browser tests and coverage |
-| v0.9 | Reach and polish | Ashby queue after the bot-check pause, Gmail labels per platform, inbox cleanup on request, remaining form gaps, async Playwright for in-process overlap, Workday / iCIMS adapters |
+| **v0.9 / 0.9.1** ✅ | Composer and fewer stops | JD-first composer + ATS read-back, engine room, embedded/SRE lanes, form-rule fixes found while applying, salary range buckets, code matcher, big-tech discovery, `codes --watch` |
+| v0.10 | Reach and polish | Ashby queue after the bot-check pause, Gmail labels per platform, inbox cleanup on request, remaining form gaps, async Playwright for in-process overlap, Workday / iCIMS adapters |
 | v0.9 | Engine room and memory | GPU live view (instanced board field, glowing pipeline, 3D lane tree, [research](docs/FRONTEND.md)); pgvector retrieval over facts and job descriptions |
 | v1.0 | Public release | One-command setup, docs site, stable APIs |
 
