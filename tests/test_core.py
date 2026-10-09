@@ -287,3 +287,11 @@ def test_imap_code_regex():
     from engine.apply.codes import CODE_RX
     m = CODE_RX.search("Security code for your application to Acme Robotics - Software Engineer Copy and paste this code into the security code field on your application: 1JhA8Jjb")
     assert m.groups() == ("Acme Robotics", "1JhA8Jjb")
+
+
+def test_rules_wave5():
+    from engine.apply import runner as r
+    assert r.answer_for("I acknowledge that I have reviewed the posted compensation range for this position", {}) == "__ACK__"
+    assert r.answer_for("Do you have unlimited and unrestricted authorization to work in the United States?", {}) == r.P.get("unrestricted_work_authorization")
+    assert r.derived("Are you based in the Central Time Zone or Eastern Time Zone?") in ("Yes", "No", None)
+    assert r.derived("Are you able to start working within 30-60 days of applying? (If you are close to completing a degree...)") in ("Yes", "No", None)

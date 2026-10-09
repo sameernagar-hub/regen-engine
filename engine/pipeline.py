@@ -37,6 +37,9 @@ def latest_status():
     return out
 
 
+SKIP_ATS = {a.strip() for a in os.environ.get("REGEN_SKIP_ATS", "").split(",") if a.strip()}
+
+
 def select(queue, max_jobs, ashby_ok=True, per_company=3):
     """Newest-first jobs that were never tried (or only errored), capped per company, interleaved by company."""
     st = latest_status()
@@ -45,6 +48,8 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
         if st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU", "FLAGGED"):
             continue
         if not ashby_ok and j.get("ats") == "ashby":
+            continue
+        if j.get("ats") in SKIP_ATS:  # e.g. REGEN_SKIP_ATS=workable while that ATS is bot-walling us
             continue
         co = j["company"].lower()
         if per[co] >= per_company:

@@ -58,6 +58,8 @@ BAY_AREA = r"san francisco|san jose|oakland|berkeley|palo alto|mountain view|sun
 RULES = [
     # arbitration is a per-company legal decision: only answered via a job's "extra" (user approval), never by default
     (r"arbitrat", None),
+    (r"^(i acknowledge|by checking this box|i confirm|i have (read|reviewed))\b", "__ACK__"),  # acknowledgements, not salary/degree answers
+    (r"(unlimited|unrestricted) (and (unlimited|unrestricted) )?(authori[sz]ation|right) to work", P.get("unrestricted_work_authorization")),  # OPT is time-limited
     # demographic / EEO questions are always declined, and checked before anything else can match their long labels
     (r"gender|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun|chronic condition|armed forces|military status", "__DECLINE__"),
     # "If you were referred, the referring individual's first and last name": the engine applies cold, so this is never
@@ -181,6 +183,9 @@ BANK = load_answer_bank()
 ALIASES = {P["state"]: [P.get("state_abbr", "")], P["country"]: ["United States of America", "USA"],
            P["degree"]: ["Master of Science", "Masters", "M.S."],
            P["school"]: [P["school"].replace(", ", "-"), P["school"].replace(", ", " - "), P["school"].replace(",", "")]}
+if P.get("work_auth_status"):  # visa-type dropdowns word the same status many ways
+    ALIASES[P["work_auth_status"]] = [x.strip() for x in re.split(r"[;,]", P.get("work_auth_status_aliases", ""))]
+ALIASES["Company careers page"] = ["Company Website", "Company website", "Careers Page", "Career Site", "Website", "Company Careers Site", "Job Board", "Other"]
 ALIASES = {k: [v for v in vs if v] for k, vs in ALIASES.items()}
 
 MAX_OPTION = 80  # longest answer we will try to match against dropdown / choice options
@@ -304,6 +309,16 @@ def derived(label):
                   r"( in (the|a|this|similar) (job|role|position|field)[^?]*| as an? [a-z ]*(engineer|developer))?\s*\??\s*$", l)
     if m and YESNO_Q.search(l) and str(P.get("years_experience", "")).isdigit():
         return "Yes" if int(P["years_experience"]) >= int(m.group(1)) else "No"  # "Do you have 2 or more years...?"
+    m = re.search(r"based in (the )?((pacific|mountain|central|eastern)( time ?zone)?( or (the )?(pacific|mountain|central|eastern))?)( time ?zone)?", l)
+    if m and P.get("timezone"):
+        mine = re.search(r"pacific|mountain|central|eastern", P["timezone"].lower())
+        return ("Yes" if mine.group(0) in m.group(2) else "No") if mine else None
+    m = re.search(r"(able|available) to start( working)? within (\d+)(-(\d+))? (days|weeks)", l)
+    if m and P.get("start_date"):
+        limit = int(m.group(5) or m.group(3)) * (7 if m.group(6) == "weeks" else 1)
+        w = re.search(r"(\d+) ?weeks?", P["start_date"])
+        need = int(w.group(1)) * 7 if w else (0 if re.search(r"immediate", P["start_date"], re.I) else None)
+        return None if need is None else ("Yes" if need <= limit else "No")
     m = re.search(r"lived in the (united states|us|u\.s\.) for (at least )?(\d+) (of|out of|in) the (past|last) (\d+) years", l)
     if m:
         y = us_years()
@@ -687,7 +702,7 @@ def fill_workable(page, job, log):
 
 def submit_workable(page):
     page.click("button[type=submit]:has-text('Submit')")
-    for _ in range(25):
+    for _ in range(60):
         yield 1
         body = page.inner_text("body")
         if re.search(r"thank(s| you) for (applying|your application)|application (has been |was )?(submitted|received)", body, re.I):
