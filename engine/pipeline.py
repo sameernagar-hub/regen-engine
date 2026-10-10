@@ -38,20 +38,62 @@ def latest_status():
 
 
 SKIP_ATS = {a.strip() for a in os.environ.get("REGEN_SKIP_ATS", "").split(",") if a.strip()}
+WALL = ("CAPTCHA", "BOT-CHECK")  # failure details that mean "a human must finish this", not "retry"
+HUMAN_ONLY = ("arbitration", "assessment", "transcript", "export c")  # blockers only the user can clear
+
+
+def ats_of(url):
+    """ATS key from a posting URL (greenhouse / ashby / lever / workable / other)."""
+    u = url or ""
+    return next((k for k, m in (("greenhouse", "greenhouse"), ("ashby", "ashbyhq"), ("lever", "lever.co"), ("workable", "workable"))
+                 if m in u), "other")
+
+
+def history(days=3, min_tries=4, wall_rate=0.5):
+    """Learn from recent attempts so a run only opens forms it can finish (the 100%-completion goal).
+
+    Returns (walled_ats, blocked_companies):
+      walled_ats         ATSs where at least `wall_rate` of the last `days` days' attempts hit a captcha / bot-check
+                         (seen 10-09: one ATS asked for hCaptcha on 6 of 6 jobs) -> left for the user's assist list
+      blocked_companies  companies whose last attempt stopped on something only the user can clear (arbitration,
+                         assessments, transcripts, export-control self-certification) or a captcha
+    One pass over the application events: O(E) time, O(companies) space."""
+    since = (datetime.datetime.now() - datetime.timedelta(days=days)).isoformat()
+    tries, walls, blocked = collections.Counter(), collections.Counter(), set()
+    for e in read("application"):
+        if e.get("dry") or (e.get("ts") or "") < since:
+            continue
+        detail = e.get("detail") or ""
+        if "cooldown" in detail.lower():
+            continue  # never opened: says nothing about the ATS
+        a = ats_of(e.get("url"))
+        tries[a] += 1
+        if any(w in detail for w in WALL):
+            walls[a] += 1
+        co = (e.get("job") or "").split(" - ")[0].strip().lower()
+        if co and (any(w in detail for w in WALL) or any(h in detail.lower() for h in HUMAN_ONLY)):
+            blocked.add(co)
+    walled = {a for a in tries if tries[a] >= min_tries and walls[a] / tries[a] >= wall_rate}
+    return walled, blocked
 
 
 def select(queue, max_jobs, ashby_ok=True, per_company=3):
     """Newest-first jobs that were never tried (or only errored), capped per company, interleaved by company."""
     st = latest_status()
+    walled, blocked = history()
+    if walled:
+        print(f"select: skipping {', '.join(sorted(walled))} (captcha walls on most recent attempts; see the assist list)")
     per, picked = collections.Counter(), []
     for j in queue:
-        if st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU", "FLAGGED"):
-            continue
+        if st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU", "FLAGGED", "FAILED"):
+            continue  # FAILED too: a failed form stays filled-in on the assist list instead of being retried blind
         if not ashby_ok and j.get("ats") == "ashby":
             continue
-        if j.get("ats") in SKIP_ATS:  # e.g. REGEN_SKIP_ATS=workable while that ATS is bot-walling us
+        if j.get("ats") in SKIP_ATS or j.get("ats") in walled:  # REGEN_SKIP_ATS, or learned from captcha walls
             continue
         co = j["company"].lower()
+        if co in blocked:
+            continue  # this company is waiting on the user (arbitration, assessment, captcha)
         if per[co] >= per_company:
             continue
         per[co] += 1

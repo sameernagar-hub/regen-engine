@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
 from apps.api import store
+from apps.api import control
 from apps.api.models import AnswerIn, AnswerOut, Application, Drafted, Event, HumanItem, Narration, Outcome, Snapshot
 from engine.config import WORKSPACE
 from engine.feedback import answers as A
@@ -23,6 +24,7 @@ app = FastAPI(title="REGEN API", version="0.8.0",
               description="API over the REGEN job engine's append-only event log (read-only, plus POST /api/answers when enabled).")
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("REGEN_WEB_ORIGINS", "http://127.0.0.1:3000,http://localhost:3000").split(","),
                    allow_methods=["GET", "POST"] if WRITE else ["GET"], allow_headers=["*"])
+app.include_router(control.router)  # v0.10 control room: runs, filters, Fact Bank, resumes
 
 WAITING = ("NEEDS YOU", "FAILED", "FLAGGED")
 

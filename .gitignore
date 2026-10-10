@@ -26,3 +26,4 @@ site/
 .coverage
 coverage.xml
 htmlcov/
+.claude/launch.json

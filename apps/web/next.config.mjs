@@ -11,7 +11,11 @@ export default {
   },
   async headers() {
     return [{
-      source: "/:path*",
+      // resumes open inline in the Applications page (same-origin iframe only)
+      source: "/api/resume/:name",
+      headers: [{ key: "Content-Security-Policy", value: "frame-ancestors 'self'" }],
+    }, {
+      source: "/((?!api/resume).*)",
       headers: [
         { key: "Content-Security-Policy", value: "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self'; frame-ancestors 'none'" },
         { key: "Referrer-Policy", value: "no-referrer" },

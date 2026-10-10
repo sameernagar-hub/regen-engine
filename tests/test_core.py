@@ -360,3 +360,16 @@ def test_area_and_address_rules():
     assert r.area_answer("Are you based in the San Francisco Bay Area region?") == r.P.get("based_in_bay_area")
     assert r.area_answer("Are you located in the US?") is None
     assert answer_for("Are you currently an employee or contractor at ExampleCo?", {}) == r.P.get("previous_employer_of_company", "No")
+
+
+def test_history_learns_walls(monkeypatch):
+    import datetime
+    import engine.pipeline as pl
+    now = datetime.datetime.now().isoformat()
+    evs = [{"ts": now, "url": "https://jobs.lever.co/a/1", "job": "A - x", "detail": "FAILED: CAPTCHA: human check"} for _ in range(4)]
+    evs += [{"ts": now, "url": "https://boards.greenhouse.io/b/1", "job": "B - y", "detail": "SUBMITTED"} for _ in range(4)]
+    evs += [{"ts": now, "url": "https://boards.greenhouse.io/c/1", "job": "C - z", "detail": "NEEDS YOU: Candidate Arbitration Agreement"}]
+    monkeypatch.setattr(pl, "read", lambda kind=None: evs)
+    walled, blocked = pl.history()
+    assert walled == {"lever"}
+    assert {"a", "c"} <= blocked and "b" not in blocked
