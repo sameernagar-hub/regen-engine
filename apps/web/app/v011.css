@@ -1,0 +1,85 @@
+/* v0.11 design layer: living backdrop, aurora type, glass surfaces, view-transition morphs, scroll-driven reveals.
+   Every effect has a reduced-motion fallback at the bottom. */
+
+@property --spin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@property --glow { syntax: "<percentage>"; inherits: false; initial-value: 30%; }
+
+.backdrop { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: .9; }
+.page, .stage { z-index: 1; background: radial-gradient(1200px 600px at 80% -10%, #1b2a4a55, transparent 60%),
+                                         radial-gradient(900px 500px at -10% 110%, #3a2a1255, transparent 60%); }
+.page { background-color: transparent; }
+
+/* aurora headline: a slowly turning conic gradient clipped to the text */
+.hero h1 {
+  background: conic-gradient(from var(--spin), #f2c14e, #ff9f43, #ff7eb6, #b39dff, #6fb7ff, #7ef0c1, #f2c14e);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: spin 12s linear infinite; letter-spacing: -.02em;
+}
+@keyframes spin { to { --spin: 360deg; } }
+
+/* glass cards with a gradient hairline border (mask trick) and a light that follows the pointer */
+.card, .room, .pstep, .detail, .applier {
+  position: relative; background: color-mix(in oklab, #0c1017 72%, transparent);
+  backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid transparent; isolation: isolate;
+}
+.card::after, .room::after, .detail::after, .applier::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: -1;
+  background: linear-gradient(140deg, #ffffff22, #ffffff06 40%, #f2c14e33 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.card:hover::after, .room:hover::after { background: linear-gradient(140deg, #f2c14e66, #6fb7ff33 50%, #ff7eb666); }
+
+/* buttons: pill with an animated sheen */
+.btn.gold { background: linear-gradient(110deg, #f2c14e 0%, #ffd88a 45%, #f2c14e 60%) 0 0 / 220% 100%; animation: sheen 3.5s ease-in-out infinite; }
+@keyframes sheen { 50% { background-position: 100% 0; } }
+
+/* nav: the current tab carries a view-transition name so the underline glides between pages */
+.topnav { position: sticky; top: 0; z-index: 5; backdrop-filter: blur(12px); background: color-mix(in oklab, var(--bg) 70%, transparent); }
+.topnav a[aria-current=page] { position: relative; }
+.topnav a[aria-current=page]::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -19px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, #f2c14e, #ff7eb6); view-transition-name: nav-underline;
+}
+.brand { view-transition-name: brand; }
+.hero h1 { view-transition-name: page-title; }
+
+/* page swap: old page sinks and blurs, new page rises; shared names morph (React ViewTransition default) */
+::view-transition-old(.page-swap) { animation: vt-out .28s cubic-bezier(.4,0,1,1) both; }
+::view-transition-new(.page-swap) { animation: vt-in .42s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes vt-out { to { opacity: 0; filter: blur(6px); transform: scale(.985); } }
+@keyframes vt-in { from { opacity: 0; filter: blur(8px); transform: translateY(14px) scale(1.01); } }
+::view-transition-group(page-title), ::view-transition-group(nav-underline), ::view-transition-group(brand) {
+  animation-duration: .45s; animation-timing-function: cubic-bezier(.2,.8,.2,1);
+}
+
+/* scroll-driven reveals: cards rise into place as they enter the viewport (no JS) */
+@supports (animation-timeline: view()) {
+  .card, .factlist li, .apps tbody tr, .timeline li {
+    animation: reveal linear both; animation-timeline: view(); animation-range: entry 0% entry 40%;
+  }
+  @keyframes reveal { from { opacity: 0; transform: translateY(24px) scale(.98); } to { opacity: 1; transform: none; } }
+  /* a progress hairline at the top of scrolling pages */
+  .page::before {
+    content: ""; position: fixed; left: 0; top: 0; height: 2px; width: 100%; z-index: 9; transform-origin: 0 50%;
+    background: linear-gradient(90deg, #6fb7ff, #f2c14e, #ff7eb6); animation: progress linear both; animation-timeline: scroll(nearest);
+  }
+  @keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+}
+
+/* bento: the control room's top grid adapts to its container, not the window */
+.grid2 { container-type: inline-size; }
+@container (min-width: 900px) { .grid2 { grid-template-columns: 1.4fr 1fr; } }
+
+/* live states breathe */
+.pstep.on { animation: breathe-b 2.4s ease-in-out infinite; }
+@keyframes breathe-b { 50% { box-shadow: 0 0 0 1px #f2c14e66, 0 0 60px #f2c14e44; } }
+.applier.live .tabs li:has(b[style*="calm"]) { background: linear-gradient(90deg, #6fb7ff14, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero h1, .btn.gold, .pstep.on { animation: none; }
+  .card, .factlist li, .apps tbody tr, .timeline li, .page::before { animation: none !important; }
+  ::view-transition-old(.page-swap), ::view-transition-new(.page-swap) { animation: none; }
+}
+@media (prefers-contrast: more) { .card, .room, .detail { backdrop-filter: none; background: #0c1017; } }
