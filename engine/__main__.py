@@ -2,6 +2,7 @@
 
   scan    [days] [--ats a,b]       Greenhouse + Ashby + Lever boards -> workspace/queue.json
   newgrad [days]                   newgrad-jobs.com leads, resolved to the employer's ATS -> queue.json / leads.json
+  outreach [days]                  recruiter / founder notes for recent submissions (Fact Bank only; nothing sent)
   bigtech [days]                   Amazon + NVIDIA careers APIs -> fit-gated roles with tailored resumes (workspace/bigtech.md)
 alerts  <file>                   job-alert emails (gmail_alerts.js output) resolved to the employer's ATS -> queue.json
   watch   [min] [--once] [--newgrad] poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)
@@ -115,6 +116,8 @@ def main():
         from engine.apply.runner import main as m
     elif cmd == "run":
         from engine.pipeline import main as m
+    elif cmd == "outreach":
+        from engine.outreach import main as m
     elif cmd == "codes":
         from engine.apply.codes import main as m
     elif cmd == "inspect":

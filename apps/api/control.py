@@ -209,3 +209,21 @@ def resume(name: str):
     if not os.path.exists(p):
         raise HTTPException(404)
     return FileResponse(p, media_type="application/pdf", headers={"Content-Disposition": f'inline; filename="{name}"'})
+
+
+@router.get("/outreach")
+def outreach():
+    """Outreach drafts built by `engine outreach` (workspace/outreach/drafts.json). Nothing here sends mail."""
+    path = os.path.join(WORKSPACE, "outreach", "drafts.json")
+    try:
+        return json.load(open(path, encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+
+
+@router.post("/outreach/build")
+def outreach_build(body: dict, request: Request):
+    """Rebuild drafts for submissions in the last `days` days (1-30)."""
+    _guard(request)
+    from engine import outreach as O
+    return O.build(max(1, min(int(body.get("days", 7)), 30)))

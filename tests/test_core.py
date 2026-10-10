@@ -400,3 +400,12 @@ def test_answerable_now_frees_backlog():
     assert answerable_now("NEEDS YOU: Ashby cooldown after a bot-check; not opened (re-run after the cooldown, resume ready)")
     assert answerable_now("NEEDS YOU: Affirmation")
     assert not answerable_now("NEEDS YOU: Please review and acknowledge the Candidate Arbitration Agreement")
+
+
+def test_outreach_draft_is_fact_only():
+    from engine.outreach import draft
+    bank = {"contact": [["name", "JANE DOE"]], "facts": {"f1": "Built <b>things</b>.", "f2": "Shipped stuff."}}
+    d = draft({"company": "ExampleCo", "role": "Software Engineer", "url": "u", "ts": "t", "why": "startup",
+               "facts": ["f1", "f2", "f3"]}, bank)
+    assert "- Built things." in d["body"] and "- Shipped stuff." in d["body"] and "Jane Doe" in d["body"]
+    assert d["sources"] == ["f1", "f2"] and d["compose"].startswith("https://mail.google.com/mail/?view=cm")

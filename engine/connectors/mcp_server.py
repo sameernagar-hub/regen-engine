@@ -218,6 +218,20 @@ def inbox_record(messages: list[dict]) -> dict:
     return {"recorded": [{"outcome": e.get("outcome"), "company": e.get("company")} for e in (evs or [])]}
 
 
+
+@mcp.tool(description="Outreach drafts for recent submissions at tier companies and startups: subject, body (template "
+                      "lines + Fact Bank entries that application's resume used), and a Gmail compose link. Nothing is "
+                      "sent; the user adds the recipient. rebuild=True regenerates them (needs REGEN_MCP_WRITE=1).")
+def outreach_drafts(days: int = 7, rebuild: bool = False) -> list[dict]:
+    from engine import outreach as O
+    if rebuild:
+        if not WRITE:
+            return [{"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}]
+        return O.build(days)
+    path = os.path.join(WORKSPACE, "outreach", "drafts.json")
+    return json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []
+
+
 def main(argv=None):
     mcp.run("stdio")
 
