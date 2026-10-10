@@ -1,4 +1,4 @@
-# Handoff: v0.10 / v0.11 on main (2026-10-10, session in progress)
+# Handoff: v0.10 / v0.11 on main (2026-10-10 ~01:00)
 
 ## When the user says "start" (do this first, in order)
 1. Read this file + memory (`v1-direction`, `rejection-learnings`).
@@ -15,36 +15,57 @@
    memory `rejection-learnings`.
 
 ## Priority queue (top = next). Keep this list current every time something lands.
-1. **Keep the loop applying** + deliver codes fast (codes are the #1 cause of lost submissions).
-2. **NEEDS YOU backlog (~96)**: answer box exists on the live page; build a bulk "answer once, apply everywhere" view
-   in /control (group by question, POST /api/answers). Biggest completion lever after codes.
-3. **MCP = the zero-cost cord**: add tools run_stop, filters_get/set, factbank, trust_check, priority_explain,
-   inbox_record, outreach_draft (engine/connectors/mcp_server.py). No paid API keys, ever.
-4. **Outreach**: recruiter / founder cold email drafts (FAANG, MANGO, AI labs, hiring YC founders) from Fact Bank only,
-   saved as Gmail drafts; the user sends. LinkedIn connection invites only after the user approves a list.
-5. **Docker appliers**: compose file with N applier services (one engine per container, shared workspace volume,
-   own browser profile). User asked 10-10. Also free tools: local Ollama for zero-cost drafting (optional), uv.
-6. **Sources**: SmartRecruiters public postings API; Workday/iCIMS assist list (user's accounts); Ashby reopens
-   after `workspace/ashby_cooldown` + 24 h (a few per hour, it bot-flags bursts).
-7. **Frontend**: assist list page (Lever captcha + Ashby filled forms, one click to open), outreach page, network
-   graph (LinkedIn connections, read-only), job page shared-element morphs.
-8. **Docs/v1**: README "By the numbers" refresh, CHANGELOG v0.10/v0.11 entries, wiki Security + Data-model +
-   Benchmarks pages; docstrings sweep per docs/CODING_STANDARDS.md.
+1. **Keep the loop applying** + deliver codes fast (codes are the #1 cause of lost submissions; 11 of 10-10's
+   submissions went through only because codes were delivered within a minute).
+2. **Needs-you backlog**: /needs page is live (group by question, answer once, retry). Ask the user to spend 5 minutes
+   there; `pipeline.answerable_now` re-queues jobs automatically when their questions become answerable.
+3. **Outreach**: recruiter / founder cold-email drafts (FAANG, MANGO, AI labs, hiring YC founders) from Fact Bank only,
+   saved as Gmail drafts; the user sends. LinkedIn connection invites only after the user approves a list. Add an
+   MCP tool `outreach_draft` and a /outreach page.
+4. **Docker appliers**: compose file with N applier services (one engine per container, shared workspace volume, own
+   browser profile). Then the cloud plan below.
+5. **Sources**: SmartRecruiters public postings API; Workday/iCIMS assist list (user's accounts); Ashby reopens after
+   `workspace/ashby_cooldown` + 24 h (a few per hour; it bot-flags bursts).
+6. **Frontend**: assist list page (Lever captcha + Ashby filled forms, one click to open), outreach page, network graph
+   (LinkedIn connections, read-only), shared-element morphs between /applications and /job.
+7. **Docs/v1**: CHANGELOG v0.10/v0.11 entries, wiki Security + Data-model + Benchmarks pages, docstring sweep per
+   docs/CODING_STANDARDS.md, then tag v1.0 = "REGEN as an MCP connector/plugin" (user's release definition).
 
-## Landed this session (10-10)
-- Title gate: non-software disciplines dropped; defense JD blocker; slug-insensitive company exclusions.
+## Cloud plan (user, 10-10; not started)
+The local machine becomes only the **knowledge source** (Fact Bank, presets, resumes, inbox access through the user's
+AI client); everything else runs in containers: appliers (Docker, one engine per container), the API, and the event
+store (Postgres; `apps/api/store.py` already supports it). Render serves the frontend and reads state from the cloud
+API instead of the gh-pages feed. Open questions for the user: where containers run (Render background workers vs a
+VM), how the Fact Bank syncs (encrypted, user-held key), and Gmail codes in the cloud (IMAP app password).
+
+## Frontend = Render (10-10)
+`https://regen-engine.onrender.com` (Render Blueprint, auto-deploys `main`, public mode). The gh-pages branch only
+serves `replay.json` (the anonymized feed) and redirects to Render; publish with `python -m engine site 7 --push`
+after a session. Repo homepage points to Render. Local-only pages show a "runs on your machine" panel in public mode.
+Screenshots for the README: `python scripts/screenshots.py http://localhost:3000` (hides narration, names, logs).
+
+## Landed this session (10-10, ~23:30 to ~01:00)
+- 81 verified total (12 this session, 11 after midnight via live code delivery).
+- Title gate: non-software disciplines; defense JD blocker; slug-insensitive company exclusions.
 - Forms: signature date, OPT/STEM/reserves from presets, home address, current employee/contractor, 5 days in person,
   "<metro> area", one-word acknowledgments.
-- Selector: priority score + JD-match ordering, history (captcha-walled ATS, user-only blockers), one retry for
-  code timeouts; scans merge into the queue; `--loop` first-applicant mode.
-- Trust gate (ATS host allowlist + scam red flags, inbox scam detection).
-- Web: /control, /applications (resume PDF + answers + facts + proof), /facts (Fact Bank map); v0.11 design layer.
-- Gmail: 12 label filters (Jobs/...). Wiki: Zero-Cost-and-MCP, Trust-Gate, Job-Priority, Control-Room.
-- Presets drafted by Claude on 10-10 (tell the user): `us_military_reserve: No`, `on_opt: Yes`, `stem_degree: Yes`.
+- Selector: priority score + JD-match ordering, history (captcha-walled ATS, user-only blockers), one retry for code
+  timeouts, NEEDS YOU -> RETRY when answerable; scans merge into the queue; `--loop` first-applicant mode.
+- Trust gate (ATS host allowlist + scam red flags; inbox scam detection).
+- MCP v0.10 tools (run_start/stop, control_state, filters, factbank, trust_check, priority_explain,
+  needs_by_question, answer_save, inbox_record).
+- Web: /control, /applications (resume PDF + answers + facts + proof), /needs, /facts, shared nav everywhere, graph
+  focus links, v0.11 design layer (neural-field backdrop, ViewTransition morphs, scroll-driven reveals).
+- API write flag can live in `.env` (`REGEN_API_WRITE=1`); `.claude/launch.json` is local (git-ignored).
+- Gmail: 12 label filters (Jobs/...). Wiki: Zero-Cost-and-MCP, Trust-Gate, Job-Priority, Control-Room; README
+  rewritten for v0.10/v0.11 with new screenshots; docs/CODING_STANDARDS.md.
+- Presets drafted by Claude on 10-10 (tell the user): `us_military_reserve: No`, `on_opt: Yes`, `stem_degree: Yes`;
+  `profile/priority.json` tier lists (FAANG/MANGO/AI labs/big sponsors) are Claude's draft too.
 
 ## Needs the user
 - Gmail app password in `.env` would make codes hands-free (`python -m engine codes --watch`).
-- Arbitration (a game company), assessment link request, Lever captcha jobs and Ashby filled forms (assist list).
+- /needs: answer the non-legal questions; arbitration (a game company), assessment link request; Lever captcha jobs
+  and Ashby filled forms.
 
 ## Earlier
 
