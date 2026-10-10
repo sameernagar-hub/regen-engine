@@ -7,7 +7,7 @@
 alerts  <file>                   job-alert emails (gmail_alerts.js output) resolved to the employer's ATS -> queue.json
   watch   [min] [--once] [--newgrad] poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)
   feed    [days]                   SimplifyJobs new-grad feed -> workspace/feed_queue.json
-  boards  [harvest|recheck]        grow the board registry / retry boards marked dead (workspace/boards.json)
+  boards  [harvest|probe|recheck]       grow the board registry / retry boards marked dead (workspace/boards.json)
   batch  <name> <id,id,...>        queue ids -> tailored resumes + workspace/batches/<name>.json
   tailor <spec.json>               build one Fact-Bank-only resume
   apply  <batches/x.json> [--dry]  fill (and submit) every job in a batch
@@ -74,6 +74,9 @@ def boards(argv):
     if argv and argv[0] == "harvest":
         for a, (b, n) in ats.harvest().items():
             print(f"{a:<11} {b} -> {n} boards")
+    elif argv and argv[0] == "probe":  # tier-list employers whose ATS board the registry lacks
+        from engine.discovery.probe import main as probe_main
+        probe_main()
     elif argv and argv[0] == "recheck":
         b = ats.load_boards()
         dead = [d.split(":", 1) for d in b.get("dead", [])]
