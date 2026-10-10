@@ -1,6 +1,6 @@
 """Orchestration pipeline: one command from "what's new" to verified submissions.
 
-    python -m engine run [--days 1] [--max 30] [--appliers 2] [--tabs 3] [--no-scan] [--dry]
+    python -m engine run [--days 1] [--max 30] [--appliers 2] [--tabs 3] [--no-scan] [--dry] [--loop MIN]
 
 Stages (each logs a `pipeline` event, so a run is traceable end to end):
   1. discover   scan every board for the last N days (Ashby skipped while its bot-check cooldown runs)
@@ -155,5 +155,17 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     os.makedirs(os.path.join(WORKSPACE, "logs"), exist_ok=True)
-    run(days=_arg(argv, "--days", 1), max_jobs=_arg(argv, "--max", 30), appliers=_arg(argv, "--appliers", 2),
-        tabs=_arg(argv, "--tabs", 3), scan="--no-scan" not in argv, dry="--dry" in argv)
+    kw = dict(days=_arg(argv, "--days", 1, float), max_jobs=_arg(argv, "--max", 30), appliers=_arg(argv, "--appliers", 2),
+              tabs=_arg(argv, "--tabs", 3), scan="--no-scan" not in argv, dry="--dry" in argv)
+    loop = _arg(argv, "--loop", 0, float)  # minutes; 0 = one pass
+    if not loop:
+        run(**kw)
+        return
+    # first-applicant mode: after the first full pass, rescan only the last few hours every `loop` minutes and apply
+    # to whatever just opened. Runs until stopped (Ctrl+C or the control room's Stop): started by the user, never scheduled.
+    n = 0
+    while True:
+        run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125)))
+        n += 1
+        print(f"loop: pass {n} done; next scan in {loop:g} min", flush=True)
+        time.sleep(loop * 60)

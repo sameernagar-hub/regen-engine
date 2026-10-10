@@ -17,7 +17,7 @@ ATS_ALL = ("greenhouse", "lever", "ashby", "workable")
 
 def defaults():
     return {"days": 3, "max": 60, "appliers": 3, "tabs": 3, "scan": True, "newgrad": True, "feed": True,
-            "ats": ["greenhouse", "lever", "ashby"], "cap": 60, "dry": False}
+            "ats": ["greenhouse", "lever", "ashby"], "cap": 60, "dry": False, "loop": 0}
 
 
 def clean(p):
@@ -29,6 +29,7 @@ def clean(p):
     d["appliers"] = max(1, min(int(d["appliers"]), 4))
     d["tabs"] = max(1, min(int(d["tabs"]), 5))
     d["cap"] = max(1, min(int(d["cap"]), 100))
+    d["loop"] = max(0, min(int(d["loop"]), 240))  # minutes between first-applicant rescans (0 = one pass)
     d["ats"] = [a for a in d["ats"] if a in ATS_ALL] or ["greenhouse"]
     for k in ("scan", "newgrad", "feed", "dry"):
         d[k] = bool(d[k])
@@ -45,7 +46,7 @@ def steps(p):
     if p["feed"]:
         out.append(("feed", py + ["feed", str(min(p["days"], 7)), "--queue"]))
     out.append(("apply", py + ["run", "--no-scan", "--max", str(p["max"]), "--appliers", str(p["appliers"]), "--tabs", str(p["tabs"])]
-                + (["--dry"] if p["dry"] else [])))
+                + (["--dry"] if p["dry"] else []) + (["--loop", str(p["loop"])] if p["loop"] else [])))
     return out
 
 

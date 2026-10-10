@@ -14,7 +14,7 @@ type State = { run: { running: boolean; params?: Record<string, any>; steps?: St
                run_log: string[]; appliers: Applier[]; queue: number; queue_by_ats: Record<string, number>;
                ashby_open_at: number | null; defaults: Params; write: boolean };
 type Params = { days: number; max: number; appliers: number; tabs: number; scan: boolean; newgrad: boolean; feed: boolean;
-                ats: string[]; cap: number; dry: boolean };
+                ats: string[]; cap: number; dry: boolean; loop: number };
 type Filters = { filters: Record<string, string>; terms: Record<string, string[]>; years_experience: number | null };
 
 const STAGES = [
@@ -93,6 +93,7 @@ export default function Control() {
               <label>Max jobs <input type="number" min={1} max={200} value={p.max} onChange={(e) => set("max", +e.target.value)} /></label>
               <label>Parallel appliers <input type="number" min={1} max={4} value={p.appliers} onChange={(e) => set("appliers", +e.target.value)} /></label>
               <label>Tabs each <input type="number" min={1} max={5} value={p.tabs} onChange={(e) => set("tabs", +e.target.value)} /></label>
+              <label title="0 = one pass. Otherwise rescan every N minutes and apply to jobs that just opened.">Rescan every (min) <input type="number" min={0} max={240} value={p.loop} onChange={(e) => set("loop", +e.target.value)} /></label>
               <label>Daily cap <input type="number" min={1} max={100} value={p.cap} onChange={(e) => set("cap", +e.target.value)} /></label>
               <fieldset><legend>Sources</legend>
                 {(["scan", "newgrad", "feed"] as const).map((k) => (
