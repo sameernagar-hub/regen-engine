@@ -19,6 +19,13 @@ US_WORDS = re.compile(r"united states|\bUSA?\b|\bU\.S\.|americas?\b|north americ
 NON_US = re.compile(r"\bUK\b|united kingdom|england|london|canada|toronto|vancouver|montreal|ontario|india|bangalore|bengaluru|hyderabad|pune|gurgaon|gurugram|noida|chennai|mumbai|dublin|ireland|germany|berlin|munich|paris|france|singapore|tokyo|japan|sydney|australia|amsterdam|netherlands|poland|warsaw|krakow|mexico|brazil|são paulo|sao paulo|israel|tel aviv|portugal|lisbon|spain|madrid|barcelona|italy|milan|romania|ukraine|serbia|argentina|colombia|chile|philippines|vietnam|korea|seoul|china|beijing|shanghai|hong kong|taiwan|emea|apac|latam|europe|switzerland|zurich|sweden|stockholm|denmark|copenhagen|norway|finland|belgium|austria|vienna|czech|prague|estonia|lithuania|greece|turkey|istanbul|egypt|nigeria|kenya|south africa|dubai|uae|saudi|new zealand|costa rica|pakistan|bangladesh|indonesia|malaysia|thailand", re.I)
 
 
+# Non-software engineering disciplines. Broad title words ("engineering lead", "programmer", "developer") only count
+# as software when the title has no discipline word like these, unless it also says software/web/data/cloud etc.
+# (2026-10-09: a civil "Transportation Engineering Leader" passed as software and was submitted.)
+NON_SOFTWARE = re.compile(r"transportation|civil|structural|geotechnical|traffic|highway|bridge|roadway|water|wastewater|stormwater|hydraulic|environmental|hvac|plumbing|construction|chemical|manufacturing|process engineer|mechanical|electrical|power systems?|substation|utility|petroleum|mining|nuclear|biomedical|clinical|aerospace|propulsion|avionics|real estate|land development|surveying|architectural|interior|landscape|cnc|plc|controls engineer", re.I)
+SOFTWARE_WORDS = re.compile(r"software|full.?stack|backend|back-end|front.?end|web|cloud|data|devops|\bsre\b|site reliability|platform|ai\b|ml\b|machine learning|llm|genai|api|application|product engineer|\bsde\b|\bswe\b|developer tools|infrastructure", re.I)
+
+
 def load_domain():
     d = dict(DEFAULT_DOMAIN)
     path = os.path.join(PROFILE, "domains.json")
@@ -48,6 +55,8 @@ def keep(dom, title, location, company=""):
         return "title"
     if dom["exclude_titles"].search(title):
         return "level/title excluded"
+    if NON_SOFTWARE.search(title) and not SOFTWARE_WORDS.search(title):
+        return "non-software discipline"
     if company and dom.get("exclude_companies") and dom["exclude_companies"].search(company):
         return "company excluded"
     if dom.get("include_locations") and location and not dom["include_locations"].search(location) and not us_location(location):

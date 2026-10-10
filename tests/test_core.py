@@ -323,3 +323,12 @@ def test_bigtech_posted_parsing():
     assert _nv_days("Posted Today") == 0 and _nv_days("Posted Yesterday") == 1
     assert _nv_days("Posted 3 Days Ago") == 3 and _nv_days("Posted 30+ Days Ago") == 30
     assert _text("<p>Build &amp; ship</p>") == "Build & ship"
+
+
+def test_non_software_discipline_titles_dropped():
+    from engine.discovery.filters import load_domain, keep
+    dom = load_domain()
+    assert keep(dom, "Transportation Engineering Leader", "Los Angeles, CA") is not None
+    assert keep(dom, "Civil Engineering Lead", "Austin, TX") is not None
+    assert keep(dom, "Software Engineer, Transportation Platform", "Seattle, WA") is None
+    assert keep(dom, "Backend Software Engineer", "New York, NY") is None
