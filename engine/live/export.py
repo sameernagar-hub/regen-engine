@@ -78,6 +78,9 @@ def publish():
     return "pushed"
 
 
+PUBLIC_APP = os.environ.get("REGEN_PUBLIC_APP", "https://regen-engine.onrender.com")
+
+
 def build(days=7):
     cut = (datetime.now() - timedelta(days=days)).isoformat()
     events = []
@@ -135,8 +138,12 @@ def build(days=7):
         raise SystemExit(f"refusing to build site/: company names would be public: {leaks}")
     os.makedirs(SITE, exist_ok=True)
     json.dump(data, open(os.path.join(SITE, "replay.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=0)
-    page = open(os.path.join(HERE, "index.html"), encoding="utf-8").read()
-    page = page.replace("<script>", "<script>window.REGEN_DEMO = true;</script>\n<script>", 1)
+    # v0.11: the public frontend is the Render app; GitHub Pages only hosts replay.json (the anonymized feed the app
+    # reads) and redirects people who land on it.
+    page = ('<!doctype html><meta charset="utf-8"><title>REGEN</title>'
+            f'<meta http-equiv="refresh" content="0; url={PUBLIC_APP}">'
+            f'<link rel="canonical" href="{PUBLIC_APP}">'
+            f'<p>REGEN moved to <a href="{PUBLIC_APP}">{PUBLIC_APP}</a>. This address only serves the public feed (replay.json).</p>')
     open(os.path.join(SITE, "index.html"), "w", encoding="utf-8").write(page)
     return data
 

@@ -391,7 +391,7 @@ IMAP: one SEARCH per poll, only while a job waits.
 ## Privacy and security
 Your data never belongs in this repository, and CI enforces it. Every pull request and every push to `main` runs a **privacy gate**: PII patterns, forbidden paths, noreply-only commit emails, and keyed fingerprints of the maintainer's private terms. The public demo is built from anonymized events and refuses to publish if a company name would appear. See [SECURITY.md](SECURITY.md).
 
-**Live demo: [sameernagar-hub.github.io/regen-engine](https://sameernagar-hub.github.io/regen-engine/)**, a static page that replays the last week of real activity with every company name and personal detail removed. It is rebuilt with `python -m engine site` and published from the `gh-pages` branch.
+**Live demo: [regen-engine.onrender.com](https://regen-engine.onrender.com)**, the Next.js app in public mode: it replays the last week of real activity with every company name and personal detail removed, from an anonymized feed (`python -m engine site 7 --push` publishes `replay.json` to the `gh-pages` branch, which now only hosts that feed and redirects to Render). Pages that read private data (control room, applications, needs you, Fact Bank) show how to run them locally.
 
 ---
 
