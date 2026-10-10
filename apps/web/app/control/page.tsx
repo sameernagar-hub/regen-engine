@@ -5,6 +5,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Nav } from "../nav";
+import { LocalOnly } from "../local-only";
+import { PUBLIC } from "@/lib/engine";
 import { get, post } from "@/lib/types";
 
 type Step = { name: string; status: string; started?: number; finished?: number };
@@ -34,6 +36,11 @@ function ago(t?: number | null) {
 }
 
 export default function Control() {
+  if (PUBLIC) return <LocalOnly title="Control room" what="Start runs with your filters and watch every stage process them." />;
+  return <ControlView />;
+}
+
+function ControlView() {
   const [st, setSt] = useState<State | null>(null);
   const [p, setP] = useState<Params | null>(null);
   const [f, setF] = useState<Filters | null>(null);

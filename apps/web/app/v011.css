@@ -83,3 +83,17 @@
   ::view-transition-old(.page-swap), ::view-transition-new(.page-swap) { animation: none; }
 }
 @media (prefers-contrast: more) { .card, .room, .detail { backdrop-filter: none; background: #0c1017; } }
+
+/* needs you: one card per blocking question; legal ones are amber and read-only */
+.needs { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); }
+.need { margin-top: 0; display: grid; gap: 8px; align-content: start; }
+.need-head { display: flex; gap: 12px; align-items: flex-start; }
+.need .q { margin: 0; line-height: 1.4; overflow-wrap: anywhere; }
+.count-pill { min-width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center; font-size: 14px;
+              background: linear-gradient(135deg, #f2c14e, #ff9f43); color: #111; flex: none; }
+.need.legal .count-pill { background: linear-gradient(135deg, #ff9f43, #ff5a5f); }
+.need.legal { opacity: .85; }
+.need.ok { border-color: #7ef0c166; }
+.need.ok .count-pill { background: #7ef0c1; }
+.answer-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.answer-row textarea { font: inherit; color: var(--ink); background: #0f141b; border: 1px solid #2a3240; border-radius: 8px; padding: 8px; resize: vertical; }

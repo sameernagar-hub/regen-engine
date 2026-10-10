@@ -6,6 +6,7 @@ const LINKS = [
   { href: "/", label: "Live" },
   { href: "/control", label: "Control" },
   { href: "/applications", label: "Applications" },
+  { href: "/needs", label: "Needs you" },
   { href: "/room", label: "Engine room" },
   { href: "/facts", label: "Fact Bank" },
   { href: "/graph", label: "Memory graph" },

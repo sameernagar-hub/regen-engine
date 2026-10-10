@@ -90,7 +90,7 @@ export default function Live() {
             <g key={lane}>
               <path className="grow" pathLength={1} d={`M ${ax} ${trunkTop} Q ${ax} ${trunkTop - 18} ${x} ${trunkTop - 26} L ${x} ${top}`} fill="none" stroke="#f2c14e" strokeOpacity={.35} strokeWidth={1.5} style={{ animationDelay: `${li * 120}ms` }} />
               {list.map((a, bi) => (
-                <circle key={a.job} className="bead" cx={x} cy={trunkTop - 34 - bi * 14} r={5} fill="#f2c14e" filter="url(#glow)" style={{ animationDelay: `${600 + li * 120 + bi * 45}ms, ${(bi % 7) * 0.4}s` }}
+                <circle key={(a.url || a.job) + bi} className="bead" cx={x} cy={trunkTop - 34 - bi * 14} r={5} fill="#f2c14e" filter="url(#glow)" style={{ animationDelay: `${600 + li * 120 + bi * 45}ms, ${(bi % 7) * 0.4}s` }}
                         {...pressable(`${PUBLIC ? "" : a.company + ", "}${a.role}, ${lane} lane: open details`, () => setOpen(a))}>
                   <title>{a.company} · {a.role}</title>
                 </circle>
@@ -106,7 +106,7 @@ export default function Live() {
         <h2>Applications sent with proof, by resume lane</h2>
         {lanes.map(([lane, list]) => (
           <div key={lane}><h3>{lane} ({list.length})</h3>
-            <ul>{list.map((a) => <li key={a.job}><button onClick={() => setOpen(a)}>{PUBLIC ? a.role : `${a.company}: ${a.role}`}</button></li>)}</ul>
+            <ul>{list.map((a) => <li key={(a.url || a.job) + a.ts}><button onClick={() => setOpen(a)}>{PUBLIC ? a.role : `${a.company}: ${a.role}`}</button></li>)}</ul>
           </div>
         ))}
       </section>
@@ -129,7 +129,7 @@ export default function Live() {
           <h2>Waiting on you</h2>
           <div className="sub">Each job's latest state. Bot checks are never bypassed; the resume is ready for each.</div>
           <ul className="list">{human.map((h) => (
-            <li key={h.job}>{h.text}<small>{h.job}</small>
+            <li key={(h.url || h.job) + h.status}>{h.text}<small>{h.job}</small>
               {(h.missing ?? []).map((q) => <AnswerBox key={q} job={h.job} question={q} />)}
             </li>))}
           </ul>

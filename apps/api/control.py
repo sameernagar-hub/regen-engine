@@ -95,6 +95,25 @@ def run(body: dict, request: Request):
         raise HTTPException(409, str(e))
 
 
+def _appliers_busy(window=120):
+    """True when any applier log was written in the last `window` seconds (a CLI loop or another run is working)."""
+    logs = os.path.join(WORKSPACE, "logs")
+    now = time.time()
+    return any(re.fullmatch(r"run_\d{8}_\d{4}.*\.log", f) and now - os.path.getmtime(os.path.join(logs, f)) < window
+               for f in (os.listdir(logs) if os.path.isdir(logs) else []))
+
+
+@router.post("/control/retry")
+def retry(request: Request):
+    """Apply again to jobs that are answerable now (pipeline.answerable_now). If appliers are already working, the
+    running loop picks them up on its next pass instead (two appliers must not share a browser profile)."""
+    _guard(request)
+    if C.read_state().get("running") or _appliers_busy():
+        return {"started": False, "note": "The engine is already applying; answered jobs join its next pass."}
+    s = C.start({"scan": False, "newgrad": False, "feed": False})
+    return {"started": True, "note": "Retry pass started.", "run": s}
+
+
 @router.post("/control/stop")
 def stop(request: Request):
     _guard(request)

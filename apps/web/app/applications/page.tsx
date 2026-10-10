@@ -4,6 +4,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Nav } from "../nav";
+import { LocalOnly } from "../local-only";
+import { PUBLIC } from "@/lib/engine";
 import { get, type Application } from "@/lib/types";
 
 const STATUSES = ["ALL", "SUBMITTED", "NEEDS YOU", "FAILED", "SKIPPED", "FLAGGED"];
@@ -12,6 +14,11 @@ const TONE: Record<string, string> = { SUBMITTED: "var(--gold)", "NEEDS YOU": "v
 const file = (p?: string | null) => (p ? p.split(/[\\/]/).pop()! : "");
 
 export default function Applications() {
+  if (PUBLIC) return <LocalOnly title="Applications" what="Every application with the exact resume, answers and proof that were sent." />;
+  return <ApplicationsView />;
+}
+
+function ApplicationsView() {
   const [apps, setApps] = useState<Application[]>([]);
   const [status, setStatus] = useState("SUBMITTED");
   const [q, setQ] = useState("");
