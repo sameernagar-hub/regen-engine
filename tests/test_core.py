@@ -352,3 +352,11 @@ def test_signature_date_is_today():
     import datetime
     from engine.apply.runner import answer
     assert answer("Date", {"extra": {}}) == datetime.date.today().strftime("%m/%d/%Y")
+
+
+def test_area_and_address_rules():
+    import engine.apply.runner as r
+    assert r.area_answer("Are you currently based in the Chicago/Chicagoland area?") == r.P.get("based_in_other_city")
+    assert r.area_answer("Are you based in the San Francisco Bay Area region?") == r.P.get("based_in_bay_area")
+    assert r.area_answer("Are you located in the US?") is None
+    assert answer_for("Are you currently an employee or contractor at ExampleCo?", {}) == r.P.get("previous_employer_of_company", "No")

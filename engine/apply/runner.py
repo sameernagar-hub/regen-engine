@@ -67,6 +67,9 @@ RULES = [
     (r"(?<![a-z])referr(ed|ing|er|al)\b.{0,80}(name|individual)|name of .{0,30}referr", "N/A"),  # (?<![a-z]): not "preferred"
     (r"preferred (first )?name", P["first_name"]),
     (r"^(full )?name|legal (full )?name|full (legal )?name", P["first_name"] + " " + P["last_name"]),
+    (r"^\W*(home|residential|current|permanent) (home )?address\W*$", ", ".join(x for x in (P.get("address_line1"), P.get("city"), P.get("state_abbr")) if x) if P.get("address_line1") else None),  # one box for the whole address (10-09)
+    (r"(are you )?(currently )?an? (current )?(employee|contractor)( or (employee|contractor))? (at|of|for|with)\b", P.get("previous_employer_of_company", "No")),  # "currently an employee or contractor at <co>?"
+    (r"(5|five) days a week .{0,30}(in person|in-person|in the office|onsite|on-site)|(in person|in-person|onsite|on-site) .{0,30}(5|five) days", P.get("open_to_onsite_or_relocation")),
     (r"address line 1|street address|^address$|mailing address", P.get("address_line1")),  # None unless you add it to presets
     (r"first name", P["first_name"]), (r"last name", P["last_name"]),
     (r"(receive|opt.?in|consent).{0,60}(whatsapp|text message|sms)|(whatsapp|sms|text message)s? .{0,40}(communication|update|notification)", P.get("sms_opt_in")),  # 10-08: SMS opt-in labels mention email
@@ -346,6 +349,19 @@ def country_list_answer(label):
     return "Yes" if any(c in listed for c in mine) else "No"
 
 
+HOME_METRO = re.compile(r"bay area|san jose|silicon valley|san francisco|sf\b|south bay|peninsula|santa clara|sunnyvale|mountain view|palo alto", re.I)
+AREA_Q = re.compile(r"(currently )?(based|located|living|reside|live) (in|near|within) (the )?(?!u\.?s|united states|us\b)([a-z .,/&-]{2,60}?) (area|region|metro|metropolitan)", re.I)
+
+
+def area_answer(label):
+    """"Are you currently based in the <metro> area?" -> presets: based_in_bay_area for the user's own metro,
+    based_in_other_city for any other one. Never a guess beyond those two presets."""
+    m = AREA_Q.search(" ".join((label or "").split()))
+    if not m:
+        return None
+    return P.get("based_in_bay_area") if HOME_METRO.search(m.group(5)) else P.get("based_in_other_city")
+
+
 def answer(label, job, field=None):
     """Presets / approved answers / rules, the job's note for "why us", derived facts, a Fact Bank draft for open
     questions, then (autofill) yes/no defaults and drafts for any remaining non-sensitive text box."""
@@ -355,7 +371,7 @@ def answer(label, job, field=None):
     if SALARY_Q.search(label) and not job.get("extra"):
         from engine.tailoring.salary import expected
         ans = expected(job, P) or ans  # midpoint of the posted range, else the market rate (user policy)
-    lists = country_list_answer(label)
+    lists = country_list_answer(label) or area_answer(label)
     if lists:
         return lists
     if ans and ans.startswith("http") and YESNO_Q.search(label) and AUTOFILL:
