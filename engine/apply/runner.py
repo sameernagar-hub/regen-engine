@@ -58,7 +58,9 @@ BAY_AREA = r"san francisco|san jose|oakland|berkeley|palo alto|mountain view|sun
 RULES = [
     # arbitration is a per-company legal decision: only answered via a job's "extra" (user approval), never by default
     (r"arbitrat", None),
-    (r"^(i acknowledge|by checking this box|i confirm|i have (read|reviewed))\b", "__ACK__"),  # acknowledgements, not salary/degree answers
+    (r"^(i acknowledge|by checking this box|i confirm|i have (read|reviewed))\b", "__ACK__"),
+    (r"^\W*(affirmation|personal information policy|applicant (privacy|data) (notice|policy))\W*$", "__ACK__"),  # 10-10: 12 forms stopped on these one-word ack labels
+    (r"(enlisted|serving).{0,40}(reserves?|national guard)", P.get("us_military_reserve")),  # presets  # acknowledgements, not salary/degree answers
     (r"(unlimited|unrestricted) (and (unlimited|unrestricted) )?(authori[sz]ation|right) to work", P.get("unrestricted_work_authorization")),  # OPT is time-limited
     # demographic / EEO questions are always declined, and checked before anything else can match their long labels
     (r"gender|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun|chronic condition|armed forces|military status", "__DECLINE__"),

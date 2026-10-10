@@ -42,7 +42,9 @@ def merge_queue(new, path=None):
     by = {str(j["id"]): j for j in old if j.get("ats")}  # legacy greenhouse-only records lack "ats"
     for j in new:
         by[str(j["id"])] = j
-    q = sorted(by.values(), key=lambda r: r.get("posted") or "", reverse=True)
+    keep_after = (datetime.now(timezone.utc) - timedelta(days=21)).isoformat()  # bound the queue: 3 weeks of postings
+    q = sorted((j for j in by.values() if (j.get("posted") or keep_after) >= keep_after),
+               key=lambda r: r.get("posted") or "", reverse=True)
     json.dump(q, open(path, "w"), indent=1)
     return q
 
@@ -56,7 +58,7 @@ def scan(days=3, only=None):
     jobs, dead, total = A.fetch_all(boards, keep=lambda j: (j.get("posted") or "") >= cut)  # stream: hold only fresh postings
     out, dropped = filter_jobs(jobs, days)
     os.makedirs(WORKSPACE, exist_ok=True)
-    json.dump(out, open(os.path.join(WORKSPACE, "queue.json"), "w"), indent=1)
+    out = merge_queue(out)  # 10-10: a short rescan used to overwrite the queue and drop 70 untried jobs
     if dead:
         b = A.load_boards()
         b["dead"] = sorted(set(b.get("dead", [])) | {f"{a}:{t}" for a, t in dead})

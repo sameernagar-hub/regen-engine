@@ -49,5 +49,6 @@
  "work_auth_status": "<your current US work authorization>",
  "unrestricted_work_authorization": "<Yes only if your US work authorization has no time limit>",
  "on_opt": "<Yes/No>",
- "stem_degree": "<Yes/No>"
+ "stem_degree": "<Yes/No>",
+ "us_military_reserve": "<Yes/No>"
 }
