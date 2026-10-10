@@ -19,7 +19,8 @@ from engine.config import WORKSPACE
 from engine.feedback import answers as A
 from engine.live.server import narrate, who
 
-WRITE = os.environ.get("REGEN_API_WRITE") == "1"
+from engine.notify import _env as _local_env
+WRITE = _local_env().get("REGEN_API_WRITE") == "1"  # env var, or REGEN_API_WRITE=1 in the git-ignored .env
 app = FastAPI(title="REGEN API", version="0.8.0",
               description="API over the REGEN job engine's append-only event log (read-only, plus POST /api/answers when enabled).")
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("REGEN_WEB_ORIGINS", "http://127.0.0.1:3000,http://localhost:3000").split(","),

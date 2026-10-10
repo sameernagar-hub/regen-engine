@@ -3,6 +3,7 @@
 // Click a node to expand its next layer (it blooms outward); click again to fold it. Facts used by several
 // applications stay one shared node, so reused knowledge is visible. Everything comes from /api/graph (evidence only).
 import Link from "next/link";
+import { Nav } from "../nav";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { loadGraph } from "@/lib/engine";
 import { pressable, usePanel } from "@/lib/a11y";
@@ -81,13 +82,13 @@ export default function Graph() {
     setView((v) => ({ x: v.x + (v.w * (1 - k)) / 2, y: v.y + (v.h * (1 - k)) / 2, w: v.w * k, h: v.h * k }));
   };
 
-  if (!g) return <main className="stage"><div className="top"><div className="brand">REGEN · MEMORY</div></div></main>;
+  if (!g) return <main className="stage"><header className="top"><Nav /></header></main>;
 
   return (
     <main className="stage" id="main">
       <a className="skip" href="#graph-text">Skip to the text version</a>
       <header className="top">
-        <div className="brand">REGEN · MEMORY <Link href="/" style={{ color: "var(--dim)", marginLeft: 16 }}>← live</Link></div>
+        <Nav />
         <div className="count"><b style={{ fontSize: 28 }}>{pos.size}</b><span>of {g.nodes.length} nodes open · click to expand a layer</span></div>
       </header>
       <svg className="machine graph" role="group" aria-label="Memory graph: press Tab to move between nodes and Enter to expand one" viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} onWheel={onWheel}
@@ -142,10 +143,16 @@ export default function Graph() {
           <div className="sub">{focus.type}{focus.type === "Application" ? ` · ${focus.label} · ${focus.data.status}` : ""}</div>
           {focus.data.text && <p style={{ lineHeight: 1.5 }}>{focus.data.text}</p>}
           {focus.data.proof && <img src={`/api/proof/${focus.data.proof}`} alt="confirmation page" />}
+          <p className="row small">
+            {focus.type === "Application" && focus.data.url && <Link href={`/job?u=${encodeURIComponent(focus.data.url)}`}>Full timeline →</Link>}
+            {focus.type === "Application" && focus.data.url && <a href={focus.data.url} target="_blank" rel="noreferrer noopener">Posting ↗</a>}
+            {focus.type === "Fact" && <Link href={`/facts#${focus.id.replace(/^fact:/, "")}`}>In the Fact Bank →</Link>}
+            {focus.type === "Company" && <Link href={`/applications`}>All applications →</Link>}
+          </p>
           <h3>CONNECTED</h3>
           <ul className="list">{(adj.get(focus.id) || []).map((e, i) => {
             const o = byId.get(e.source === focus.id ? e.target : e.source);
-            return o ? <li key={i}><span style={{ color: COLOR[o.type] }}>●</span> {o.type === "Application" ? `${o.data.company} · ${o.label}` : o.label}<small>{e.type}</small></li> : null;
+            return o ? <li key={i}><button className="linkish" onClick={() => setFocus(o)}><span style={{ color: COLOR[o.type] }}>●</span> {o.type === "Application" ? `${o.data.company} · ${o.label}` : o.label}</button><small>{e.type}</small></li> : null;
           })}</ul>
         </FocusPanel>
       )}

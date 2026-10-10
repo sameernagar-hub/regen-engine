@@ -61,7 +61,7 @@ def build(submitted_only=True, questions=True):
             lanes_linked.add(lane)
             edge(you, lane, "WRITES_AS")
         co, _, role = job.partition(" - ")
-        app = node("app:" + job, "Application", role.strip() or job, company=co.strip(), status=st, ts=e.get("ts"),
+        app = node("app:" + job, "Application", role.strip() or job, company=co.strip(), status=st, ts=e.get("ts"), url=e.get("url"),
                    proof=os.path.basename(e.get("proof") or "") or None)
         edge(lane, app, "SENT")
         edge(app, node("co:" + co.strip().lower(), "Company", co.strip()), "AT")

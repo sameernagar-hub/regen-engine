@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PUBLIC, useEngine } from "@/lib/engine";
 import { pressable, usePanel } from "@/lib/a11y";
 import Link from "next/link";
+import { Nav } from "./nav";
 import { STAGES, get, post, type Application, type HumanItem } from "@/lib/types";
 
 const W = 1200, H = 620, LINE_Y = 470;
@@ -45,7 +46,7 @@ export default function Live() {
     <main className="stage" id="main">
       <a className="skip" href="#text-view">Skip to the text version</a>
       <header className="top">
-        <div className="brand">REGEN · LIVE <Link href="/graph" style={{ color: "var(--gold)", marginLeft: 16 }}>memory graph →</Link></div>
+        <Nav />
         <div className="count">
           <b>{snap?.verified ?? "·"}</b>
           <span>applications sent with proof{snap && !PUBLIC ? ` · ${snap.verified_today} today` : ""}{PUBLIC ? " · names hidden" : ""}</span>
@@ -116,9 +117,9 @@ export default function Live() {
           {lines.map((l, i) => <p key={l.id} className={l.tone} style={{ opacity: .35 + (i + 1) / lines.length * .65 }}>{l.text}</p>)}
         </div>
         {!PUBLIC && snap && snap.waiting > 0 && (
-          <button className="waiting" onClick={() => get<HumanItem[]>("/api/human").then(setHuman)}>
+          <Link className="waiting" href="/needs">
             {snap.waiting} {snap.waiting === 1 ? "thing is" : "things are"} waiting on you →
-          </button>
+          </Link>
         )}
       </footer>
 

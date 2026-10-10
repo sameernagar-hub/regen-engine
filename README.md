@@ -12,13 +12,14 @@
 [![next.js](https://img.shields.io/badge/web-Next.js%20%2B%20TypeScript-black)](apps/web)
 [![fastapi](https://img.shields.io/badge/api-FastAPI%20%2B%20Pydantic-009688)](apps/api)
 [![mcp](https://img.shields.io/badge/MCP-server-8a63d2)](engine/connectors/mcp_server.py)
+[![cost](https://img.shields.io/badge/API%20keys-none-success)](docs/wiki/Zero-Cost-and-MCP.md)
 [![privacy](https://img.shields.io/badge/privacy-gated%20in%20CI-success)](SECURITY.md)
 
 <img src="docs/assets/live-dark.png" alt="REGEN live view: work moves through listening, judging, writing, applying and hearing back; each gold bead is an application sent with proof, grouped by resume lane" width="100%">
 
-<sub>The live view replaying real activity, company names hidden. Each gold bead is an application with a saved confirmation page, grouped by the resume lane that wrote it.</sub>
+<sub>The live view, company names hidden. Each gold bead is an application with a saved confirmation page, grouped by the resume lane that wrote it; the field behind it pulses with every real engine event.</sub>
 
-**[Live demo](https://sameernagar-hub.github.io/regen-engine/)** · **[Why REGEN](#why-regen)** · **[Features](#features)** · **[Quick start](#quick-start)** · **[Architecture](#architecture)** · **[Platform](#the-platform-v07)** · **[Roadmap](#roadmap)**
+**[Live demo](https://regen-engine.onrender.com)** · **[Why REGEN](#why-regen)** · **[What's new](#whats-new-v010--v011)** · **[Features](#features)** · **[Quick start](#quick-start)** · **[Architecture](#architecture)** · **[Platform](#the-platform-v07)** · **[Roadmap](#roadmap)**
 
 </div>
 
@@ -44,20 +45,46 @@ resume to every posting and make up answers to fill the gaps.
   and logged. CAPTCHAs, arbitration agreements and self-certifications always come to you.
 - **Receipts, not claims.** A submission counts only when the company's confirmation page is saved as proof. Every
   answer, every fact id and every skip reason is in an append-only event log.
+- **Zero cost, your AI drives it.** No model API keys. The AI client you already use (Claude, Cursor, any MCP client)
+  operates the engine over MCP: start runs, read the inbox, deliver email codes, answer blocking questions.
+- **Trust before data.** Personal data is only typed into employer-controlled ATS forms that pass a scam check.
 
 ## By the numbers
 
 | | |
 |---|---|
-| Verified applications (confirmation page on disk) | **69** to date; **28 in one day** (2026-10-09) |
-| Company boards polled directly | **~2,370** on Greenhouse, Ashby, Lever, Workable |
-| Sources resolved back to the employer | Job-alert emails (7 platforms), newgrad-jobs.com, SimplifyJobs, big-tech careers APIs |
+| Verified applications (confirmation page on disk) | **81** to date; **28 in one day** (2026-10-09) |
+| Company boards polled directly | **~2,450** on Greenhouse, Ashby, Lever, Workable |
+| Sources resolved back to the employer | Job-alert emails (7 platforms), newgrad-jobs.com, 13 GitHub job lists, big-tech careers APIs |
 | Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF |
+| Email security codes | delivered within ~1 minute while a run is watched (11 submissions on 10-10 cleared this way) |
 | Scheduler | ×2.05 throughput vs sequential (seeded benchmark, `scripts/bench_scheduler.py`) |
-| Tests | **95** passing (unit, API, headless form tests against local ATS look-alikes), coverage in CI |
+| Tests | **104** passing (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
 | Resume claims outside your Fact Bank | **Rejected** by the validator before any PDF is written |
+| Model API keys required | **0** |
 
 All numbers come from this repo's own logs and benchmarks. Run `python -m engine report` to check the verified count.
+
+## What's new (v0.10 / v0.11)
+
+<img src="docs/assets/control-room.png" alt="REGEN control room: a pipeline strip (discover, new-grad leads, GitHub feeds, gate-compose-apply), run settings, and the job queue by ATS" width="100%">
+
+| | |
+|---|---|
+| **Control room** (`/control`) | Start and stop runs with your filters (days, max jobs, appliers, tabs, daily cap, rescan interval, sources, ATSs), watch each stage process live, edit title/company filters. |
+| **Applications** (`/applications`) | Every application with the exact resume PDF that was sent, each question with the answer given, the Fact Bank ids used, and the proof screenshot. |
+| **Needs you** (`/needs`) | Blocking questions grouped across jobs: answer once, every job that asked it goes back in line. Legal items stay yours. |
+| **Fact Bank** (`/facts`) | A radial map of your roles and facts, sized by use and colored by lane. |
+| **First-applicant mode** | `engine run --loop 20` rescans the last hours every 20 minutes and applies to what just opened. |
+| **Job priority** | Queue ordered by level/lane fit, freshness, employer tier and learned reply rates; each batch ordered by JD match. |
+| **Learns what not to open** | Skips ATSs that captcha-wall us and companies waiting on you; one retry for transient failures. |
+| **Trust gate** | ATS-host allowlist and job-scam red flags (fees, check-for-equipment, chat-app interviews, early SSN asks) before any data is shared; scam detection on recruiter email. |
+| **MCP, the zero-cost cord** | `run_start`, `run_stop`, `control_state`, `filters_get/set`, `factbank`, `trust_check`, `priority_explain`, `needs_by_question`, `answer_save`, `inbox_record`, plus the earlier read tools. |
+| **Design** | Living neural-field backdrop pulsed by real events, React `ViewTransition` page morphs, scroll-driven reveals, glass surfaces. |
+
+<img src="docs/assets/memory-graph.png" alt="REGEN memory graph: you at the center, resume lanes around you; click a lane to bloom its applications, then facts, company, ATS and outcome" width="100%">
+
+<sub>The memory graph: click a lane to bloom its applications, then an application to see its proof, timeline, facts and outcome.</sub>
 
 ## How it works
 

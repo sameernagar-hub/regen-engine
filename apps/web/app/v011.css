@@ -97,3 +97,9 @@
 .need.ok .count-pill { background: #7ef0c1; }
 .answer-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
 .answer-row textarea { font: inherit; color: var(--ink); background: #0f141b; border: 1px solid #2a3240; border-radius: 8px; padding: 8px; resize: vertical; }
+
+/* stage pages (live, graph) share the nav; it sits in their header row */
+.stage .top { align-items: center; }
+.stage .top .topnav { border-bottom: 0; padding: 0; position: static; background: none; backdrop-filter: none; }
+.linkish { text-align: left; color: var(--ink); padding: 0; }
+.linkish:hover { color: var(--gold); text-decoration: underline; }

@@ -11,7 +11,8 @@ from engine import control as C
 from engine.config import WORKSPACE, profile_file
 
 router = APIRouter(prefix="/api")
-WRITE = os.environ.get("REGEN_API_WRITE") == "1"
+from engine.notify import _env as _local_env
+WRITE = _local_env().get("REGEN_API_WRITE") == "1"  # env var, or REGEN_API_WRITE=1 in the git-ignored .env
 LOCAL = ("127.0.0.1", "::1", "localhost", "testclient")
 
 
