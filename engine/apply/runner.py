@@ -80,7 +80,7 @@ RULES = [
     (r"which .{0,40}(location|office|site)s? .{0,30}(closest|nearest|near)", P.get("preferred_location")),
     (r"are you (currently )?(based|located|living) in (the )?(" + BAY_AREA + r"|bay area|silicon valley|california)", P.get("based_in_bay_area")),
     (r"are you (currently )?(based|located|living) in (?!(the )?(u\.?s\.?|us|usa|united|america|and)\b)[a-z][a-z .,]{1,30}\?", P.get("based_in_other_city")),  # another city: No (relocation is asked separately)
-    (r"(currently|now) (in|on) (a period of )?(stem )?(optional practical training|opt)\b|period of optional practical training", P.get("on_opt")),  # F-1 OPT (presets)
+    (r"(currently|now) (in|on) (a period of )?(stem )?(optional practical training|opt)\b|period of optional practical training", P.get("on_opt")),  # presets
     (r"degree in a (science, technology, engineering|stem)|stem (field|degree)", P.get("stem_degree")),  # presets (M.S. Computer Science)
     (r"able to begin a new opportunity|when (would|could) you (be able to )?(begin|start)", P.get("start_date")),
     (r"hear about|how did you find|learned about|(first )?learn about .{0,40}(employer|us|company|role|position|job|opportunity)|^source\b|(job|application|referral|candidate) source", "Company careers page"),  # before the link rules: these labels often list "LinkedIn"

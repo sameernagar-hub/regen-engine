@@ -30,7 +30,7 @@ SKIP_PRESET_KEYS = {"citizenship_country", "_market_salary_source", "city", "sta
 # private terms flags half the repo, which trains everyone to ignore the gate
 COMMON_WORD_COMPANIES = {"clear", "handshake", "chalk", "applied", "affirm", "ramp", "compass", "scale", "figure", "notion", "current", "atoms",
                          "mercury", "anchor", "persona", "together", "modal", "pylon",
-                         "amazon", "nvidia"}  # also tech names (Amazon Web Services) and public bigtech data sources
+                         "amazon", "nvidia", "cursor"}  # also tech names (Amazon Web Services) and public bigtech data sources
 ALLOW_FILES ={"engine/discovery/boards.example.txt"}  # a public list of company job boards, not applications
 FORBIDDEN = re.compile(r"^(profile/|workspace/(?!\.gitkeep$)|\.env$|\.env\.local$|\.insforge/)|\.(pdf|docx)$", re.I)
 

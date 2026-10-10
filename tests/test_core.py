@@ -337,9 +337,9 @@ def test_non_software_discipline_titles_dropped():
 def test_slug_company_exclusion():
     from engine.discovery.filters import load_domain, keep
     dom = load_domain()
-    assert keep(dom, "Software Engineer", "Austin, TX", "shieldai") == "company excluded"
-    assert keep(dom, "Software Engineer", "Austin, TX", "Shield AI") == "company excluded"
-    assert keep(dom, "Software Engineer", "Austin, TX", "Asana") is None
+    assert keep(dom, "Software Engineer", "Austin, TX", "lockheedmartin") == "company excluded"
+    assert keep(dom, "Software Engineer", "Austin, TX", "Lockheed Martin") == "company excluded"
+    assert keep(dom, "Software Engineer", "Austin, TX", "Example Corp") is None
 
 
 def test_defense_jd_blocked():
