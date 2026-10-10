@@ -43,8 +43,24 @@ def latest_status():
                 fails[e["url"]] += 1
                 if fails[e["url"]] == 1 and any(r in (e.get("detail") or "") for r in RETRYABLE):
                     st = "RETRY"
+            elif st == "NEEDS YOU" and answerable_now(e.get("detail") or ""):
+                st = "RETRY"
             out[e["url"]] = st
     return out
+
+
+def answerable_now(detail):
+    """True when a NEEDS YOU job can be finished today without the user: it was only parked for the Ashby cooldown
+    (never opened), or every question it stopped on now has an answer (a new rule, preset or saved answer).
+    Legal / sensitive questions never count as answerable. O(questions x rules)."""
+    if "cooldown" in detail and "not opened" in detail:
+        return True  # the selector still skips Ashby while the cooldown runs
+    from engine.feedback.answers import LEGAL_OR_SENSITIVE, missing_questions
+    qs = missing_questions(detail)
+    if not qs or any(LEGAL_OR_SENSITIVE.search(q) for q in qs):
+        return False
+    from engine.apply.runner import answer_for
+    return all(answer_for(q, {}) not in (None, "") for q in qs)
 
 
 SKIP_ATS = {a.strip() for a in os.environ.get("REGEN_SKIP_ATS", "").split(",") if a.strip()}

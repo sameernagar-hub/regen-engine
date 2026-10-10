@@ -393,3 +393,10 @@ def test_priority_orders_good_jobs_first():
     meh = {"title": "Software Engineer II, Billing", "company": "ExampleCo", "posted": ""}
     assert score(new)[0] > score(meh)[0]
     assert jd_match({"jd_terms_you_have": ["a", "b", "c", "d"], "on_resume": ["a", "b", "c"]}) == 0.75
+
+
+def test_answerable_now_frees_backlog():
+    from engine.pipeline import answerable_now
+    assert answerable_now("NEEDS YOU: Ashby cooldown after a bot-check; not opened (re-run after the cooldown, resume ready)")
+    assert answerable_now("NEEDS YOU: Affirmation")
+    assert not answerable_now("NEEDS YOU: Please review and acknowledge the Candidate Arbitration Agreement")
