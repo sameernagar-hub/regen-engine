@@ -140,6 +140,7 @@ def tailor(spec, jd, title=None, lanes=None):
 BLOCKERS = [
     ("citizenship", r"u\.?s\.? citizen(ship)? (is )?(required|only)|must be (a )?u\.?s\.? citizen|requires? u\.?s\.? citizenship|us persons? only|\bitar\b|export control|green card holders? only"),
     ("clearance", r"(active|current|obtain|eligib\w+ for)( a)? (secret|ts|top secret|security) clearance|polygraph"),
+    ("defense", r"department of (defense|war)|\bdod\b|warfighters?|national security (mission|customers)|defense (tech|technology|industry|customers|sector)|military (customers|operations|end users)"),  # 10-09: defense employers got through on slug spelling
     ("no sponsorship", r"(unable|not able|will not|won.t|cannot|can.t|do(es)? not|no longer)( be able to)? (to )?(provide |offer )?(visa )?sponsor|sponsorship (is )?not (available|provided|offered)|without (the need for )?(current or future )?(visa )?sponsorship|not eligible for (visa )?sponsorship"),
     ("grad window", r"(graduating|graduation date|expected to graduate|graduate) (in|between|from|during)[^.]{0,40}(2027|2028)|class of (2027|2028)|(2027|2028) (start|new grads?|graduates)|"
                     r"degree (by|in|before|no later than) [^.]{0,30}(2027|2028)|(currently|actively) (enrolled|pursuing)[^.]{0,60}(degree|program|university)|"

@@ -80,6 +80,9 @@ RULES = [
     (r"which .{0,40}(location|office|site)s? .{0,30}(closest|nearest|near)", P.get("preferred_location")),
     (r"are you (currently )?(based|located|living) in (the )?(" + BAY_AREA + r"|bay area|silicon valley|california)", P.get("based_in_bay_area")),
     (r"are you (currently )?(based|located|living) in (?!(the )?(u\.?s\.?|us|usa|united|america|and)\b)[a-z][a-z .,]{1,30}\?", P.get("based_in_other_city")),  # another city: No (relocation is asked separately)
+    (r"(currently|now) (in|on) (a period of )?(stem )?(optional practical training|opt)\b|period of optional practical training", P.get("on_opt")),  # F-1 OPT (presets)
+    (r"degree in a (science, technology, engineering|stem)|stem (field|degree)", P.get("stem_degree")),  # presets (M.S. Computer Science)
+    (r"able to begin a new opportunity|when (would|could) you (be able to )?(begin|start)", P.get("start_date")),
     (r"hear about|how did you find|learned about|(first )?learn about .{0,40}(employer|us|company|role|position|job|opportunity)|^source\b|(job|application|referral|candidate) source", "Company careers page"),  # before the link rules: these labels often list "LinkedIn"
     (r"linkedin", P["linkedin"]),
     (r"github|website|portfolio|other (web)?site|personal site|other url|additional (url|link)|^url$", P["github"]),
@@ -361,6 +364,8 @@ def answer(label, job, field=None):
         # a date box can't take "Immediately (2 weeks notice)": give the date that notice period lands on
         wk = int(re.search(r"(\d+) ?weeks?", ans).group(1))
         ans = (datetime.date.today() + datetime.timedelta(weeks=wk)).strftime("%m/%d/%Y")
+    if re.fullmatch(r"\W*(today'?s )?date\W*|.{0,40}(signature date|date signed|date of signature)\W*", label.strip(), re.I):
+        return datetime.date.today().strftime("%m/%d/%Y")  # a signature date, not an essay (10-09: got a drafted sentence)
     ans = derived(label) or ans  # computed from Fact Bank dates/years: beats the generic years rule
     if ans is None and re.fullmatch(r"\s*(attach|upload|dropbox|google drive|enter manually|browse)\s*", label, re.I):
         return None  # a file-upload control, not a question

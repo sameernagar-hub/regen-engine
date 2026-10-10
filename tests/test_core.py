@@ -332,3 +332,23 @@ def test_non_software_discipline_titles_dropped():
     assert keep(dom, "Civil Engineering Lead", "Austin, TX") is not None
     assert keep(dom, "Software Engineer, Transportation Platform", "Seattle, WA") is None
     assert keep(dom, "Backend Software Engineer", "New York, NY") is None
+
+
+def test_slug_company_exclusion():
+    from engine.discovery.filters import load_domain, keep
+    dom = load_domain()
+    assert keep(dom, "Software Engineer", "Austin, TX", "shieldai") == "company excluded"
+    assert keep(dom, "Software Engineer", "Austin, TX", "Shield AI") == "company excluded"
+    assert keep(dom, "Software Engineer", "Austin, TX", "Asana") is None
+
+
+def test_defense_jd_blocked():
+    from engine.tailoring.tailor import fit
+    assert "defense" in fit("You will build software for the Department of Defense and our warfighters.", 3)
+    assert "defense" not in fit("Build payment APIs in Python.", 3)
+
+
+def test_signature_date_is_today():
+    import datetime
+    from engine.apply.runner import answer
+    assert answer("Date", {"extra": {}}) == datetime.date.today().strftime("%m/%d/%Y")
