@@ -11,7 +11,7 @@ replayable from disk.
 flowchart TB
     CLI[python -m engine run] --> SCAN[scan subprocess<br/>parallel HTTP to ATS APIs]
     SCAN --> QJ[(workspace/queue.json)]
-    CLI --> SEL[select<br/>newest-first, never-tried, ≤3 per company, interleaved]
+    CLI --> SEL[select<br/>priority-ordered, history-aware, ≤3 per company, interleaved]
     QJ --> SEL
     SEL --> BUILD[build<br/>parallel JD fetch → fit gate → tailor → PDF]
     BUILD --> B0[(batches/run_x_0.json)]
@@ -85,3 +85,9 @@ ids, the resume path and the proof path, which is everything needed to audit one
 
 Related: [Discovery](Discovery.md) · [Tailoring](Tailoring.md) · [Apply engine](Apply-Engine.md) ·
 [Outcomes and learning](Outcomes-and-Learning.md) · [Platform](Platform.md) · [Algorithms](Algorithms.md)
+
+## v0.10 additions
+- **Zero cost** ([Zero-Cost-and-MCP](Zero-Cost-and-MCP)): no model keys; the user's own AI client drives the engine over MCP.
+- **Trust gate** ([Trust-Gate](Trust-Gate)): ATS-host allowlist + scam red flags, before any data is shared.
+- **Priority + history** ([Job-Priority](Job-Priority)): best-fit jobs first; captcha-walled ATSs and user-only blockers skipped; one retry for transient failures; scans merge into the queue; `--loop` first-applicant mode.
+- **Control room** ([Control-Room](Control-Room)): start/stop runs, filters, live appliers, every submission with its resume PDF.
