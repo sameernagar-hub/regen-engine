@@ -1,7 +1,7 @@
 {
-"generated": "2026-10-10 00:34",
+"generated": "2026-10-10 00:47",
 "days": 7,
-"verified": 77,
+"verified": 79,
 "verified_roles": [
 [
 "Software Engineer",
@@ -310,23 +310,19 @@
 [
 "Consultant, Healthcare Revenue Cycle (Software)",
 "backend"
+],
+[
+"DevOps Engineer II",
+"backend"
+],
+[
+"Associate Backend Engineer",
+"backend"
 ]
 ],
 "boards": 2180,
 "last_poll": 1791444614.5749974,
 "events": [
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-09T23:31"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-09T23:31"
-},
 {
 "stage": "write",
 "tone": "calm",
@@ -1278,6 +1274,18 @@
 "tone": "win",
 "text": "Applied to a company, Consultant, Healthcare Revenue Cycle (Software). Proof saved.",
 "ts": "2026-10-10T00:34"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, DevOps Engineer II. Proof saved.",
+"ts": "2026-10-10T00:38"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Associate Backend Engineer. Proof saved.",
+"ts": "2026-10-10T00:38"
 }
 ],
 "graph": {
@@ -2022,15 +2030,19 @@
 },
 {
 "id": "n95",
-"type": "Outcome",
-"label": "confirmation",
-"data": {}
+"type": "Application",
+"label": "DevOps Engineer II",
+"data": {
+"status": "SUBMITTED"
+}
 },
 {
 "id": "n96",
-"type": "Outcome",
-"label": "confirmation",
-"data": {}
+"type": "Application",
+"label": "Associate Backend Engineer",
+"data": {
+"status": "SUBMITTED"
+}
 },
 {
 "id": "n97",
@@ -2137,13 +2149,13 @@
 {
 "id": "n114",
 "type": "Outcome",
-"label": "rejection",
+"label": "confirmation",
 "data": {}
 },
 {
 "id": "n115",
 "type": "Outcome",
-"label": "rejection",
+"label": "confirmation",
 "data": {}
 },
 {
@@ -2155,7 +2167,7 @@
 {
 "id": "n117",
 "type": "Outcome",
-"label": "confirmation",
+"label": "rejection",
 "data": {}
 },
 {
@@ -2167,7 +2179,7 @@
 {
 "id": "n119",
 "type": "Outcome",
-"label": "rejection",
+"label": "confirmation",
 "data": {}
 },
 {
@@ -2179,7 +2191,7 @@
 {
 "id": "n121",
 "type": "Outcome",
-"label": "confirmation",
+"label": "rejection",
 "data": {}
 },
 {
@@ -2190,6 +2202,18 @@
 },
 {
 "id": "n123",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n124",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n125",
 "type": "Outcome",
 "label": "rejection",
 "data": {}
@@ -3042,158 +3066,178 @@
 "type": "HOSTED_ON"
 },
 {
-"source": "n27",
+"source": "n20",
 "target": "n95",
-"type": "RESULTED_IN"
+"type": "SENT"
 },
 {
-"source": "n9",
+"source": "n95",
+"target": "n10",
+"type": "HOSTED_ON"
+},
+{
+"source": "n20",
 "target": "n96",
-"type": "RESULTED_IN"
+"type": "SENT"
 },
 {
-"source": "n9",
-"target": "n96",
-"type": "RESULTED_IN"
+"source": "n96",
+"target": "n10",
+"type": "HOSTED_ON"
 },
 {
-"source": "n25",
+"source": "n27",
 "target": "n97",
 "type": "RESULTED_IN"
 },
 {
-"source": "n11",
+"source": "n9",
 "target": "n98",
 "type": "RESULTED_IN"
 },
 {
-"source": "n15",
+"source": "n9",
+"target": "n98",
+"type": "RESULTED_IN"
+},
+{
+"source": "n25",
 "target": "n99",
 "type": "RESULTED_IN"
 },
 {
-"source": "n19",
+"source": "n11",
 "target": "n100",
 "type": "RESULTED_IN"
 },
 {
-"source": "n21",
+"source": "n15",
 "target": "n101",
 "type": "RESULTED_IN"
 },
 {
-"source": "n23",
+"source": "n19",
 "target": "n102",
 "type": "RESULTED_IN"
 },
 {
-"source": "n18",
+"source": "n21",
 "target": "n103",
 "type": "RESULTED_IN"
 },
 {
-"source": "n17",
+"source": "n23",
 "target": "n104",
 "type": "RESULTED_IN"
 },
 {
-"source": "n13",
+"source": "n18",
 "target": "n105",
 "type": "RESULTED_IN"
 },
 {
-"source": "n8",
+"source": "n17",
 "target": "n106",
 "type": "RESULTED_IN"
 },
 {
-"source": "n7",
+"source": "n13",
 "target": "n107",
 "type": "RESULTED_IN"
 },
 {
-"source": "n15",
+"source": "n8",
 "target": "n108",
 "type": "RESULTED_IN"
 },
 {
-"source": "n6",
+"source": "n7",
 "target": "n109",
 "type": "RESULTED_IN"
 },
 {
-"source": "n5",
+"source": "n15",
 "target": "n110",
 "type": "RESULTED_IN"
 },
 {
-"source": "n4",
+"source": "n6",
 "target": "n111",
 "type": "RESULTED_IN"
 },
 {
-"source": "n3",
+"source": "n5",
 "target": "n112",
 "type": "RESULTED_IN"
 },
 {
-"source": "n2",
+"source": "n4",
 "target": "n113",
 "type": "RESULTED_IN"
 },
 {
-"source": "n7",
+"source": "n3",
 "target": "n114",
 "type": "RESULTED_IN"
 },
 {
-"source": "n15",
+"source": "n2",
 "target": "n115",
 "type": "RESULTED_IN"
 },
 {
-"source": "n8",
+"source": "n7",
 "target": "n116",
 "type": "RESULTED_IN"
 },
 {
-"source": "n36",
+"source": "n15",
 "target": "n117",
 "type": "RESULTED_IN"
 },
 {
-"source": "n13",
+"source": "n8",
 "target": "n118",
 "type": "RESULTED_IN"
 },
 {
-"source": "n44",
+"source": "n36",
 "target": "n119",
 "type": "RESULTED_IN"
 },
 {
-"source": "n5",
+"source": "n13",
 "target": "n120",
 "type": "RESULTED_IN"
 },
 {
-"source": "n67",
+"source": "n44",
 "target": "n121",
 "type": "RESULTED_IN"
 },
 {
-"source": "n47",
+"source": "n5",
 "target": "n122",
 "type": "RESULTED_IN"
 },
 {
-"source": "n69",
+"source": "n67",
 "target": "n123",
 "type": "RESULTED_IN"
 },
 {
+"source": "n47",
+"target": "n124",
+"type": "RESULTED_IN"
+},
+{
 "source": "n69",
-"target": "n123",
+"target": "n125",
+"type": "RESULTED_IN"
+},
+{
+"source": "n69",
+"target": "n125",
 "type": "RESULTED_IN"
 }
 ]
