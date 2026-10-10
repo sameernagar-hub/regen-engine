@@ -1,0 +1,6 @@
+{
+ "_why": "Employers to apply to first. Regex alternations; edit freely. tier1 = dream list, tier2 = strong, sponsors = known visa sponsors.",
+ "tier1": "acme|globex",
+ "tier2": "initech|hooli",
+ "sponsors": "acme|umbrella"
+}

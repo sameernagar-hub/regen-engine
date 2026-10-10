@@ -48,6 +48,11 @@ def _safe_fetch(j):
         return {}, "", []
 
 
+def _match(cov):
+    from engine.discovery.priority import jd_match
+    return jd_match(cov)
+
+
 def build(name, ids, force=False):
     cfg = load_lanes()
     with in_workspace():
@@ -105,7 +110,10 @@ def build(name, ids, force=False):
             record("resume", job=label, url=j["url"], lane=ln, file=spec["file"], facts=spec["roles"],
                    projects=spec.get("projects", []), skills=spec["skills"], coverage=cov)
             batch.append({"name": label, "url": j["url"], "ats": j["ats"], "resume": os.path.relpath(pdf, WORKSPACE),
-                          "lane": ln, "extra": {}, "salary_range": parse_range(jd)})
+                          "lane": ln, "extra": {}, "salary_range": parse_range(jd), "jd_match": _match(cov)})
+        # after reading every description: highest JD match first (stable, so ties keep queue priority)
+        from engine.discovery.priority import jd_match
+        batch.sort(key=lambda b: -b.get("jd_match", 0))
         path = f"batches/{name}.json"
         json.dump(batch, open(path, "w"), indent=1)
     print(f"-> workspace/{path}: {len(batch)} jobs" + (f", {len(skipped)} skipped for JD blockers" if skipped else ""))

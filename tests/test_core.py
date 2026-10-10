@@ -385,3 +385,11 @@ def test_trust_gate():
     assert not ok and any("chat interview" in w for w in why)
     assert "recruiter on a free-mail domain" in message_flags("hr.team@" + "gmail.com", "Interview offer", "We are hiring, reply with your SSN")
     assert message_flags("talent@example.com", "Your application", "Thanks for applying") == []
+
+
+def test_priority_orders_good_jobs_first():
+    from engine.discovery.priority import score, jd_match
+    new = {"title": "Software Engineer, New Grad (AI)", "company": "ExampleCo", "posted": ""}
+    meh = {"title": "Software Engineer II, Billing", "company": "ExampleCo", "posted": ""}
+    assert score(new)[0] > score(meh)[0]
+    assert jd_match({"jd_terms_you_have": ["a", "b", "c", "d"], "on_resume": ["a", "b", "c"]}) == 0.75

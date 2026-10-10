@@ -88,11 +88,15 @@ def history(days=3, min_tries=4, wall_rate=0.5):
 
 
 def select(queue, max_jobs, ashby_ok=True, per_company=3):
-    """Newest-first jobs that were never tried (or only errored), capped per company, interleaved by company."""
+    """Highest-priority jobs (engine/discovery/priority.py) that were never tried (or only hit a transient failure),
+    capped per company, interleaved by company."""
     st = latest_status()
     walled, blocked = history()
     if walled:
         print(f"select: skipping {', '.join(sorted(walled))} (captcha walls on most recent attempts; see the assist list)")
+    from engine.discovery.priority import lane_rates, score
+    rates = lane_rates()
+    queue = sorted(queue, key=lambda j: -score(j, rates)[0])  # best fit first, not just newest (O(Q log Q))
     per, picked = collections.Counter(), []
     for j in queue:
         if st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU", "FLAGGED", "FAILED"):
