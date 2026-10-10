@@ -29,11 +29,21 @@ def _arg(argv, name, default, cast=int):
     return default
 
 
+RETRYABLE = ("EMAIL CODE REQUIRED (timed out)", "no confirmation seen")  # transient: worth one more attempt
+
+
 def latest_status():
-    out = {}
+    """url -> latest status; a FAILED that was only a code timeout / missing confirmation (first time) reads as
+    RETRY so the selector gives it one more pass while someone is watching the inbox. O(E)."""
+    out, fails = {}, collections.Counter()
     for e in read("application"):
         if not e.get("dry") and e.get("url"):
-            out[e["url"]] = (e.get("status") or "").split(":")[0]
+            st = (e.get("status") or "").split(":")[0]
+            if st == "FAILED":
+                fails[e["url"]] += 1
+                if fails[e["url"]] == 1 and any(r in (e.get("detail") or "") for r in RETRYABLE):
+                    st = "RETRY"
+            out[e["url"]] = st
     return out
 
 

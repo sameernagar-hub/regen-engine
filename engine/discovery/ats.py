@@ -206,6 +206,17 @@ HARVEST_FEEDS = [  # machine-readable lists (JSON with "url") and READMEs (any A
     "https://raw.githubusercontent.com/vanshb03/New-Grad-2026/main/README.md",
     "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/master/README.md",
     "https://raw.githubusercontent.com/ReaVNaiL/New-Grad-2024/main/README.md",
+    # 10-10: more lists. Intern and older lists still name each company's board, and a board lists every open role
+    # (new grad and experienced), so they widen the pool; a missing list is skipped.
+    "https://raw.githubusercontent.com/SimplifyJobs/Summer2025-Internships/dev/.github/scripts/listings.json",
+    "https://raw.githubusercontent.com/speedyapply/2026-SWE-College-Jobs/main/NEW_GRAD_USA.md",
+    "https://raw.githubusercontent.com/speedyapply/2026-AI-College-Jobs/main/README.md",
+    "https://raw.githubusercontent.com/jobright-ai/2026-Software-Engineer-New-Grad/master/README.md",
+    "https://raw.githubusercontent.com/cvrve/New-Grad-2026/main/README.md",
+    "https://raw.githubusercontent.com/Ouckah/Summer2026-Internships/main/README.md",
+    "https://raw.githubusercontent.com/vanshb03/Summer2026-Internships/main/README.md",
+    "https://raw.githubusercontent.com/poteto/hiring-without-whiteboards/main/README.md",
+    "https://raw.githubusercontent.com/remoteintech/remote-jobs/main/README.md",
 ]
 
 

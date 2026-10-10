@@ -6,6 +6,11 @@ Thanks for helping build an honest job engine. Three rules come before everythin
 2. **No fabrication.** Anything that writes resumes, answers or messages must draw only from the user's Fact Bank and presets, and must keep the audit trail (fact ids, question → answer).
 3. **No bypassing.** No CAPTCHA solving, no bot-detection evasion, no auto-created accounts, discovery-only on LinkedIn/Indeed/Handshake.
 
+## Coding standards
+Read [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md) before writing code: non-negotiables (truth, presets-not-code,
+trust before data, no bypassing, zero cost, privacy gate), Python and TypeScript style, docstrings with complexity,
+tests-as-evidence, and the release rules toward v1.0.
+
 ## Setup
 ```bash
 git clone https://github.com/sameernagar-hub/regen-engine && cd regen-engine
@@ -19,6 +24,8 @@ python -m pytest -q
 - [ ] Your commits use your GitHub **noreply** email (Settings → Emails → "Keep my email addresses private")
 - [ ] `CHANGELOG.md` has an entry: what changed, why, how to verify
 - [ ] New behavior has a test
+- [ ] Public functions have docstrings (what, side effects, complexity) — see the standards
+- [ ] `npx tsc --noEmit` clean in `apps/web` for UI changes; screenshot attached
 
 CI runs the same privacy gate and tests; `main` only accepts merges that pass both.
 
