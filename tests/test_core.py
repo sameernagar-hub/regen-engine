@@ -373,3 +373,15 @@ def test_history_learns_walls(monkeypatch):
     walled, blocked = pl.history()
     assert walled == {"lever"}
     assert {"a", "c"} <= blocked and "b" not in blocked
+
+
+def test_trust_gate():
+    from engine.discovery.trust import verdict, message_flags
+    ok, why = verdict("https://boards.greenhouse.io/example/jobs/1", "Build APIs in Python. Interview loop: 4 rounds.")
+    assert ok and not why
+    ok, why = verdict("https://bit.ly/abc", "")
+    assert not ok
+    ok, why = verdict("https://boards.greenhouse.io/x/jobs/2", "Interviews will be conducted via Telegram. We will send you a check to purchase equipment.")
+    assert not ok and any("chat interview" in w for w in why)
+    assert "recruiter on a free-mail domain" in message_flags("hr.team@" + "gmail.com", "Interview offer", "We are hiring, reply with your SSN")
+    assert message_flags("talent@example.com", "Your application", "Thanks for applying") == []

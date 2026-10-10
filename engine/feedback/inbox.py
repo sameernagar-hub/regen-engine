@@ -82,6 +82,9 @@ def ingest(messages):
         if mid in seen:
             continue
         cls = classify(m.get("subject", ""), m.get("snippet", ""))
+        from engine.discovery.trust import message_flags
+        if message_flags(m.get("from", ""), m.get("subject", ""), m.get("snippet", "")):
+            cls = "scam"  # money / identity / chat-app asks or a free-mail "recruiter": never reply, tell the user
         if cls == "other":
             continue
         co = match_company(m, companies)

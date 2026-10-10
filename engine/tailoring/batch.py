@@ -71,11 +71,19 @@ def build(name, ids, force=False):
             co = re.sub(r"[^A-Za-z0-9]", "", j["company"])[:20]
             short = str(i)[:12]
             json.dump(raw, open(f"jd/{j['ats']}_{co}_{short}.json", "w"), indent=1)
-            blockers = fit(jd)
+            blockers = fit(jd)  # reads the whole description: sponsorship, clearance, years, grad window, stack, defense
+            # every stage re-checks: the title/company filter again (sources can change titles) and the trust gate
+            from engine.discovery.filters import keep, load_domain
+            from engine.discovery.trust import verdict
+            why = keep(load_domain(), j["title"], j.get("location") or "", j["company"])
+            if why:
+                blockers.append(why)
+            trusted, distrust = verdict(j["url"], jd, j["company"])
+            blockers += distrust
             label = f"{j['company']} - {j['title']}"
             if blockers:
                 print(f"  x {label}: {blockers}")
-                if not force:
+                if not force or not trusted:  # --force never overrides the trust gate
                     skipped.append(label)
                     record("application", job=label, url=j["url"], status="SKIPPED", detail="JD: " + ", ".join(blockers), dry=False)
                     continue
