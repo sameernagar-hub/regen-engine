@@ -12,9 +12,11 @@ from mcp.server.mcpserver import MCPServer
 from engine.config import WORKSPACE
 from engine.memory import graph as G
 
-mcp = MCPServer("regen-engine", version="0.8.0",
-                instructions="Read-only memory of the REGEN job engine: applications with proof, what's waiting on "
-                             "the human, outcomes, the knowledge graph, and the job queue.")
+mcp = MCPServer("regen-engine", version="0.10.0",
+                instructions="REGEN job engine. Your assistant is the engine's operator at zero cost: read its memory "
+                             "(applications with proof, outcomes, knowledge graph, queue, Fact Bank), start/stop runs, "
+                             "deliver email codes, record inbox replies, and answer blocking questions. Writes need "
+                             "REGEN_MCP_WRITE=1. Never invent facts: answers come from the user or the Fact Bank.")
 
 
 def _api():
@@ -99,6 +101,121 @@ def submit_codes(codes: list[dict]) -> dict:
         return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
     from engine.apply.codes import match, waiting
     return {"written": match(codes), "still_waiting": [s for s, _ in waiting()]}
+
+
+# ---- v0.10: the zero-cost cord. Everything the control room can do, the user's own AI client can do over MCP. ----
+
+@mcp.tool(description="Start a run the way the control room does: {days, max, appliers, tabs, cap, loop (minutes, 0 = one "
+                      "pass), scan, newgrad, feed, ats: [greenhouse, lever, ashby, workable], dry}. Needs REGEN_MCP_WRITE=1.")
+def run_start(params: dict) -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    from engine import control as C
+    try:
+        return C.start(params)
+    except RuntimeError as e:
+        return {"error": str(e)}
+
+
+@mcp.tool(description="Stop the run started by run_start / the control room (kills its process tree). Needs REGEN_MCP_WRITE=1.")
+def run_stop() -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    from engine import control as C
+    return C.stop()
+
+
+@mcp.tool(description="Live control-room state: the current run's steps, each active applier's tabs (job + state), latest "
+                      "answers, queue size by ATS, and when Ashby reopens.")
+def control_state() -> dict:
+    from apps.api import control
+    return control.state()
+
+
+@mcp.tool(description="Title/company filters (regex alternations) and the years-of-experience gate from presets.")
+def filters_get() -> dict:
+    from apps.api import control
+    return control.filters()
+
+
+@mcp.tool(description="Replace include_titles / exclude_titles / exclude_companies (regex; each must compile; old file kept "
+                      "as .bak-ui). Needs REGEN_MCP_WRITE=1.")
+def filters_set(include_titles: str = "", exclude_titles: str = "", exclude_companies: str = "") -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    import json as _j, re as _re, shutil
+    from engine.config import profile_file
+    path = profile_file("domains.json")
+    cur = _j.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
+    for k, v in (("include_titles", include_titles), ("exclude_titles", exclude_titles), ("exclude_companies", exclude_companies)):
+        if v:
+            _re.compile(v, _re.I)
+            cur[k] = v
+    if os.path.exists(path):
+        shutil.copy(path, path + ".bak-ui")
+    _j.dump(cur, open(path, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+    return filters_get()
+
+
+@mcp.tool(description="The Fact Bank: every fact with how many resumes used it and in which lanes, plus roles, projects, "
+                      "skills, education and where each fact came from. The only source the engine writes from.")
+def factbank() -> dict:
+    from apps.api import control
+    return control.factbank()
+
+
+@mcp.tool(description="Trust gate for one posting: is the application host an employer-controlled ATS, and does the "
+                      "description carry job-scam red flags? Returns {ok, reasons}.")
+def trust_check(url: str, description: str = "") -> dict:
+    from engine.discovery.trust import verdict
+    ok, reasons = verdict(url, description)
+    return {"ok": ok, "reasons": reasons}
+
+
+@mcp.tool(description="Why the queue is ordered the way it is: the top N jobs with their priority score and its parts "
+                      "(level, lane, freshness, employer tier, sponsor, learned reply rate).")
+def priority_explain(top: int = 20) -> list[dict]:
+    import json as _j
+    from engine.discovery.priority import lane_rates, score
+    q = _j.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8"))
+    rates = lane_rates()
+    rows = [(score(j, rates), j) for j in q]
+    rows.sort(key=lambda r: -r[0][0])
+    return [{"company": j["company"], "title": j["title"], "score": s, "parts": parts, "url": j["url"]} for (s, parts), j in rows[:top]]
+
+
+@mcp.tool(description="What's waiting on the user, grouped by blocking question (answer one question to unblock many jobs).")
+def needs_by_question() -> list[dict]:
+    from engine.feedback.answers import LEGAL_OR_SENSITIVE
+    groups = {}
+    for it in _api().human():
+        for q in (it.missing or [it.text]):
+            groups.setdefault(q, []).append(it.job)
+    return sorted(({"question": q, "jobs": js, "count": len(js), "user_only": bool(LEGAL_OR_SENSITIVE.search(q))}
+                   for q, js in groups.items()), key=lambda g: (g["user_only"], -g["count"]))
+
+
+@mcp.tool(description="Save the user's answer to a blocking question (reused on every form that asks it; legal / EEO / "
+                      "sponsorship questions are refused: those come from presets only). Needs REGEN_MCP_WRITE=1.")
+def answer_save(job: str, question: str, answer: str) -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    from engine.feedback import answers as A
+    try:
+        return A.save(job, question, answer)
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@mcp.tool(description="Record recruiting emails the assistant read from the user's inbox: messages = [{date, from, subject, "
+                      "snippet}]. Classifies confirmation / rejection / OA / interview / offer / scam and links them to "
+                      "applications. Needs REGEN_MCP_WRITE=1.")
+def inbox_record(messages: list[dict]) -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    from engine.feedback import inbox
+    evs = inbox.ingest(messages)
+    return {"recorded": [{"outcome": e.get("outcome"), "company": e.get("company")} for e in (evs or [])]}
 
 
 def main(argv=None):
