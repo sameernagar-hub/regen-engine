@@ -30,7 +30,13 @@ export default function Graph() {
   const [view, setView] = useState({ x: -560, y: -400, w: 1120, h: 800 });
   const drag = useRef<{ x: number; y: number } | null>(null);
 
-  useEffect(() => { loadGraph().then(setG).catch(() => {}); }, []);
+  useEffect(() => {
+    loadGraph().then((x) => {
+      setG(x);
+      const root = x.nodes.find((n: GNode) => n.type === "You");  // the public feed may name the root differently
+      if (root) setOpen([root.id]);
+    }).catch(() => {});
+  }, []);
 
   const byId = useMemo(() => new Map((g?.nodes || []).map((n) => [n.id, n])), [g]);
   const adj = useMemo(() => {
@@ -47,7 +53,8 @@ export default function Graph() {
     const pos = new Map<string, Pos>();
     const shown: GEdge[] = [];
     if (!g) return { pos, shown };
-    pos.set("you", { x: 0, y: 0, a: -Math.PI / 2, depth: 0 });
+    const root = g.nodes.find((n) => n.type === "You")?.id || "you";  // "you" locally, "n0" in the anonymized feed
+    pos.set(root, { x: 0, y: 0, a: -Math.PI / 2, depth: 0 });
     for (const id of open) {
       const p = pos.get(id), n = byId.get(id);
       if (!p || !n) continue;
@@ -109,7 +116,7 @@ export default function Graph() {
                        strokeOpacity={on ? 0.55 : 0.07} strokeWidth={e.type === "INCLUDES" ? 1 : 1.6} />;
         })}
         {[...pos.entries()].map(([id, p]) => {
-          const n = byId.get(id)!; const isOpen = open.includes(id);
+          const n = byId.get(id); if (!n) return null; const isOpen = open.includes(id);
           const r = n.type === "You" ? 16 : n.type === "Lane" ? 11 : n.type === "Application" ? 7 : 5;
           const dim = lit && !lit.has(id);
           return (
@@ -127,7 +134,7 @@ export default function Graph() {
       </svg>
       <section id="graph-text" className="sr-only" aria-label="Text version of the graph">
         <h2>Open nodes</h2>
-        <ul>{[...pos.keys()].map((id) => { const n = byId.get(id)!; return (
+        <ul>{[...pos.keys()].map((id) => { const n = byId.get(id); if (!n) return null; return (
           <li key={id}><button onClick={() => toggle(n)}>{n.type}: {n.type === "Application" ? (n.data.company || n.label) : n.label}</button>
             {" "}({(adj.get(id) || []).length} connections)</li>); })}</ul>
       </section>
