@@ -1,4 +1,52 @@
-# Handoff: v0.9.1 on main (2026-10-09 ~13:10, stopped by the user)
+# Handoff: v0.10 / v0.11 on main (2026-10-10, session in progress)
+
+## When the user says "start" (do this first, in order)
+1. Read this file + memory (`v1-direction`, `rejection-learnings`).
+2. Start the API + web (control room): `.claude/launch.json` configs `regen-api` (REGEN_API_WRITE=1) and `regen-web`
+   (local file, git-ignored), or:
+   `REGEN_API_WRITE=1 python -m uvicorn apps.api.main:app --port 8787` and `npm --prefix apps/web run dev`.
+3. Start continuous applying (Bash `run_in_background`):
+   `REGEN_MAX_PER_DAY=60 REGEN_SKIP_ATS=workable python -m engine run --days 10 --max 60 --appliers 3 --tabs 3 --loop 20 > workspace/logs/loop_<date>.log`
+4. Arm a Monitor on `workspace/codes/*.wait` (prints "CODE NEEDED: <file>") and keep a Gmail tab with
+   `window.regenCodes` defined (see 10-10 session: searches `subject:(security code) newer_than:2h`, reads every code
+   in each thread via the print view). Deliver with `python -m engine codes '<json>'` within a minute.
+5. Inbox: search `label:jobs-rejections OR label:jobs-interviews newer_than:2d` (Gmail filters exist since 10-10),
+   record with `python -m engine inbox <msgs.json>`, analyze each rejection's JD, add a rule + test, append to
+   memory `rejection-learnings`.
+
+## Priority queue (top = next). Keep this list current every time something lands.
+1. **Keep the loop applying** + deliver codes fast (codes are the #1 cause of lost submissions).
+2. **NEEDS YOU backlog (~96)**: answer box exists on the live page; build a bulk "answer once, apply everywhere" view
+   in /control (group by question, POST /api/answers). Biggest completion lever after codes.
+3. **MCP = the zero-cost cord**: add tools run_stop, filters_get/set, factbank, trust_check, priority_explain,
+   inbox_record, outreach_draft (engine/connectors/mcp_server.py). No paid API keys, ever.
+4. **Outreach**: recruiter / founder cold email drafts (FAANG, MANGO, AI labs, hiring YC founders) from Fact Bank only,
+   saved as Gmail drafts; the user sends. LinkedIn connection invites only after the user approves a list.
+5. **Docker appliers**: compose file with N applier services (one engine per container, shared workspace volume,
+   own browser profile). User asked 10-10. Also free tools: local Ollama for zero-cost drafting (optional), uv.
+6. **Sources**: SmartRecruiters public postings API; Workday/iCIMS assist list (user's accounts); Ashby reopens
+   after `workspace/ashby_cooldown` + 24 h (a few per hour, it bot-flags bursts).
+7. **Frontend**: assist list page (Lever captcha + Ashby filled forms, one click to open), outreach page, network
+   graph (LinkedIn connections, read-only), job page shared-element morphs.
+8. **Docs/v1**: README "By the numbers" refresh, CHANGELOG v0.10/v0.11 entries, wiki Security + Data-model +
+   Benchmarks pages; docstrings sweep per docs/CODING_STANDARDS.md.
+
+## Landed this session (10-10)
+- Title gate: non-software disciplines dropped; defense JD blocker; slug-insensitive company exclusions.
+- Forms: signature date, OPT/STEM/reserves from presets, home address, current employee/contractor, 5 days in person,
+  "<metro> area", one-word acknowledgments.
+- Selector: priority score + JD-match ordering, history (captcha-walled ATS, user-only blockers), one retry for
+  code timeouts; scans merge into the queue; `--loop` first-applicant mode.
+- Trust gate (ATS host allowlist + scam red flags, inbox scam detection).
+- Web: /control, /applications (resume PDF + answers + facts + proof), /facts (Fact Bank map); v0.11 design layer.
+- Gmail: 12 label filters (Jobs/...). Wiki: Zero-Cost-and-MCP, Trust-Gate, Job-Priority, Control-Room.
+- Presets drafted by Claude on 10-10 (tell the user): `us_military_reserve: No`, `on_opt: Yes`, `stem_degree: Yes`.
+
+## Needs the user
+- Gmail app password in `.env` would make codes hands-free (`python -m engine codes --watch`).
+- Arbitration (a game company), assessment link request, Lever captcha jobs and Ashby filled forms (assist list).
+
+## Earlier
 
 ## State
 - `main` = `v0.9` = 43a22e4 (fast-forward merges only; never merge on GitHub: it stamps a personal email).
