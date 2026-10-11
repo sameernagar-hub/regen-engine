@@ -53,17 +53,41 @@ resume to every posting and make up answers to fill the gaps.
 
 | | |
 |---|---|
-| Verified applications (confirmation page on disk) | **81** to date; **28 in one day** (2026-10-09) |
-| Company boards polled directly | **~2,450** on Greenhouse, Ashby, Lever, Workable |
+| Verified applications (confirmation page on disk) | **105** to date; **35 in one day** (2026-10-10) · `python -m engine report 2026-10-10` |
+| Company boards polled directly | **2,469** on Greenhouse, Ashby, Lever, Workable (`workspace/boards.json`) |
 | Sources resolved back to the employer | Job-alert emails (7 platforms), newgrad-jobs.com, 13 GitHub job lists, big-tech careers APIs |
-| Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF |
-| Email security codes | delivered within ~1 minute while a run is watched (11 submissions on 10-10 cleared this way) |
+| Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF; coverage fill puts most at **100%** of the JD terms you have (build log: `resume covers 24/24 JD terms, ATS text 100%`) |
+| Email security codes | **hands-free** via the code relay: a Gmail tab posts codes from the Atom feed every 20 s (`engine relay`, `workspace/logs/relay_*.log` shows each delivery) |
 | Scheduler | ×2.05 throughput vs sequential (seeded benchmark, `scripts/bench_scheduler.py`) |
-| Tests | **104** passing (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
+| Tests | **108** passing (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
 | Resume claims outside your Fact Bank | **Rejected** by the validator before any PDF is written |
 | Model API keys required | **0** |
+| Applier capacity | **N containers** (`--scale applier=N`), each a headed Chromium with its own profile; 5 workers + 1 pipeline container on an 8 GB Docker VM |
 
 All numbers come from this repo's own logs and benchmarks. Run `python -m engine report` to check the verified count.
+
+## What's new (v0.12): the engine runs in Docker
+
+Docker is now the execution room, not just the memory stack. The **pipeline container** discovers, prunes, selects
+and tailors. It drops batch parts into a shared inbox, and **N applier containers** claim them with an atomic rename
+and fill forms in headed Chromium on a virtual display. Your machine keeps only the knowledge: `profile/`, mounted
+read-only, and the signed-in Gmail tab that relays codes. The shared `workspace/` volume is the ledger: every event,
+status, answer and proof lands in `events.jsonl`, so a crashed container never loses a job.
+
+```bash
+docker compose -f deploy/appliers.compose.yml up -d --build --scale applier=5   # pipeline + 5 appliers
+python -m engine relay                                                          # hands-free email codes
+```
+
+| | Evidence |
+|---|---|
+| Atomic-claim workers, no broker | `engine/apply/worker.py`, `test_worker_claims_each_batch_once` |
+| Freshness bands (hour > day > week > cold) with a lazy-heap top-k | `engine/pipeline.py:select`, `test_select_prefers_fresh_band` |
+| Onsite roles rank above remote | `engine/discovery/priority.py:score` (`onsite` part) |
+| Queue prune: only fillable jobs stay | `engine/pipeline.py:prune` (229 to 17 fillable found on 10-10; the 30-day scan grew the queue to 488 usable) |
+| Ashby burst guard: 1 per pass across all workers | `REGEN_ASHBY_PER_PASS`; added after 5 parallel workers tripped Ashby's bot check |
+| Disk hygiene every pass | `engine/clean.py` (first run freed 459 MB of logged proofs, resumes and browser caches) |
+| Full write-up | [Scale-out wiki page](docs/wiki/Scale-Out.md), [CHANGELOG 0.12.0](CHANGELOG.md) |
 
 ## What's new (v0.10 / v0.11)
 
@@ -268,18 +292,25 @@ docker compose -f deploy/watcher.compose.yml up -d --build   # watcher + live vi
 
 ```mermaid
 flowchart LR
-    subgraph Fuel["① Discovery"]
-        ATS[Greenhouse · Ashby · Lever · Workable<br/>2,100+ live boards]
-        LEADS[newgrad-jobs · job-alert emails<br/>resolved to the source]
+    subgraph Host["Your machine: knowledge only"]
+        P[profile/ · Fact Bank, presets<br/>mounted read-only]
+        G[Gmail tab<br/>Atom feed → code relay]
     end
-    Fuel --> F["② Fit gate<br/>eligibility · years · core stack"]
-    F --> T["③ Tailor<br/>Fact Bank → lane → 1-page PDF"]
-    T --> A["④ Apply<br/>4 adapters · airbags · proof"]
-    A -- "personal / legal / human check" --> HQ[Human queue]
-    HQ --> A
-    A --> E["⑤ Feedback<br/>events · inbox outcomes"]
-    E --> M["Memory graph<br/>API · web · MCP"]
-    M -- "what worked, by lane and source" --> T
+    subgraph Docker["Docker: execution room"]
+        PL["pipeline container<br/>① discover → prune → bands/heap select<br/>② fit gate → ③ tailor"]
+        IN[(workspace/batches/inbox)]
+        W1["applier 1<br/>headed Chromium"]
+        W2["applier 2"]
+        WN["applier N"]
+        L[("workspace/ ledger<br/>events.jsonl · queue · codes · proof")]
+    end
+    P --> PL
+    PL --> IN
+    IN -- atomic rename claim --> W1 & W2 & WN
+    W1 & W2 & WN -- "④ apply · proof · status" --> L
+    G -- "codes/*.txt" --> L
+    L -- "⑤ feedback: outcomes, lane rates" --> PL
+    L --> M["Memory graph · API · web · MCP"]
 ```
 
 | Stage | Module |
@@ -287,7 +318,8 @@ flowchart LR
 | ① Discovery | `engine/discovery/` |
 | ② Fit gate | `engine/tailoring/tailor.py` |
 | ③ Tailor | `engine/tailoring/resume.py`, `tailor.py`, `batch.py` |
-| ④ Apply | `engine/apply/runner.py`, `engine/safety.py` |
+| ④ Apply | `engine/apply/runner.py`, `engine/safety.py`, `engine/apply/worker.py` (container worker) |
+| Execution room | `deploy/applier.Dockerfile`, `deploy/appliers.compose.yml` (pipeline + N appliers) |
 | ⑤ Feedback | `engine/feedback/` (events, inbox, learn) |
 | Memory and connectors | `engine/memory/graph.py`, `engine/connectors/mcp_server.py`, `apps/api/` |
 

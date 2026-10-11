@@ -88,6 +88,21 @@ schedule and flag events. Writes are locked across processes; reads are incremen
 (confirmation, OA, interview, rejection, offer, scam) into `outcome` events; `answers.py` is the one write path from
 the web app (answer from the page). `engine/discovery/gmail_codes.js` + `engine/apply/codes.py` supply Greenhouse codes.
 
+## Execution room: Docker (v0.12)
+The engine runs in containers; the host holds only knowledge (profile/, read-only) and the Gmail tab that relays
+email codes.
+
+| Container | Runs | State |
+|---|---|---|
+| `pipeline` (1) | `engine run --loop 10` with `REGEN_APPLIERS=docker`: scan, prune, select (freshness bands + lazy heap), tailor, then drops parts into `workspace/batches/inbox` | none of its own |
+| `applier` (N) | `engine worker`: claims a part by `os.rename` into `claimed/` (atomic, so one winner), runs `engine apply` in headed Chromium on Xvfb, moves the part to `done/` | browser profile inside the container |
+| shared volume `workspace/` | the ledger: `events.jsonl` (every status, answer, proof), `queue.json`, `codes/`, `logs/` | survives any container |
+
+Failure model: a worker that dies leaves its part in `claimed/`; the pipeline's wait times out (3 h) and the next
+pass re-selects the unfinished jobs from the queue. Jobs already `SUBMITTED` are skipped, so nothing is sent twice.
+Rate limits are global because selection is central: at most `REGEN_ASHBY_PER_PASS` Ashby jobs per pass, whatever N is.
+Evidence: `test_worker_claims_each_batch_once`, `test_select_prefers_fresh_band`; wiki [Scale-Out](wiki/Scale-Out.md).
+
 ## Memory: `engine/memory/` + `deploy/docker-compose.yml`
 
 A local Docker stack (Neo4j for the graph, Postgres + pgvector for vectors and events) holds three kinds of memory:

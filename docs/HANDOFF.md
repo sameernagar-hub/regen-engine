@@ -14,6 +14,17 @@
    record with `python -m engine inbox <msgs.json>`, analyze each rejection's JD, add a rule + test, append to
    memory `rejection-learnings`.
 
+## v0.12 state (10-10 ~23:40): everything runs in Docker
+- Start: `REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_PARTS=5 docker compose -f deploy/appliers.compose.yml up -d --build --scale applier=5`
+  (pipeline + 5 appliers). Stop after current batch: `touch workspace/batches/STOP`; or `docker compose ... down`.
+- Codes: `python -m engine relay` on the host + paste `engine/discovery/gmail_relay.js` into a signed-in Gmail tab
+  (re-paste after the tab reloads). Check `workspace/logs/relay_*.log`.
+- Ashby cooldown started ~23:25 10-10 (5 parallel workers tripped it); parked "not opened" Ashby jobs auto-return
+  after 24 h; now max 1 Ashby per pass.
+- Next: Gmail cleanup (move code emails >1 day and job-alert mail to Trash; user asked 10-10, never empty Trash),
+  per-container supervisor view in /control (container health from `docker ps` + done/claimed counts), frontend
+  pages for scale-out, SmartRecruiters source, outreach drafts into Gmail.
+
 ## Landed 10-10 evening (~22:10 to ~22:40)
 - Inbox: "after careful consideration, we have decided" = rejection (a marketing-SaaS reject was read as a confirmation).
 - Needs-you: 79 answers drafted from presets + Fact Bank (user: "draft them, don't ask"); 35 jobs requeued
