@@ -462,6 +462,9 @@ def pick_option(options, ans):
     for t, h in options:  # short option inside a longer answer ("San Francisco" for "San Francisco Bay Area")
         o = t
         if len(o) >= 4 and re.search(r"(?<![a-z0-9])" + re.escape(o) + r"(?![a-z0-9])", a): return h
+    if re.fullmatch(r"(the )?(united states( of america)?|usa?|u\.?s\.?a?\.?)", a.strip()):  # some boards list just "US"
+        for t, h in options:
+            if re.fullmatch(r"(the )?(united states( of america)?|usa?|u\.?s\.?a?\.?)( \(.*\))?", t.strip()): return h
     if ans == "No":  # "No" phrased as a sentence: "I have never been employed by X", "I am not ...", "None"
         for t, h in options:
             if re.match(r"(i have never|i've never|never|i am not|i'm not|i do not|i don't|not |none\b)", t):

@@ -17,7 +17,7 @@ the round-robin scheduler inside. Greenhouse email codes still come from Gmail (
 Complexity: select is O(Q) over the queue with O(1) set lookups; split is O(J). Wall time ≈ build + max over
 appliers of their batch time, instead of the sum.
 """
-import collections, datetime, json, os, subprocess, sys, time
+import collections, heapq, datetime, json, os, subprocess, sys, time
 
 from engine.config import ROOT, WORKSPACE, in_workspace
 from engine.feedback.events import read, record
@@ -110,11 +110,15 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
     walled, blocked = history()
     if walled:
         print(f"select: skipping {', '.join(sorted(walled))} (captcha walls on most recent attempts; see the assist list)")
-    from engine.discovery.priority import lane_rates, score
+    from engine.discovery.priority import band, lane_rates, score
     rates = lane_rates()
-    queue = sorted(queue, key=lambda j: -score(j, rates)[0])  # best fit first, not just newest (O(Q log Q))
+    # freshness bands first (past hour > day > week > older), score inside a band. Lazy heap: O(Q) heapify, then
+    # O(log Q) per job popped; only as many pops as needed to fill max_jobs (skips are cheap), not a full sort.
+    heap = [(band(j), -score(j, rates)[0], i) for i, j in enumerate(queue)]
+    heapq.heapify(heap)
     per, picked = collections.Counter(), []
-    for j in queue:
+    while heap:
+        j = queue[heapq.heappop(heap)[2]]
         if st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU", "FLAGGED", "FAILED"):
             continue  # FAILED too: a failed form stays filled-in on the assist list instead of being retried blind
         if not ashby_ok and j.get("ats") == "ashby":
@@ -134,6 +138,20 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
     return interleave([dict(j, name=f"{j['company']} - {j['title']}") for j in picked])
 
 
+def prune(queue):
+    """Drop queue jobs that can never be applied to by the engine (final status, skipped or captcha-walled ATS) and
+    rewrite queue.json, so the queue holds only fillable jobs (user, 2026-10-10). NEEDS YOU stays: answers re-open it.
+    O(Q)."""
+    st = latest_status()
+    walled, _ = history()
+    keep = [j for j in queue if st.get(j["url"]) not in ("SUBMITTED", "SKIPPED", "FLAGGED", "FAILED")
+            and j.get("ats") not in SKIP_ATS and j.get("ats") not in walled]
+    if len(keep) != len(queue):
+        json.dump(keep, open(os.path.join(WORKSPACE, "queue.json"), "w", encoding="utf-8"), indent=1)
+        print(f"prune: {len(queue) - len(keep)} unusable jobs dropped, {len(keep)} kept")
+    return keep
+
+
 def split(jobs, parts):
     """Round-robin split so each applier gets a mix of companies and ATSs. O(J)."""
     out = [[] for _ in range(max(1, parts))]
@@ -151,7 +169,7 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
     if scan:
         ats = "greenhouse,ashby,lever,workable" if ashby_ok else "greenhouse,lever,workable"
         subprocess.run([sys.executable, "-m", "engine", "scan", str(days), "--ats", ats], cwd=ROOT, check=False)
-    q = json.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8"))
+    q = prune(json.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8")))
     chosen = select(q, max_jobs, ashby_ok)
     record("pipeline", stage="select", queued=len(q), chosen=len(chosen), ashby=ashby_ok)
     print(f"select: {len(chosen)} of {len(q)} queued jobs" + ("" if ashby_ok else " (Ashby cooling down: skipped)"))

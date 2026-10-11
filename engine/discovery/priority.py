@@ -50,6 +50,15 @@ def _hours_old(posted):
         return 72.0
 
 
+BANDS = (1, 24, 24 * 7)  # hours: past hour, past day, past week, then older (closing soon)
+
+
+def band(job):
+    """Freshness band 0..3 (0 = posted in the last hour). Bands are strict: every fresher job goes first (user 10-10)."""
+    h = _hours_old(job.get("posted"))
+    return next((i for i, b in enumerate(BANDS) if h <= b), len(BANDS))
+
+
 def score(job, lane_rates=None):
     """(score, parts) for one queued job. Higher = apply sooner. Parts are kept for the log/UI."""
     title, co = job.get("title", ""), job.get("company", "")
