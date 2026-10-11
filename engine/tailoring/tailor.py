@@ -118,6 +118,16 @@ def tailor(spec, jd, title=None, lanes=None):
     extra = max((k for k in resume.SKILLS if k not in skills), key=lambda k: score(resume.SKILLS[k][1]), default=None)
     if extra and score(resume.SKILLS[extra][1]) >= 2:
         skills.append(extra)
+    # v0.11 coverage fill: JD terms the candidate has but no chosen line shows yet pull in (at most 2) more of the
+    # Fact Bank's own skills lines, best gap-closer first; never invented wording, so the page stays truthful.
+    shown = set().union(*(hits(resume.FACTS[f]) for _, fids in roles for f in fids), *(hits(resume.SKILLS[k][1]) for k in skills))
+    for _ in range(2):
+        gap = want - shown
+        best = max((k for k in resume.SKILLS if k not in skills), key=lambda k: len(hits(resume.SKILLS[k][1]) & gap), default=None)
+        if not gap or best is None or not hits(resume.SKILLS[best][1]) & gap:
+            break
+        skills.append(best)
+        shown |= hits(resume.SKILLS[best][1])
     # v0.9 JD-first composition: each skills line leads with the posting's terms, in the posting's spelling
     skill_text = {k: t for k in skills
                   if (t := resume.jd_spelling(compose.order_skill_line(resume.SKILLS[k][1], want), jd)) != resume.SKILLS[k][1]}
@@ -133,6 +143,10 @@ def tailor(spec, jd, title=None, lanes=None):
             covered |= hits(resume.FACTS[f])
     for k in skills:
         covered |= hits(skill_text.get(k, resume.SKILLS[k][1]))
+    for p in projects:
+        covered |= hits(" ".join([resume.PROJECTS[p][0]] + resume.PROJECTS[p][2]))
+    for k in ("headline", "summary"):
+        covered |= hits(out[k]) if isinstance(out.get(k), str) else set()
     out["_coverage"] = {"jd_terms_you_have": sorted(want), "on_resume": sorted(covered), "missing_from_resume": sorted(want - covered)}
     return out
 
