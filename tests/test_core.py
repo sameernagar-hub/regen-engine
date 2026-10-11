@@ -161,6 +161,7 @@ def test_inbox_classify():
     assert classify("Thank you for applying to Umbrella", "If there is a fit, someone will reach out to schedule an interview.") == "confirmation"
     assert classify("Next steps", "We'd like to invite you to a phone screen. Please share your availability.") == "interview"
     assert classify("Your application", "Unfortunately, we have decided to move forward with other candidates.") == "rejection"
+    assert classify("Thanks for applying to Acme", "the time to apply for the Lead Engineer role at Acme. After careful consideration, we have decided") == "rejection"
     assert classify("Coding challenge", "Please complete the HackerRank assessment within 7 days.") == "oa"
     assert classify("Job offer", "Please buy equipment with a gift card and we'll reimburse you") == "scam"
     assert classify("Security code for your application to X", "paste this code") == "other"
