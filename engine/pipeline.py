@@ -103,6 +103,9 @@ def history(days=3, min_tries=4, wall_rate=0.5):
     return walled, blocked
 
 
+ASHBY_PER_PASS = int(os.environ.get("REGEN_ASHBY_PER_PASS", "1"))
+
+
 def select(queue, max_jobs, ashby_ok=True, per_company=3):
     """Highest-priority jobs (engine/discovery/priority.py) that were never tried (or only hit a transient failure),
     capped per company, interleaved by company."""
@@ -130,6 +133,10 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
             continue  # this company is waiting on the user (arbitration, assessment, captcha)
         if per[co] >= per_company:
             continue
+        if j.get("ats") == "ashby":  # Ashby bot-flags bursts (5 parallel workers tripped it on 10-10): a few per hour
+            if per["__ashby__"] >= ASHBY_PER_PASS:
+                continue
+            per["__ashby__"] += 1
         per[co] += 1
         picked.append(j)
         if len(picked) >= max_jobs:
