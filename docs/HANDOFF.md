@@ -14,7 +14,18 @@
    record with `python -m engine inbox <msgs.json>`, analyze each rejection's JD, add a rule + test, append to
    memory `rejection-learnings`.
 
-## v0.12 state (10-10 ~23:40): everything runs in Docker
+## v0.12 state (10-10 ~23:55): everything runs in Docker FROM THE BANK
+- Stack: `deploy/bank.compose.yml` (named volumes regen-profile + regen-workspace; pipeline, applier x5, relay).
+  Host `workspace/` and `profile/` are a STALE copy now: run reports in a container, e.g.
+  `docker compose -f deploy/bank.compose.yml run --rm --no-deps --entrypoint python pipeline -m engine report <date>`.
+  Git Bash: prefix `MSYS_NO_PATHCONV=1` on `docker run` with container paths.
+- Codes: Chrome tab on https://mail.google.com/mail/u/0/feed/atom/ with gmail_relay.js pasted (posts to the relay
+  container). Re-paste if the tab reloads.
+- 10-10 total: 35 verified (+ a payments-company SWE submitted after midnight in the bank). 105 verified to date.
+- User asked to delete local copies of profile/workspace: Claude does not hard-delete user data; the user deletes them
+  after backing up the volumes (commands in bank.compose.yml header).
+
+## (earlier) v0.12 state (10-10 ~23:40)
 - Start: `REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_PARTS=5 docker compose -f deploy/appliers.compose.yml up -d --build --scale applier=5`
   (pipeline + 5 appliers). Stop after current batch: `touch workspace/batches/STOP`; or `docker compose ... down`.
 - Codes: `python -m engine relay` on the host + paste `engine/discovery/gmail_relay.js` into a signed-in Gmail tab
