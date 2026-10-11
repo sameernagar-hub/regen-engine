@@ -54,7 +54,29 @@ def plan():
                     if s in CACHE_DIRS:
                         dirs.append(os.path.join(root, s))
                         subdirs.remove(s)
-    return [f for f in files if _inside(f)], [d for d in dirs if _inside(d)]
+    keep = pending_resumes()
+    return [f for f in files if _inside(f) and os.path.basename(f) not in keep], [d for d in dirs if _inside(d)]
+
+
+def pending_resumes():
+    """Resume file names a batch that has not finished still points at (inbox, claimed, or a local run's batch file
+    from the last 2 days): never delete those, or that job fails with "Missing entry: Resume"."""
+    import json
+    names = set()
+    for sub in ("batches/inbox", "batches/claimed", "batches"):
+        d = os.path.join(WORKSPACE, sub)
+        if not os.path.isdir(d):
+            continue
+        for n in os.listdir(d):
+            p = os.path.join(d, n)
+            if n.endswith(".json") and os.path.isfile(p) and (sub != "batches" or time.time() - os.path.getmtime(p) < BATCH_DAYS * 86400):
+                try:
+                    for j in json.load(open(p, encoding="utf-8")):
+                        if isinstance(j, dict) and j.get("resume"):
+                            names.add(os.path.basename(j["resume"].replace("\\", "/")))
+                except (ValueError, OSError):
+                    pass
+    return names
 
 
 def size(p):
