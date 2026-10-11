@@ -10,7 +10,7 @@ from engine.config import PROFILE
 
 DEFAULT_DOMAIN = {
     "include_titles": r"software|full.?stack|backend|back-end|ai engineer|machine learning engineer|ml engineer|forward.?deployed|platform engineer|product engineer|applied ai|founding engineer|member of technical staff|developer|\bsde\b|\bswe\b|data engineer",
-    "exclude_titles": r"senior|\bsr\b|\bsr\.|staff|principal|\blead\b|manager|director|head of|\bvp\b|vice president|chief|architect|intern\b|internship|co-?op\b|apprentice|firmware|embedded|hardware|silicon|asic|fpga|verification|clearance|polygraph|top secret|\bts/sci\b|\biii\b|\biv\b|\b[345]\b|\bios\b|android|mobile|salesforce admin|technician|quality engineer|test engineer|sdet|2027|phd|research scientist|professor|instructor|recruiter|sales engineer|solutions? consultant",
+    "exclude_titles": r"senior|\bsr\b|\bsr\.|staff|principal|\blead\b|manager|director|head of|\bvp\b|vice president|chief|architect|intern\b|internship|co-?op\b|apprentice|firmware|embedded|hardware|silicon|asic|fpga|verification|clearance|polygraph|top secret|\bts/sci\b|\biii\b|\biv\b|\b[345]\b|\bios\b|android|mobile|technician|quality engineer|test engineer|sdet|2027|phd|research scientist|professor|instructor|recruiter|sales engineer|solutions? consultant",
     "exclude_companies": r"anduril|spacex|chaos industries|lockheed|raytheon|\brtx\b|northrop|general dynamics|bae systems|l3harris|leidos|\bsaic\b|booz allen|palantir|epirus|saronic|hadrian|castelion|militar|defense|\bfederal\b",  # federal contractors: clearance / military / citizenship forms
     "require_us": True,
 }
