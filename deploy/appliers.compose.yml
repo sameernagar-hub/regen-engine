@@ -19,3 +19,18 @@ services:
     deploy:
       resources:
         limits: { cpus: "1.5", memory: 2g }
+
+  # The central engine, also in a container: discovery -> prune -> select -> tailor, then it drops batch parts into
+  # workspace/batches/inbox for the applier workers above. No browser here. Parts = number of applier replicas.
+  pipeline:
+    image: regen-applier:local
+    restart: unless-stopped
+    depends_on: [applier]
+    environment:
+      REGEN_APPLIERS: docker
+      REGEN_SKIP_ATS: "${REGEN_SKIP_ATS:-workable}"
+      REGEN_MAX_PER_DAY: "${REGEN_MAX_PER_DAY:-60}"
+    command: ["run", "--days", "1", "--max", "${REGEN_MAX:-100}", "--appliers", "${REGEN_PARTS:-5}", "--loop", "10"]
+    volumes:
+      - ../profile:/data/profile:ro
+      - ../workspace:/data/workspace
