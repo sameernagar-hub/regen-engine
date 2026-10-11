@@ -14,6 +14,18 @@
    record with `python -m engine inbox <msgs.json>`, analyze each rejection's JD, add a rule + test, append to
    memory `rejection-learnings`.
 
+## Landed 10-10 evening (~22:10 to ~22:40)
+- Inbox: "after careful consideration, we have decided" = rejection (a marketing-SaaS reject was read as a confirmation).
+- Needs-you: 79 answers drafted from presets + Fact Bank (user: "draft them, don't ask"); 35 jobs requeued
+  (`batches/requeue_2238.json`). Left for the user: legal/EEO/export/arbitration, captcha, Ashby human click.
+- Forms: "Do you possess N years of experience in X" answered from the Fact Bank (No when N > years); STATUS_Q's
+  `age` matched "language", which sent every programming-language question to the human queue (fixed).
+- Tailor: coverage fill adds up to 2 Fact Bank skills lines for JD terms the page missed (median was 88% of the
+  candidate's JD terms on the page; ATS read-back median 90).
+- Sources: `newgrad 5` (+40 resolved) and `feed 7 --queue` (SimplifyJobs ATS rows) merged into queue.json.
+- Title gate: Salesforce admin/consultant/analyst allowed (user: 5 certs). Fact Bank: Ruby, NoSQL added (user-stated).
+- Outreach: 15 drafts in `workspace/outreach/drafts.md` (Gmail compose links; user adds recipient and sends).
+
 ## Priority queue (top = next). Keep this list current every time something lands.
 1. **Keep the loop applying** + deliver codes fast (codes are the #1 cause of lost submissions; 11 of 10-10's
    submissions went through only because codes were delivered within a minute).
