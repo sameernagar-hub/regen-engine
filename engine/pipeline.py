@@ -179,6 +179,8 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
     batch = build(f"run_{stamp}", [str(j["id"]) for j in chosen])
     record("pipeline", stage="build", jobs=len(batch))
     parts = split(batch, appliers)
+    if os.environ.get("REGEN_APPLIERS") == "docker":  # container workers claim the parts (engine/apply/worker.py)
+        return _dispatch(parts, stamp, batch, t0)
     procs = []
     for i, part in enumerate(parts):
         name = f"run_{stamp}_{i}"
@@ -193,6 +195,29 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
     record("pipeline", stage="apply", appliers=[n for n, _ in procs], jobs=len(batch))
     for _, p in procs:
         p.wait()
+    st = latest_status()
+    done = [j for j in batch if st.get(j["url"]) == "SUBMITTED"]
+    record("pipeline", stage="report", submitted=len(done), jobs=len(batch), wall_s=round(time.monotonic() - t0, 1))
+    print(f"report: {len(done)} of {len(batch)} submitted in {time.monotonic() - t0:.0f}s")
+    return done
+
+
+def _dispatch(parts, stamp, batch, t0):
+    """Drop each part into batches/inbox/ for the worker containers and wait until all land in batches/done/."""
+    from engine.apply.worker import DIRS
+    for d in DIRS.values():
+        os.makedirs(d, exist_ok=True)
+    names = []
+    for i, part in enumerate(parts):
+        name = f"run_{stamp}_{i}.json"
+        tmp = os.path.join(DIRS["inbox"], "." + name)
+        json.dump(part, open(tmp, "w"), indent=1)
+        os.replace(tmp, os.path.join(DIRS["inbox"], name))  # appear atomically: a worker never reads half a file
+        names.append(name)
+    record("pipeline", stage="apply", appliers=names, jobs=len(batch), mode="docker")
+    print(f"dispatch: {len(names)} parts -> batches/inbox (docker workers)")
+    while not all(os.path.exists(os.path.join(DIRS["done"], n)) for n in names):
+        time.sleep(5)
     st = latest_status()
     done = [j for j in batch if st.get(j["url"]) == "SUBMITTED"]
     record("pipeline", stage="report", submitted=len(done), jobs=len(batch), wall_s=round(time.monotonic() - t0, 1))

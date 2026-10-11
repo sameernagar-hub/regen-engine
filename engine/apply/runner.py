@@ -989,6 +989,9 @@ def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     with in_workspace():
         jobs = json.load(open(argv[0]))
+        for j in jobs:  # batches built on Windows say "out\\x.pdf"; a Linux container worker needs "out/x.pdf"
+            if j.get("resume"):
+                j["resume"] = j["resume"].replace("\\", "/")
         if "--only" in argv:
             pat = argv[argv.index("--only") + 1]
             jobs = [j for j in jobs if re.search(pat, j.get("name", ""), re.I)]

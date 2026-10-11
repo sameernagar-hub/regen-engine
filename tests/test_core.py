@@ -418,3 +418,23 @@ def test_possess_years_questions():
     assert STATUS_Q.search("What is your age?")
     assert autofill_yesno("Do you possess 1 year of experience in Ruby programming language?") == "No"
     assert autofill_yesno("Do you possess 9 years of experience in Python?") == "No"  # more years than the presets
+
+
+def test_worker_claims_each_batch_once(tmp_path, monkeypatch):
+    from engine.apply import worker as W
+    monkeypatch.setattr(W, "DIRS", {k: str(tmp_path / k) for k in ("inbox", "claimed", "done")})
+    (tmp_path / "inbox").mkdir()
+    for n in ("a.json", "b.json", ".c.json"):
+        (tmp_path / "inbox" / n).write_text("[]")
+    got = [W.claim(), W.claim(), W.claim()]
+    assert sorted(g for g in got if g) == ["a.json", "b.json"] and got[2] is None  # ".c.json" is mid-write
+
+
+def test_select_prefers_fresh_band():
+    import datetime
+    from engine.discovery.priority import band
+    now = datetime.datetime.now()
+    assert band({"posted": (now - datetime.timedelta(minutes=20)).isoformat()}) == 0
+    assert band({"posted": (now - datetime.timedelta(hours=5)).isoformat()}) == 1
+    assert band({"posted": (now - datetime.timedelta(days=3)).isoformat()}) == 2
+    assert band({"posted": (now - datetime.timedelta(days=20)).isoformat()}) == 3

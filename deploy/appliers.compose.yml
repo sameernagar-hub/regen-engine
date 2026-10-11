@@ -1,0 +1,21 @@
+# Applier workers: capacity = number of replicas. Each claims batches from workspace/batches/inbox.
+#   docker compose -f deploy/appliers.compose.yml up -d --build --scale applier=4
+#   docker compose -f deploy/appliers.compose.yml logs -f applier
+# Stop after the current batch: create workspace/batches/STOP (or `docker compose ... down`).
+services:
+  applier:
+    build:
+      context: ..
+      dockerfile: deploy/applier.Dockerfile
+    image: regen-applier:local
+    restart: unless-stopped
+    shm_size: "1gb"           # Chromium needs more than Docker's 64 MB /dev/shm
+    environment:
+      REGEN_TABS: "${REGEN_TABS:-3}"
+      REGEN_MAX_PER_DAY: "${REGEN_MAX_PER_DAY:-60}"
+    volumes:
+      - ../profile:/data/profile:ro      # read-only: workers never change your Fact Bank or presets
+      - ../workspace:/data/workspace     # shared queue, batches, logs, codes, events
+    deploy:
+      resources:
+        limits: { cpus: "1.5", memory: 2g }

@@ -23,8 +23,13 @@ def claim():
     """Oldest inbox batch this worker managed to rename into claimed/, or None. O(inbox)."""
     for d in DIRS.values():
         os.makedirs(d, exist_ok=True)
-    for name in sorted(os.listdir(DIRS["inbox"]), key=lambda n: os.path.getmtime(os.path.join(DIRS["inbox"], n))):
-        if not name.endswith(".json"):
+    def age(n):  # another worker may claim (rename) a file between listdir and stat
+        try:
+            return os.path.getmtime(os.path.join(DIRS["inbox"], n))
+        except OSError:
+            return float("inf")
+    for name in sorted(os.listdir(DIRS["inbox"]), key=age):
+        if not name.endswith(".json") or name.startswith("."):  # ".x.json" is still being written
             continue
         try:
             os.rename(os.path.join(DIRS["inbox"], name), os.path.join(DIRS["claimed"], name))
