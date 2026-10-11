@@ -50,7 +50,8 @@ Related: [Apply engine](Apply-Engine.md) · [Running the engine](Running.md) · 
 
 ## Hands-free without an app password: the code relay (v0.12)
 1. `python -m engine relay` (listens on 127.0.0.1:8799 only).
-2. Paste `engine/discovery/gmail_relay.js` into a signed-in Gmail tab (DevTools or the browser tool).
+2. Open `https://mail.google.com/mail/u/0/feed/atom/` (a tiny XML page; the full Gmail UI freezes background tabs) and
+   paste `engine/discovery/gmail_relay.js` there.
 
 Every 20 s the tab fetches Gmail's **Atom feed** (unread inbox; one request, no UI, so the tab never freezes the way the
 search-results UI does after long scripts). It posts `[{company, code, iso}]` as `text/plain`, a simple request with no

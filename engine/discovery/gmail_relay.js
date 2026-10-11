@@ -1,4 +1,5 @@
-// Hands-free codes: paste once into a signed-in mail.google.com tab (browser tool or DevTools) while
+// Hands-free codes: open https://mail.google.com/mail/u/0/feed/atom/ (a tiny XML page: the full Gmail UI freezes
+// background tabs) and paste this once (browser tool or DevTools) while
 // `python -m engine relay` runs. Every 20 s it reads Gmail's Atom feed (unread inbox, one fetch, no UI) and POSTs
 // [{company, code, iso}] to the loopback relay, which writes the code only for a job that is waiting on it.
 // text/plain keeps it a "simple" request (no CORS preflight). Stop: clearInterval(window.regenTimer).
