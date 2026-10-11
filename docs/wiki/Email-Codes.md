@@ -47,3 +47,13 @@ script `regenCodes` now reads every code in each thread through Gmail's print vi
 Cost: O(waiting × codes) per poll, both tiny. One IMAP login per watch session.
 
 Related: [Apply engine](Apply-Engine.md) · [Running the engine](Running.md) · [Configuration](Configuration.md)
+
+## Hands-free without an app password: the code relay (v0.12)
+1. `python -m engine relay` (listens on 127.0.0.1:8799 only).
+2. Paste `engine/discovery/gmail_relay.js` into a signed-in Gmail tab (DevTools or the browser tool).
+
+Every 20 s the tab fetches Gmail's **Atom feed** (unread inbox; one request, no UI, so the tab never freezes the way the
+search-results UI does after long scripts). It posts `[{company, code, iso}]` as `text/plain`, a simple request with no
+CORS preflight. The relay turns the send time into local `HH:MM` and calls `codes.match()`. A code is written only
+for a job that is waiting, whose company matches, and that started waiting before the code was sent. The relay accepts
+only short `{company, code, iso}` records and never reads anything else from the mailbox.

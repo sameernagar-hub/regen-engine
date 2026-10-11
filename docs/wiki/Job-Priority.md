@@ -34,3 +34,13 @@ rescan of only the last few hours of postings, applying to whatever just opened.
 
 ## Evidence
 - `tests/test_core.py::test_priority_orders_good_jobs_first`, `test_history_learns_walls`.
+
+## Freshness bands and onsite preference (v0.12)
+Selection drains strict **bands** in order: posted within the last hour, the last day, the last week, then older.
+Older postings are close to closing, so they're a cold backup. Inside a band the priority score decides. The score
+adds an onsite term: +3 for Bay Area onsite or hybrid, +2 for onsite elsewhere, 0 for fully remote. Remote roles are still
+applied to.
+
+Picking k of Q jobs uses a lazy heap: `heapify` is O(Q) and each pop is O(log Q). Skipped jobs (per-company cap,
+blocked company) cost one pop each, and the loop stops once k jobs are picked, so there's no O(Q log Q) full sort.
+Before selection, `prune()` drops jobs that can never be applied to, so the queue holds only fillable work.

@@ -15,6 +15,7 @@
 - [Tailoring](Tailoring)
 - [Apply engine](Apply-Engine)
 - [Email codes](Email-Codes)
+- [Scale-out](Scale-Out)
 - [Outcomes and learning](Outcomes-and-Learning)
 - [Platform](Platform)
 - [Control room](Control-Room)

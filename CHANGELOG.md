@@ -4,6 +4,36 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.12.0] - 2026-10-10 · "Scale-out"
+Supply, not speed, was the limit: of 229 queued jobs only 17 were fillable. This release widens discovery, ranks fresh
+jobs first, and adds container appliers so capacity is a number you set.
+
+### Added
+- **Container appliers** (`deploy/applier.Dockerfile`, `deploy/appliers.compose.yml`): one engine worker and one
+  headed Chromium (on Xvfb) per container. `python -m engine worker` claims batches from `workspace/batches/inbox`
+  with an atomic rename, so exactly one worker wins each batch, no broker needed. Scale with
+  `docker compose -f deploy/appliers.compose.yml up -d --scale applier=N`.
+  *Verify:* `test_worker_claims_each_batch_once`.
+- **Hybrid dispatch:** `REGEN_DOCKER_PARTS=K` sends K batch parts to container workers while local appliers take the
+  rest; one selector feeds both, so no job is applied twice. `REGEN_APPLIERS=docker` sends everything to containers.
+- **Hands-free email codes without an app password:** `python -m engine relay` (loopback only) plus
+  `engine/discovery/gmail_relay.js`. A signed-in Gmail tab reads the Atom feed every 20 s (one fetch, no UI, so no frozen tabs)
+  and posts codes to the relay, which writes them only for waiting jobs.
+- **Freshness bands:** jobs posted within the hour, then the day, then the week; older postings stay cold and are used only
+  when hotter bands are empty. Picking k jobs uses a lazy heap: O(Q) heapify plus O(log Q) per pick, so there's no
+  full sort. *Verify:* `test_select_prefers_fresh_band`.
+- **Onsite preference:** onsite or hybrid roles rank above remote ones (+3 Bay Area, +2 elsewhere); remote roles are still applied to.
+- **Queue prune:** jobs that can never be applied to (final status, skipped or captcha-walled ATS) leave the queue.
+- **Resume coverage fill:** JD terms you have but the page doesn't show pull in up to two more of your own Fact Bank
+  skills lines (median coverage was 88%; never invented wording).
+
+### Fixed
+- `STATUS_Q` matched "age" inside "language": every programming-language question went to the human queue.
+- "Do you possess N years of experience in X" is answered from the Fact Bank (No when N exceeds your years).
+- Dropdowns that list the country as "US" now match "United States".
+- An inbox snippet "after careful consideration, we have decided" is a rejection, not a confirmation.
+- `.wait` files written in the Windows code page no longer crash the code matcher.
+
 ## [0.9.1] - 2026-10-09 · "Fewer stops"
 Found while applying: each fix came from a form that stopped a real application. 24 verified submissions on 2026-10-09.
 
