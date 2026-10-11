@@ -207,13 +207,15 @@ def text_ok(label, ans):
     return ans not in ("Yes", "No") or any(YESNO_Q.search(x) for x in sentences)
 
 
-EXPERIENCE_Q = re.compile(r"^(do|have) you (have )?(any |professional |hands.on |industry |internship or industry |prior )*experience "
-                          r"(with|in|using|developing|building|working (with|on)|on)\b(.{3,120}?)\??$", re.I)
+EXPERIENCE_Q = re.compile(r"^(do|have) you (have |possess )?(?:\d+\+? (?:or more )?years? of )?"
+                          r"(any |professional |hands.on |industry |internship or industry |prior )*experience "
+                          r"(with|in|using|developing|building|working (with|on)|on|performing)\b(.{3,120}?)\??$", re.I)
 CONCEPTS = {  # phrase in a question -> skill terms that count as having it (still must be in your Fact Bank)
+    r"no.?sql": ["mongodb", "dynamodb", "redis", "cassandra"],  # before the sql rule: "nosql" is not PostgreSQL
     r"single.page|\bspa\b|front.?end|web app": ["react", "typescript", "javascript"],
     r"back.?end|server.side|\bapis?\b|web services": ["rest apis", "node.js", "spring boot", "fastapi", "microservices"],
     r"cloud|aws|amazon web services": ["aws"], r"\bml\b|machine learning|\bai\b|llm|gen.?ai": ["llms", "rag", "pytorch"],
-    r"distributed|microservice": ["microservices", "kafka"], r"database|sql": ["postgresql", "sql", "mysql"],
+    r"distributed|microservice": ["microservices", "kafka"], r"database|(?<!no)sql": ["postgresql", "sql", "mysql"],
 }
 
 
@@ -265,9 +267,9 @@ AUTOFILL = os.environ.get("REGEN_AUTOFILL", "1") != "0"  # user, 2026-10-07: "no
 STATUS_Q = re.compile(r"sponsor|authori[sz]|visa|citizen|resident|immigration|export|sanction|cuba|iran|north korea|syria|crimea|"
                       r"arbitrat|salary|compensation|gender|race|ethnic|veteran|military|disab|criminal|convict|felony|"
                       r"clearance|government|related to|relatives?|family|employee of|employed (by|at)|worked (at|for)|"
-                      r"non-?compete|agreement|over 18|age\b|lived in|reside|located", re.I)
+                      r"non-?compete|agreement|over 18|\bage\b|lived in|reside|located", re.I)
 WILLING_Q = re.compile(r"^\s*(are|would|will) you (be )?(willing|comfortable|able|open|ok|okay|happy|available)\b", re.I)
-HAVE_Q = re.compile(r"^\s*(have you|do you have|did you|have you ever|are you (familiar|experienced|proficient))\b", re.I)
+HAVE_Q = re.compile(r"^\s*(have you|do you (have|possess)|did you|have you ever|are you (familiar|experienced|proficient))\b", re.I)
 
 
 def _fact_text():
@@ -285,6 +287,10 @@ def autofill_yesno(label):
     if WILLING_Q.search(l):
         return P.get("open_to_onsite_or_relocation") or "Yes"
     if HAVE_Q.search(l):
+        # "Do you possess 3 years of experience in Go?": No when it asks more years than you have in total
+        m = re.search(r"(\d+)\+? (or more )?years?", l)
+        if m and str(P.get("years_experience", "")).isdigit() and int(m.group(1)) > int(P["years_experience"]):
+            return "No"
         return experience_answer(l) or "No"
     return None
 

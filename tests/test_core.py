@@ -410,3 +410,11 @@ def test_outreach_draft_is_fact_only():
                "facts": ["f1", "f2", "f3"]}, bank)
     assert "- Built things." in d["body"] and "- Shipped stuff." in d["body"] and "Jane Doe" in d["body"]
     assert d["sources"] == ["f1", "f2"] and d["compose"].startswith("https://mail.google.com/mail/?view=cm")
+
+
+def test_possess_years_questions():
+    from engine.apply.runner import autofill_yesno, STATUS_Q
+    assert not STATUS_Q.search("Do you possess 1 year of experience in Python programming language?")  # "langu-age"
+    assert STATUS_Q.search("What is your age?")
+    assert autofill_yesno("Do you possess 1 year of experience in Ruby programming language?") == "No"
+    assert autofill_yesno("Do you possess 9 years of experience in Python?") == "No"  # more years than the presets

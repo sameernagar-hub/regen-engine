@@ -18,11 +18,11 @@
     b.classList.add('_active'); window.__spons = b.textContent;
     // a follow-up question that only appears after the first answer (a 10-07 case)
     if (!document.getElementById('travel')) document.getElementById('extra').innerHTML =
-      '<div class="ashby-application-form-field-entry"><label class="_required_q">Do you have experience with an obscure mainframe language?</label><input type="text" id="travel"></div>';
+      '<div class="ashby-application-form-field-entry"><label class="_required_q">Do you agree to the obscure mainframe arbitration terms?</label><input type="text" id="travel"></div>';
   }));
   document.getElementById('submit').addEventListener('click', () => {
     const t = document.getElementById('travel');
-    if (t && !t.value) { document.body.insertAdjacentHTML('beforeend', '<p>Missing entry for required field: Do you have experience with an obscure mainframe language?</p>'); return; }
+    if (t && !t.value) { document.body.insertAdjacentHTML('beforeend', '<p>Missing entry for required field: Do you agree to the obscure mainframe arbitration terms?</p>'); return; }
     document.body.innerHTML = '<p>Your application was successfully submitted.</p>';
   });
 </script>
