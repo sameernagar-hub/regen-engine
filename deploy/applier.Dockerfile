@@ -10,7 +10,8 @@ FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 PYTHONIOENCODING=utf-8 \
     REGEN_PROFILE=/data/profile REGEN_WORKSPACE=/data/workspace \
-    REGEN_PW_PROFILE=/home/regen/pw-profile PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \n    TZ=America/Los_Angeles
+    REGEN_PW_PROFILE=/home/regen/pw-profile PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    TZ=America/Los_Angeles
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir playwright reportlab pypdf \
