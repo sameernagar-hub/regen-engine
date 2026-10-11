@@ -10,12 +10,12 @@ FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 PYTHONIOENCODING=utf-8 \
     REGEN_PROFILE=/data/profile REGEN_WORKSPACE=/data/workspace \
-    REGEN_PW_PROFILE=/home/regen/pw-profile PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    REGEN_PW_PROFILE=/home/regen/pw-profile PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \n    TZ=America/Los_Angeles
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir playwright reportlab pypdf \
  && python -m playwright install --with-deps chromium \
- && apt-get update && apt-get install -y --no-install-recommends xvfb xauth \
+ && apt-get update && apt-get install -y --no-install-recommends xvfb xauth tzdata \
  && rm -rf /var/lib/apt/lists/*
 COPY engine/ engine/
 COPY profile.example/ profile.example/

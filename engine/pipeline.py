@@ -247,5 +247,10 @@ def main(argv=None):
     while True:
         run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125)))
         n += 1
+        try:  # disk hygiene every pass: logged proofs/resumes/caches past their window (engine/clean.py)
+            from engine.clean import main as clean
+            clean([])
+        except Exception as e:  # never let cleanup stop applying
+            print(f"clean skipped: {e}")
         print(f"loop: pass {n} done; next scan in {loop:g} min", flush=True)
         time.sleep(loop * 60)
