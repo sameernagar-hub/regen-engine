@@ -23,7 +23,7 @@ def waiting(workspace=None):
     if os.path.isdir(d):
         for f in sorted(os.listdir(d)):
             if f.endswith(".wait") and not os.path.exists(os.path.join(d, f[:-5] + ".txt")):
-                first = open(os.path.join(d, f), encoding="utf-8").read().splitlines()[:1]
+                first = open(os.path.join(d, f), encoding="utf-8", errors="replace").read().splitlines()[:1]
                 out.append((f[:-5], (first[0] if first else "").split(" - ")[0]))
     return out
 

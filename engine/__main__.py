@@ -22,6 +22,7 @@ alerts  <file>                   job-alert emails (gmail_alerts.js output) resol
   live    [port]                   the engine, watched live (localhost page; read-only)
   site    [days]                   build the public face (site/): the live view replaying anonymized recent activity
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
+  relay   [port]                   local code relay: a Gmail tab POSTs codes (engine/discovery/gmail_relay.js)
   worker  [--once]                 applier worker: claim batches from workspace/batches/inbox (one per container)
   run     [--days 1 --max 30 --appliers 2 --tabs 3 --no-scan --dry]   the whole pipeline: discover, select, build, apply, report
 """
@@ -98,6 +99,8 @@ def main():
         from engine.discovery.scan import main as m
     elif cmd == "watch":
         from engine.discovery.watch import main as m
+    elif cmd == "relay":
+        from engine.apply.code_relay import main as m
     elif cmd == "worker":
         from engine.apply.worker import main as m
     elif cmd == "newgrad":
