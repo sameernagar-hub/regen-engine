@@ -8,7 +8,7 @@ send time to local "HH:MM" and calls codes.match(), which writes workspace/codes
 is waiting and whose company matches, and only for codes sent after it started waiting. Nothing else is accepted:
 the body must be a JSON list of short {company, code, iso} records, and the server listens on loopback only.
 """
-import datetime, http.server, json, re, sys
+import datetime, http.server, json, os, re, sys
 
 from engine.apply import codes as C
 
@@ -51,7 +51,8 @@ def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     port = int(argv[0]) if argv else 8799
     print(f"code relay on http://127.0.0.1:{port} (POST codes from the Gmail tab)", flush=True)
-    http.server.ThreadingHTTPServer(("127.0.0.1", port), Relay).serve_forever()
+    host = os.environ.get("REGEN_RELAY_HOST", "127.0.0.1")  # 0.0.0.0 inside a container; compose publishes 127.0.0.1 only
+    http.server.ThreadingHTTPServer((host, port), Relay).serve_forever()
 
 
 if __name__ == "__main__":

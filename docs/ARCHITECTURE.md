@@ -89,14 +89,16 @@ schedule and flag events. Writes are locked across processes; reads are incremen
 the web app (answer from the page). `engine/discovery/gmail_codes.js` + `engine/apply/codes.py` supply Greenhouse codes.
 
 ## Execution room: Docker (v0.12)
-The engine runs in containers; the host holds only knowledge (profile/, read-only) and the Gmail tab that relays
-email codes.
+The engine and the data both live in Docker. Named volumes are the bank: `regen-profile` (knowledge) and
+`regen-workspace` (the ledger). The host keeps only the signed-in Gmail tab that posts codes to the `relay` container
+(`deploy/bank.compose.yml`). The older `deploy/appliers.compose.yml` bind-mounts local folders instead.
 
 | Container | Runs | State |
 |---|---|---|
 | `pipeline` (1) | `engine run --loop 10` with `REGEN_APPLIERS=docker`: scan, prune, select (freshness bands + lazy heap), tailor, then drops parts into `workspace/batches/inbox` | none of its own |
 | `applier` (N) | `engine worker`: claims a part by `os.rename` into `claimed/` (atomic, so one winner), runs `engine apply` in headed Chromium on Xvfb, moves the part to `done/` | browser profile inside the container |
-| shared volume `workspace/` | the ledger: `events.jsonl` (every status, answer, proof), `queue.json`, `codes/`, `logs/` | survives any container |
+| `relay` (1) | `engine relay` on 0.0.0.0 inside, published on 127.0.0.1:8799 only; writes codes into the bank | none |
+| volumes `regen-profile`, `regen-workspace` | the bank and the ledger: `events.jsonl` (every status, answer, proof), `queue.json`, `codes/`, `logs/` | survives any container |
 
 Failure model: a worker that dies leaves its part in `claimed/`; the pipeline's wait times out (3 h) and the next
 pass re-selects the unfinished jobs from the queue. Jobs already `SUBMITTED` are skipped, so nothing is sent twice.

@@ -1,0 +1,55 @@
+# The bank: your data lives in Docker named volumes instead of local folders.
+#   regen-profile    Fact Bank, presets, answers, priority lists (the knowledge)
+#   regen-workspace  the ledger: events.jsonl, queue, resumes, proof, codes, logs
+# Every service mounts the volumes, never a host folder. Seed once from local folders:
+#   docker compose -f deploy/bank.compose.yml run --rm seed
+# Run:  REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_PARTS=5 docker compose -f deploy/bank.compose.yml up -d --scale applier=5
+# Back up (do this before any `docker volume prune`):
+#   docker run --rm -v regen-profile:/p -v "$PWD":/b alpine tar czf /b/regen-profile.tgz -C /p .
+x-engine: &engine
+  image: regen-applier:local
+  restart: unless-stopped
+  volumes:
+    - regen-profile:/data/profile
+    - regen-workspace:/data/workspace
+
+services:
+  seed:  # one-off: copy local profile/ and workspace/ into the volumes (no deletes)
+    image: regen-applier:local
+    profiles: ["seed"]
+    user: root
+    entrypoint: ["sh", "-c", "cp -a /src/profile/. /data/profile/ && cp -a /src/workspace/. /data/workspace/ && chown -R 10001 /data && echo seeded"]
+    volumes:
+      - ../profile:/src/profile:ro
+      - ../workspace:/src/workspace:ro
+      - regen-profile:/data/profile
+      - regen-workspace:/data/workspace
+
+  applier:
+    <<: *engine
+    build: { context: .., dockerfile: deploy/applier.Dockerfile }
+    shm_size: "1gb"
+    environment:
+      REGEN_TABS: "${REGEN_TABS:-3}"
+      REGEN_MAX_PER_DAY: "${REGEN_MAX_PER_DAY:-60}"
+    deploy: { resources: { limits: { cpus: "1.5", memory: 2g } } }
+
+  pipeline:
+    <<: *engine
+    depends_on: [applier]
+    environment:
+      REGEN_APPLIERS: docker
+      REGEN_SKIP_ATS: "${REGEN_SKIP_ATS:-workable}"
+      REGEN_MAX_PER_DAY: "${REGEN_MAX_PER_DAY:-60}"
+    command: ["run", "--days", "1", "--max", "${REGEN_MAX:-100}", "--appliers", "${REGEN_PARTS:-5}", "--loop", "10"]
+
+  relay:  # email codes from the Gmail tab land straight in the bank
+    <<: *engine
+    environment: { REGEN_RELAY_HOST: "0.0.0.0" }
+    entrypoint: ["python", "-m", "engine"]
+    command: ["relay", "8799"]
+    ports: ["127.0.0.1:8799:8799"]
+
+volumes:
+  regen-profile: { name: regen-profile }
+  regen-workspace: { name: regen-workspace }

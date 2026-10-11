@@ -68,19 +68,25 @@ All numbers come from this repo's own logs and benchmarks. Run `python -m engine
 
 ## What's new (v0.12): the engine runs in Docker
 
-Docker is now the execution room, not just the memory stack. The **pipeline container** discovers, prunes, selects
-and tailors. It drops batch parts into a shared inbox, and **N applier containers** claim them with an atomic rename
-and fill forms in headed Chromium on a virtual display. Your machine keeps only the knowledge: `profile/`, mounted
-read-only, and the signed-in Gmail tab that relays codes. The shared `workspace/` volume is the ledger: every event,
-status, answer and proof lands in `events.jsonl`, so a crashed container never loses a job.
+Docker is now the execution room **and the bank**. Your data lives in two Docker named volumes, not local folders:
+`regen-profile` (Fact Bank, presets, answers: the knowledge) and `regen-workspace` (the ledger: `events.jsonl`, queue,
+resumes, proof, codes). Every container reads and writes the bank:
+
+- **pipeline** discovers, prunes, selects and tailors, then drops batch parts into the bank's inbox
+- **applier × N** claim parts with an atomic rename and fill forms in headed Chromium on a virtual display
+- **relay** receives email codes from your signed-in Gmail tab (published on 127.0.0.1 only) and writes them to the bank
+
+A crashed container loses nothing; every status, answer and proof is already in the ledger.
 
 ```bash
-docker compose -f deploy/appliers.compose.yml up -d --build --scale applier=5   # pipeline + 5 appliers
-python -m engine relay                                                          # hands-free email codes
+docker compose -f deploy/bank.compose.yml run --rm seed                                  # once: copy local data into the bank
+REGEN_MAX_PER_DAY=150 REGEN_PARTS=5 docker compose -f deploy/bank.compose.yml up -d --scale applier=5
+# Gmail tab: paste engine/discovery/gmail_relay.js   ·   back up: see deploy/bank.compose.yml
 ```
 
 | | Evidence |
 |---|---|
+| Data bank in Docker volumes | `deploy/bank.compose.yml` (seed, applier, pipeline, relay); seeded 2026-10-10 with the profile + 229 MB ledger |
 | Atomic-claim workers, no broker | `engine/apply/worker.py`, `test_worker_claims_each_batch_once` |
 | Freshness bands (hour > day > week > cold) with a lazy-heap top-k | `engine/pipeline.py:select`, `test_select_prefers_fresh_band` |
 | Onsite roles rank above remote | `engine/discovery/priority.py:score` (`onsite` part) |
@@ -292,23 +298,25 @@ docker compose -f deploy/watcher.compose.yml up -d --build   # watcher + live vi
 
 ```mermaid
 flowchart LR
-    subgraph Host["Your machine: knowledge only"]
-        P[profile/ · Fact Bank, presets<br/>mounted read-only]
-        G[Gmail tab<br/>Atom feed → code relay]
+    subgraph Host["Your machine"]
+        G[signed-in Gmail tab<br/>Atom feed every 20 s]
     end
-    subgraph Docker["Docker: execution room"]
+    subgraph Docker["Docker: execution room + bank"]
+        P[("regen-profile volume<br/>Fact Bank · presets · answers")]
+        R[relay container<br/>127.0.0.1:8799]
         PL["pipeline container<br/>① discover → prune → bands/heap select<br/>② fit gate → ③ tailor"]
         IN[(workspace/batches/inbox)]
         W1["applier 1<br/>headed Chromium"]
         W2["applier 2"]
         WN["applier N"]
-        L[("workspace/ ledger<br/>events.jsonl · queue · codes · proof")]
+        L[("regen-workspace volume: the ledger<br/>events.jsonl · queue · resumes · codes · proof")]
     end
     P --> PL
     PL --> IN
     IN -- atomic rename claim --> W1 & W2 & WN
     W1 & W2 & WN -- "④ apply · proof · status" --> L
-    G -- "codes/*.txt" --> L
+    G --> R
+    R -- "codes/*.txt" --> L
     L -- "⑤ feedback: outcomes, lane rates" --> PL
     L --> M["Memory graph · API · web · MCP"]
 ```

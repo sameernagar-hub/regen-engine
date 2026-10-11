@@ -45,3 +45,9 @@ next to the host's local appliers.
 ## Email codes at scale
 Workers write `workspace/codes/<board>_<id>.wait` to the shared volume. The [code relay](Email-Codes) on the host
 answers within about 20 s, whichever container asked.
+
+## The bank: data in Docker volumes (v0.12)
+`deploy/bank.compose.yml` keeps your data in named volumes instead of local folders: `regen-profile` holds the
+knowledge and `regen-workspace` holds the ledger. `seed` copies local folders in once and never deletes them. The `relay`
+container receives codes from the Gmail tab. Back up the volumes before any `docker volume prune`: a pruned volume
+is gone. Back-up commands are in the compose file header.
