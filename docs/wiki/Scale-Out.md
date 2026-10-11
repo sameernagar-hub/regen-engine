@@ -39,8 +39,8 @@ REGEN_DOCKER_PARTS=4 python -m engine run --days 1 --max 120 --appliers 6 --tabs
 - Resource limits per worker: 1.5 CPU, 2 GB RAM, 1 GB `/dev/shm` (Chromium needs more than Docker's 64 MB default).
 
 ## Sizing
-One worker with 3 tabs uses about 1.2 to 1.6 GB. Docker Desktop's VM memory is the ceiling: with 8 GB, run 4 workers
-next to the host's local appliers.
+One worker with 3 to 4 tabs uses about 1.2 to 1.6 GB. Docker Desktop's VM memory is the ceiling: with 8 GB, run 5 appliers plus
+the pipeline and relay (the 2026-10-10 configuration).
 
 ## Email codes at scale
 Workers write `workspace/codes/<board>_<id>.wait` to the shared volume. The [code relay](Email-Codes) on the host

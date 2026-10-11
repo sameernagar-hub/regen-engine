@@ -31,11 +31,19 @@ def claim():
     for name in sorted(os.listdir(DIRS["inbox"]), key=age):
         if not name.endswith(".json") or name.startswith("."):  # ".x.json" is still being written
             continue
+        # exclusive create is the claim: atomic on every filesystem (a rename race let two Windows workers both
+        # "win" a batch: bench B3 saw 233 claims for 200 batches). The lock stays until the batch is done.
+        lock = os.path.join(DIRS["claimed"], name + ".lock")
         try:
-            os.rename(os.path.join(DIRS["inbox"], name), os.path.join(DIRS["claimed"], name))
-            return name
+            os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
         except OSError:
-            continue  # another worker won it
+            continue  # another worker holds it
+        try:
+            os.replace(os.path.join(DIRS["inbox"], name), os.path.join(DIRS["claimed"], name))
+            return name
+        except OSError:  # finished and moved on before we looked: drop our lock
+            os.remove(lock)
+            continue
     return None
 
 
@@ -47,6 +55,10 @@ def apply_one(name):
     rc = subprocess.call([sys.executable, "-m", "engine", "apply", f"batches/claimed/{name}"], cwd=ROOT,
                          env=dict(os.environ, PYTHONUNBUFFERED="1"), stdout=log, stderr=subprocess.STDOUT)
     os.replace(os.path.join(DIRS["claimed"], name), os.path.join(DIRS["done"], name))
+    try:
+        os.remove(os.path.join(DIRS["claimed"], name + ".lock"))
+    except OSError:
+        pass
     return rc
 
 

@@ -1,6 +1,6 @@
 # REGEN engine: always-on discovery in a container.
 # Discovery (scan / watch / newgrad / boards) needs only the Python standard library, so the image stays small
-# and has no browser. Applying stays on your machine (headed browser + your email codes).
+# and has no browser. Applying runs in the applier containers (deploy/applier.Dockerfile, deploy/bank.compose.yml).
 #
 #   docker compose -f deploy/docker-compose.yml up -d watcher
 #

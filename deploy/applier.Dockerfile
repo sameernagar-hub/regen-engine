@@ -14,7 +14,7 @@ ENV PYTHONUNBUFFERED=1 PYTHONIOENCODING=utf-8 \
     TZ=America/Los_Angeles
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir playwright reportlab pypdf \
+RUN pip install --no-cache-dir playwright reportlab pypdf "mcp>=2.0" \
  && python -m playwright install --with-deps chromium \
  && apt-get update && apt-get install -y --no-install-recommends xvfb xauth tzdata \
  && rm -rf /var/lib/apt/lists/*

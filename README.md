@@ -59,7 +59,7 @@ resume to every posting and make up answers to fill the gaps.
 | Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF; coverage fill puts most at **100%** of the JD terms you have (build log: `resume covers 24/24 JD terms, ATS text 100%`) |
 | Email security codes | **hands-free** via the code relay: a Gmail tab posts codes from the Atom feed every 20 s (`engine relay`, `workspace/logs/relay_*.log` shows each delivery) |
 | Scheduler | ×2.05 throughput vs sequential (seeded benchmark, `scripts/bench_scheduler.py`) |
-| Tests | **108** passing (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
+| Tests | **108** passing; system benchmarks B1–B4 in `scripts/bench_system.py` (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
 | Resume claims outside your Fact Bank | **Rejected** by the validator before any PDF is written |
 | Model API keys required | **0** |
 | Applier capacity | **N containers** (`--scale applier=N`), each a headed Chromium with its own profile; 5 workers + 1 pipeline container on an 8 GB Docker VM |
@@ -224,7 +224,7 @@ The two write tools only start the same CLI commands you would run, with the sam
 
 ---
 
-## The platform (v0.7)
+## The platform: API, web, MCP
 
 ```mermaid
 flowchart LR
@@ -246,7 +246,8 @@ flowchart LR
 | **Typed client** | TypeScript types are generated from the API's OpenAPI schema (`npm run gen:api`), so the page and the API can't drift apart. | `apps/web/lib/` |
 | **Stack** | `docker compose -f deploy/platform.compose.yml up -d --build` starts Postgres, the migrator, the API and the web app, all bound to 127.0.0.1, with the workspace mounted read-only. | `deploy/` |
 
-Run it without Docker:
+Every engine container also serves MCP over stdio (`docker exec -i deploy-pipeline-1 python -m engine mcp`); see
+[How it runs](docs/wiki/How-It-Runs.md#5-mcp-in-every-container). Run the API and web without Docker:
 ```bash
 pip install fastapi uvicorn "psycopg[binary]"
 python -m uvicorn apps.api.main:app --host 127.0.0.1 --port 8787     # API + docs at /docs
@@ -257,6 +258,17 @@ cd apps/web && npm install && npm run dev                          # http://127.
 
 ## Quick start
 
+**Docker (recommended; the engine and your data both live in containers):**
+```bash
+git clone https://github.com/sameernagar-hub/regen-engine && cd regen-engine
+cp -r profile.example profile                                  # fill in YOUR facts and presets once
+docker compose -f deploy/bank.compose.yml build applier
+docker compose -f deploy/bank.compose.yml run --rm seed         # copy profile/ into the regen-profile volume
+REGEN_MAX_PER_DAY=60 REGEN_PARTS=5 docker compose -f deploy/bank.compose.yml up -d --scale applier=5
+# email codes: open https://mail.google.com/mail/u/0/feed/atom/ and paste engine/discovery/gmail_relay.js
+```
+
+**Local, step by step:**
 ```bash
 git clone https://github.com/sameernagar-hub/regen-engine && cd regen-engine
 pip install -r requirements.txt && playwright install chromium
@@ -438,40 +450,31 @@ Your data never belongs in this repository, and CI enforces it. Every pull reque
 ## Status
 
 Every change is itemized in [CHANGELOG.md](CHANGELOG.md) with what changed, why, and how to verify it.
+Claims and their proof: [Evidence](docs/wiki/Evidence.md) · [Efficiency](docs/wiki/Efficiency.md) · [Benchmarks](docs/wiki/Benchmarks.md).
 
 | Capability | State |
 |---|---|
-| Discovery on 4 ATSs, board registry, watcher, alert emails, lead resolution | ✅ |
-| Fit gate (eligibility, clearance, sponsorship, grad window, years, core stack) | ✅ |
-| Fact-Bank tailoring with JD spelling, overlap groups and audit log | ✅ |
-| Apply: Greenhouse | ✅ |
-| Apply: Ashby, Lever, Workable | ✅ beta (human checks go to you) |
-| Airbags, kill switch, SOS email | ✅ |
-| Inbox outcomes, `learn`, verified-only `report` | ✅ |
-| Platform: FastAPI API, Postgres store, Next.js live view and memory graph | ✅ v0.7 first cut |
-| Round-robin applying over tabs with adaptive quantum | ✅ v0.8 |
-| Drafted open-ended answers from the Fact Bank, reviewable | ✅ v0.8 |
-| Tests: unit, API, and headless form tests against local ATS look-alikes; coverage in CI | ✅ v0.8 |
-| MCP server: read tools, plus pipeline tools behind `REGEN_MCP_WRITE=1` | ✅ v0.8 |
-| Privacy gate in CI, anonymized public site | ✅ |
-| Vector memory (pgvector) and facts-for-JD retrieval | 🔜 |
-| Write path from the web app (answer the human queue in the page) | ✅ v0.8 (`REGEN_API_WRITE=1`, localhost only) |
-| Engine room (Next.js `/room`, `/room/[stage]`, `/job`) | ✅ v0.9 first cut |
-| JD-first resume composer with ATS read-back | ✅ v0.9 |
-| Big-tech discovery (two careers APIs) with resumes ready; you submit on their portal | ✅ v0.9.1 |
-| Hands-free email codes over IMAP (`codes --watch`) | ✅ v0.9.1 (needs your app password) |
+| Discovery on 4 ATSs (2,469 boards), new-grad and alert sources, 30-day scans, queue prune | ✅ |
+| Fit gate, trust gate (ATS allowlist and scam signals) | ✅ |
+| JD-first resume composer, coverage fill, ATS read-back (median 100% coverage of your JD terms) | ✅ |
+| Apply: Greenhouse ✅ · Ashby ✅ (1 per pass, bot-check aware) · Lever (captcha: assist list) · Workable (skipped while bot-walling) | ✅ |
+| Freshness bands and priority (onsite first, tiers, learned reply rates) | ✅ v0.12 |
+| **Docker execution room and data bank**: pipeline + N appliers + relay, named volumes | ✅ v0.12 |
+| Hands-free email codes (Atom-feed relay; or IMAP with an app password) | ✅ v0.12 |
+| MCP in every container; control room, applications, needs, Fact Bank pages | ✅ |
+| Disk hygiene (`engine clean` every pass) | ✅ v0.12 |
+| Workday / iCIMS adapters, SmartRecruiters source | 🔜 |
+| Gmail cleanup (old codes and alerts to Trash, on request) | 🔜 |
 
 ## Roadmap
 
 | Release | Theme | Deliverables |
 |---|---|---|
-| v0.1–0.6 ✅ | Engine | Discovery, Fact-Bank tailoring, Greenhouse/Ashby apply with proof, safety, inbox loop, live view, privacy gate |
-| **v0.7** ✅ first cut | Platform | FastAPI + Pydantic API, Postgres event store, Next.js live view, memory graph, MCP server, Lever and Workable adapters, job-alert emails |
-| **v0.8** ✅ | Throughput, truthfully | Round-robin scheduler with adaptive time slices, parallel appliers, `engine run`, drafted answers from the Fact Bank, salary from the posted range, answer from the page, locked event log, ×3 faster tailoring, browser tests and coverage |
-| **v0.9 / 0.9.1** ✅ | Composer and fewer stops | JD-first composer + ATS read-back, engine room, embedded/SRE lanes, form-rule fixes found while applying, salary range buckets, code matcher, big-tech discovery, `codes --watch` |
-| v0.10 | Reach and polish | Ashby queue after the bot-check pause, Gmail labels per platform, inbox cleanup on request, remaining form gaps, async Playwright for in-process overlap, Workday / iCIMS adapters |
-| v0.9 | Engine room and memory | GPU live view (instanced board field, glowing pipeline, 3D lane tree, [research](docs/FRONTEND.md)); pgvector retrieval over facts and job descriptions |
-| v1.0 | Public release | One-command setup, docs site, stable APIs |
+| v0.1–0.9 ✅ | Engine and platform | Discovery, Fact-Bank tailoring, adapters, proof, inbox loop, FastAPI + Postgres + Next.js, MCP, scheduler, composer |
+| v0.10–0.11 ✅ | Control | Control room, applications/needs/facts pages, trust gate, first-applicant loop, priority, design layer |
+| **v0.12** ✅ | Scale-out | Docker execution room and bank, atomic-claim workers, freshness bands, code relay, prune, clean, benchmarks |
+| v0.13 | Reach | Workday/iCIMS, SmartRecruiters, supervisor view of containers in /control, benchmarks B5–B7 |
+| v1.0 | Public release | REGEN as an MCP connector/plugin, one-command setup, docs site |
 
 ## Repository layout
 ```
@@ -479,10 +482,10 @@ regen-engine/
 ├── engine/            the engine (Python): discovery · tailoring · apply · feedback · memory · connectors · live
 ├── apps/api/          FastAPI + Pydantic API (reads, plus answers you type), Postgres migration
 ├── apps/web/          Next.js + TypeScript: live view (/) and memory graph (/graph)
-├── deploy/            watcher, platform (db + api + web) and memory compose files
+├── deploy/            bank (pipeline + appliers + relay, data volumes), appliers, watcher, platform, memory compose files
 ├── profile.example/   templates for your private profile/
 ├── tests/             pytest suite (fictional persona, never real data)
-├── scripts/           privacy gate, benchmarks (bench_scheduler.py, bench_tailor.py)
+├── scripts/           privacy gate, benchmarks (bench_system.py B1–B4, bench_scheduler.py, bench_tailor.py)
 ├── site/              anonymized public demo (built by `python -m engine site`)
 └── docs/              architecture, original plan, frontend research, handoff
 ```

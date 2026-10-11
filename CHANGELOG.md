@@ -27,7 +27,13 @@ jobs first, and adds container appliers so capacity is a number you set.
 - **Resume coverage fill:** JD terms you have but the page doesn't show pull in up to two more of your own Fact Bank
   skills lines (median coverage was 88%; never invented wording).
 
+- **System benchmarks** `scripts/bench_system.py`: B1 select (heap vs sort), B2 answer coverage over every question
+  ever asked, B3 exactly-once claims under a race, B4 resume coverage. See wiki Benchmarks, Efficiency, Evidence.
+- **MCP in every container** (`docker exec -i <container> python -m engine mcp`); **data bank** in named volumes.
+
 ### Fixed
+- **Duplicate claims on Windows:** B3 found 233 claims for 200 batches with rename-only claims. Claims now use an
+  exclusive lock file (O_CREAT|O_EXCL): 200/200 in 3 of 3 runs.
 - `STATUS_Q` matched "age" inside "language": every programming-language question went to the human queue.
 - "Do you possess N years of experience in X" is answered from the Fact Bank (No when N exceeds your years).
 - Dropdowns that list the country as "US" now match "United States".
