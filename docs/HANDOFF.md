@@ -1,18 +1,30 @@
-# Handoff: v0.10 / v0.11 on main (2026-10-10 ~01:00)
+# Handoff: v0.12 on main (2026-10-11 ~00:05)
 
-## When the user says "start" (do this first, in order)
-1. Read this file + memory (`v1-direction`, `rejection-learnings`).
-2. Start the API + web (control room): `.claude/launch.json` configs `regen-api` (REGEN_API_WRITE=1) and `regen-web`
-   (local file, git-ignored), or:
-   `REGEN_API_WRITE=1 python -m uvicorn apps.api.main:app --port 8787` and `npm --prefix apps/web run dev`.
-3. Start continuous applying (Bash `run_in_background`):
-   `REGEN_MAX_PER_DAY=60 REGEN_SKIP_ATS=workable python -m engine run --days 10 --max 60 --appliers 3 --tabs 3 --loop 20 > workspace/logs/loop_<date>.log`
-4. Arm a Monitor on `workspace/codes/*.wait` (prints "CODE NEEDED: <file>") and keep a Gmail tab with
-   `window.regenCodes` defined (see 10-10 session: searches `subject:(security code) newer_than:2h`, reads every code
-   in each thread via the print view). Deliver with `python -m engine codes '<json>'` within a minute.
-5. Inbox: search `label:jobs-rejections OR label:jobs-interviews newer_than:2d` (Gmail filters exist since 10-10),
-   record with `python -m engine inbox <msgs.json>`, analyze each rejection's JD, add a rule + test, append to
-   memory `rejection-learnings`.
+## Start of next session (in order)
+1. Read this file + memory (`regen-docker-bank`, `v1-direction`, `rejection-learnings`).
+2. Stack should still be running: `docker ps` (deploy-pipeline-1, deploy-applier-1..5, deploy-relay-1). If not:
+   `REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_PARTS=5 docker compose -f deploy/bank.compose.yml up -d --scale applier=5`
+3. Codes: Chrome tab on https://mail.google.com/mail/u/0/feed/atom/ with `engine/discovery/gmail_relay.js` pasted.
+4. Numbers: `docker compose -f deploy/bank.compose.yml run --rm --no-deps --entrypoint python pipeline -m engine report <date>`.
+   At handoff: **118 verified total, 46 on 2026-10-10** (best day), 2 so far on 10-11.
+5. Benchmarks: `python scripts/bench_system.py` (needs the bank ledger copied to workspace/ or run in a container).
+
+## Priority queue
+1. Keep the stack applying; watch `docker logs deploy-pipeline-1 | grep report`.
+2. B2 missing answers (67.5% of non-legal questions answerable): add rules for "currently based in <city>"
+   (city-match), "transitioning service member" (preset No), "performing work on behalf of X as a contractor" (No),
+   "legally eligible for employment in the US" (Yes). Re-run B2.
+3. Gmail cleanup (user asked twice): move code emails >1 day and job-alert mail >3 days to Trash. Gmail's UI freezes
+   tabs; try the basic-HTML view or a fresh foreground tab with a small batch. Never empty Trash.
+4. Benchmarks B5 (submissions/hour by N), B6 (code latency), B7 (fit-gate precision).
+5. Supervisor view in /control (container health + inbox/claimed/done counts), SmartRecruiters, Workday/iCIMS.
+
+## Needs the user
+- Local copies: `profile/` and `workspace/` are still on disk (stale; the bank is live). Backups verified at
+  `../regen-backups/regen-profile-20261011.tgz` (12 entries) and `regen-workspace-20261011.tgz` (170 MB, has events.jsonl).
+  Claude does not hard-delete user data: delete them yourself if you want them gone (keep `profile.example/`).
+- /needs: legal / EEO / export / arbitration questions.
+- Ashby cooldown started ~23:25 10-10; parked Ashby jobs return automatically after 24 h.
 
 ## v0.12 state (10-10 ~23:55): everything runs in Docker FROM THE BANK
 - Stack: `deploy/bank.compose.yml` (named volumes regen-profile + regen-workspace; pipeline, applier x5, relay).

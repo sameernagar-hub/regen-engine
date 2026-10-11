@@ -53,7 +53,7 @@ resume to every posting and make up answers to fill the gaps.
 
 | | |
 |---|---|
-| Verified applications (confirmation page on disk) | **105** to date; **35 in one day** (2026-10-10) · `python -m engine report 2026-10-10` |
+| Verified applications (confirmation page on disk) | **118** to date; **46 in one day** (2026-10-10) · `python -m engine report 2026-10-10` |
 | Company boards polled directly | **2,469** on Greenhouse, Ashby, Lever, Workable (`workspace/boards.json`) |
 | Sources resolved back to the employer | Job-alert emails (7 platforms), newgrad-jobs.com, 13 GitHub job lists, big-tech careers APIs |
 | Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF; coverage fill puts most at **100%** of the JD terms you have (build log: `resume covers 24/24 JD terms, ATS text 100%`) |
