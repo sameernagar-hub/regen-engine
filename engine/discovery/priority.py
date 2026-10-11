@@ -70,6 +70,15 @@ def score(job, lane_rates=None):
         parts["tier"] = 2
     if t.get("sponsors") and t["sponsors"].search(co):
         parts["sponsor"] = 2
+    # user, 2026-10-10: onsite roles land more often than remote ones; prefer them (Bay Area most), remote still applied
+    loc = job.get("location", "") or ""
+    if re.search(r"\bremote\b|anywhere|work from home", loc, re.I) and not re.search(r"hybrid|on.?site|office", loc, re.I):
+        parts["onsite"] = 0
+    elif re.search(r"san francisco|bay area|san jose|santa clara|sunnyvale|mountain view|palo alto|menlo park|"
+                   r"redwood city|cupertino|oakland|fremont|milpitas|san mateo|south san francisco", loc, re.I):
+        parts["onsite"] = 3
+    elif loc.strip():
+        parts["onsite"] = 2
     if lane_rates:
         best = max((lane_rates.get(l, 0) for l, (rx, _) in LANE_WORDS.items() if rx.search(title)), default=0)
         if best:
