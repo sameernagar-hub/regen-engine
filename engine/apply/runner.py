@@ -243,8 +243,29 @@ def experience_answer(label):
     return None
 
 
+WORD_N = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+YEARS_YN = re.compile(r"^(do|have|are) you (have |possess |got )?(at least |a minimum of |minimum |over |more than )?"
+                      r"(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\+? (\(\d+\) )?(or more )?years?( of)? (.{3,160}?)\??$", re.I)
+
+
+def years_yesno(label):
+    """'Do you have at least two years of professional experience developing backend applications?' is yes/no, not
+    a number (10-11: answered "3"). More years than you have -> No; within your years -> Yes only when the area
+    itself is backed by your Fact Bank (experience_answer), else None (the human queue)."""
+    m = YEARS_YN.search(" ".join(label.split()))
+    if not m or not str(P.get("years_experience", "")).isdigit():
+        return None
+    n = int(m.group(4)) if m.group(4).isdigit() else WORD_N[m.group(4).lower()]
+    if n > int(P["years_experience"]):
+        return "No"
+    rest = re.sub(r"^(professional |relevant |hands.on |industry )*experience\s*", "", m.group(8).strip(), flags=re.I)
+    return experience_answer(f"Do you have experience with {rest}?")
+
+
 def answer_for(label, extra):
     l = " ".join(label.split()).lower()
+    if YEARS_YN.search(" ".join(label.split())) and not any(re.search(p, l, re.I) for p, _ in list(extra.items()) + BANK):
+        return years_yesno(label)  # yes/no, never the "years of experience" number; None -> you (a saved answer wins)
     # per-job extras first, then your approved answer bank, then the built-in rules
     for pat, ans in list(extra.items()) + BANK + RULES:
         if re.search(pat, l, re.I):

@@ -177,3 +177,13 @@ def test_needs_backlog_rules():
     if R.P.get("address_line1") and not R.P["address_line1"].startswith("<"):  # profile.example placeholders never fill
         assert R.P["address_line1"] in R.answer_for("What is your current address?", {})
         assert R.P["address_line1"] in R.answer_for("Please provide your current address.", {})
+
+
+def test_years_question_is_yes_no():
+    """10-11: 'Do you have at least two years of ... ?' got the number '3'."""
+    y = R.P.get("years_experience")
+    if not str(y).isdigit():
+        return
+    assert R.years_yesno(f"Do you have at least {int(y) + 2} years of experience with Kubernetes?") == "No"
+    assert R.years_yesno("Do you have at least two years of professional experience developing backend applications?") in ("Yes", None)
+    assert R.years_yesno("What is your name?") is None
