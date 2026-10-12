@@ -832,18 +832,19 @@ def fill_gh(page, job, log):
         cc = page.query_selector("#country, .phone-input input[role=combobox], [id*=phone] input[role=combobox]")
         if cc:
             try:
-                cc.click(timeout=3000); cc.type("United States"); time.sleep(0.8)
+                cc.scroll_into_view_if_needed(timeout=3000)  # 10-11: a plain click timed out (covered) -> "Select a country"
+                cc.click(timeout=3000, force=True); cc.type("United States"); time.sleep(0.8)
                 # options read "United States+1"; Enter alone picked whatever was highlighted (seen: "Select a country")
                 # react-select options read "United States +1"; [class*=option] would also catch the hidden
                 # intl-tel-input list, so only real react-select options are considered
                 opts = menu_options(page)
                 us = next((o for o in opts if re.match(r"\s*United States(?! Minor)\s*(\(?\+?\s*1\)?)?\s*$", o.inner_text())), None)
-                if us: us.click()
+                if us: us.click(force=True)
                 else: page.keyboard.press("Enter")  # typing "United States" leaves it highlighted first
                 time.sleep(0.4)
                 shown = cc.evaluate("e => (e.closest('.select__control') || e.closest('[class*=control]') || e.parentElement).innerText") or ""
                 if "United States" not in shown and "+1" not in shown:  # retry once; never ArrowDown (it moves off US)
-                    cc.click(timeout=3000); cc.type("United States"); time.sleep(0.8); page.keyboard.press("Enter")
+                    cc.click(timeout=3000, force=True); cc.type("United States"); time.sleep(0.8); page.keyboard.press("Enter")
             except Exception as e: log(f"  ! phone country: {str(e)[:160]}")
     seen = set()
     for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question, .eeoc__question__wrapper, .education--form .select__container, .education--form .text-input-wrapper"):
