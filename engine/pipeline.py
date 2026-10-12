@@ -21,6 +21,7 @@ import collections, heapq, datetime, json, os, subprocess, sys, time
 
 from engine.config import ROOT, WORKSPACE, in_workspace
 from engine.feedback.events import read, record
+from engine.supervisor import beat
 
 
 def _arg(argv, name, default, cast=int):
@@ -243,6 +244,7 @@ def _wait(names, timeout_h=3):
     end = time.monotonic() + timeout_h * 3600
     while names and time.monotonic() < end and not all(os.path.exists(os.path.join(DIRS["done"], n)) for n in names):
         time.sleep(5)
+        beat("pipeline", state="waiting for appliers", parts=len(names))
 
 
 def main(argv=None):
@@ -258,6 +260,7 @@ def main(argv=None):
     # to whatever just opened. Runs until stopped (Ctrl+C or the control room's Stop): started by the user, never scheduled.
     n = 0
     while True:
+        beat("pipeline", state="scanning and tailoring", **{"pass": n + 1})
         run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125)))
         n += 1
         try:  # disk hygiene every pass: logged proofs/resumes/caches past their window (engine/clean.py)
@@ -266,4 +269,7 @@ def main(argv=None):
         except Exception as e:  # never let cleanup stop applying
             print(f"clean skipped: {e}")
         print(f"loop: pass {n} done; next scan in {loop:g} min", flush=True)
-        time.sleep(loop * 60)
+        for _ in range(int(loop)):  # one heartbeat a minute while idle
+            beat("pipeline", state="sleeping until next scan", **{"pass": n})
+            time.sleep(60)
+        time.sleep(loop * 60 - int(loop) * 60)

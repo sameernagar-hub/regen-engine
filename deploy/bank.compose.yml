@@ -50,6 +50,11 @@ services:
     command: ["relay", "8799"]
     ports: ["127.0.0.1:8799:8799"]
 
+  api:  # the control room reads the bank: http://127.0.0.1:8787 (read-only; writes need your own machine)
+    <<: *engine
+    entrypoint: ["python", "-m", "uvicorn", "apps.api.main:app", "--host", "0.0.0.0", "--port", "8787"]
+    ports: ["127.0.0.1:8787:8787"]
+
 volumes:
   regen-profile: { name: regen-profile }
   regen-workspace: { name: regen-workspace }

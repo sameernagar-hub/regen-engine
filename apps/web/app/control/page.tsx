@@ -17,6 +17,10 @@ type State = { run: { running: boolean; params?: Record<string, any>; steps?: St
                ashby_open_at: number | null; defaults: Params; write: boolean };
 type Params = { days: number; max: number; appliers: number; tabs: number; scan: boolean; newgrad: boolean; feed: boolean;
                 ats: string[]; cap: number; dry: boolean; loop: number };
+type Member = { role: string; host: string; age: number; up: boolean; state?: string; batch?: string | null;
+                pass?: number; codes?: number; waiting?: number };
+type Fleet = { members: Member[]; inbox: number; claimed: number; done: number; stale_claims: string[];
+               codes_waiting: string[]; gmail_tab_age: number | null; problems: string[]; verdict: string };
 type Filters = { filters: Record<string, string>; terms: Record<string, string[]>; years_experience: number | null };
 
 const STAGES = [
@@ -46,13 +50,16 @@ function ControlView() {
   const [f, setF] = useState<Filters | null>(null);
   const [edit, setEdit] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<string>("");
+  const [fl, setFl] = useState<Fleet | null>(null);
 
   useEffect(() => {
     const pull = () => get<State>("/api/control/state").then((s) => { setSt(s); setP((cur) => cur || s.defaults); }).catch((e) => setMsg(String(e.message)));
-    pull();
+    const pullFleet = () => get<Fleet>("/api/control/fleet").then(setFl).catch(() => {});
+    pull(); pullFleet();
+    const tf = setInterval(pullFleet, 5000);  // heartbeats land every 30-60 s
     get<Filters>("/api/control/filters").then((x) => { setF(x); setEdit(x.filters); }).catch(() => {});
     const t = setInterval(pull, 2000);  // processing view: every 2 s while you watch
-    return () => clearInterval(t);
+    return () => { clearInterval(t); clearInterval(tf); };
   }, []);
 
   const start = () => post("/api/control/run", p).then(() => setMsg("Run started.")).catch((e) => setMsg(e.message));
@@ -136,6 +143,28 @@ function ControlView() {
           <ul className="chips">{Object.entries(totals).map(([k, v]) => <li key={k} className="chip" style={{ color: TONE[k] }}>{k} {v}</li>)}</ul>
         </section>
       </div>
+
+      {fl && (
+        <section className="card" aria-label="Fleet">
+          <h2 className="sub">Fleet <small className="dim">({fl.verdict})</small></h2>
+          <ul className="chips">
+            <li className="chip">inbox {fl.inbox}</li><li className="chip">claimed {fl.claimed}</li>
+            <li className="chip">done {fl.done}</li>
+            <li className="chip" style={{ color: fl.codes_waiting.length ? "var(--amber)" : undefined }}>codes waiting {fl.codes_waiting.length}</li>
+            <li className="chip" style={{ color: fl.gmail_tab_age == null || fl.gmail_tab_age > 120 ? "var(--alarm)" : "var(--calm)" }}>
+              Gmail tab {fl.gmail_tab_age == null ? "silent" : `posted ${fl.gmail_tab_age}s ago`}</li>
+          </ul>
+          <ul className="tabs">
+            {fl.members.map((m) => (
+              <li key={m.role + m.host} style={{ borderColor: m.up ? "var(--calm)" : "var(--alarm)" }}>
+                <span>{m.role} · <span className="mono small">{m.host}</span> · {m.state}{m.batch ? ` ${m.batch}` : ""}{m.pass ? ` (pass ${m.pass})` : ""}</span>
+                <b style={{ color: m.up ? "var(--calm)" : "var(--alarm)" }}>{m.up ? "up" : "down"} · {m.age}s</b>
+              </li>
+            ))}
+          </ul>
+          {fl.problems.map((x) => <p key={x} className="small" style={{ color: "var(--amber)" }}>! {x}</p>)}
+        </section>
+      )}
 
       <section aria-label="Appliers" className="appliers">
         <h2 className="sub">Processing now</h2>

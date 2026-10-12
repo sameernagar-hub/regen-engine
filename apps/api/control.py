@@ -87,6 +87,14 @@ def state():
             "write": WRITE}
 
 
+@router.get("/control/fleet")
+def fleet():
+    """Container health from heartbeats in the shared workspace (engine/supervisor.py): pipeline, appliers, relay,
+    batch queue, lost claims, codes waiting, and whether the Gmail tab is still posting."""
+    from engine.supervisor import fleet as f
+    return f()
+
+
 @router.post("/control/run")
 def run(body: dict, request: Request):
     _guard(request)

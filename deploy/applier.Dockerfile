@@ -18,7 +18,11 @@ RUN pip install --no-cache-dir playwright reportlab pypdf "mcp>=2.0" \
  && python -m playwright install --with-deps chromium \
  && apt-get update && apt-get install -y --no-install-recommends xvfb xauth tzdata \
  && rm -rf /var/lib/apt/lists/*
+# own layer so the browser layer above stays cached: the read-only API service (control room fleet view) uses it
+RUN pip install --no-cache-dir "fastapi>=0.142" "uvicorn>=0.54" "pydantic>=2.13"
 COPY engine/ engine/
+COPY apps/__init__.py apps/
+COPY apps/api/ apps/api/
 COPY profile.example/ profile.example/
 
 # Least privilege: an unprivileged user; the browser profile lives in the container, not on the shared volume.

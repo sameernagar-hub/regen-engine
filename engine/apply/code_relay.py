@@ -8,11 +8,13 @@ send time to local "HH:MM" and calls codes.match(), which writes workspace/codes
 is waiting and whose company matches, and only for codes sent after it started waiting. Nothing else is accepted:
 the body must be a JSON list of short {company, code, iso} records, and the server listens on loopback only.
 """
-import datetime, http.server, json, os, re, sys
+import datetime, http.server, json, os, re, sys, threading, time
 
 from engine.apply import codes as C
+from engine.supervisor import beat
 
 SEEN = set()
+LAST = {"last_post": None, "codes": 0}
 
 
 class Relay(http.server.BaseHTTPRequestHandler):
@@ -38,6 +40,9 @@ class Relay(http.server.BaseHTTPRequestHandler):
             if (slug, code) not in SEEN:
                 SEEN.add((slug, code))
                 print(f"{datetime.datetime.now():%H:%M:%S} code -> {slug}", flush=True)
+                LAST["codes"] += 1
+        LAST["last_post"] = time.time()
+        beat("relay", state="listening", waiting=len(waiting), **LAST)
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "https://mail.google.com")
         self.end_headers()
@@ -52,6 +57,11 @@ def main(argv=None):
     port = int(argv[0]) if argv else 8799
     print(f"code relay on http://127.0.0.1:{port} (POST codes from the Gmail tab)", flush=True)
     host = os.environ.get("REGEN_RELAY_HOST", "127.0.0.1")  # 0.0.0.0 inside a container; compose publishes 127.0.0.1 only
+    def idle():
+        while True:
+            beat("relay", state="listening", **LAST)
+            time.sleep(60)
+    threading.Thread(target=idle, daemon=True).start()
     http.server.ThreadingHTTPServer((host, port), Relay).serve_forever()
 
 

@@ -14,6 +14,7 @@ Stop: create workspace/batches/STOP (every worker exits after its current batch)
 import os, socket, subprocess, sys, time
 
 from engine.config import ROOT, WORKSPACE
+from engine.supervisor import beat
 
 BOX = os.path.join(WORKSPACE, "batches")
 DIRS = {k: os.path.join(BOX, k) for k in ("inbox", "claimed", "done")}
@@ -52,8 +53,15 @@ def apply_one(name):
     log = open(os.path.join(WORKSPACE, "logs", name[:-5] + ".log"), "a", encoding="utf-8")
     log.write(f"worker {socket.gethostname()} claimed {name}\n")
     log.flush()
-    rc = subprocess.call([sys.executable, "-m", "engine", "apply", f"batches/claimed/{name}"], cwd=ROOT,
+    p = subprocess.Popen([sys.executable, "-m", "engine", "apply", f"batches/claimed/{name}"], cwd=ROOT,
                          env=dict(os.environ, PYTHONUNBUFFERED="1"), stdout=log, stderr=subprocess.STDOUT)
+    while True:  # heartbeat every 30 s so the control room can tell a long batch from a dead container
+        beat("applier", state="applying", batch=name)
+        try:
+            rc = p.wait(timeout=30)
+            break
+        except subprocess.TimeoutExpired:
+            continue
     os.replace(os.path.join(DIRS["claimed"], name), os.path.join(DIRS["done"], name))
     try:
         os.remove(os.path.join(DIRS["claimed"], name + ".lock"))
@@ -68,6 +76,7 @@ def main(argv=None):
     print(f"worker {socket.gethostname()}: watching {DIRS['inbox']}", flush=True)
     while not os.path.exists(os.path.join(BOX, "STOP")):
         name = claim()
+        beat("applier", state="applying" if name else "watching", batch=name)
         if name:
             print(f"apply {name} -> rc {apply_one(name)}", flush=True)
         elif "--once" in argv:

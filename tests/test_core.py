@@ -444,3 +444,25 @@ def test_citizenship_required_in_form_question():
     """10-11: the requirement can live only in a required question label; the JD rule reads it."""
     from engine.tailoring.tailor import fit
     assert "citizenship" in fit("Due to the nature of this role, this role requires US citizenship and eligibility.", max_years=99)
+
+
+def test_fleet_heartbeats(tmp_path, monkeypatch):
+    """engine/supervisor.py: live and dead members, lost claims, a silent Gmail tab."""
+    import json, os, time
+    from engine import supervisor as S
+    monkeypatch.setattr(S, "FLEET", str(tmp_path / "fleet"))
+    monkeypatch.setattr(S, "BOX", str(tmp_path / "batches"))
+    monkeypatch.setattr(S, "WORKSPACE", str(tmp_path))
+    S.beat("applier", state="applying", batch="b1.json")
+    S.beat("relay", state="listening", last_post=time.time() - 10)
+    os.makedirs(tmp_path / "batches" / "claimed")
+    for n in ("b1.json", "b2.json"):
+        (tmp_path / "batches" / "claimed" / n).write_text("[]")
+        os.utime(tmp_path / "batches" / "claimed" / n, (time.time() - 3600,) * 2)
+    old = tmp_path / "fleet" / "applier_dead.json"
+    old.write_text(json.dumps({"role": "applier", "host": "dead", "ts": time.time() - 600}))
+    f = S.fleet()
+    assert [m["up"] for m in f["members"] if m["role"] == "applier"].count(True) == 1
+    assert f["stale_claims"] == ["b2.json"]  # b1 is held by a live applier
+    assert f["gmail_tab_age"] is not None and f["gmail_tab_age"] < 60
+    assert "pipeline is not running" in f["problems"]
