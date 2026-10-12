@@ -116,8 +116,100 @@ def build(days=7):
     return drafts
 
 
+SOFTWARE_POST = re.compile(r"engineer|developer|\bswe\b|full.?stack|back.?end|front.?end|platform|infrastructure|"
+                           r"\bsre\b|devops|\bml\b|machine learning|\bai\b|llm|data", re.I)
+NOT_A_FIT = re.compile(r"sales|go.to.market|marketing|product manager|\bpm\b|head of|director|vp\b|principal|distinguished|"
+                       r"staff|manager|scientist|£|€|/hr\b", re.I)
+NOT_FOR_YOU = re.compile(r"citizen(ship)? (required|only)|clearance|no (visa )?sponsorship|onsite in (london|berlin|paris|"
+                         r"toronto|amsterdam)|dutch required|german required|(eu|uk|canada) only", re.I)
+
+
+def hn_targets(limit=60):
+    """Published HN hiring contacts (engine/discovery/hn.py) for software roles in the US or remote, minus employers
+    the domain filter excludes and posts that rule the candidate out (citizenship, no sponsorship, non-US only). O(C)."""
+    p = os.path.join(WORKSPACE, "outreach", "hn_contacts.json")
+    if not os.path.exists(p):
+        return []
+    from engine.tailoring.batch import load_lanes, route
+    from engine.discovery.filters import keep, load_domain
+    cfg, lf, dom = load_lanes(), lane_facts(), load_domain()
+    out = []
+    for c in json.load(open(p, encoding="utf-8")):
+        parts = [x.strip() for x in c["post"].split("|")]
+        roles = next((x for x in parts[1:] if SOFTWARE_POST.search(x)), "")
+        if not c.get("us") or not roles or NOT_FOR_YOU.search(c["post"]) or excluded(c["company"]):
+            continue
+        if keep(dom, roles, "", c["company"]) or NOT_A_FIT.search(roles):
+            continue  # the same title filter as applications: no sales/PM/marketing, no principal/distinguished
+        lane = route(cfg, roles, c["post"])
+        out.append({"company": c["company"], "role": roles[:90], "to": c["email"], "url": c["hn"], "ts": "",
+                    "why": "HN hiring post", "lane": lane, "facts": lf.get(lane) or lf.get("fullstack") or []})
+    return out[:limit]
+
+
+def hn_draft(t, bank=None):
+    """Cold note to a founder who posted on HN: their own post is the reason to write, two Fact Bank lines are the
+    evidence. Addressed to the contact they published; still nothing is sent."""
+    bank = bank or _bank()
+    name = dict(bank.get("contact", {})).get("name", "").title()
+    facts = bank.get("facts", {})
+    lines = [_strip(facts[f]) for f in t["facts"] if f in facts][:2]
+    links = _links(bank)
+    subject = f"Re: your HN hiring post ({t['role'][:60]})"
+    body = "\n".join([
+        "Hi,",
+        "",
+        f"I saw the {t['company']} post in HN's Who is hiring thread ({t['role']}) and wanted to reach out.",
+        *(["", "Two things from my background that fit:"] + [f"- {l}" for l in lines] if lines else []),
+        "",
+        *([" | ".join(links), ""] if links else []),
+        "I'm happy to send my resume, and I'd be glad to talk or do a technical screen.",
+        "",
+        "Thanks,",
+        name,
+    ])
+    compose = f"https://mail.google.com/mail/?view=cm&fs=1&to={quote(t['to'])}&su={quote(subject)}&body={quote(body)}"
+    return dict(t, subject=subject, body=body, compose=compose, sources=t["facts"][:2])
+
+
+def gmail_drafts(drafts):
+    """Save drafts into the user's Gmail Drafts folder over IMAP (the app password in .env). APPEND only: nothing is
+    sent, read or changed; the user reviews and sends each one. Returns how many were saved."""
+    import email.message, email.utils, imaplib, time as T
+    from engine.notify import _env
+    e = _env()
+    user, pw = e.get("REGEN_SMTP_USER"), (e.get("REGEN_SMTP_APP_PASSWORD") or "").replace(" ", "")
+    if not (user and pw):
+        raise SystemExit("needs REGEN_SMTP_USER and REGEN_SMTP_APP_PASSWORD in .env")
+    M = imaplib.IMAP4_SSL(e.get("REGEN_IMAP_HOST", "imap.gmail.com"))
+    M.login(user, pw)
+    n = 0
+    for d in drafts:
+        if not d.get("to"):
+            continue  # a draft without a published recipient stays a compose link
+        m = email.message.EmailMessage()
+        m["From"], m["To"], m["Subject"] = user, d["to"], d["subject"]
+        m["Date"] = email.utils.formatdate(localtime=True)
+        m.set_content(d["body"])
+        typ, _ = M.append('"[Gmail]/Drafts"', "\\Draft", imaplib.Time2Internaldate(T.time()), m.as_bytes())
+        n += typ == "OK"
+    M.logout()
+    return n
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "hn":  # python -m engine outreach hn [limit] [--gmail]
+        bank = _bank()
+        ds = [hn_draft(t, bank) for t in hn_targets(int(argv[1]) if len(argv) > 1 and argv[1].isdigit() else 60)]
+        d = os.path.join(WORKSPACE, "outreach")
+        os.makedirs(d, exist_ok=True)
+        json.dump(ds, open(os.path.join(d, "hn_drafts.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+        for x in ds:
+            print(f"  {x['company'][:28]:<28} {x['to']:<34} {x['role'][:40]}")
+        saved = gmail_drafts(ds) if "--gmail" in argv else 0
+        print(f"{len(ds)} HN drafts -> workspace/outreach/hn_drafts.json" + (f"; {saved} saved to Gmail Drafts (nothing sent)" if saved else " (nothing sent)"))
+        return
     ds = build(int(argv[0]) if argv else 7)
     for x in ds:
         print(f"  {x['why']:<8} {x['company'][:24]:<24} {x['role'][:50]}")

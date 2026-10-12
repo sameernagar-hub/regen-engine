@@ -19,7 +19,11 @@ from engine.config import WORKSPACE
 
 API = "https://hn.algolia.com/api/v1"
 UA = {"User-Agent": "regen-engine (job search; github.com/sameernagar-hub/regen-engine)"}
-EMAIL = re.compile(r"\b([A-Za-z0-9._%+-]+)\s*(?:@|\(at\)|\[at\]|\{at\}| at )\s*([A-Za-z0-9-]+(?:\s*(?:\.|\(dot\)|\[dot\]|\{dot\}| dot )\s*[A-Za-z0-9-]+)+)\b", re.I)
+TLD = r"(?:com|io|ai|co|org|net|dev|app|xyz|us|tech|so|sh|vc|health|bio|inc|gg|me|fm|to|ly|is|so|cloud|systems|energy|finance|world|software|studio|run|build|team|works|page|care)"
+# plain addresses, or fully bracketed obfuscation (x [at] y [dot] com). A bare " at " is prose ("reliably at scale"),
+# so it is never read as an address (10-11 dry run).
+EMAIL = re.compile(r"\b([A-Za-z0-9._%+-]+)@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\." + TLD + r")(?![A-Za-z0-9-]|\.[A-Za-z0-9])", re.I)
+EMAIL_OBF = re.compile(r"\b([A-Za-z0-9._%+-]+)\s*[\[\(\{]\s*at\s*[\]\)\}]\s*([A-Za-z0-9-]+(?:\s*[\[\(\{]\s*dot\s*[\]\)\}]\s*[A-Za-z0-9-]+)+)\b", re.I)
 NOT_CONTACT = re.compile(r"^(no-?reply|noreply|privacy|legal|security|abuse|support)$", re.I)
 
 
@@ -43,12 +47,14 @@ def _hrefs(c):
 
 
 def email_of(text):
-    """First published address in a post, de-obfuscated, or None. Never builds one from a name."""
+    """First published address in a post (plain or [at]/[dot] bracketed), or None. Never builds one from a name."""
     for m in EMAIL.finditer(text):
-        user = m.group(1)
-        dom = re.sub(r"\s*(\(dot\)|\[dot\]|\{dot\}| dot )\s*", ".", m.group(2), flags=re.I).replace(" ", "")
-        if "." in dom and not NOT_CONTACT.match(user) and not dom.lower().endswith((".png", ".jpg")):
-            return f"{user}@{dom}".lower()
+        if not NOT_CONTACT.match(m.group(1)):
+            return f"{m.group(1)}@{m.group(2)}".lower()
+    for m in EMAIL_OBF.finditer(text):
+        dom = re.sub(r"\s*[\[\(\{]\s*dot\s*[\]\)\}]\s*", ".", m.group(2), flags=re.I)
+        if re.search(r"\." + TLD + r"$", dom, re.I) and not NOT_CONTACT.match(m.group(1)):
+            return f"{m.group(1)}@{dom}".lower()
     return None
 
 
