@@ -54,6 +54,8 @@ services:
   supervisor:  # the container on top: autoscales appliers to the backlog, requeues lost claims, IMAP codes
     <<: *engine
     user: root  # the Docker socket is root-owned; this is the only service that gets it
+    env_file:  # REGEN_SMTP_USER + REGEN_SMTP_APP_PASSWORD (Gmail app password) -> hands-free IMAP codes
+      - { path: ../.env, required: false }
     environment:
       REGEN_MIN_APPLIERS: "${REGEN_MIN_APPLIERS:-1}"
       REGEN_MAX_APPLIERS: "${REGEN_MAX_APPLIERS:-7}"
