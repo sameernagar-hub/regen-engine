@@ -36,10 +36,15 @@ RETRYABLE = ("EMAIL CODE REQUIRED (timed out)", "no confirmation seen")  # trans
 def latest_status():
     """url -> latest status; a FAILED that was only a code timeout / missing confirmation (first time) reads as
     RETRY so the selector gives it one more pass while someone is watching the inbox. O(E)."""
-    out, fails = {}, collections.Counter()
+    out, fails, asked = {}, collections.Counter(), collections.Counter()
     for e in read("application"):
         if not e.get("dry") and e.get("url"):
             st = (e.get("status") or "").split(":")[0]
+            if st == "NEEDS YOU":  # stopped twice on the same question: the rule that "answers" it doesn't fill it
+                asked[(e["url"], e.get("detail") or "")] += 1
+                if asked[(e["url"], e.get("detail") or "")] >= 2:
+                    out[e["url"]] = st
+                    continue
             if st == "FAILED":
                 fails[e["url"]] += 1
                 if fails[e["url"]] == 1 and any(r in (e.get("detail") or "") for r in RETRYABLE):
