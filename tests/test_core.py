@@ -438,3 +438,9 @@ def test_select_prefers_fresh_band():
     assert band({"posted": (now - datetime.timedelta(hours=5)).isoformat()}) == 1
     assert band({"posted": (now - datetime.timedelta(days=3)).isoformat()}) == 2
     assert band({"posted": (now - datetime.timedelta(days=20)).isoformat()}) == 3
+
+
+def test_citizenship_required_in_form_question():
+    """10-11: the requirement can live only in a required question label; the JD rule reads it."""
+    from engine.tailoring.tailor import fit
+    assert "citizenship" in fit("Due to the nature of this role, this role requires US citizenship and eligibility.", max_years=99)

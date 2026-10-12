@@ -120,8 +120,14 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
     heap = [(band(j), -score(j, rates)[0], i) for i, j in enumerate(queue)]
     heapq.heapify(heap)
     per, picked = collections.Counter(), []
+    seen = {(e.get("job") or "").lower().strip() for e in read("application")
+            if not e.get("dry") and (e.get("status") or "").startswith("SUBMITTED")}
     while heap:
         j = queue[heapq.heappop(heap)[2]]
+        key = f"{j['company']} - {j['title']}".lower().strip()
+        if key in seen:
+            continue  # one posting listed under several URLs (locations, sources): 10-11 batch held the same role 3 times
+        seen.add(key)
         if st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU", "FLAGGED", "FAILED"):
             continue  # FAILED too: a failed form stays filled-in on the assist list instead of being retried blind
         if not ashby_ok and j.get("ats") == "ashby":

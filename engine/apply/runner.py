@@ -60,7 +60,8 @@ RULES = [
     (r"arbitrat", None),
     (r"^(i acknowledge|by checking this box|i confirm|i have (read|reviewed))\b", "__ACK__"),
     (r"^\W*(affirmation|personal information policy|applicant (privacy|data) (notice|policy))\W*$", "__ACK__"),  # 10-10: 12 forms stopped on these one-word ack labels
-    (r"(enlisted|serving).{0,40}(reserves?|national guard)", P.get("us_military_reserve")),  # presets  # acknowledgements, not salary/degree answers
+    (r"(enlisted|serving).{0,40}(reserves?|national guard)", P.get("us_military_reserve")),  # presets
+    (r"transitioning (service ?member|military)", P.get("transitioning_service_member", P.get("us_military_reserve"))),  # B2: before the EEO decline  # acknowledgements, not salary/degree answers
     (r"(unlimited|unrestricted) (and (unlimited|unrestricted) )?(authori[sz]ation|right) to work", P.get("unrestricted_work_authorization")),  # OPT is time-limited
     # demographic / EEO questions are always declined, and checked before anything else can match their long labels
     (r"gender|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun|chronic condition|armed forces|military status", "__DECLINE__"),
@@ -76,13 +77,15 @@ RULES = [
     (r"first name", P["first_name"]), (r"last name", P["last_name"]),
     (r"(receive|opt.?in|consent).{0,60}(whatsapp|text message|sms)|(whatsapp|sms|text message)s? .{0,40}(communication|update|notification)", P.get("sms_opt_in")),  # 10-08: SMS opt-in labels mention email
     (r"^have you (ever )?(previously )?worked (at|for)\b|(currently|presently) an? .{0,40}employee\?|(an? )?current(ly)? (an? )?employee (with|of|at)\b", P.get("previous_employer_of_company")),
-    (r"legally eligible to (begin|start) (employment|work)", P.get("work_authorized_us")),
+    (r"legally eligible to (begin|start) (employment|work)|legally eligible for employment", P.get("work_authorized_us")),
+    (r"(perform(ing)?|provid(e|ing)) (work|services) (on behalf of|for) .{0,60}(as an? )?(contractor|consultant|vendor)", P.get("former_contractor_of_company")),  # B2
     (r"considered for (future|other) (opportunities|roles|positions)", P.get("future_opportunities")),
     (r"^have you (ever )?held h-?1b|h-?1b petition (been )?approved", P.get("held_h1b")),  # not "require ... (e.g., H-1B visa)": sponsorship rules own those
     (r"e-?mail", P["email"]), (r"phone", P["phone"]),
     (r"(current|former|previous|ever been an?) (contractor|consultant|intern|temp)" + r"\b", P.get("former_contractor_of_company")),  # 10-08 Lucid: got a drafted paragraph
     (r"(list|share|provide).{0,40}(professional )?certifications?", P.get("certifications")),
     (r"which .{0,40}(location|office|site)s? .{0,30}(closest|nearest|near)", P.get("preferred_location")),
+    (r"(currently )?(based|located|living|reside) in .{0,25}\b" + re.escape(P.get("city", "").lower() or "\x00") + r"\b", "Yes" if P.get("city") else None),  # B2: your own city (before the Bay Area rule)
     (r"are you (currently )?(based|located|living) in (the )?(" + BAY_AREA + r"|bay area|silicon valley|california)", P.get("based_in_bay_area")),
     (r"are you (currently )?(based|located|living) in (?!(the )?(u\.?s\.?|us|usa|united|america|and)\b)[a-z][a-z .,]{1,30}\?", P.get("based_in_other_city")),  # another city: No (relocation is asked separately)
     (r"(currently|now) (in|on) (a period of )?(stem )?(optional practical training|opt)\b|period of optional practical training", P.get("on_opt")),  # presets

@@ -27,5 +27,5 @@ USER regen
 
 # Xvfb started directly (xvfb-run as PID 1 waits forever for a signal it never gets), then the engine owns PID 1.
 ENV DISPLAY=:99
-ENTRYPOINT ["sh", "-c", "Xvfb :99 -screen 0 1366x900x24 -nolisten tcp >/dev/null 2>&1 & sleep 1; exec python -m engine \"$@\"", "--"]
+ENTRYPOINT ["sh", "-c", "rm -f /tmp/.X99-lock; Xvfb :99 -screen 0 1366x900x24 -nolisten tcp >/dev/null 2>&1 & sleep 1; exec python -m engine \"$@\"", "--"]
 CMD ["worker"]

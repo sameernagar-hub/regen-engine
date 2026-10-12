@@ -125,3 +125,13 @@ def test_workable_end_to_end(browser):
     assert w["first"] == R.P["first_name"] and w["address"].startswith(R.P["city"])
     assert w["spons"] == R.P["needs_sponsorship_now_or_future"]
     assert "I built 12 production REST APIs" in w["why"]
+
+
+def test_b2_rules_from_presets():
+    """B2 (10-11): own-city 'based in', transitioning service member, contractor on behalf of, eligible for employment."""
+    city = R.P.get("city")
+    if city:
+        assert R.answer_for(f"Are you currently based in {city}?", {}) == "Yes"
+    assert R.answer_for("Are you a transitioning service member?", {}) == R.P.get("transitioning_service_member", R.P.get("us_military_reserve"))
+    assert R.answer_for("Are you legally eligible for employment in the US?", {}) == R.P.get("work_authorized_us")
+    assert R.answer_for("Are you currently performing work on behalf of Acme as a contractor?", {}) == R.P.get("former_contractor_of_company")
