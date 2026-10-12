@@ -65,7 +65,7 @@ def answerable_now(detail):
 
 SKIP_ATS = {a.strip() for a in os.environ.get("REGEN_SKIP_ATS", "").split(",") if a.strip()}
 WALL = ("CAPTCHA", "BOT-CHECK")  # failure details that mean "a human must finish this", not "retry"
-HUMAN_ONLY = ("arbitration", "assessment", "transcript", "export c")  # blockers only the user can clear
+HUMAN_ONLY = ("arbitration", "assessment", "transcript", "export c", "any disputes")  # blockers only the user can clear ("any disputes": an arbitration clause cut at 100 chars)
 
 
 def ats_of(url):
