@@ -168,10 +168,14 @@ def requeue_stale():
     if not f["stale_claims"]:
         return 0
     st = latest_status()
+    from engine.feedback.events import read
+    done = {(e.get("job") or "").lower().strip() for e in read("application")  # the same role under another URL
+            if not e.get("dry") and (e.get("status") or "").startswith("SUBMITTED")}
     for n in f["stale_claims"]:
         src = os.path.join(DIRS["claimed"], n)
         try:
-            jobs = [j for j in json.load(open(src, encoding="utf-8")) if st.get(j["url"]) not in ("SUBMITTED", "SKIPPED")]
+            jobs = [j for j in json.load(open(src, encoding="utf-8")) if st.get(j["url"]) not in ("SUBMITTED", "SKIPPED")
+                    and j.get("name", "").lower().strip() not in done]
             tmp = os.path.join(DIRS["inbox"], ".re_" + n)
             json.dump(jobs, open(tmp, "w", encoding="utf-8"), indent=1)
             os.replace(tmp, os.path.join(DIRS["inbox"], "re_" + n))

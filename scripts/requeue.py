@@ -23,12 +23,16 @@ def main(args):
                 if os.path.exists(f + ".lock"): shutil.move(f + ".lock", dst + ".lock")
     st, (_, blocked) = latest_status(), history()
     out, seen, busy = [], set(), in_flight()
+    from engine.feedback.events import read
+    done = {(e.get("job") or "").lower().strip() for e in read("application")  # same role under another URL
+            if not e.get("dry") and (e.get("status") or "").startswith("SUBMITTED")}
     for f in files:
         for j in json.load(open(f, encoding="utf-8")):
             co = j["name"].split(" - ")[0].lower()
-            if j["url"] in seen or j["name"].lower().strip() in busy or st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU") or co in blocked:
+            key = j["name"].lower().strip()
+            if j["url"] in seen or key in seen or key in done or key in busy or st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU") or co in blocked:
                 continue
-            seen.add(j["url"]); out.append(j)
+            seen |= {j["url"], key}; out.append(j)
     stamp = time.strftime('%H%M')
     for i, part in enumerate(split(out, int(os.environ.get("REGEN_PARTS", "5")))):  # one file per applier
         name = f"requeue_{stamp}_{i}.json"
