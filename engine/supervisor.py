@@ -198,7 +198,15 @@ def supervise(argv=None):
     e = _env()
     if e.get("REGEN_SMTP_USER") and e.get("REGEN_SMTP_APP_PASSWORD"):
         from engine.apply.codes import watch
-        threading.Thread(target=watch, daemon=True).start()
+        def codes_forever():  # reconnect after a dropped IMAP connection; say why it failed instead of dying silently
+            while True:
+                try:
+                    watch()
+                except BaseException as ex:  # SystemExit too: watch() raises it on bad credentials
+                    print(f"supervisor: IMAP watcher stopped: {str(ex)[:120]}; retry in 60 s", flush=True)
+                    beat("codes", state=f"error: {str(ex)[:80]}")
+                time.sleep(60)
+        threading.Thread(target=codes_forever, daemon=True).start()
         print("supervisor: IMAP code watcher on", flush=True)
     print(f"supervisor: appliers {lo}..{hi}", flush=True)
     n = 0

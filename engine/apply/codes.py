@@ -103,7 +103,7 @@ def watch(every=8, idle_exit=0):
     if not (user and pw):
         raise SystemExit("codes --watch needs REGEN_SMTP_USER and REGEN_SMTP_APP_PASSWORD (Gmail app password) in .env")
     M = imaplib.IMAP4_SSL(e.get("REGEN_IMAP_HOST", "imap.gmail.com"))
-    M.login(user, pw)
+    M.login(user, pw.replace(" ", ""))  # Google shows app passwords as "abcd efgh ijkl mnop"
     idle = 0
     try:
         while True:
