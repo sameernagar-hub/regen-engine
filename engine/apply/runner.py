@@ -141,7 +141,7 @@ RULES = [
     (r"(ideal|earliest|preferred|desired|expected|possible|available|target) start date|start date (in|at) (the )?office", P.get("start_date")),  # before "office" yes/no
     (r"(office|location)s? .{0,40}(would|do) you (prefer|like)|prefer.{0,40}(office|location)", P.get("preferred_location")),  # before the onsite yes/no rule
     (r"(office|in-person|onsite|on-site|hybrid|relocat|commut|remote-eligible states)", P.get("open_to_onsite_or_relocation")),
-    (r"do you have an? (college|university|bachelor.?s?|undergraduate)? ?degree|completed an? (bachelor|college|university)", P.get("has_degree")),
+    (r"do you have an? (college|university|bachelor.?s?|undergraduate)? ?degree|completed an? (bachelor|college|university)|have you completed .{0,40}(bachelor|degree)", P.get("has_degree")),
     (r"currently enrolled|enrolled in (full.time )?(education|school|a degree)", P.get("currently_enrolled")),
     (r"university|school|college|institution", P["school"]),
     (r"discipline|field of study|\bmajor\b(?! life)", P.get("major")),
@@ -477,6 +477,53 @@ def pick_option(options, ans):
         for rx in (BAY_AREA, r"\bremote\b"):
             for t, h in options:
                 if re.search(rx, t, re.I): return h
+    return option_fallback(options, a)
+
+
+def _bounds(t):
+    """Percent bucket -> (low, high): '11-20%' -> (11, 20), '75%+' -> (75, inf), '0%' -> (0, 0)."""
+    n = [int(x) for x in re.findall(r"\d+", t)]
+    if not n: return None
+    return (n[0], float("inf")) if "+" in t else (n[0], n[-1])
+
+
+def option_fallback(options, a):
+    """Last-chance matches for answers phrased differently from the options (10-11: 12 of 12 jobs in one pass stopped
+    on these). options are already normalized (lowercase). Each branch maps the same answer onto the option wording,
+    never invents one. O(options) per branch."""
+    if re.search(r"careers? page|company (web)?site|careers? (web)?site", a):  # source: "<Co> Website", "<Co> Career Site"
+        for rx in (r"careers? (web)?site|careers? page", r"\bwebsite\b|\bsite\b", r"^other\b"):
+            for t, h in options:
+                if re.search(rx, t) and not re.search(r"fair|conference|event|blog|social|job board", t): return h
+    for lvl in (r"master", r"bachelor", r"doctor|ph\.?d", r"associate"):  # "Master's" vs "Masters's Degree"
+        if re.search(lvl, a):
+            for t, h in options:
+                if re.search(lvl, t): return h
+            break
+    m = re.search(r"(\d+)\s*%", a)  # "Up to 25%" against travel buckets: the widest bucket that stays within it
+    if m and options and all("%" in t for t, _ in options):
+        fits = [(b[1], h) for t, h in options if (b := _bounds(t)) and b[1] <= int(m.group(1))]
+        if fits: return max(fits, key=lambda x: x[0])[1]
+    if any("sponsor" in t for t, _ in options) and re.search(r"opt|f-?1|visa|sponsor|authori", a):
+        need = P.get("needs_sponsorship_now_or_future")  # sentence options: "I require sponsorship ..." / "... without sponsorship"
+        for t, h in options:
+            if need == "Yes" and re.search(r"require|need", t) and "without" not in t: return h
+            if need == "No" and "without" in t: return h
+    if a == "yes":  # a single acknowledgment option: "I understand that this role requires ... in office"
+        for t, h in options:
+            if ACK.search(t) and not NACK.search(t): return h
+    city = (P.get("city") or "").lower()
+    if city and a.startswith(city):  # "commutable to office A / office B / neither": you live elsewhere
+        for t, h in options:
+            if re.search(r"\bnot\b.{0,40}(located|commut|within|near)", t): return h
+    if a == _norm_opt(P.get("preferred_location")) and P.get("open_to_onsite_or_relocation") == "Yes":
+        for t, h in options:  # no Bay Area office listed: you relocate (presets), so an office, not remote work
+            if not re.search(r"remote", t): return h
+    if len(a) > 40 and options and all(len(t) > 30 for t, _ in options):  # "which best describes": sentence vs sentences
+        words = lambda s: {w for w in re.findall(r"[a-z]{4,}", s)} - {"have", "with", "that", "this", "using", "experience", "would", "some", "them", "they", "their", "work"}
+        mine = words(a)
+        ranked = sorted(((len(words(t) & mine), h) for t, h in options), key=lambda x: -x[0])
+        if ranked[0][0] >= 2 and (len(ranked) == 1 or ranked[0][0] > ranked[1][0]): return ranked[0][1]
     return None
 
 # ---------------- Ashby ----------------

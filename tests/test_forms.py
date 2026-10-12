@@ -135,3 +135,36 @@ def test_b2_rules_from_presets():
     assert R.answer_for("Are you a transitioning service member?", {}) == R.P.get("transitioning_service_member", R.P.get("us_military_reserve"))
     assert R.answer_for("Are you legally eligible for employment in the US?", {}) == R.P.get("work_authorized_us")
     assert R.answer_for("Are you currently performing work on behalf of Acme as a contractor?", {}) == R.P.get("former_contractor_of_company")
+
+
+def _opts(*texts):
+    return [(t, i) for i, t in enumerate(texts)]
+
+
+def test_option_fallback_real_option_lists():
+    """10-11: option lists that stopped a whole pass (answers existed, wording differed)."""
+    src = _opts("College Career Fair", "Dice", "LinkedIn", "Acme Website", "Referral", "Other")
+    assert R.pick_option(src, "Company careers page") == 3
+    assert R.pick_option(_opts("Career Fair/Conference", "Acme Career Site", "LinkedIn"), "Company careers page") == 1
+    assert R.pick_option(_opts("Careers Website", "LinkedIn", "Other"), "Company website") == 0
+    edu = _opts("High School", "Associate's Degree", "Bachelor's Degree", "Masters's Degree", "Other")
+    assert R.pick_option(edu, "Master's degree") == 3
+    travel = _opts("0%", "1-10%", "11-20%", "21-30%", "75%+")
+    assert R.pick_option(travel, "Up to 25%") == 2
+    ack = _opts("I understand that this role requires a minimum of 2 days a week in office")
+    assert R.pick_option(ack, "Yes") == 0
+    elig = _opts("I am eligible to work in the country of my application without sponsorship now or in the future",
+                 "I require sponsorship in the country of my application now or in the future")
+    need = R.P.get("needs_sponsorship_now_or_future")
+    if need in ("Yes", "No"):
+        assert R.pick_option(elig, "Student visa") == (1 if need == "Yes" else 0)
+    city = R.P.get("city")
+    if city:
+        loc = _opts("I am located within a commutable distance to Springfield, IL.",
+                    "I am not currently located within a commutable distance near either office.")
+        assert R.pick_option(loc, f"{city}, California") == 1
+    assert R.pick_option(_opts("Yes", "No"), "Up to 25%") is None  # never guesses
+
+
+def test_completed_bachelors_is_yes_no():
+    assert R.answer_for("Have you completed the following level of education: Bachelor's Degree?", {}) == R.P.get("has_degree")
