@@ -4,6 +4,29 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.12.1] - 2026-10-11 · "Fleet"
+Completion, not supply, was the limit: one pass stopped 12 of 12 jobs on choice questions the engine could already
+answer, and B5 showed the same 5 appliers drop from 16.3 to 0.75 submissions per active hour when the Gmail tab froze.
+
+### Added
+- **Fleet supervisor** (`engine/supervisor.py`): pipeline, appliers and relay write heartbeats to
+  `workspace/fleet/`; `GET /api/control/fleet`, a Fleet panel in `/control` and `python -m engine fleet` show who is
+  up, the batch queue, lost claims, codes waiting and whether the Gmail tab still posts. No Docker socket in containers.
+  Verify: `curl 127.0.0.1:8787/api/control/fleet`; `pytest -k fleet`.
+- **`api` service** in `deploy/bank.compose.yml` (127.0.0.1:8787, read-only): the control room reads the bank.
+- **Benchmarks B5-B7** (`scripts/bench_system.py`): submissions per active hour, code latency (`code` events), fit
+  gate vs rejections. Results in docs/wiki/Benchmarks.md.
+- **`scripts/requeue.py`**: requeue open jobs after a fix; moves claims lost with a dead container to `batches/stale/`.
+
+### Fixed
+- Option matching (`runner.option_fallback`): "<Co> Career Site" for the careers-page answer, "Masters's Degree",
+  travel-percent buckets, sponsorship and acknowledgment sentences, "commutable to our offices", "which best describes".
+- One posting under several URLs went out up to 3 times; jobs already submitted or in a worker's batch are skipped.
+- A required form question saying "this role requires US citizenship" now skips the job (the JD was silent).
+- Arbitration clauses that only say "any disputes" mark the company as user-only.
+- Restarted appliers had no X server (stale `/tmp/.X99-lock`); the entrypoint removes it.
+- The relay unescapes `&amp;` in company names (a code for "A &amp; B" never matched "A & B").
+
 ## [0.12.0] - 2026-10-10 · "Scale-out"
 Supply, not speed, was the limit: of 229 queued jobs only 17 were fillable. This release widens discovery, ranks fresh
 jobs first, and adds container appliers so capacity is a number you set.

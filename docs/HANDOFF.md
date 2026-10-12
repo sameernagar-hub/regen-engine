@@ -1,5 +1,17 @@
 # Handoff: v0.12 on main (2026-10-11 ~00:05)
 
+## 10-11 ~21:45 update (v0.12.1 "Fleet", see CHANGELOG)
+- Health first: `python -m engine fleet` (or `curl 127.0.0.1:8787/api/control/fleet`, or the Fleet panel in /control).
+  The stack now has an `api` service; pipeline/appliers/relay heartbeat into `workspace/fleet/`.
+- Codes are THE bottleneck (B5: 16.3/h with live codes vs 0.75/h without). The user's pasted relay tab froze twice
+  and the fleet showed "Gmail tab silent". Fallback that works: Claude reads the Atom feed in its own Chrome tab
+  (read-only JS) and POSTs `[{company, code, iso}]` to `127.0.0.1:8799/codes` with curl, driven by a Monitor on
+  `codes_waiting`. Hands-free fix needs the user: a Gmail app password in `.env` (`engine codes --watch`), or Chrome's
+  Memory Saver exception for mail.google.com.
+- Lost claims after a container dies: `scripts/requeue.py --stale` (run in the pipeline container, see its docstring).
+- v0.12 list left: Gmail cleanup (do it when no form waits on a code: the full Gmail UI froze tabs), SmartRecruiters
+  source (needs an apply adapter to add volume), B5 by worker count.
+
 ## 10-11 ~20:25 update
 - Stack restarted (it had been killed ~20 h earlier); now recreated with `--force-recreate` on a rebuilt image.
   Restarted (not recreated) appliers had no X server: stale `/tmp/.X99-lock`. The entrypoint now removes it.

@@ -50,8 +50,8 @@ def fleet(now=None):
         except (OSError, ValueError):
             continue
         age = now - m.get("ts", 0)
-        if age > 24 * 3600:
-            continue  # a container that was recreated long ago: its old hostname never beats again
+        if age > 900:
+            continue  # a recreated container gets a new hostname; the old one never beats again
         m["age"] = round(age)
         m["up"] = age <= STALE.get(m.get("role"), 120)
         members.append(m)
