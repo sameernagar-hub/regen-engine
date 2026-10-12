@@ -1,5 +1,16 @@
 # Handoff: v0.12 on main (2026-10-11 ~00:05)
 
+## 10-11 ~20:25 update
+- Stack restarted (it had been killed ~20 h earlier); now recreated with `--force-recreate` on a rebuilt image.
+  Restarted (not recreated) appliers had no X server: stale `/tmp/.X99-lock`. The entrypoint now removes it.
+- Landed (cf39afd): select() dedupes by company+title and seeds with submitted roles (a role went out twice; two roles were
+  3x in one batch); a required form question saying "requires US citizenship" skips the job; B2 rules (own-city
+  "based in", transitioning service member, contractor on behalf of, "legally eligible for employment").
+- 3 verified on 10-11 at 20:24. Codes relay tab: Claude's paste into Gmail was blocked by the permission
+  classifier; the user pastes `engine/discovery/gmail_relay.js` into the Atom-feed tab themselves.
+- Next form gaps seen: "How did you hear about <co>?" select, multi-select locations / travel % / most recent
+  education, "AI tools" single choice, onsite-city requirement.
+
 ## Start of next session (in order)
 1. Read this file + memory (`regen-docker-bank`, `v1-direction`, `rejection-learnings`).
 2. Stack should still be running: `docker ps` (deploy-pipeline-1, deploy-applier-1..5, deploy-relay-1). If not:
