@@ -466,3 +466,17 @@ def test_fleet_heartbeats(tmp_path, monkeypatch):
     assert f["stale_claims"] == ["b2.json"]  # b1 is held by a live applier
     assert f["gmail_tab_age"] is not None and f["gmail_tab_age"] < 60
     assert "pipeline is not running" in f["problems"]
+
+
+def test_supervisor_desired_follows_backlog(tmp_path, monkeypatch):
+    """Autoscaling: one applier per 3 jobs waiting or in progress, clamped to [min, max]."""
+    import json, os
+    from engine import supervisor as S
+    monkeypatch.setattr(S, "BOX", str(tmp_path))
+    os.makedirs(tmp_path / "inbox"); os.makedirs(tmp_path / "claimed")
+    assert S.desired(1, 7) == (1, 0)
+    for i in range(4):
+        (tmp_path / "inbox" / f"b{i}.json").write_text(json.dumps([{}] * 3))
+    (tmp_path / "claimed" / "c.json").write_text(json.dumps([{}] * 2))
+    assert S.desired(1, 7) == (5, 14)
+    assert S.desired(1, 4) == (4, 14)

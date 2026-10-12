@@ -211,7 +211,8 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
     # `appliers` local browsers take the rest; REGEN_APPLIERS=docker sends everything to the containers.
     k = int(os.environ.get("REGEN_DOCKER_PARTS") or 0)
     local_n = 0 if os.environ.get("REGEN_APPLIERS") == "docker" else appliers
-    parts = split(batch, local_n + (k or (appliers if not local_n else 0)))
+    small = -(-len(batch) // int(os.environ.get("REGEN_BATCH_JOBS", "3")))  # docker: batches of ~3 jobs (autoscaling)
+    parts = split(batch, local_n + (k or ((max(appliers, small) if os.environ.get("REGEN_APPLIERS") == "docker" else appliers) if not local_n else 0)))
     boxed = _drop(parts[local_n:], stamp, local_n)
     procs = []
     for i, part in enumerate(parts[:local_n]):

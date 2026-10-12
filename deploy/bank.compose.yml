@@ -3,7 +3,8 @@
 #   regen-workspace  the ledger: events.jsonl, queue, resumes, proof, codes, logs
 # Every service mounts the volumes, never a host folder. Seed once from local folders:
 #   docker compose -f deploy/bank.compose.yml run --rm seed
-# Run:  REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_PARTS=5 docker compose -f deploy/bank.compose.yml up -d --scale applier=5
+# Run:  REGEN_MAX_PER_DAY=150 REGEN_TABS=4 docker compose -f deploy/bank.compose.yml up -d --scale applier=7
+#       (7 = REGEN_MAX_APPLIERS: the supervisor keeps only as many running as the backlog needs)
 # Back up (do this before any `docker volume prune`):
 #   docker run --rm -v regen-profile:/p -v "$PWD":/b alpine tar czf /b/regen-profile.tgz -C /p .
 x-engine: &engine
@@ -41,7 +42,7 @@ services:
       REGEN_APPLIERS: docker
       REGEN_SKIP_ATS: "${REGEN_SKIP_ATS:-workable}"
       REGEN_MAX_PER_DAY: "${REGEN_MAX_PER_DAY:-60}"
-    command: ["run", "--days", "1", "--max", "${REGEN_MAX:-100}", "--appliers", "${REGEN_PARTS:-5}", "--loop", "10"]
+    command: ["run", "--days", "1", "--max", "${REGEN_MAX:-100}", "--appliers", "${REGEN_PARTS:-5}", "--loop", "${REGEN_LOOP_MIN:-5}"]
 
   relay:  # email codes from the Gmail tab land straight in the bank
     <<: *engine
@@ -49,6 +50,20 @@ services:
     entrypoint: ["python", "-m", "engine"]
     command: ["relay", "8799"]
     ports: ["127.0.0.1:8799:8799"]
+
+  supervisor:  # the container on top: autoscales appliers to the backlog, requeues lost claims, IMAP codes
+    <<: *engine
+    user: root  # the Docker socket is root-owned; this is the only service that gets it
+    environment:
+      REGEN_MIN_APPLIERS: "${REGEN_MIN_APPLIERS:-1}"
+      REGEN_MAX_APPLIERS: "${REGEN_MAX_APPLIERS:-7}"
+      REGEN_COMPOSE_PROJECT: deploy
+    entrypoint: ["python", "-m", "engine"]
+    command: ["supervise"]
+    volumes:
+      - regen-profile:/data/profile
+      - regen-workspace:/data/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
 
   api:  # the control room reads the bank: http://127.0.0.1:8787 (read-only; writes need your own machine)
     <<: *engine

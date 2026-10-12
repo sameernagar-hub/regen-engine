@@ -8,6 +8,13 @@ Roles: pipeline (pass number, next scan), applier (watching / applying <batch>),
 codes written). A heartbeat older than STALE seconds reads as "down".
 
     python -m engine fleet        prints the same summary as GET /api/control/fleet
+    python -m engine supervise    the supervisor container: autoscale appliers, requeue lost claims, IMAP codes
+
+Autoscaling (the `supervisor` service in deploy/bank.compose.yml): compose creates REGEN_MAX_APPLIERS applier
+containers; the supervisor keeps as many RUNNING as there are batches waiting or being applied (min
+REGEN_MIN_APPLIERS), starting stopped ones when work arrives and stopping only appliers whose heartbeat says
+"watching" (never one in the middle of a form). It talks to the Docker Engine API over /var/run/docker.sock, which
+is mounted into this one container only (the socket is root-equivalent on the host: nothing else gets it).
 """
 import json, os, socket, time
 
@@ -77,6 +84,131 @@ def fleet(now=None):
             "done": len(_count(os.path.join(BOX, "done"))), "stale_claims": stale, "codes_waiting": waiting,
             "gmail_tab_age": round(tab_age) if tab_age is not None else None, "problems": problems,
             "verdict": "ok" if not problems else "attention"}
+
+
+# ---------------- supervisor container ----------------
+SOCK = "/var/run/docker.sock"
+
+
+def _docker(method, path):
+    """One Docker Engine API call over the unix socket (stdlib only). Returns parsed JSON or None."""
+    import http.client, socket as so
+    class C(http.client.HTTPConnection):
+        def connect(self):
+            self.sock = so.socket(so.AF_UNIX, so.SOCK_STREAM); self.sock.connect(SOCK)
+    c = C("docker", timeout=30)
+    c.request(method, path)
+    r = c.getresponse(); body = r.read()
+    try:
+        return json.loads(body) if body else None
+    except ValueError:
+        return None
+
+
+def appliers():
+    """[(id, name, running)] for this compose project's applier containers, by container number."""
+    import urllib.parse
+    labels = ["com.docker.compose.service=applier"]  # this stack only: never another project's containers
+    if os.environ.get("REGEN_COMPOSE_PROJECT"):
+        labels.append("com.docker.compose.project=" + os.environ["REGEN_COMPOSE_PROJECT"])
+    flt = urllib.parse.quote(json.dumps({"label": labels}))
+    rows = _docker("GET", f"/containers/json?all=1&filters={flt}") or []
+    return sorted(((r["Id"], r["Names"][0].lstrip("/"), r["State"] == "running") for r in rows), key=lambda x: x[1])
+
+
+def _jobs(d):
+    n = 0
+    for f in _count(d):
+        try:
+            n += len(json.load(open(os.path.join(d, f), encoding="utf-8")))
+        except (OSError, ValueError):
+            pass
+    return n
+
+
+def desired(lo, hi, per_applier=3):
+    """Appliers needed now: one per `per_applier` jobs waiting in inbox/ or being applied in claimed/."""
+    jobs = _jobs(os.path.join(BOX, "inbox")) + _jobs(os.path.join(BOX, "claimed"))
+    return max(lo, min(hi, -(-jobs // per_applier))), jobs
+
+
+def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container was seen idle (kept across calls)
+    """Start stopped appliers up to desired(); stop idle ones above it (idle for idle_grace s). O(containers)."""
+    want, jobs = desired(lo, hi)
+    rows = appliers()
+    running = [r for r in rows if r[2]]
+    beats = {m["host"]: m for m in fleet()["members"] if m.get("role") == "applier"}
+    now = time.time()
+    if len(running) < want:
+        for cid, name, _ in [r for r in rows if not r[2]][: want - len(running)]:
+            _docker("POST", f"/containers/{cid}/start")
+            print(f"scale: start {name} ({jobs} jobs waiting, want {want})", flush=True)
+    elif len(running) > want:
+        for cid, name, _ in reversed(running):
+            if len(running) <= want:
+                break
+            m = beats.get(cid[:12])  # a container's hostname is its short id
+            if m and m["up"] and m.get("state") == "watching":
+                first = _idle.setdefault(cid, now)
+                if now - first >= idle_grace:
+                    _docker("POST", f"/containers/{cid}/stop?t=20")
+                    running = [r for r in running if r[0] != cid]
+                    _idle.pop(cid, None)
+                    print(f"scale: stop {name} (idle; {jobs} jobs waiting, want {want})", flush=True)
+            else:
+                _idle.pop(cid, None)
+    return want, len(running), jobs
+
+
+def requeue_stale():
+    """Claims lost with a dead container go back to the inbox, minus jobs that reached a final status."""
+    from engine.apply.worker import DIRS
+    from engine.pipeline import latest_status
+    f = fleet()
+    if not f["stale_claims"]:
+        return 0
+    st = latest_status()
+    for n in f["stale_claims"]:
+        src = os.path.join(DIRS["claimed"], n)
+        try:
+            jobs = [j for j in json.load(open(src, encoding="utf-8")) if st.get(j["url"]) not in ("SUBMITTED", "SKIPPED")]
+            tmp = os.path.join(DIRS["inbox"], ".re_" + n)
+            json.dump(jobs, open(tmp, "w", encoding="utf-8"), indent=1)
+            os.replace(tmp, os.path.join(DIRS["inbox"], "re_" + n))
+            os.remove(src)
+            if os.path.exists(src + ".lock"):
+                os.remove(src + ".lock")
+            print(f"requeue: {n} -> inbox ({len(jobs)} jobs)", flush=True)
+        except (OSError, ValueError) as e:
+            print(f"requeue: {n} skipped: {e}", flush=True)
+    return len(f["stale_claims"])
+
+
+def supervise(argv=None):
+    """The container on top: every 15 s scale appliers to the backlog and requeue lost claims; if a Gmail app
+    password is configured, watch IMAP for codes in a thread (hands-free, no browser tab)."""
+    import threading
+    lo = int(os.environ.get("REGEN_MIN_APPLIERS", "1"))
+    hi = int(os.environ.get("REGEN_MAX_APPLIERS", "7"))
+    from engine.notify import _env
+    e = _env()
+    if e.get("REGEN_SMTP_USER") and e.get("REGEN_SMTP_APP_PASSWORD"):
+        from engine.apply.codes import watch
+        threading.Thread(target=watch, daemon=True).start()
+        print("supervisor: IMAP code watcher on", flush=True)
+    print(f"supervisor: appliers {lo}..{hi}", flush=True)
+    n = 0
+    while True:
+        try:
+            want, running, jobs = scale(lo, hi)
+            if n % 8 == 0:
+                requeue_stale()
+            beat("supervisor", state="supervising", want=want, running=running, jobs=jobs)
+        except Exception as ex:  # never die: a supervisor that crashes leaves the fleet at its last size
+            print(f"supervisor: {ex}", flush=True)
+            beat("supervisor", state=f"error: {str(ex)[:80]}")
+        n += 1
+        time.sleep(15)
 
 
 def main(argv=None):
