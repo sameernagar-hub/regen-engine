@@ -1,5 +1,24 @@
 # Handoff: v0.12 on main (2026-10-11 ~00:05)
 
+## 10-11 ~22:55 update: the supervisor runs the fleet
+- `deploy/bank.compose.yml` now has `supervisor` (only service with the Docker socket, reads ../.env):
+  autoscale 1..7 appliers (one per 3 jobs; clones a running applier to add, removes idle ones), requeues lost
+  claims, prunes dangling images, audits every action (`supervisor` events), IMAP codes (app password in .env:
+  REGEN_SMTP_USER / REGEN_SMTP_APP_PASSWORD; verified delivering), leak guard + kill switch (secret in a new
+  log/outreach/ledger byte -> STOP + KILL, containers stopped, file to workspace/quarantine/). Clear after review:
+  `docker exec deploy-supervisor-1 python -m engine supervise --clear`.
+- Start everything: `REGEN_MAX_PER_DAY=150 REGEN_TABS=4 docker compose -f deploy/bank.compose.yml up -d --scale applier=2`
+  (the supervisor grows it). Health: `python -m engine fleet` or `curl 127.0.0.1:8787/api/control/fleet`.
+- 24+ verified on 10-11. Answers: 37 drafted into profile/answers.json (source per entry); right-to-work proof from
+  presets; legal retry only when a preset answers. Ashby (250 jobs) cools down until ~06:27 10-12.
+- Sources: HN "Who is hiring" (`python -m engine hn 3`): +71 boards, 160 published contacts. Outreach:
+  `python -m engine outreach hn 60 --gmail` saved 32 drafts to Gmail Drafts (nothing sent). Flag to user: Duets
+  (address looks malformed), Furtim Modus (agency), "Early-stage Startup" (personal gmail).
+- NEXT (user asked 10-11, not started): Postgres for the ledger (apps/api/store.py supports it; add a `postgres`
+  service + migrate events, labeled/normalized tables), MCP tools for Claude oversight (fleet, kill, clear, audit
+  log), memory/data cleanup policy, SmartRecruiters adapter (public API, no account), run `hn` + outreach in the
+  supervisor once a day.
+
 ## 10-11 ~21:45 update (v0.12.1 "Fleet", see CHANGELOG)
 - Health first: `python -m engine fleet` (or `curl 127.0.0.1:8787/api/control/fleet`, or the Fleet panel in /control).
   The stack now has an `api` service; pipeline/appliers/relay heartbeat into `workspace/fleet/`.
