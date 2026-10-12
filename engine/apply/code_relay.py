@@ -8,7 +8,7 @@ send time to local "HH:MM" and calls codes.match(), which writes workspace/codes
 is waiting and whose company matches, and only for codes sent after it started waiting. Nothing else is accepted:
 the body must be a JSON list of short {company, code, iso} records, and the server listens on loopback only.
 """
-import datetime, http.server, json, os, re, sys, threading, time
+import datetime, html, http.server, json, os, re, sys, threading, time
 
 from engine.apply import codes as C
 from engine.supervisor import beat
@@ -27,7 +27,7 @@ class Relay(http.server.BaseHTTPRequestHandler):
             assert isinstance(rows, list)
             out = []
             for r in rows[:50]:
-                co, code = str(r["company"])[:80], str(r["code"])
+                co, code = html.unescape(str(r["company"]))[:80], str(r["code"])  # the Atom feed sends "&amp;"
                 if not re.fullmatch(r"[A-Za-z0-9]{6,10}", code):
                     continue
                 t = datetime.datetime.fromisoformat(str(r.get("iso", "")).replace("Z", "+00:00")).astimezone()

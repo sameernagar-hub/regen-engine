@@ -7,7 +7,7 @@ A code is written to <board>_<id>.txt only when the email names that same compan
 code is never typed into another company's form. Several codes for one company: oldest waiter gets the oldest unused code; a bounced code is never reused for that job.
 Already-answered or stale codes are left alone. O(waiting x codes), both tiny.
 """
-import datetime, json, os, re, sys
+import datetime, json, os, re, sys, time
 
 from engine.config import WORKSPACE
 
@@ -64,6 +64,11 @@ def match(codes, workspace=None):
             open(os.path.join(d, slug + ".txt"), "w").write(hit["code"])
             open(tried_f, "a").write(hit["code"] + "\n")
             written[slug] = hit["code"]
+            try:  # benchmark B6: how long the form waited for its code (never the code itself)
+                from engine.feedback.events import record
+                record("code", slug=slug, latency_s=round(time.time() - os.path.getmtime(os.path.join(d, slug + ".wait"))))
+            except Exception:
+                pass
     return written
 
 

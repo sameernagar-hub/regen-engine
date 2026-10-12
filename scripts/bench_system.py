@@ -8,6 +8,10 @@ B2 answers  : share of every question the engine ever stopped on that the curren
               now (corpus = NEEDS YOU details in events.jsonl). Unanswered, non-legal questions = missing components.
 B3 claims   : 8 worker threads race to claim 200 inbox batches; every batch must be claimed exactly once
 B4 coverage : median share of your JD terms that reach the resume, from the last 200 resume events
+B5 rate     : verified submissions per active hour (an hour with any application attempt), per day, from events.jsonl
+B6 codes    : email-code latency, .wait written -> .txt delivered (workspace/codes), and how many waits never got one
+B7 fit gate : today's fit() re-run on the stored JD of every submitted job: share of later rejections it would now
+              block (catch rate) vs share of not-rejected submissions it would block (cost). A missed blocker = a rule.
 """
 import heapq, json, os, random, statistics, sys, tempfile, threading, time
 
@@ -91,9 +95,72 @@ def b4_coverage(last=200):
             "median_ats_readback": statistics.median(ats) if ats else None}
 
 
+def _events(kind):
+    from engine.config import WORKSPACE
+    for line in open(os.path.join(WORKSPACE, "events.jsonl"), encoding="utf-8"):
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if e.get("kind") == kind:
+            yield e
+
+
+def b5_rate():
+    import collections
+    hours, subs = collections.defaultdict(set), collections.Counter()
+    for e in _events("application"):
+        if e.get("dry") or not e.get("ts"):
+            continue
+        day, hour = e["ts"][:10], e["ts"][11:13]
+        hours[day].add(hour)
+        subs[day] += (e.get("status") or "").startswith("SUBMITTED")
+    days = sorted(hours)[-7:]
+    per = {d: {"submitted": subs[d], "active_h": len(hours[d]), "per_h": round(subs[d] / len(hours[d]), 2)} for d in days}
+    best = max(per.values(), key=lambda x: x["per_h"]) if per else None
+    return {"days": per, "best_per_h": best and best["per_h"]}
+
+
+def b6_codes():
+    lat = [e["latency_s"] for e in _events("code") if isinstance(e.get("latency_s"), (int, float))]
+    lost = sum("EMAIL CODE REQUIRED" in (e.get("detail") or "") for e in _events("application"))
+    return {"delivered": len(lat), "code_timeouts": lost,
+            "median_s": round(statistics.median(lat)) if lat else None,
+            "p90_s": round(sorted(lat)[int(0.9 * (len(lat) - 1))]) if lat else None}
+
+
+def b7_fitgate():
+    import glob, html as H
+    from engine.config import WORKSPACE
+    from engine.tailoring.tailor import fit
+    jd = {}
+    for f in glob.glob(os.path.join(WORKSPACE, "jd", "*.json")):
+        try:
+            j = json.load(open(f, encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        url = (j.get("absolute_url") or j.get("jobUrl") or j.get("applyUrl") or "").split("?")[0]
+        text = j.get("content") or j.get("descriptionHtml") or j.get("descriptionPlain") or j.get("description") or ""
+        if url and text:
+            jd[url] = H.unescape(text)
+    url_of = {}
+    for e in _events("application"):
+        if (e.get("status") or "").startswith("SUBMITTED") and e.get("url"):
+            url_of[e["job"]] = e["url"].split("?")[0]
+    rejected = {j for e in _events("outcome") if e.get("outcome") == "rejection" for j in (e.get("jobs") or [])}
+    rej, ok = [], []
+    for job, url in url_of.items():
+        if url in jd:
+            (rej if job in rejected else ok).append(bool(fit(jd[url])))
+    return {"submitted_with_jd": len(rej) + len(ok), "rejections_with_jd": len(rej),
+            "catch_rate_pct": round(100 * sum(rej) / len(rej), 1) if rej else None,
+            "would_block_ok_pct": round(100 * sum(ok) / len(ok), 1) if ok else None}
+
+
 if __name__ == "__main__":
     out = {}
-    for name, fn in (("B1_select", b1_select), ("B2_answers", b2_answers), ("B3_claims", b3_claims), ("B4_coverage", b4_coverage)):
+    for name, fn in (("B1_select", b1_select), ("B2_answers", b2_answers), ("B3_claims", b3_claims), ("B4_coverage", b4_coverage),
+                     ("B5_rate", b5_rate), ("B6_codes", b6_codes), ("B7_fitgate", b7_fitgate)):
         try:
             out[name] = fn()
         except Exception as e:  # a benchmark that can't run is itself a finding
