@@ -1,5 +1,55 @@
 # Handoff: v0.12 on main (2026-10-11 ~00:05)
 
+## START HERE (10-12 morning): 5-minute checklist
+1. Read this block + memory `regen-docker-bank`. Main = latest `git log -1` (all 10-11 work pushed).
+2. Stack up? `docker ps --format '{{.Names}} {{.Status}}' | grep deploy` -> api, pipeline, relay, supervisor, applier-N.
+   If not: `cd regen-engine && REGEN_MAX_PER_DAY=150 REGEN_TABS=4 docker compose -f deploy/bank.compose.yml up -d --scale applier=2`
+   (the supervisor scales 1..7 by itself). Recreate, never restart, after a reboot (`--force-recreate`).
+3. Health: `docker exec deploy-supervisor-1 python -m engine fleet` and `docker logs --tail 20 deploy-supervisor-1`.
+   Expect "IMAP code watcher on" (codes are automatic now; no Gmail tab, no Claude needed).
+   If the log says KILL: read the reason, inspect `workspace/quarantine/` (in the regen-workspace volume), then
+   `docker exec deploy-supervisor-1 python -m engine supervise --clear`.
+4. Numbers: `docker compose -f deploy/bank.compose.yml run --rm --no-deps --entrypoint python pipeline -m engine report 2026-10-12`
+   (10-11 ended with 24+ verified).
+5. Ashby: 250 queued jobs; the bot-check cooldown ends ~06:27 10-12; 1 Ashby job per pass (REGEN_ASHBY_PER_PASS).
+   Watch for a new cooldown (`workspace/ashby_cooldown`); raise to 2 per pass only if none trips by noon.
+6. Fresh supply each morning (in the pipeline container): `python -m engine hn 2`, `python -m engine boards harvest`,
+   `python -m engine scan 7 --ats greenhouse,ashby,lever`, `python -m engine newgrad 7`, `python -m engine feed 7 --queue`.
+
+### Tell the user first thing
+- 32 cold-email drafts are in Gmail Drafts (nothing sent). Delete before sending: Duets (address looks malformed),
+  Furtim Modus (agency), "Early-stage Startup" (personal gmail). User sends the rest themselves.
+- /needs still holds legal-only questions (arbitration, export control, criminal history, citizenship without a
+  preset, "do you have offers", credit history). 37 answers Claude drafted on 10-11 are in profile/answers.json with
+  a `source` per entry; the user can review them on /needs or /facts.
+
+### Build next (user's 10-11 asks, in priority order)
+1. **Postgres ledger**: add a `postgres` service (named volume, 127.0.0.1 only, password from .env), point
+   `apps/api/store.py` at it, migrate `events.jsonl` into labeled/normalized tables (applications, answers, codes,
+   outcomes, supervisor audit, fleet heartbeats); keep events.jsonl as the append-only source of truth.
+2. **MCP oversight** (engine/connectors/mcp_server.py): tools `fleet_status`, `kill(reason)`, `clear_kill`,
+   `audit_log(n)`, `quarantine_list`, `scale(min,max)` so Claude can watch and stop processing at any step.
+3. **Kill switch per step**: pipeline (scan/tailor/dispatch) and runner (before each submit) check `KILL` too, not
+   only the supervisor and workers (`batches/STOP`).
+4. **Guard stricter**: also scan resumes/proof text and outgoing outreach bodies before Gmail APPEND; block any
+   draft containing presets-only data (address, phone, visa status) the user did not approve for outreach.
+5. **Data hygiene**: retention policy (logs 14 d, proof 90 d, codes 1 d) in engine/clean.py run by the supervisor;
+   label every event with `kind` + schema version; normalize company names (one slug function everywhere).
+6. **More platforms**: SmartRecruiters adapter (public postings API, apply without account); daily `hn` + `outreach hn
+   --gmail` inside the supervisor (dedupe contacts already drafted); "most active boards" ranking (postings/week
+   from scan) to scan hot boards every pass and cold ones daily.
+7. Gmail cleanup (user asked 3x): move code mail >1 day and job alerts >3 days to Trash via IMAP (COPY to
+   [Gmail]/Trash), never empty Trash. Needs the user's OK for the exact search before running.
+
+### Gotchas learned 10-11
+- Git Bash heredocs turn `\b` into a backspace byte: write patches with the Write tool, then
+  `grep -cP "[\x00-\x08]" file` must print 0.
+- Privacy pre-push hook blocks company names, personal status words and example emails in code/docs: use
+  placeholders ("<Co>", "a code bounced").
+- Gmail threads code emails; IMAP reads single messages (use IMAP, not the Atom feed).
+- `requeue.py` and the supervisor dedupe by role (company + title) and skip in-flight jobs: never requeue old
+  batches by hand without them.
+
 ## 10-11 ~22:55 update: the supervisor runs the fleet
 - `deploy/bank.compose.yml` now has `supervisor` (only service with the Docker socket, reads ../.env):
   autoscale 1..7 appliers (one per 3 jobs; clones a running applier to add, removes idle ones), requeues lost
