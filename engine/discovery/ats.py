@@ -217,6 +217,17 @@ HARVEST_FEEDS = [  # machine-readable lists (JSON with "url") and READMEs (any A
     "https://raw.githubusercontent.com/vanshb03/Summer2026-Internships/main/README.md",
     "https://raw.githubusercontent.com/poteto/hiring-without-whiteboards/main/README.md",
     "https://raw.githubusercontent.com/remoteintech/remote-jobs/main/README.md",
+    # 10-11: the 2027 cycle lists (probed 200 OK); each new board lists every open role, not only campus ones
+    "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
+    "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/README.md",
+    "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/README.md",
+    "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md",
+    "https://raw.githubusercontent.com/speedyapply/2027-AI-College-Jobs/main/README.md",
+    "https://raw.githubusercontent.com/vanshb03/New-Grad-2027/main/README.md",
+    "https://raw.githubusercontent.com/vanshb03/Summer2027-Internships/main/README.md",
+    "https://raw.githubusercontent.com/zapplyjobs/New-Grad-Jobs/main/README.md",
+    "https://raw.githubusercontent.com/codicate/underclassmen-internships/main/README.md",
+    "https://raw.githubusercontent.com/northwesternfintech/2027QuantInternships/main/README.md",
 ]
 
 
