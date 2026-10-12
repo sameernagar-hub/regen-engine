@@ -17,7 +17,7 @@ the round-robin scheduler inside. Greenhouse email codes still come from Gmail (
 Complexity: select is O(Q) over the queue with O(1) set lookups; split is O(J). Wall time ≈ build + max over
 appliers of their batch time, instead of the sum.
 """
-import collections, heapq, datetime, json, os, subprocess, sys, time
+import collections, heapq, datetime, json, os, re, subprocess, sys, time
 
 from engine.config import ROOT, WORKSPACE, in_workspace
 from engine.feedback.events import read, record
@@ -37,12 +37,17 @@ def latest_status():
     """url -> latest status; a FAILED that was only a code timeout / missing confirmation (first time) reads as
     RETRY so the selector gives it one more pass while someone is watching the inbox. O(E)."""
     out, fails, asked = {}, collections.Counter(), collections.Counter()
+    from engine.config import PROFILE
+    try:  # answers saved after a stop give the job another try even if it stopped twice
+        bank_t = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(PROFILE, "answers.json"))).isoformat()
+    except OSError:
+        bank_t = ""
     for e in read("application"):
         if not e.get("dry") and e.get("url"):
             st = (e.get("status") or "").split(":")[0]
             if st == "NEEDS YOU":  # stopped twice on the same question: the rule that "answers" it doesn't fill it
                 asked[(e["url"], e.get("detail") or "")] += 1
-                if asked[(e["url"], e.get("detail") or "")] >= 2:
+                if asked[(e["url"], e.get("detail") or "")] >= 2 and (e.get("ts") or "") > bank_t:
                     out[e["url"]] = st
                     continue
             if st == "FAILED":
@@ -63,12 +68,15 @@ def answerable_now(detail):
         return True  # the selector still skips Ashby while the cooldown runs, and takes 1 Ashby job per pass
     from engine.feedback.answers import LEGAL_OR_SENSITIVE, missing_questions
     qs = missing_questions(detail)
-    if not qs or any(LEGAL_OR_SENSITIVE.search(q) for q in qs):
+    if not qs or any(USER_ONLY_Q.search(q) for q in qs):
         return False
     from engine.apply.runner import answer_for
+    # a legal/status question counts only when a preset rule answers it (never a drafted answer)
     return all(answer_for(q, {}) not in (None, "") for q in qs)
 
 
+# questions only the user answers, even when a rule exists: agreements, export control, criminal history (10-11)
+USER_ONLY_Q = re.compile(r"arbitrat|any disputes|export|deemed export|convict|felony|misdemeanor|indict", re.I)
 SKIP_ATS = {a.strip() for a in os.environ.get("REGEN_SKIP_ATS", "").split(",") if a.strip()}
 WALL = ("CAPTCHA", "BOT-CHECK")  # failure details that mean "a human must finish this", not "retry"
 HUMAN_ONLY = ("arbitration", "assessment", "transcript", "export c", "any disputes")  # blockers only the user can clear ("any disputes": an arbitration clause cut at 100 chars)

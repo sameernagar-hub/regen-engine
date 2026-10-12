@@ -81,6 +81,7 @@ RULES = [
     (r"(receive|opt.?in|consent).{0,60}(whatsapp|text message|sms)|(whatsapp|sms|text message)s? .{0,40}(communication|update|notification)", P.get("sms_opt_in")),  # 10-08: SMS opt-in labels mention email
     (r"^have you (ever )?(previously )?worked (at|for)\b|(currently|presently) an? .{0,40}employee\?|(an? )?current(ly)? (an? )?employee (with|of|at)\b", P.get("previous_employer_of_company")),
     (r"legally eligible to (begin|start) (employment|work)|legally eligible for employment", P.get("work_authorized_us")),
+    (r"(provide|furnish) (proof|verification|documentation) of .{0,60}(legal right to work|authori[sz]ation to work|eligibility to work)", P.get("work_authorized_us")),  # presets: I-9 documents
     (r"(perform(ing)?|provid(e|ing)) (work|services) (on behalf of|for) .{0,60}(as an? )?(contractor|consultant|vendor)", P.get("former_contractor_of_company")),  # B2
     (r"considered for (future|other) (opportunities|roles|positions)", P.get("future_opportunities")),
     (r"^have you (ever )?held h-?1b|h-?1b petition (been )?approved", P.get("held_h1b")),  # not "require ... (e.g., H-1B visa)": sponsorship rules own those
