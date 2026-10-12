@@ -53,8 +53,8 @@ def answerable_now(detail):
     """True when a NEEDS YOU job can be finished today without the user: it was only parked for the Ashby cooldown
     (never opened), or every question it stopped on now has an answer (a new rule, preset or saved answer).
     Legal / sensitive questions never count as answerable. O(questions x rules)."""
-    if "cooldown" in detail and "not opened" in detail:
-        return True  # the selector still skips Ashby while the cooldown runs
+    if "cooldown" in detail:  # never opened, or filled and parked (18 on 10-11): refill once the cooldown ends
+        return True  # the selector still skips Ashby while the cooldown runs, and takes 1 Ashby job per pass
     from engine.feedback.answers import LEGAL_OR_SENSITIVE, missing_questions
     qs = missing_questions(detail)
     if not qs or any(LEGAL_OR_SENSITIVE.search(q) for q in qs):

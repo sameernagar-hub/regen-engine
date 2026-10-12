@@ -168,3 +168,12 @@ def test_option_fallback_real_option_lists():
 
 def test_completed_bachelors_is_yes_no():
     assert R.answer_for("Have you completed the following level of education: Bachelor's Degree?", {}) == R.P.get("has_degree")
+
+
+def test_needs_backlog_rules():
+    """10-11 /needs backlog: yes/no name check, referral, address phrasings."""
+    assert R.answer_for("Have you added your full legal name and surname (including any middle names)?", {}) == "__ACK__"
+    assert R.answer_for("Did someone refer you to apply to this role?", {}) == R.P.get("referred", "No")
+    if R.P.get("address_line1") and not R.P["address_line1"].startswith("<"):  # profile.example placeholders never fill
+        assert R.P["address_line1"] in R.answer_for("What is your current address?", {})
+        assert R.P["address_line1"] in R.answer_for("Please provide your current address.", {})

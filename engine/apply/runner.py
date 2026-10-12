@@ -68,6 +68,9 @@ RULES = [
     # "If you were referred, the referring individual's first and last name": the engine applies cold, so this is never
     # the candidate's own name (v0.8 bug: matched "last name" below)
     (r"(?<![a-z])referr(ed|ing|er|al)\b.{0,80}(name|individual)|name of .{0,30}referr", "N/A"),  # (?<![a-z]): not "preferred"
+    (r"have you (added|entered|provided|included|used) your (full )?(legal )?(name|surname)", "__ACK__"),  # a yes/no check, not a name box
+    (r"(did|has) (someone|anyone|an employee) refer(red)? you|were you referred", P.get("referred", "No")),  # the engine applies cold
+    (r"(what is|provide|enter|share) (us )?(with )?your (current |home |full |mailing )?(street )?address\b",", ".join(x for x in (P.get("address_line1"), P.get("city"), P.get("state_abbr")) if x) if P.get("address_line1") else None),
     (r"preferred (first )?name", P["first_name"]),
     (r"^(full )?name|legal (full )?name|full (legal )?name", P["first_name"] + " " + P["last_name"]),
     (r"^\W*(home|residential|current|permanent) (home )?address\W*$", ", ".join(x for x in (P.get("address_line1"), P.get("city"), P.get("state_abbr")) if x) if P.get("address_line1") else None),  # one box for the whole address (10-09)
