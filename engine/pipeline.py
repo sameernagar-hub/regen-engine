@@ -107,6 +107,20 @@ def history(days=3, min_tries=4, wall_rate=0.5):
 ASHBY_PER_PASS = int(os.environ.get("REGEN_ASHBY_PER_PASS", "1"))
 
 
+def in_flight():
+    """Job labels (lowercase) in batches still waiting in inbox/ or being applied in claimed/. O(batched jobs)."""
+    from engine.apply.worker import DIRS
+    out = set()
+    for d in (DIRS["inbox"], DIRS["claimed"]):
+        for n in os.listdir(d) if os.path.isdir(d) else []:
+            if n.endswith(".json") and not n.startswith("."):
+                try:
+                    out |= {j["name"].lower().strip() for j in json.load(open(os.path.join(d, n), encoding="utf-8"))}
+                except (OSError, ValueError, KeyError, TypeError):
+                    pass
+    return out
+
+
 def select(queue, max_jobs, ashby_ok=True, per_company=3):
     """Highest-priority jobs (engine/discovery/priority.py) that were never tried (or only hit a transient failure),
     capped per company, interleaved by company."""
@@ -123,6 +137,7 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
     per, picked = collections.Counter(), []
     seen = {(e.get("job") or "").lower().strip() for e in read("application")
             if not e.get("dry") and (e.get("status") or "").startswith("SUBMITTED")}
+    seen |= in_flight()  # a job already in a worker's batch: two attempts share one email code (10-11: a code bounced)
     while heap:
         j = queue[heapq.heappop(heap)[2]]
         key = f"{j['company']} - {j['title']}".lower().strip()

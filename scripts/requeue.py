@@ -8,7 +8,7 @@ import glob, json, os, shutil, sys, time
 
 from engine.config import WORKSPACE
 from engine.apply.worker import DIRS
-from engine.pipeline import history, latest_status, split
+from engine.pipeline import history, in_flight, latest_status, split
 
 
 def main(args):
@@ -22,11 +22,11 @@ def main(args):
                 shutil.move(f, dst); files.append(dst)
                 if os.path.exists(f + ".lock"): shutil.move(f + ".lock", dst + ".lock")
     st, (_, blocked) = latest_status(), history()
-    out, seen = [], set()
+    out, seen, busy = [], set(), in_flight()
     for f in files:
         for j in json.load(open(f, encoding="utf-8")):
             co = j["name"].split(" - ")[0].lower()
-            if j["url"] in seen or st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU") or co in blocked:
+            if j["url"] in seen or j["name"].lower().strip() in busy or st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU") or co in blocked:
                 continue
             seen.add(j["url"]); out.append(j)
     stamp = time.strftime('%H%M')
