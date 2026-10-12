@@ -76,19 +76,24 @@ CODE_RX = re.compile(r"application to ([^,]+?)(?: - |, ).*?application:?\s*([A-Z
 
 
 def imap_codes(M):
-    """Security-code emails from today, newest first, as [{company, code, when}] (read-only, headers + 1.5 KB of body)."""
+    """Security-code emails from today, newest first, as [{company, code, when}] (read-only: BODY.PEEK never marks
+    mail read). Each message is fetched whole and decoded (10-11: the first 1.5 KB of the quoted-printable HTML held
+    only <head>, and Gmail returns the parts in its own order, so no code was ever found)."""
     import email, email.utils
     since = datetime.date.today().strftime("%d-%b-%Y")
     _, data = M.search(None, f'(SINCE "{since}" SUBJECT "security code")')
     out = []
     for num in reversed(data[0].split()[-30:]):
-        _, md = M.fetch(num, "(BODY.PEEK[HEADER.FIELDS (SUBJECT DATE)] BODY.PEEK[TEXT]<0.1500>)")
-        hdr = email.message_from_bytes(md[0][1])
-        body = md[1][1].decode("utf-8", "replace") if len(md) > 1 and isinstance(md[1], tuple) else ""
-        m = CODE_RX.search(" ".join((str(hdr.get("Subject", "")) + " " + re.sub(r"<[^>]+>", " ", body)).split()))
-        if m:
-            sent = email.utils.parsedate_to_datetime(hdr["Date"]).astimezone()
-            out.append({"company": m.group(1).strip(), "code": m.group(2), "when": sent.strftime("%H:%M")})
+        _, md = M.fetch(num, "(BODY.PEEK[])")
+        raw = next((x[1] for x in md if isinstance(x, tuple)), b"")
+        msg = email.message_from_bytes(raw)
+        parts = [msg] if not msg.is_multipart() else [p for p in msg.walk() if p.get_content_maintype() == "text"]
+        body = " ".join((p.get_payload(decode=True) or b"").decode(p.get_content_charset() or "utf-8", "replace") for p in parts)
+        co = re.search(r"application to (.+?)\s*$", " ".join(str(msg.get("Subject", "")).split()), re.I)
+        code = re.search(r"application:?\s*([A-Za-z0-9]{8})\b", " ".join(re.sub(r"<[^>]+>", " ", body).split()), re.I)
+        if co and code and msg.get("Date"):
+            sent = email.utils.parsedate_to_datetime(msg["Date"]).astimezone()
+            out.append({"company": co.group(1).strip(), "code": code.group(1), "when": sent.strftime("%H:%M")})
     return out
 
 

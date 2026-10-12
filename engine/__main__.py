@@ -104,6 +104,8 @@ def main():
         from engine.clean import main as m
     elif cmd == "relay":
         from engine.apply.code_relay import main as m
+    elif cmd == "hn":
+        from engine.discovery.hn import main as m
     elif cmd == "fleet":
         from engine.supervisor import main as m
     elif cmd == "supervise":
