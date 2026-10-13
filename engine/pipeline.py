@@ -51,6 +51,10 @@ def latest_status():
                 if asked[(e["url"], e.get("detail") or "")] >= 2 and (e.get("ts") or "") > bank_t:
                     out[e["url"]] = st
                     continue
+            if st == "ERROR":  # a page that never rendered its form: twice is enough (10-12: one Ashby job took
+                fails[e["url"] + "#err"] += 1  # the single Ashby slot of every pass)
+                if fails[e["url"] + "#err"] >= 2:
+                    st = "FAILED"
             if st == "FAILED":
                 fails[e["url"]] += 1
                 if fails[e["url"]] == 1 and any(r in (e.get("detail") or "") for r in RETRYABLE):

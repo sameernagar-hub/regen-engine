@@ -83,6 +83,10 @@ def fleet(now=None):
     imap = any(m["up"] and m.get("imap") for m in members if m.get("role") == "supervisor")
     if not imap and (tab_age is None or tab_age > 120):
         problems.append("Gmail tab is not posting codes (re-paste gmail_relay.js; keep the tab active)")
+    sup = next((m for m in members if m.get("role") == "supervisor" and m["up"]), None)
+    for name, st in ((sup or {}).get("services") or {}).items():
+        if st != "ok":
+            problems.append(f"{name}: {st}")
     if stale:
         problems.append(f"{len(stale)} claimed batch(es) lost with their container: python scripts/requeue.py --stale")
     return {"members": members, "inbox": len(_count(os.path.join(BOX, "inbox"))), "claimed": len(claimed),
@@ -464,6 +468,48 @@ def control(argv):
     return None
 
 
+# services without a heartbeat of their own: the supervisor probes them over the compose network
+SERVICES = {"api": "http://api:8787/api/health", "web": "http://web:3000/", "ledger": None, "postgres": None}
+
+
+def services(_fails={}):  # _fails: consecutive failed probes per service (kept across calls)
+    """Probe each service; restart one after 3 failed probes in a row (or when its container is not running).
+    Returns {service: "ok" | "down: why" | "restarted"} and puts it in the supervisor heartbeat. O(services)."""
+    import urllib.parse, urllib.request
+    out = {}
+    for svc, url in SERVICES.items():
+        flt = urllib.parse.quote(json.dumps({"label": [f"com.docker.compose.service={svc}"]}))
+        try:
+            rows = _docker("GET", f"/containers/json?all=1&filters={flt}") or []
+        except Exception as ex:
+            out[svc] = f"down: docker {str(ex)[:40]}"
+            continue
+        if not rows:
+            continue  # not part of this stack
+        r = rows[0]
+        why = None
+        if r.get("State") != "running":
+            why = r.get("State") or "not running"
+        elif url:
+            try:
+                urllib.request.urlopen(url, timeout=5).read(64)
+            except Exception as ex:
+                why = str(ex)[:60]
+        if not why:
+            _fails.pop(svc, None)
+            out[svc] = "ok"
+            continue
+        _fails[svc] = _fails.get(svc, 0) + 1
+        if _fails[svc] >= 3 or r.get("State") in ("exited", "dead", "created"):
+            _docker("POST", f"/containers/{r['Id']}/restart?t=10")
+            audit("restart", svc, reason=why)
+            _fails[svc] = 0
+            out[svc] = "restarted"
+        else:
+            out[svc] = f"down: {why}"
+    return out
+
+
 DAILY_HOUR = int(os.environ.get("REGEN_DAILY_HOUR", "7"))  # local time; the container runs TZ=America/Los_Angeles
 OUTREACH_PER_DAY = int(os.environ.get("REGEN_OUTREACH_PER_DAY", "20"))
 
@@ -522,7 +568,7 @@ def supervise(argv=None):
         threading.Thread(target=codes_forever, daemon=True).start()
         print("supervisor: IMAP code watcher on", flush=True)
     print(f"supervisor: appliers {lo}..{hi}", flush=True)
-    n = 0
+    n, svc = 0, {}
     while True:
         try:
             if os.path.exists(os.path.join(WORKSPACE, "KILL")):
@@ -538,7 +584,9 @@ def supervise(argv=None):
                 prune_images()
                 from engine.clean import main as clean
                 clean([])
-            beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap)
+            if n % 4 == 0:  # every minute
+                svc = services()
+            beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap, services=svc)
         except Exception as ex:  # never die: a supervisor that crashes leaves the fleet at its last size
             print(f"supervisor: {ex}", flush=True)
             beat("supervisor", state=f"error: {str(ex)[:80]}")

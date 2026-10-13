@@ -90,9 +90,11 @@ def state():
 @router.get("/control/fleet")
 def fleet():
     """Container health from heartbeats in the shared workspace (engine/supervisor.py): pipeline, appliers, relay,
-    batch queue, lost claims, codes waiting, and whether the Gmail tab is still posting."""
-    from engine.supervisor import fleet as f
-    return f()
+    supervisor (+ the services it probes), batch queue, lost claims, codes waiting, kill switch, applier limits, the
+    supervisor's last audit records and which ledger backend the API reads."""
+    from apps.api import store
+    from engine.supervisor import audit_tail, status
+    return dict(status(), audit=audit_tail(12), ledger=store.backend())
 
 
 @router.post("/control/run")

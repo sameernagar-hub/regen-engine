@@ -697,3 +697,35 @@ def test_hot_boards_skip_quiet_boards_until_due():
     act = {"greenhouse:busy": {"week": 4, "seen": fresh}, "greenhouse:quiet": {"week": 0, "seen": fresh},
            "greenhouse:old": {"week": 0, "seen": stale}}
     assert Sc.hot_boards(boards, act, now) == {"greenhouse:busy", "greenhouse:old", "greenhouse:new"}
+
+
+def test_supervisor_restarts_unhealthy_service(monkeypatch):
+    import urllib.request
+    from engine import supervisor as S
+    calls, acts = [], []
+    state = {"api": "running", "web": "running"}
+
+    def docker(m, path, body=None):
+        if m == "GET":
+            svc = next(s for s in S.SERVICES if f"service%3D{s}%22" in path or f"service={s}" in path)
+            return [{"Id": svc + "id", "State": state[svc]}] if svc in state else []
+        calls.append(path)
+    monkeypatch.setattr(S, "_docker", docker)
+    monkeypatch.setattr(S, "audit", lambda a, t, **k: acts.append((a, t)))
+    monkeypatch.setattr(urllib.request, "urlopen",
+                        lambda url, timeout: (_ for _ in ()).throw(OSError("refused")) if "web" in url else type("R", (), {"read": lambda s, n: b"ok"})())
+    fails = {}
+    assert S.services(fails) == {"api": "ok", "web": "down: refused"}
+    S.services(fails)
+    assert S.services(fails)["web"] == "restarted" and calls == ["/containers/webid/restart?t=10"]
+    state["api"] = "exited"
+    assert S.services(fails)["api"] == "restarted" and acts[-1] == ("restart", "api")
+
+
+def test_errors_stop_being_retried_after_two(monkeypatch):
+    from engine import pipeline as Pl
+    evs = [{"url": "u", "status": "ERROR: Timeout", "ts": "1"}]
+    monkeypatch.setattr(Pl, "read", lambda kind: evs)
+    assert Pl.latest_status()["u"] == "ERROR"
+    evs.append({"url": "u", "status": "ERROR: Timeout", "ts": "2"})
+    assert Pl.latest_status()["u"] == "FAILED"

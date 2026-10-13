@@ -54,7 +54,16 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   short loop passes run `scan --hot` (boards that posted this week + any not fetched for 24 h).
   Verify: `pytest -k "daily or drafted or hot_boards"`.
 
+- **`web` container** in the bank stack (`regen-web:local`, 127.0.0.1:3000): the control room no longer runs on
+  the host. The supervisor probes `api` and `web` over HTTP and `ledger`/`postgres` by container state every
+  minute, restarts one after 3 failed probes (audited `restart`), and reports them in its heartbeat; failures show
+  as fleet problems.
+- **Control room Fleet panel**: kill-switch banner, service health, ledger backend, applier limits, IMAP codes,
+  only live members, and the supervisor's audit trail (`/api/control/fleet` now returns status + audit + ledger).
+
 ### Fixed
+- A job whose page never renders its form (`ERROR`) is retried once, then treated as FAILED: one Ashby posting
+  took the single Ashby slot of every pass.
 - **The supervisor killed an applier mid-batch** (10-12 22:21): it chose an idle applier from a "watching"
   heartbeat, then `docker stop -t 20` gave the worker 20 s in which it claimed a fresh 3-job batch and died holding
   it. Retiring is now a handshake: `fleet/drain_<host>` -> the worker checks it before every claim and beats

@@ -100,6 +100,17 @@ services:
     secrets: [pg_password]
     depends_on: [ledger]
 
+  web:  # the control room UI in a container: http://127.0.0.1:3000 (local mode; proxies /api to the api service)
+    build:
+      context: ../apps/web
+      dockerfile: ../../deploy/web.Dockerfile
+      args: { REGEN_API_URL: "http://api:8787" }
+    image: regen-web:local
+    restart: unless-stopped
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on: [api]
+    deploy: { resources: { limits: { memory: 384m } } }
+
 secrets:
   pg_password: { file: ../.pg_password }
 
