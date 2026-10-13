@@ -75,7 +75,17 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   scrubbed from every message. Heartbeats like every member; audited as `reposync` events.
   Verify: `pytest -k reposync`; `docker logs deploy-reposync-1`.
 
+- **Answer queue + `answers` container** (`engine/feedback/answer_queue.py`): in the bank, `/needs` answers are
+  validated by the API (legal/EEO/sensitive still refused) and queued in `workspace/answers/inbox/`; the `answers`
+  container claims each one, saves it to profile/answers.json and drops one retry batch in `batches/inbox`, which the
+  supervisor scales appliers for. Submitted jobs are skipped; held while KILL is on; `answer_queued/applied/refused/
+  retry` events. The bank API gets an answers-only write switch (`REGEN_API_ANSWERS`), nothing else.
+  Verify: `pytest -k answer_queue`.
+
 ### Fixed
+- **Answers from /needs never reached the containers**: the bank API was read-only (and saw the browser as the
+  Docker gateway, not 127.0.0.1), and `requeue()` wrote `batches/requeue.json`, which no container reads, after
+  searching only top-level batch files (container batches live in inbox/claimed/done).
 - **Fact Bank page blank**: one Fact Bank source was a plain line (facts added from chat) and `/facts` crashed on
   `added.length`; the API now returns every source as `{date, file, added}`.
 - **Memory graph going deeper**: rings were a fixed list, so every layer past the 4th stacked on one circle; radius

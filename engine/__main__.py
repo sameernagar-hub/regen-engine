@@ -110,6 +110,8 @@ def main():
         from engine.supervisor import main as m
     elif cmd == "supervise":
         from engine.supervisor import supervise as m
+    elif cmd == "answers":
+        from engine.feedback.answer_queue import main as m
     elif cmd == "reposync":
         from engine.reposync import main as m
     elif cmd == "worker":
