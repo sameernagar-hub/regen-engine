@@ -742,13 +742,15 @@ def test_reposync_push_allowlist_and_kill(tmp_path, monkeypatch):
         with pytest.raises(R.GuardError):
             R.push("HEAD", bad)
     with pytest.raises(R.GuardError):
-        R.push("HEAD", "refs/heads/gh-pages", lease="")  # no force on gh-pages
-    R.push("HEAD", "refs/heads/gh-pages")
+        R.push("1234abc", "refs/heads/gh-pages", lease="")  # no force on gh-pages
+    with pytest.raises(R.GuardError):
+        R.push("HEAD", "refs/heads/gh-pages")  # an explicit commit id only: HEAD once named the wrong branch
+    R.push("1234abc", "refs/heads/gh-pages")
     R.push("abc", "refs/heads/bot/sync", lease="def")
-    assert ran[0][-1] == "HEAD:refs/heads/gh-pages" and ran[1][1] == "--force-with-lease=refs/heads/bot/sync:def"
+    assert ran[0][-1] == "1234abc:refs/heads/gh-pages" and ran[1][1] == "--force-with-lease=refs/heads/bot/sync:def"
     (tmp_path / "KILL").write_text("x")
     with pytest.raises(R.GuardError):
-        R.push("HEAD", "refs/heads/gh-pages")
+        R.push("1234abc", "refs/heads/gh-pages")
     assert len(ran) == 2
 
 
