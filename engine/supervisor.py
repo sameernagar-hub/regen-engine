@@ -138,36 +138,64 @@ def desired(lo, hi, per_applier=3):
     return max(lo, min(hi, -(-jobs // per_applier))), jobs
 
 
+def drain_path(host):
+    """workspace/fleet/drain_<host>: the supervisor asks one applier to stop claiming (engine/apply/worker.py)."""
+    return os.path.join(FLEET, f"drain_{host}")
+
+
 def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container was seen idle (kept across calls)
-    """Start stopped appliers up to desired(); stop idle ones above it (idle for idle_grace s). O(containers)."""
+    """Start/create appliers up to desired(); retire idle ones above it. O(containers).
+
+    Retiring is a handshake, never a stop on a heartbeat alone: a heartbeat can say "watching" a moment before the
+    worker claims a batch, and `docker stop` takes up to 20 s (10-12: an applier claimed a batch inside that window
+    and died holding it). So the supervisor writes drain_<host>, the worker checks it BEFORE every claim and answers
+    with state "draining", and only a container whose heartbeat says "draining" is stopped and deleted. More work
+    arriving cancels pending drains first."""
     want, jobs = desired(lo, hi)
     rows = appliers()
     running = [r for r in rows if r[2]]
     beats = {m["host"]: m for m in fleet()["members"] if m.get("role") == "applier"}
     now = time.time()
-    if len(running) < want:
+    drains = [r for r in running if os.path.exists(drain_path(r[0][:12]))]  # a container's hostname is its short id
+    active = [r for r in running if r not in drains]
+    if len(active) < want:
+        need = want - len(active)
+        for r in drains[:need]:  # cancel a drain before adding a container
+            os.remove(drain_path(r[0][:12]))
+            drains.remove(r)
+            need -= 1
         stopped = [r for r in rows if not r[2]]
-        for cid, name, _ in stopped[: want - len(running)]:
+        for cid, name, _ in stopped[:need]:
             _docker("POST", f"/containers/{cid}/start")
             audit("start", name, jobs=jobs, want=want)
-        for _ in range(max(0, want - len(running) - len(stopped))):  # none left to start: create one
+        for _ in range(max(0, need - len(stopped))):  # none left to start: create one
             if running:
                 audit("create", clone(running[0][0], appliers()), jobs=jobs, want=want)
-    elif len(running) > want:
-        for cid, name, _ in reversed(running):
-            if len(running) <= want:
+    elif len(active) > want:
+        for cid, name, up in reversed(active[:]):
+            if len(active) <= want:
                 break
-            m = beats.get(cid[:12])  # a container's hostname is its short id
+            m = beats.get(cid[:12])
             if m and m["up"] and m.get("state") == "watching":
                 first = _idle.setdefault(cid, now)
                 if now - first >= idle_grace:
-                    _docker("POST", f"/containers/{cid}/stop?t=20")
-                    _docker("DELETE", f"/containers/{cid}")  # idle capacity is removed, not parked
-                    running = [r for r in running if r[0] != cid]
+                    os.makedirs(FLEET, exist_ok=True)
+                    open(drain_path(cid[:12]), "w").write(str(now))
+                    active.remove((cid, name, up))
                     _idle.pop(cid, None)
-                    audit("remove", name, jobs=jobs, want=want)
             else:
                 _idle.pop(cid, None)
+    for cid, name, up in drains:  # retire only what the worker confirmed: it can no longer claim anything
+        m = beats.get(cid[:12])
+        if m and m.get("state") == "draining":
+            _docker("POST", f"/containers/{cid}/stop?t=20")
+            _docker("DELETE", f"/containers/{cid}")  # idle capacity is removed, not parked
+            try:
+                os.remove(drain_path(cid[:12]))
+            except OSError:
+                pass
+            running = [r for r in running if r[0] != cid]
+            audit("remove", name, jobs=jobs, want=want)
     return want, len(running), jobs
 
 

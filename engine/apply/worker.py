@@ -10,11 +10,13 @@ Each worker logs to workspace/logs/<name>.log (same as local appliers), writes e
 workspace/codes/*.wait (the operator's watcher sees them no matter which container asked) and keeps its own browser
 profile inside the container. `docker compose -f deploy/appliers.compose.yml up -d --scale applier=N` sets capacity.
 Stop: create workspace/batches/STOP (every worker exits after its current batch).
+Retire: the supervisor writes workspace/fleet/drain_<host>; the worker checks it before every claim and beats
+"draining", and only then is the container stopped (engine/supervisor.py scale()).
 """
 import os, socket, subprocess, sys, time
 
 from engine.config import ROOT, WORKSPACE
-from engine.supervisor import beat
+from engine.supervisor import beat, drain_path
 
 BOX = os.path.join(WORKSPACE, "batches")
 DIRS = {k: os.path.join(BOX, k) for k in ("inbox", "claimed", "done")}
@@ -74,7 +76,12 @@ def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     os.makedirs(os.path.join(WORKSPACE, "logs"), exist_ok=True)
     print(f"worker {socket.gethostname()}: watching {DIRS['inbox']}", flush=True)
+    drain = drain_path(socket.gethostname())
     while not os.path.exists(os.path.join(BOX, "STOP")):
+        if os.path.exists(drain):  # the supervisor wants to retire this container: never claim, then say so
+            beat("applier", state="draining", batch=None)
+            time.sleep(5)
+            continue
         name = claim()
         beat("applier", state="applying" if name else "watching", batch=name)
         if name:

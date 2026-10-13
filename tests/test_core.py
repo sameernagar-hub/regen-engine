@@ -562,3 +562,70 @@ def test_gmail_drafts_skips_guarded_drafts(monkeypatch):
                         {"company": "<Co2>", "subject": "Hi", "body": "no recipient"}], blocked)
     assert n == 0 and blocked == [("<Co>", ["work-authorization status (h-1b)"])]  # no IMAP login when nothing is left
     assert seen[0][0] == "flag" and seen[0][1]["flag_kind"] == "outreach_guard"
+
+
+def test_scale_retires_only_after_drain_ack(tmp_path, monkeypatch):
+    """10-12: an applier claimed a batch inside the 20 s stop window. Now stop needs the worker's 'draining' ack."""
+    import json, os
+    from engine import supervisor as S
+    for k, v in (("FLEET", tmp_path / "fleet"), ("BOX", tmp_path / "batches"), ("WORKSPACE", tmp_path)):
+        monkeypatch.setattr(S, k, str(v))
+    for d in ("inbox", "claimed"):
+        os.makedirs(tmp_path / "batches" / d)
+    rows = [("aaaaaaaaaaaa" + "0" * 52, "deploy-applier-1", True), ("bbbbbbbbbbbb" + "0" * 52, "deploy-applier-2", True)]
+    calls, acts = [], []
+    monkeypatch.setattr(S, "appliers", lambda: [r for r in rows if not any(c[1].endswith(r[0] + "") for c in calls)])
+    monkeypatch.setattr(S, "_docker", lambda m, path, body=None: calls.append((m, path.split("/")[2].split("?")[0])))
+    monkeypatch.setattr(S, "audit", lambda action, target, **kw: acts.append((action, target)))
+    monkeypatch.setattr(S, "clone", lambda *a: "new")
+    S.beat("applier", state="watching", host="aaaaaaaaaaaa")
+    S.beat("applier", state="watching", host="bbbbbbbbbbbb")
+    beat = lambda h, st: (tmp_path / "fleet" / f"applier_{h}.json").write_text(
+        json.dumps({"role": "applier", "host": h, "state": st, "ts": __import__("time").time()}))
+    beat("aaaaaaaaaaaa", "watching"); beat("bbbbbbbbbbbb", "watching")
+    S.scale(1, 7, idle_grace=0, _idle={})
+    assert calls == [] and os.path.exists(S.drain_path("bbbbbbbbbbbb"))  # asked, not stopped
+    beat("bbbbbbbbbbbb", "applying")  # claimed just before it saw the drain: keeps working, still not stopped
+    S.scale(1, 7, idle_grace=0, _idle={})
+    assert calls == []
+    beat("bbbbbbbbbbbb", "draining")
+    S.scale(1, 7, idle_grace=0, _idle={})
+    assert [c[0] for c in calls] == ["POST", "DELETE"] and acts == [("remove", "deploy-applier-2")]
+    assert not os.path.exists(S.drain_path("bbbbbbbbbbbb"))
+
+
+def test_scale_cancels_drain_when_work_arrives(tmp_path, monkeypatch):
+    import json, os
+    from engine import supervisor as S
+    for k, v in (("FLEET", tmp_path / "fleet"), ("BOX", tmp_path / "batches"), ("WORKSPACE", tmp_path)):
+        monkeypatch.setattr(S, k, str(v))
+    for d in ("inbox", "claimed"):
+        os.makedirs(tmp_path / "batches" / d)
+    rows = [("a" * 64, "deploy-applier-1", True), ("b" * 64, "deploy-applier-2", True)]
+    monkeypatch.setattr(S, "appliers", lambda: rows)
+    calls = []
+    monkeypatch.setattr(S, "_docker", lambda *a, **k: calls.append(a))
+    monkeypatch.setattr(S, "clone", lambda *a: calls.append("clone"))
+    os.makedirs(tmp_path / "fleet")
+    open(S.drain_path("b" * 12), "w").write("x")
+    (tmp_path / "batches" / "inbox" / "x.json").write_text(json.dumps([{}] * 6))  # 6 jobs -> want 2
+    S.scale(1, 7, _idle={})
+    assert not os.path.exists(S.drain_path("b" * 12)) and calls == []  # un-drained instead of creating a third
+
+
+def test_worker_never_claims_while_drained(tmp_path, monkeypatch):
+    import os
+    from engine.apply import worker as W
+    from engine import supervisor as S
+    monkeypatch.setattr(S, "FLEET", str(tmp_path / "fleet"))
+    monkeypatch.setattr(W, "BOX", str(tmp_path / "batches"))
+    monkeypatch.setattr(W, "WORKSPACE", str(tmp_path))
+    monkeypatch.setattr(W.socket, "gethostname", lambda: "hosthosthost")
+    os.makedirs(tmp_path / "fleet"); os.makedirs(tmp_path / "batches")
+    open(S.drain_path("hosthosthost"), "w").write("x")
+    states = []
+    monkeypatch.setattr(W, "beat", lambda role, **kw: states.append(kw["state"]))
+    monkeypatch.setattr(W, "claim", lambda: (_ for _ in ()).throw(AssertionError("claimed while drained")))
+    monkeypatch.setattr(W.time, "sleep", lambda s: open(tmp_path / "batches" / "STOP", "w").close())
+    W.main([])
+    assert states == ["draining"]

@@ -40,6 +40,11 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   Verify: `pytest -k "outreach_guard or guarded_drafts"`.
 
 ### Fixed
+- **The supervisor killed an applier mid-batch** (10-12 22:21): it chose an idle applier from a "watching"
+  heartbeat, then `docker stop -t 20` gave the worker 20 s in which it claimed a fresh 3-job batch and died holding
+  it. Retiring is now a handshake: `fleet/drain_<host>` -> the worker checks it before every claim and beats
+  "draining" -> only then stop + delete. New work cancels pending drains before adding containers.
+  Verify: `pytest -k drain`.
 - A kill only reached workers between batches: `stop_requested()` looked at `workspace/STOP`, while `kill()` writes
   `KILL` and `batches/STOP`, so a running applier kept submitting until its batch ended.
 - `engine fleet` no longer reports "Gmail tab is not posting codes" while the supervisor's IMAP watcher delivers
