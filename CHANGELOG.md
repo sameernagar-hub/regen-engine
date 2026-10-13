@@ -82,6 +82,12 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   retry` events. The bank API gets an answers-only write switch (`REGEN_API_ANSWERS`), nothing else.
   Verify: `pytest -k answer_queue`.
 
+- **Every local port explains itself**: `127.0.0.1:8787/` (and `/db`) is the API's own page: a request tracker
+  (hits, errors, latency per route) and a live database browser over the Postgres ledger (every table/view with row
+  counts, search, column filters, sort, auto-refresh on the data bus, CSV/JSON download; allowlisted relations,
+  bound parameters only). `127.0.0.1:8799/` shows jobs waiting on a code (never code values), `/status` as JSON.
+  The control room nav links "Data". Postgres (5433) speaks its own protocol, so its browser is the API page.
+
 ### Fixed
 - **Answers from /needs never reached the containers**: the bank API was read-only (and saw the browser as the
   Docker gateway, not 127.0.0.1), and `requeue()` wrote `batches/requeue.json`, which no container reads, after

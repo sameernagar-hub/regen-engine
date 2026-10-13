@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { API_ORIGIN } from "../lib/types";
 
 const LINKS = [
   { href: "/", label: "Live" },
@@ -23,6 +24,8 @@ export function Nav() {
           const on = l.href === "/" ? path === "/" : path.startsWith(l.href);
           return <li key={l.href}><Link href={l.href} aria-current={on ? "page" : undefined}>{l.label}</Link></li>;
         })}
+        {process.env.NEXT_PUBLIC_REGEN_MODE !== "public" && (  // the API's own page: request tracker + live ledger tables
+          <li><a href={`${API_ORIGIN}/db`} title="Ledger database: live tables, filters, CSV/JSON download">Data ↗</a></li>)}
       </ul>
     </nav>
   );

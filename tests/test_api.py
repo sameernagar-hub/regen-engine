@@ -202,3 +202,16 @@ def test_answer_queue_end_to_end(monkeypatch, tmp_path, seeded):
     (seeded / "KILL").write_text("x")
     client.post("/api/answers", json={"job": "Globex - AI Engineer", "question": "Why us?", "answer": "Because."})
     assert Q.drain() == {"held": True} and len(os.listdir(seeded / "answers" / "inbox")) == 1
+
+
+def test_explorer_page_tracker_and_rows():
+    """The API's own page (/) and its jsonl fallback: tables, filtered rows, CSV download, request tracker."""
+    assert "Ledger database" in client.get("/").text and client.get("/db").status_code == 200
+    t = client.get("/api/db/tables").json()
+    assert t[0]["name"] == "events" and t[0]["rows"] >= 3
+    rows = client.get("/api/db/rows/events?q=globex").json()
+    assert rows and all("globex" in json.dumps(r).lower() for r in rows)
+    csv_ = client.get("/api/db/rows/events?format=csv")
+    assert csv_.headers["content-type"].startswith("text/csv") and "attachment" in csv_.headers["content-disposition"]
+    assert client.get("/api/db/rows/pg_shadow").status_code == 404  # allowlist only
+    assert any(r["route"] == "GET /api/db/rows/{name}" for r in client.get("/api/track").json())
