@@ -1,4 +1,5 @@
 "use client";
+import { api } from "./types";
 // v0.9 engine room data: stations (one per pipeline stage) and per-job timelines. Live by SSE: any new event in the
 // log re-pulls the stations (one O(E) pass on the API), so every room updates the moment the engine does something.
 import { useEffect, useState } from "react";
@@ -30,7 +31,7 @@ export function useStations(recent = 8) {
     pull();
     let es: EventSource | null = null;
     try {
-      es = new EventSource("/api/stream?after=999999999");
+      es = new EventSource(api("/api/stream?after=999999999"));
       es.addEventListener("narration", (m) => {
         const n = JSON.parse((m as MessageEvent).data);
         setBeat((b) => ({ stage: n.stage, n: (b?.n || 0) + 1 }));

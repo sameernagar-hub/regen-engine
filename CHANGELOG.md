@@ -61,7 +61,15 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
 - **Control room Fleet panel**: kill-switch banner, service health, ledger backend, applier limits, IMAP codes,
   only live members, and the supervisor's audit trail (`/api/control/fleet` now returns status + audit + ledger).
 
+- **Data bus, no proxy**: the ledger's inserts fire `NOTIFY regen_events` (statement-level trigger); `/api/stream`
+  LISTENs on it when the backend is Postgres, so a new event reaches the browser in ~1 s (ledger loop now 2 s)
+  without polling. The web container no longer rewrites `/api` through itself: the browser calls the api container
+  directly (`NEXT_PUBLIC_REGEN_API`, CORS limited to the web origin, CSP `connect-src`/`img-src`/`frame-src` name it;
+  resumes carry `frame-ancestors` for the web origin).
+
 ### Fixed
+- **Live narration never streamed**: clients open `/api/stream?after=999999999` for "only new events", but the
+  server compared ids against that number literally, so only snapshots arrived. `after` is clamped to the newest id.
 - A job whose page never renders its form (`ERROR`) is retried once, then treated as FAILED: one Ashby posting
   took the single Ashby slot of every pass.
 - **The supervisor killed an applier mid-batch** (10-12 22:21): it chose an idle applier from a "watching"

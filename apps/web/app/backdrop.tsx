@@ -1,4 +1,5 @@
 "use client";
+import { api } from "../lib/types";
 // The neural field behind every page: points drift along the five engine stages and pull toward each other when
 // close, drawing the links between them. Each real engine event (SSE narration) sends a pulse through the field,
 // so the background is a heartbeat of the engine, not decoration. Canvas 2D, ~120 points, O(n^2) link pass at
@@ -56,7 +57,7 @@ export function Backdrop() {
     // every real engine event pulses the field in that stage's color
     let es: EventSource | null = null;
     if (process.env.NEXT_PUBLIC_REGEN_MODE !== "public") {
-      es = new EventSource("/api/stream?after=999999999");
+      es = new EventSource(api("/api/stream?after=999999999"));
       es.addEventListener("narration", (m) => {
         const n = JSON.parse((m as MessageEvent).data);
         const k = ["listen", "judge", "write", "apply", "hear"].indexOf(n.stage);

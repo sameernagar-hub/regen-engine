@@ -3,9 +3,9 @@ WORKDIR /web
 COPY package.json package-lock.json* ./
 RUN npm ci --no-audit --no-fund
 COPY . .
-# rewrites() is evaluated at build time: the private API address is baked into the standalone server
-ARG REGEN_API_URL=http://api:8787
-ENV REGEN_API_URL=$REGEN_API_URL
+# the browser calls the API directly: its address is baked into the client bundle at build time
+ARG NEXT_PUBLIC_REGEN_API=http://127.0.0.1:8787
+ENV NEXT_PUBLIC_REGEN_API=$NEXT_PUBLIC_REGEN_API
 RUN npm run build
 
 FROM node:24-alpine

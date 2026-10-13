@@ -1,4 +1,5 @@
 "use client";
+import { api } from "../../lib/types";
 // One job, end to end: which room touched it, when, with what (Fact Bank entries, JD coverage, ATS read-back,
 // every question and the answer sent, proof). Each step links back to its room.
 import Link from "next/link";
@@ -56,7 +57,7 @@ function JobView() {
                   <dl className="qa">{e.answers.map(([q, a], i) => <div key={i}><dt>{q}</dt><dd>{String(a)}</dd></div>)}</dl>
                 </details>
               )}
-              {d.proof && <a className="dim" href={`/api/proof/${String(d.proof).split("/").pop()}`} target="_blank" rel="noreferrer">Proof screenshot ↗</a>}
+              {d.proof && <a className="dim" href={api(`/api/proof/${String(d.proof).split("/").pop()}`)} target="_blank" rel="noreferrer">Proof screenshot ↗</a>}
             </li>
           );
         })}

@@ -1,4 +1,5 @@
 "use client";
+import { api } from "../lib/types";
 // The engine, watched live. Not a dashboard: one line of stations, a tree of real applications growing from
 // "applying" (one stem per resume lane, one bead per proof-backed submission), a narrator, and what needs you.
 import { useEffect, useMemo, useState } from "react";
@@ -155,7 +156,7 @@ function Proof({ a, onClose }: { a: Application; onClose: () => void }) {
       <h2>{PUBLIC ? a.role : a.company}</h2>
       <div className="sub">{a.role} · {a.lane || "earlier"} lane · {a.ts.replace("T", " ")}</div>
       {PUBLIC && <p style={{ color: "var(--dim)" }}>Sent with a saved confirmation page. On the public view the company, the resume and every answer stay private.</p>}
-      {!PUBLIC && file && <img src={`/api/proof/${file}`} alt={`Confirmation page for ${a.company}`} />}
+      {!PUBLIC && file && <img src={api(`/api/proof/${file}`)} alt={`Confirmation page for ${a.company}`} />}
       {facts.length > 0 && (<><h3>BUILT FROM THESE FACTS</h3><div className="chips">{facts.map((f) => <span className="chip" key={f}>{f}</span>)}</div></>)}
       {answers.length > 0 && (<><h3>WHAT THE FORM ASKED, WHAT WE ANSWERED</h3>
         {answers.map(([q, ans], i) => <div className="qa" key={i}><span>{q}</span><span>{ans === "__DECLINE__" ? "declined" : ans === "__ACK__" ? "acknowledged" : ans ?? "—"}</span></div>)}</>)}

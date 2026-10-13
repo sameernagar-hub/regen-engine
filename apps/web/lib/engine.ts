@@ -1,4 +1,5 @@
 "use client";
+import { api } from "./types";
 // One data layer, two sources:
 //   local  -> the private REGEN API (/api/*, SSE stream): your real data, on 127.0.0.1 only
 //   public -> the anonymized feed (/api/public, polled): no company names, no answers, no proofs
@@ -72,7 +73,7 @@ export function useEngine() {
     refresh();
     get<Narration[]>("/api/narration?limit=40").then((r) => { recent.current = r; }).catch(() => {});
     get<Snapshot>("/api/snapshot").then(setSnap).catch(() => {});
-    const es = new EventSource("/api/stream?after=999999999");
+    const es = new EventSource(api("/api/stream?after=999999999"));
     es.addEventListener("snapshot", (m) => setSnap(JSON.parse((m as MessageEvent).data)));
     es.addEventListener("narration", (m) => {
       const n: Narration = JSON.parse((m as MessageEvent).data);

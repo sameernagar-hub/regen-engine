@@ -15,15 +15,21 @@ export const STAGES = [
   { key: "hear", verb: "hearing back" },
 ] as const;
 
+// The browser talks to the API container directly (no proxy hop through the web server). /api/public is the web
+// app's own route (the Render site); everything else lives on the API at NEXT_PUBLIC_REGEN_API.
+export const API_ORIGIN = process.env.NEXT_PUBLIC_REGEN_API || "http://127.0.0.1:8787";
+export const api = (path: string) =>
+  process.env.NEXT_PUBLIC_REGEN_MODE === "public" || path.startsWith("/api/public") ? path : API_ORIGIN + path;
+
 export async function get<T>(path: string): Promise<T> {
-  const r = await fetch(path, { cache: "no-store" });
+  const r = await fetch(api(path), { cache: "no-store" });
   if (!r.ok) throw new Error(`${path}: ${r.status}`);
   return r.json() as Promise<T>;
 }
 
 // The one write (v0.8): answer a waiting question. The API refuses it unless REGEN_API_WRITE=1 on your machine.
 export async function post<T>(path: string, body: unknown): Promise<T> {
-  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const r = await fetch(api(path), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || `${path}: ${r.status}`);
   return r.json() as Promise<T>;
 }

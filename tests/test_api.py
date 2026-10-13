@@ -154,3 +154,22 @@ def test_migrate_reads_only_whole_new_lines(tmp_path, monkeypatch):
     added, off = MG.copy_events(con, off)
     assert added == 1 and con.rows[-1][2] == "application" and con.rows[-1][4] == 2
     assert off == log.stat().st_size
+
+
+def test_stream_after_huge_means_from_now(monkeypatch):
+    """Clients open /api/stream?after=999999999 for "only new events"; the server must clamp it, or nothing streams."""
+    import asyncio
+    from engine.feedback import events
+    resp = asyncio.run(M.stream(after=999999999))
+    it = resp.body_iterator
+
+    async def first_two():
+        a = await it.__anext__()
+        events.record("discovered", job="Initech - Platform Engineer", url="https://job-boards.greenhouse.io/initech/jobs/9",
+                      ats="greenhouse", lag_min=2)
+        out = [a]
+        while "narration" not in out[-1]:
+            out.append(await it.__anext__())
+        return out
+    out = asyncio.run(asyncio.wait_for(first_two(), 20))
+    assert out[0].startswith("event: snapshot") and "Platform Engineer" in out[-1]

@@ -218,7 +218,9 @@ def resume(name: str):
     p = os.path.join(WORKSPACE, "out", name)
     if not os.path.exists(p):
         raise HTTPException(404)
-    return FileResponse(p, media_type="application/pdf", headers={"Content-Disposition": f'inline; filename="{name}"'})
+    origins = " ".join(os.environ.get("REGEN_WEB_ORIGINS", "http://127.0.0.1:3000 http://localhost:3000").replace(",", " ").split())
+    return FileResponse(p, media_type="application/pdf", headers={  # framed by the control room's Applications page only
+        "Content-Disposition": f'inline; filename="{name}"', "Content-Security-Policy": f"frame-ancestors {origins}"})
 
 
 @router.get("/outreach")

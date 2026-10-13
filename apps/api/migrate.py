@@ -14,7 +14,8 @@ events.jsonl stays the source of truth; the database is a labeled, queryable cop
   supervisor_audit  kind=supervisor: action, target, jobs, want
   fleet_heartbeats  latest workspace/fleet/*.json per container (a table, upserted each pass; not events)
 
-The per-kind relations are views over `events`, so they can never disagree with it.
+The per-kind relations are views over `events`, so they can never disagree with it. Every insert also fires
+NOTIFY regen_events: the API's /api/stream LISTENs on it, so new events reach the browser without polling.
 """
 import glob, hashlib, json, os, sys, time
 from datetime import datetime, timezone
@@ -38,6 +39,12 @@ CREATE OR REPLACE FUNCTION events_append_only() RETURNS trigger AS $$
 BEGIN RAISE EXCEPTION 'events is append-only'; END $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS events_no_change ON events;
 CREATE TRIGGER events_no_change BEFORE UPDATE OR DELETE ON events FOR EACH ROW EXECUTE FUNCTION events_append_only();
+-- the data bus: every committed insert wakes the API's LISTEN (one notification per transaction, payload = max id)
+CREATE OR REPLACE FUNCTION events_notify() RETURNS trigger AS $$
+BEGIN PERFORM pg_notify('regen_events', (SELECT coalesce(max(id), 0)::text FROM new_rows)); RETURN NULL; END $$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS events_bus ON events;
+CREATE TRIGGER events_bus AFTER INSERT ON events REFERENCING NEW TABLE AS new_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION events_notify();
 
 CREATE OR REPLACE VIEW applications AS
   SELECT id, ts, job, split_part(job, ' - ', 1) AS company, substr(job, length(split_part(job, ' - ', 1)) + 4) AS title,

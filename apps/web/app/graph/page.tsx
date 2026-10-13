@@ -1,4 +1,5 @@
 "use client";
+import { api } from "../../lib/types";
 // The engine's memory as layers you can open: You -> lanes -> applications -> facts, company, ATS, outcomes.
 // Click a node to expand its next layer (it blooms outward); click again to fold it. Facts used by several
 // applications stay one shared node, so reused knowledge is visible. Everything comes from /api/graph (evidence only).
@@ -149,7 +150,7 @@ export default function Graph() {
           <h2>{focus.type === "Application" ? focus.data.company : focus.label}</h2>
           <div className="sub">{focus.type}{focus.type === "Application" ? ` · ${focus.label} · ${focus.data.status}` : ""}</div>
           {focus.data.text && <p style={{ lineHeight: 1.5 }}>{focus.data.text}</p>}
-          {focus.data.proof && <img src={`/api/proof/${focus.data.proof}`} alt="confirmation page" />}
+          {focus.data.proof && <img src={api(`/api/proof/${focus.data.proof}`)} alt="confirmation page" />}
           <p className="row small">
             {focus.type === "Application" && focus.data.url && <Link href={`/job?u=${encodeURIComponent(focus.data.url)}`}>Full timeline →</Link>}
             {focus.type === "Application" && focus.data.url && <a href={focus.data.url} target="_blank" rel="noreferrer noopener">Posting ↗</a>}

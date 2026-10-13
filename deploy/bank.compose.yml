@@ -84,10 +84,10 @@ services:
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U regen"], interval: 5s, retries: 20 }
     deploy: { resources: { limits: { memory: 384m } } }
 
-  ledger:  # copies new events.jsonl lines + fleet heartbeats into Postgres every 15 s (append-only, idempotent)
+  ledger:  # copies new events.jsonl lines + fleet heartbeats into Postgres every 2 s (append-only, idempotent; only new bytes)
     <<: *engine
     entrypoint: ["python", "-m", "apps.api.migrate"]
-    command: ["--loop", "15"]
+    command: ["--loop", "2"]
     environment: { REGEN_DB_HOST: postgres }
     secrets: [pg_password]
     depends_on: { postgres: { condition: service_healthy } }
@@ -100,11 +100,11 @@ services:
     secrets: [pg_password]
     depends_on: [ledger]
 
-  web:  # the control room UI in a container: http://127.0.0.1:3000 (local mode; proxies /api to the api service)
+  web:  # the control room UI in a container: http://127.0.0.1:3000 (local mode; the browser calls the api container directly, CORS-scoped)
     build:
       context: ../apps/web
       dockerfile: ../../deploy/web.Dockerfile
-      args: { REGEN_API_URL: "http://api:8787" }
+      args: { NEXT_PUBLIC_REGEN_API: "http://127.0.0.1:8787" }  # no proxy: the browser talks to the api container
     image: regen-web:local
     restart: unless-stopped
     ports: ["127.0.0.1:3000:3000"]

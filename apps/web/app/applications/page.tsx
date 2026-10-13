@@ -1,4 +1,5 @@
 "use client";
+import { api } from "../../lib/types";
 // Every application the engine touched, newest first. Pick one to see exactly what was sent: the resume PDF,
 // every question with the answer given, the Fact Bank entries the resume used, and the proof screenshot.
 import Link from "next/link";
@@ -80,14 +81,14 @@ function ApplicationsView() {
             <p className="row small">
               {sel.url && <a href={sel.url} target="_blank" rel="noreferrer noopener">Posting ↗</a>}
               {sel.url && <Link href={`/job?u=${encodeURIComponent(sel.url)}`}>Full timeline →</Link>}
-              {sel.proof && <a href={`/api/proof/${file(sel.proof)}`} target="_blank" rel="noreferrer">Proof ↗</a>}
+              {sel.proof && <a href={api(`/api/proof/${file(sel.proof)}`)} target="_blank" rel="noreferrer">Proof ↗</a>}
             </p>
             {sel.detail && sel.status !== "SUBMITTED" && <p className="note">{sel.detail}</p>}
             {sel.resume && (
               <>
                 <h3 className="sub">Resume sent</h3>
-                <iframe className="pdf" src={`/api/resume/${file(sel.resume)}`} title={`Resume for ${sel.company}`} />
-                <a className="small" href={`/api/resume/${file(sel.resume)}`} target="_blank" rel="noreferrer">{file(sel.resume)} ↗</a>
+                <iframe className="pdf" src={api(`/api/resume/${file(sel.resume)}`)} title={`Resume for ${sel.company}`} />
+                <a className="small" href={api(`/api/resume/${file(sel.resume)}`)} target="_blank" rel="noreferrer">{file(sel.resume)} ↗</a>
               </>
             )}
             {(sel.answers || []).length > 0 && (

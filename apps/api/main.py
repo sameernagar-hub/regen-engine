@@ -159,8 +159,11 @@ def proof(name: str):
 @app.get("/api/stream")
 async def stream(after: int = 0):
     """SSE: `narration` for each new event, `snapshot` when anything changes (and every 15 s as a keep-alive)."""
+    if store.backend() == "postgres":
+        return StreamingResponse(_bus(after), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
+
     async def gen():
-        last, marker, beat = after, None, 0.0
+        last, marker, beat = min(after, len(store.read())), None, 0.0  # a huge `after` means "from now"
         while True:
             m = store.size_marker()
             if m != marker:
@@ -175,6 +178,40 @@ async def stream(after: int = 0):
                 yield f"event: snapshot\ndata: {snapshot().model_dump_json()}\n\n"; beat = time.time()
             await asyncio.sleep(1)
     return StreamingResponse(gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
+
+
+async def _bus(after):
+    """SSE fed by the Postgres data bus: LISTEN regen_events (fired by the ledger's inserts), then read only rows
+    past `last`. No polling; a 15 s timeout doubles as the keep-alive snapshot. Reconnects if the database restarts."""
+    import psycopg
+    last = min(after, store.size_marker())  # after=999999999 means "from now": clamp to the newest id
+
+    def emit(rows):
+        nonlocal last
+        out = []
+        for i, e in rows:
+            last = i
+            n = narrate(e)
+            if n:
+                out.append(f"event: narration\ndata: {Narration(id=i, ts=e.get('ts'), **n).model_dump_json()}\n\n")
+        return out
+    while True:
+        try:
+            async with await psycopg.AsyncConnection.connect(store.DSN, autocommit=True) as con:
+                await con.execute("LISTEN regen_events")
+                for chunk in emit(await asyncio.to_thread(store.read, last)):
+                    yield chunk
+                yield f"event: snapshot\ndata: {snapshot().model_dump_json()}\n\n"
+                while True:
+                    woke = False
+                    async for _ in con.notifies(timeout=15, stop_after=1):
+                        woke = True
+                    if woke:
+                        for chunk in emit(await asyncio.to_thread(store.read, last)):
+                            yield chunk
+                    yield f"event: snapshot\ndata: {snapshot().model_dump_json()}\n\n"
+        except psycopg.OperationalError:
+            await asyncio.sleep(3)
 
 
 @app.get("/api/graph")
