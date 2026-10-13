@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-12 22:58",
+"generated": "2026-10-12 23:26",
 "days": 7,
 "verified": 79,
 "verified_roles": [
@@ -323,61 +323,6 @@
 "boards": 2270,
 "last_poll": 1791700372.0784452,
 "events": [
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:39"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:39"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 7 facts in the Fact Bank, embedded lane.",
-"ts": "2026-10-11T20:39"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:39"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:39"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:39"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-11T20:39"
-},
-{
-"stage": "apply",
-"tone": "quiet",
-"text": "A company didn't go through yet: Select a country.",
-"ts": "2026-10-11T20:42"
-},
-{
-"stage": "apply",
-"tone": "quiet",
-"text": "6 companies didn't go through yet: EMAIL CODE REQUIRED (timed out).",
-"ts": "2026-10-11T20:46",
-"n": 6
-},
 {
 "stage": "write",
 "tone": "calm",
@@ -1288,6 +1233,60 @@
 "tone": "quiet",
 "text": "A company didn't go through yet: no confirmation seen (captcha?).",
 "ts": "2026-10-12T22:58"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-12T23:03"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: no confirmation seen (captcha?).",
+"ts": "2026-10-12T23:04"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Bus Test Engineer, 1 min after it went live.",
+"ts": "2026-10-12T23:07"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Bus Test Two, 1 min after it went live.",
+"ts": "2026-10-12T23:09"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-12T23:10"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-12T23:16"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: Missing entry for required field: Where are you currently l….",
+"ts": "2026-10-12T23:16"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-12T23:22"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: Missing entry for required field: Please confirm you are ab….",
+"ts": "2026-10-12T23:22"
 }
 ],
 "graph": {
