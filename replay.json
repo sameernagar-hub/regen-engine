@@ -1,7 +1,7 @@
 {
-"generated": "2026-10-12 23:27",
+"generated": "2026-10-12 23:41",
 "days": 7,
-"verified": 79,
+"verified": 80,
 "verified_roles": [
 [
 "Backend Engineer",
@@ -318,47 +318,15 @@
 [
 "Software Engineer, Lab Platform",
 "platform"
+],
+[
+"Machine Learning Engineer (Physics-based)",
+"ai"
 ]
 ],
 "boards": 2270,
 "last_poll": 1791700372.0784452,
 "events": [
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
-"ts": "2026-10-11T20:52"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
-"ts": "2026-10-11T20:52"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:52"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-11T20:52"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:52"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:52"
-},
 {
 "stage": "write",
 "tone": "calm",
@@ -1287,6 +1255,42 @@
 "tone": "quiet",
 "text": "A company didn't go through yet: Missing entry for required field: Please confirm you are ab….",
 "ts": "2026-10-12T23:22"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-12T23:27"
+},
+{
+"stage": "apply",
+"tone": "win",
+"text": "Applied to a company, Machine Learning Engineer (Physics-based). Proof saved.",
+"ts": "2026-10-12T23:28"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-12T23:33"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: Missing entry for required field: Do you have the appropria….",
+"ts": "2026-10-12T23:34"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-12T23:39"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: Missing entry for required field: Location; Missing entry f….",
+"ts": "2026-10-12T23:40"
 }
 ],
 "graph": {
@@ -2591,9 +2595,11 @@
 },
 {
 "id": "n165",
-"type": "Outcome",
-"label": "confirmation",
-"data": {}
+"type": "Application",
+"label": "Machine Learning Engineer (Physics-based)",
+"data": {
+"status": "SUBMITTED"
+}
 },
 {
 "id": "n166",
@@ -2706,7 +2712,7 @@
 {
 "id": "n184",
 "type": "Outcome",
-"label": "rejection",
+"label": "confirmation",
 "data": {}
 },
 {
@@ -2724,13 +2730,13 @@
 {
 "id": "n187",
 "type": "Outcome",
-"label": "confirmation",
+"label": "rejection",
 "data": {}
 },
 {
 "id": "n188",
 "type": "Outcome",
-"label": "rejection",
+"label": "confirmation",
 "data": {}
 },
 {
@@ -2748,13 +2754,13 @@
 {
 "id": "n191",
 "type": "Outcome",
-"label": "confirmation",
+"label": "rejection",
 "data": {}
 },
 {
 "id": "n192",
 "type": "Outcome",
-"label": "rejection",
+"label": "confirmation",
 "data": {}
 },
 {
@@ -2765,6 +2771,12 @@
 },
 {
 "id": "n194",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n195",
 "type": "Outcome",
 "label": "confirmation",
 "data": {}
@@ -4317,157 +4329,157 @@
 "type": "HOSTED_ON"
 },
 {
-"source": "n27",
+"source": "n16",
 "target": "n165",
-"type": "RESULTED_IN"
+"type": "SENT"
 },
 {
-"source": "n9",
+"source": "n165",
+"target": "n26",
+"type": "HOSTED_ON"
+},
+{
+"source": "n27",
 "target": "n166",
 "type": "RESULTED_IN"
 },
 {
 "source": "n9",
-"target": "n166",
-"type": "RESULTED_IN"
-},
-{
-"source": "n25",
 "target": "n167",
 "type": "RESULTED_IN"
 },
 {
-"source": "n11",
+"source": "n9",
+"target": "n167",
+"type": "RESULTED_IN"
+},
+{
+"source": "n25",
 "target": "n168",
 "type": "RESULTED_IN"
 },
 {
-"source": "n15",
+"source": "n11",
 "target": "n169",
 "type": "RESULTED_IN"
 },
 {
-"source": "n19",
+"source": "n15",
 "target": "n170",
 "type": "RESULTED_IN"
 },
 {
-"source": "n21",
+"source": "n19",
 "target": "n171",
 "type": "RESULTED_IN"
 },
 {
-"source": "n23",
+"source": "n21",
 "target": "n172",
 "type": "RESULTED_IN"
 },
 {
-"source": "n18",
+"source": "n23",
 "target": "n173",
 "type": "RESULTED_IN"
 },
 {
-"source": "n17",
+"source": "n18",
 "target": "n174",
 "type": "RESULTED_IN"
 },
 {
-"source": "n13",
+"source": "n17",
 "target": "n175",
 "type": "RESULTED_IN"
 },
 {
-"source": "n8",
+"source": "n13",
 "target": "n176",
 "type": "RESULTED_IN"
 },
 {
-"source": "n7",
+"source": "n8",
 "target": "n177",
 "type": "RESULTED_IN"
 },
 {
-"source": "n15",
+"source": "n7",
 "target": "n178",
 "type": "RESULTED_IN"
 },
 {
-"source": "n6",
+"source": "n15",
 "target": "n179",
 "type": "RESULTED_IN"
 },
 {
-"source": "n5",
+"source": "n6",
 "target": "n180",
 "type": "RESULTED_IN"
 },
 {
-"source": "n4",
+"source": "n5",
 "target": "n181",
 "type": "RESULTED_IN"
 },
 {
-"source": "n3",
+"source": "n4",
 "target": "n182",
 "type": "RESULTED_IN"
 },
 {
-"source": "n2",
+"source": "n3",
 "target": "n183",
 "type": "RESULTED_IN"
 },
 {
-"source": "n7",
+"source": "n2",
 "target": "n184",
 "type": "RESULTED_IN"
 },
 {
-"source": "n15",
+"source": "n7",
 "target": "n185",
 "type": "RESULTED_IN"
 },
 {
-"source": "n8",
+"source": "n15",
 "target": "n186",
 "type": "RESULTED_IN"
 },
 {
-"source": "n37",
+"source": "n8",
 "target": "n187",
 "type": "RESULTED_IN"
 },
 {
-"source": "n13",
+"source": "n37",
 "target": "n188",
 "type": "RESULTED_IN"
 },
 {
-"source": "n46",
+"source": "n13",
 "target": "n189",
 "type": "RESULTED_IN"
 },
 {
-"source": "n5",
+"source": "n46",
 "target": "n190",
 "type": "RESULTED_IN"
 },
 {
-"source": "n71",
+"source": "n5",
 "target": "n191",
 "type": "RESULTED_IN"
 },
 {
-"source": "n49",
+"source": "n71",
 "target": "n192",
 "type": "RESULTED_IN"
 },
 {
-"source": "n73",
-"target": "n193",
-"type": "RESULTED_IN"
-},
-{
-"source": "n73",
+"source": "n49",
 "target": "n193",
 "type": "RESULTED_IN"
 },
@@ -4479,6 +4491,16 @@
 {
 "source": "n73",
 "target": "n194",
+"type": "RESULTED_IN"
+},
+{
+"source": "n73",
+"target": "n195",
+"type": "RESULTED_IN"
+},
+{
+"source": "n73",
+"target": "n195",
 "type": "RESULTED_IN"
 }
 ]
