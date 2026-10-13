@@ -79,8 +79,8 @@ def git(*args, cwd=None, auth=False, check=True, timeout=300):
 
 def push(src, dst, lease=None):
     """The only way this module pushes. dst must be on the allowlist; force only as a lease on a bot branch."""
-    if not dst.startswith("refs/heads/") or not any(dst == a or (a.endswith("/") and dst.startswith(a)) for a in ALLOWED):
-        raise GuardError(f"push to {dst} refused: only gh-pages and bot/* are allowed")
+    if src == "HEAD" or not dst.startswith("refs/heads/") or not any(dst == a or (a.endswith("/") and dst.startswith(a)) for a in ALLOWED):
+        raise GuardError(f"push to {dst} refused: only gh-pages and bot/* are allowed, from an explicit commit id")
     if lease is not None and not dst.startswith("refs/heads/bot/"):
         raise GuardError("force-with-lease is only allowed on bot/* branches")
     if os.path.exists(os.path.join(WORKSPACE, "KILL")):
@@ -104,8 +104,14 @@ def ensure_clone():
     if not os.path.isdir(os.path.join(REPO, ".git")):
         os.makedirs(REPO, exist_ok=True)
         git("clone", "--no-checkout", URL, REPO, cwd="/", auth=True)
-    git("fetch", "--prune", URL, "+refs/heads/main:refs/remotes/origin/main", "+refs/heads/gh-pages:refs/remotes/origin/gh-pages",
-        f"+refs/heads/{BOT}:refs/remotes/origin/{BOT}", auth=True, check=False)
+    # one fetch per ref: a missing ref (bot/sync before its first push) fails a whole multi-ref fetch, which once left
+    # origin/main stale and made already-pushed commits look local. main and gh-pages must fetch, or the pass stops.
+    for ref in ("main", "gh-pages"):
+        git("fetch", "--no-tags", URL, f"+refs/heads/{ref}:refs/remotes/origin/{ref}", auth=True)
+    if git("ls-remote", "--heads", URL, BOT, auth=True):
+        git("fetch", "--no-tags", URL, f"+refs/heads/{BOT}:refs/remotes/origin/{BOT}", auth=True)
+    else:
+        git("update-ref", "-d", f"refs/remotes/origin/{BOT}", check=False)
 
 
 def sync_feed():
@@ -128,7 +134,8 @@ def sync_feed():
         return "unchanged"
     git("add", "-A", cwd=wt)
     git(*AUTHOR, "commit", "-m", "public feed: anonymized replay " + time.strftime("%Y-%m-%d %H:%M"), cwd=wt)
-    push("HEAD", "refs/heads/gh-pages")
+    # an explicit commit id from the pages worktree: "HEAD" in the main clone once named main's commit
+    push(git("rev-parse", "HEAD", cwd=wt), "refs/heads/gh-pages")
     audit("feed_pushed", verified=d["verified"], events=len(d["events"]))
     return "pushed"
 

@@ -76,6 +76,10 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   Verify: `pytest -k reposync`; `docker logs deploy-reposync-1`.
 
 ### Fixed
+- reposync's first live pass: one multi-ref fetch failed on the not-yet-existing bot branch and left `origin/main`
+  stale (pushed commits looked local), and the feed push named `HEAD` of the main clone instead of the pages
+  worktree (git rejected it as non-fast-forward). Fetches are per ref (main and gh-pages must succeed) and every push
+  takes an explicit commit id (`HEAD` is refused by the guard).
 - **Live narration never streamed**: clients open `/api/stream?after=999999999` for "only new events", but the
   server compared ids against that number literally, so only snapshots arrived. `after` is clamped to the newest id.
 - A job whose page never renders its form (`ERROR`) is retried once, then treated as FAILED: one Ashby posting
