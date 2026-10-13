@@ -13,8 +13,8 @@ from engine.config import WORKSPACE
 
 
 def _norm(s):
-    s = re.sub(r"[,.]?\s+(inc|llc|ltd|corp|corporation|co)\.?$", "", (s or "").strip(), flags=re.I)
-    return re.sub(r"[^a-z0-9]", "", s.lower())
+    from engine.names import company_slug  # one company comparison everywhere
+    return company_slug(s)
 
 
 def waiting(workspace=None):

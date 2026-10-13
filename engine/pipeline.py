@@ -21,6 +21,7 @@ import collections, heapq, datetime, json, os, re, subprocess, sys, time
 
 from engine.config import ROOT, WORKSPACE, in_workspace
 from engine.feedback.events import read, record
+from engine.names import company_slug, role_key
 from engine.supervisor import beat
 
 
@@ -110,7 +111,7 @@ def history(days=3, min_tries=4, wall_rate=0.5):
         tries[a] += 1
         if any(w in detail for w in WALL):
             walls[a] += 1
-        co = (e.get("job") or "").split(" - ")[0].strip().lower()
+        co = company_slug((e.get("job") or "").split(" - ")[0])
         if co and (any(w in detail for w in WALL) or any(h in detail.lower() for h in HUMAN_ONLY)):
             blocked.add(co)
     walled = {a for a in tries if tries[a] >= min_tries and walls[a] / tries[a] >= wall_rate}
@@ -121,14 +122,14 @@ ASHBY_PER_PASS = int(os.environ.get("REGEN_ASHBY_PER_PASS", "1"))
 
 
 def in_flight():
-    """Job labels (lowercase) in batches still waiting in inbox/ or being applied in claimed/. O(batched jobs)."""
+    """role_key()s of the jobs in batches still waiting in inbox/ or being applied in claimed/. O(batched jobs)."""
     from engine.apply.worker import DIRS
     out = set()
     for d in (DIRS["inbox"], DIRS["claimed"]):
         for n in os.listdir(d) if os.path.isdir(d) else []:
             if n.endswith(".json") and not n.startswith("."):
                 try:
-                    out |= {j["name"].lower().strip() for j in json.load(open(os.path.join(d, n), encoding="utf-8"))}
+                    out |= {role_key(j["name"]) for j in json.load(open(os.path.join(d, n), encoding="utf-8"))}
                 except (OSError, ValueError, KeyError, TypeError):
                     pass
     return out
@@ -148,12 +149,12 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
     heap = [(band(j), -score(j, rates)[0], i) for i, j in enumerate(queue)]
     heapq.heapify(heap)
     per, picked = collections.Counter(), []
-    seen = {(e.get("job") or "").lower().strip() for e in read("application")
+    seen = {role_key(e.get("job")) for e in read("application")
             if not e.get("dry") and (e.get("status") or "").startswith("SUBMITTED")}
     seen |= in_flight()  # a job already in a worker's batch: two attempts share one email code (10-11: a code bounced)
     while heap:
         j = queue[heapq.heappop(heap)[2]]
-        key = f"{j['company']} - {j['title']}".lower().strip()
+        key = role_key(j["company"], j["title"])
         if key in seen:
             continue  # one posting listed under several URLs (locations, sources): 10-11 batch held the same role 3 times
         seen.add(key)
@@ -163,7 +164,7 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
             continue
         if j.get("ats") in SKIP_ATS or j.get("ats") in walled:  # REGEN_SKIP_ATS, or learned from captcha walls
             continue
-        co = j["company"].lower()
+        co = company_slug(j["company"])
         if co in blocked:
             continue  # this company is waiting on the user (arbitration, assessment, captcha)
         if per[co] >= per_company:
@@ -310,12 +311,7 @@ def main(argv=None):
             continue
         beat("pipeline", state="scanning and tailoring", **{"pass": n + 1})
         run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125)))
-        n += 1
-        try:  # disk hygiene every pass: logged proofs/resumes/caches past their window (engine/clean.py)
-            from engine.clean import main as clean
-            clean([])
-        except Exception as e:  # never let cleanup stop applying
-            print(f"clean skipped: {e}")
+        n += 1  # disk hygiene (engine/clean.py) is the supervisor's job: hourly, one owner
         print(f"loop: pass {n} done; next scan in {loop:g} min", flush=True)
         for _ in range(int(loop)):  # one heartbeat a minute while idle
             beat("pipeline", state="sleeping until next scan", **{"pass": n})

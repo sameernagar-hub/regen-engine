@@ -501,8 +501,10 @@ def supervise(argv=None):
             want, running, jobs = scale(*limits(lo, hi))
             if n % 8 == 0:
                 requeue_stale()
-            if n % 240 == 0:
+            if n % 240 == 0:  # hourly: dangling images, then the retention policy (engine/clean.py)
                 prune_images()
+                from engine.clean import main as clean
+                clean([])
             beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap)
         except Exception as ex:  # never die: a supervisor that crashes leaves the fleet at its last size
             print(f"supervisor: {ex}", flush=True)

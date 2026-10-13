@@ -8,6 +8,7 @@ import glob, json, os, shutil, sys, time
 
 from engine.config import WORKSPACE
 from engine.apply.worker import DIRS
+from engine.names import company_slug, role_key
 from engine.pipeline import history, in_flight, latest_status, split
 
 
@@ -24,12 +25,12 @@ def main(args):
     st, (_, blocked) = latest_status(), history()
     out, seen, busy = [], set(), in_flight()
     from engine.feedback.events import read
-    done = {(e.get("job") or "").lower().strip() for e in read("application")  # same role under another URL
+    done = {role_key(e.get("job")) for e in read("application")  # same role under another URL
             if not e.get("dry") and (e.get("status") or "").startswith("SUBMITTED")}
     for f in files:
         for j in json.load(open(f, encoding="utf-8")):
-            co = j["name"].split(" - ")[0].lower()
-            key = j["name"].lower().strip()
+            co = company_slug(j["name"].split(" - ")[0])
+            key = role_key(j["name"])
             if j["url"] in seen or key in seen or key in done or key in busy or st.get(j["url"]) in ("SUBMITTED", "SKIPPED", "NEEDS YOU") or co in blocked:
                 continue
             seen |= {j["url"], key}; out.append(j)

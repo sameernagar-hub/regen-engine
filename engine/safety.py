@@ -81,7 +81,8 @@ def check_rate(company, max_per_day=None, max_per_company=3):
     out = []
     if len(subs) >= max_per_day:
         out.append(f"daily cap reached ({len(subs)}/{max_per_day}); raise REGEN_MAX_PER_DAY if intended")
-    same = [e for e in subs if e.get("job", "").lower().startswith(company.lower())]
+    from engine.names import company_slug
+    same = [e for e in subs if company_slug(e.get("job", "").split(" - ")[0]) == company_slug(company)]
     if company and len(same) >= max_per_company:
         out.append(f"{len(same)} submissions to {company} today already")
     return out

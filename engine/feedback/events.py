@@ -62,9 +62,12 @@ def append_line(path, obj):
             os.close(lf)
 
 
+SCHEMA_VERSION = 1  # bump when an event kind's fields change meaning; the Postgres ledger stores it as `v`
+
+
 def record(kind, **fields):
     os.makedirs(WORKSPACE, exist_ok=True)
-    ev = {"ts": datetime.datetime.now().isoformat(timespec="seconds"), "kind": kind, **fields}
+    ev = {"ts": datetime.datetime.now().isoformat(timespec="seconds"), "kind": kind, "v": SCHEMA_VERSION, **fields}
     append_line(_path(), ev)
     return ev
 

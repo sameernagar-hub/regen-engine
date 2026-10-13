@@ -629,3 +629,23 @@ def test_worker_never_claims_while_drained(tmp_path, monkeypatch):
     monkeypatch.setattr(W.time, "sleep", lambda s: open(tmp_path / "batches" / "STOP", "w").close())
     W.main([])
     assert states == ["draining"]
+
+
+def test_company_slug_and_role_key():
+    from engine.names import company_slug, role_key
+    assert company_slug("Acme Robotics, Inc.") == company_slug("acme-robotics") == "acmerobotics"
+    assert company_slug("A&B Labs LLC") == "aandblabs"
+    assert role_key("Acme, Inc. - Software Engineer  II") == role_key("acme", "software engineer ii") == "acme - software engineer ii"
+
+
+def test_clean_drops_day_old_codes_only(tmp_path, monkeypatch):
+    import os, time
+    from engine import clean as C
+    monkeypatch.setattr(C, "WORKSPACE", str(tmp_path))
+    (tmp_path / "codes").mkdir()
+    old, new = tmp_path / "codes" / "a.tried", tmp_path / "codes" / "b.wait"
+    old.write_text("1"); new.write_text("2")
+    os.utime(old, (time.time() - 2 * 86400,) * 2)
+    files, _ = C.plan()
+    assert [os.path.basename(f) for f in files] == ["a.tried"]
+    assert C.PROOF_DAYS == 90 and C.LOG_DAYS == 14 and C.CODE_DAYS == 1

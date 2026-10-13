@@ -2,21 +2,28 @@
 
     python -m engine clean [--dry]
 
-What goes (the event log keeps the record: job, status, resume name, proof name, answers):
-  proof/*.png            older than PROOF_DAYS (3)    confirmation screenshots, already logged as `proof` events
+Retention policy (user, 10-11). The event log keeps the record: job, status, resume name, proof name, answers.
+  proof/*.png            older than PROOF_DAYS (90)   confirmation screenshots: the evidence a submission happened
   out/*.pdf              older than RESUME_DAYS (3)   tailored resumes; rebuilt from the Fact Bank on demand
   jd/*                   older than JD_DAYS (14)      cached job descriptions
-  logs/*.log             older than LOG_DAYS (7)
+  logs/*.log             older than LOG_DAYS (14)
+  codes/*                older than CODE_DAYS (1)     email codes and waits: useless (and sensitive) after a day
   batches/done/*, batches/*.json older than 2 days
   pw-profile*/**/{Cache, Code Cache, GPUCache, CacheStorage}   browser caches (cookies and logins stay)
-What stays: events.jsonl, queue.json, seen.json, codes/, profile/ (never touched), anything newer than its window.
-O(files under workspace).
+What stays: events.jsonl, queue.json, seen.json, profile/ (never touched), quarantine/ (the user reviews it),
+anything newer than its window. Each window can be overridden with REGEN_KEEP_<NAME>_DAYS (e.g. REGEN_KEEP_PROOF_DAYS).
+The supervisor runs it hourly. O(files under workspace).
 """
 import os, shutil, sys, time
 
 from engine.config import WORKSPACE
 
-PROOF_DAYS, RESUME_DAYS, JD_DAYS, LOG_DAYS, BATCH_DAYS = 3, 3, 14, 7, 2
+def _days(name, default):
+    return float(os.environ.get(f"REGEN_KEEP_{name}_DAYS", default))
+
+
+PROOF_DAYS, RESUME_DAYS, JD_DAYS, LOG_DAYS, BATCH_DAYS, CODE_DAYS = (
+    _days("PROOF", 90), _days("RESUME", 3), _days("JD", 14), _days("LOG", 14), _days("BATCH", 2), _days("CODE", 1))
 CACHE_DIRS = {"Cache", "Code Cache", "GPUCache", "CacheStorage", "ShaderCache", "GrShaderCache"}
 
 
@@ -44,6 +51,7 @@ def plan():
     files += _old_files("out", RESUME_DAYS, (".pdf", ".docx"))
     files += _old_files("jd", JD_DAYS)
     files += _old_files("logs", LOG_DAYS, (".log",))
+    files += _old_files("codes", CODE_DAYS)
     files += _old_files(os.path.join("batches", "done"), BATCH_DAYS, (".json",))
     files += _old_files("batches", BATCH_DAYS, (".json",))
     dirs = []

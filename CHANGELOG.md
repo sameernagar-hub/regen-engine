@@ -39,6 +39,14 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   10-11 all pass. Proof screenshots are PNG only and are not text-scanned.
   Verify: `pytest -k "outreach_guard or guarded_drafts"`.
 
+- **Data hygiene**: retention per the user's 10-11 policy (proof 90 d, logs 14 d, codes 1 d; resumes 3 d, JDs 14 d
+  unchanged; each overridable with `REGEN_KEEP_<NAME>_DAYS`), run hourly by the supervisor instead of every
+  pipeline pass. Every new event carries `"v": 1` (`events.SCHEMA_VERSION`). One company comparison everywhere
+  (`engine/names.py`: `company_slug`, `role_key`): selection dedupe, per-company caps, blocked companies,
+  in-flight jobs, requeue, the daily per-company rate airbag (was a prefix match: "Acme" counted "Acme Robotics")
+  and email-code matching. Display names are unchanged.
+  Verify: `pytest -k "slug or day_old"`.
+
 ### Fixed
 - **The supervisor killed an applier mid-batch** (10-12 22:21): it chose an idle applier from a "watching"
   heartbeat, then `docker stop -t 20` gave the worker 20 s in which it claimed a fresh 3-job batch and died holding
