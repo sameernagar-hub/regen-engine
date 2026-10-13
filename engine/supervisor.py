@@ -239,30 +239,21 @@ def prune_images():
 
 
 # ---------------- leak guard + kill switch ----------------
-SECRET_RX = [
-    re.compile(r"\b(sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|xox[abp]-[A-Za-z0-9-]{20,}|AIza[0-9A-Za-z_-]{30,})"),
-    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
-    re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),  # SSN shape
-]
 _scanned = {}
-
-
-def _secrets():
-    """Exact secret values from the environment (.env): the app password, tokens. Never logged themselves."""
-    from engine.notify import _env
-    e = _env()
-    return [(k, v.replace(" ", "")) for k, v in e.items()
-            if re.search(r"PASSWORD|SECRET|TOKEN|API_KEY|PRIVATE", k) and len((v or "").replace(" ", "")) >= 8]
+TEXT_DIRS = ("logs", "outreach", os.path.join("batches", "done"), "specs", "")  # appended or rewritten text files
+PDF_DIRS = ("out",)  # tailored resumes: their extracted text, once per file version (proof/ is PNG only)
 
 
 def guard():
-    """Scan files written since the last pass (logs, outreach, finished batches, top-level ledger files) for secret
-    values from .env and secret shapes. A hit is a kill: kill() + the file moved to quarantine/ (kept for review,
-    never deleted automatically) + an audit record naming the file and rule (never the secret). O(new bytes)."""
+    """Scan files written since the last pass (logs, outreach, finished batches, resume specs, top-level ledger
+    files, and the text of new resume PDFs) for secret values from .env and secret shapes (engine/guard.py).
+    A hit is a kill: kill() + the file moved to quarantine/ (kept for review, never deleted automatically) + an
+    audit record naming the file and rule (never the secret). O(new bytes) + one PDF read per new resume."""
     import shutil
-    secrets = _secrets()
+    from engine import guard as G
+    secrets = G.secrets()
     hits = []
-    for sub in ("logs", "outreach", os.path.join("batches", "done"), ""):
+    for sub in TEXT_DIRS:
         d = os.path.join(WORKSPACE, sub)
         if not os.path.isdir(d):
             continue
@@ -278,9 +269,22 @@ def guard():
                 f.seek(start)
                 text = f.read().decode("utf-8", "replace")
             _scanned[p] = size
-            flat = text.replace(" ", "")
-            rule = next((k for k, v in secrets if v in flat), None) or \
-                next((f"pattern {i}" for i, rx in enumerate(SECRET_RX) if rx.search(text)), None)
+            rule = G.secret_rule(text, secrets)
+            if rule:
+                hits.append((p, rule))
+    for sub in PDF_DIRS:
+        d = os.path.join(WORKSPACE, sub)
+        if not os.path.isdir(d):
+            continue
+        for n in os.listdir(d):
+            p = os.path.join(d, n)
+            if not n.endswith(".pdf") or not os.path.isfile(p):
+                continue
+            ver = (os.path.getsize(p), os.path.getmtime(p))
+            if _scanned.get(p) == ver:
+                continue
+            _scanned[p] = ver
+            rule = G.secret_rule(G.pdf_text(p), secrets)
             if rule:
                 hits.append((p, rule))
     for p, rule in hits:

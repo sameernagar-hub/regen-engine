@@ -31,6 +31,14 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   `supervise --clear` restarts the pipeline container that `kill()` stopped.
   Verify: `pytest -k kill_switch_reaches_every_step`.
 
+- **Stricter leak guard** (`engine/guard.py`, shared rules): the supervisor scan now also covers resume specs
+  (`specs/`) and the extracted text of each new or changed resume PDF (`out/`). Outreach drafts pass
+  `guard.outreach_problems` before the Gmail APPEND: secrets, the preset phone, street address, salary numbers and
+  work-authorization status words are blocked unless the key is in `presets["_outreach_allowed"]`; a blocked draft
+  is not saved and leaves a `flag` event (`outreach_guard`) naming the rule, never the value. The 32 drafts saved on
+  10-11 all pass. Proof screenshots are PNG only and are not text-scanned.
+  Verify: `pytest -k "outreach_guard or guarded_drafts"`.
+
 ### Fixed
 - A kill only reached workers between batches: `stop_requested()` looked at `workspace/STOP`, while `kill()` writes
   `KILL` and `batches/STOP`, so a running applier kept submitting until its batch ended.

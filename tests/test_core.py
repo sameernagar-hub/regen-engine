@@ -532,3 +532,33 @@ def test_kill_switch_reaches_every_step(tmp_path, monkeypatch):
     assert safety.killed().endswith("x.log") and safety.stop_requested()
     assert pipeline.run(scan=True) == []  # returns before scanning, selecting or dispatching anything
     assert seen == [{"stage": "scan", "halted": "2026-10-12T22:00:00 secret in logs/x.log"}]
+
+
+def test_outreach_guard_blocks_form_only_data():
+    """Cold emails never carry secrets, phone, street address, salary numbers or work-authorization status."""
+    from engine import guard as G
+    p = {"phone": "+1 (408) 555-0142", "address_line1": "12 Example Street", "market_salary": 140000}
+    s = [("REGEN_SMTP_APP_PASSWORD", "abcdefghijklmnop")]
+    ok = "Hi,\nI built a RAG pipeline with an F1 score of 0.91; happy to opt-in to a screen.\nThanks"
+    assert G.outreach_problems(ok, p, s) == []
+    assert G.outreach_problems("call me at 408.555.0142", p, s) == ["preset phone"]
+    assert G.outreach_problems("I live at 12 example street", p, s) == ["preset address_line1"]
+    assert G.outreach_problems("expecting $140,000", p, s) == ["preset market_salary"]
+    assert G.outreach_problems("I am on CPT", p, s) == ["work-authorization status (cpt)"]
+    assert G.outreach_problems("no sponsorship needed", p, s) == ["work-authorization status (sponsorship)"]
+    assert G.outreach_problems("pw abcd efgh ijkl mnop", p, s) == ["secret (REGEN_SMTP_APP_PASSWORD)"]
+    assert G.outreach_problems("call 408 555 0142", dict(p, _outreach_allowed=["phone"]), s) == []
+
+
+def test_gmail_drafts_skips_guarded_drafts(monkeypatch):
+    from engine import outreach as O, guard as G
+    from engine.feedback import events
+    monkeypatch.setattr(G, "_presets", lambda: {})
+    monkeypatch.setattr(G, "secrets", lambda: [])
+    seen = []
+    monkeypatch.setattr(events, "record", lambda kind, **kw: seen.append((kind, kw)))
+    blocked = []
+    n = O.gmail_drafts([{"to": "a@b.c", "company": "<Co>", "subject": "Hi", "body": "I need H-1B sponsorship"},
+                        {"company": "<Co2>", "subject": "Hi", "body": "no recipient"}], blocked)
+    assert n == 0 and blocked == [("<Co>", ["work-authorization status (h-1b)"])]  # no IMAP login when nothing is left
+    assert seen[0][0] == "flag" and seen[0][1]["flag_kind"] == "outreach_guard"

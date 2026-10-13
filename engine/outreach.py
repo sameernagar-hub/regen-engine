@@ -172,11 +172,28 @@ def hn_draft(t, bank=None):
     return dict(t, subject=subject, body=body, compose=compose, sources=t["facts"][:2])
 
 
-def gmail_drafts(drafts):
+def gmail_drafts(drafts, blocked=None):
     """Save drafts into the user's Gmail Drafts folder over IMAP (the app password in .env). APPEND only: nothing is
-    sent, read or changed; the user reviews and sends each one. Returns how many were saved."""
+    sent, read or changed; the user reviews and sends each one. Every subject + body passes the leak guard first
+    (engine/guard.py: secrets, phone, address, salary, visa/work-authorization status): a draft that fails is not
+    saved, a `flag` event names the rule, and it lands in `blocked` as (company, rules). Returns how many were saved."""
     import email.message, email.utils, imaplib, time as T
+    from engine import guard
+    from engine.feedback.events import record
     from engine.notify import _env
+    blocked = [] if blocked is None else blocked
+    ok = []
+    for d in drafts:
+        if not d.get("to"):
+            continue  # a draft without a published recipient stays a compose link
+        rules = guard.outreach_problems(d.get("subject", "") + "\n" + d.get("body", ""))
+        if rules:
+            blocked.append((d.get("company", "?"), rules))
+            record("flag", flag_kind="outreach_guard", job=d.get("company", "?"), detail="; ".join(rules))
+        else:
+            ok.append(d)
+    if not ok:
+        return 0
     e = _env()
     user, pw = e.get("REGEN_SMTP_USER"), (e.get("REGEN_SMTP_APP_PASSWORD") or "").replace(" ", "")
     if not (user and pw):
@@ -184,9 +201,7 @@ def gmail_drafts(drafts):
     M = imaplib.IMAP4_SSL(e.get("REGEN_IMAP_HOST", "imap.gmail.com"))
     M.login(user, pw)
     n = 0
-    for d in drafts:
-        if not d.get("to"):
-            continue  # a draft without a published recipient stays a compose link
+    for d in ok:
         m = email.message.EmailMessage()
         m["From"], m["To"], m["Subject"] = user, d["to"], d["subject"]
         m["Date"] = email.utils.formatdate(localtime=True)
@@ -207,7 +222,10 @@ def main(argv=None):
         json.dump(ds, open(os.path.join(d, "hn_drafts.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
         for x in ds:
             print(f"  {x['company'][:28]:<28} {x['to']:<34} {x['role'][:40]}")
-        saved = gmail_drafts(ds) if "--gmail" in argv else 0
+        blocked = []
+        saved = gmail_drafts(ds, blocked) if "--gmail" in argv else 0
+        for co, rules in blocked:
+            print(f"  blocked by the leak guard: {co[:28]} ({'; '.join(rules)})")
         print(f"{len(ds)} HN drafts -> workspace/outreach/hn_drafts.json" + (f"; {saved} saved to Gmail Drafts (nothing sent)" if saved else " (nothing sent)"))
         return
     ds = build(int(argv[0]) if argv else 7)
