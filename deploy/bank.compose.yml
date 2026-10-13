@@ -92,11 +92,21 @@ services:
     secrets: [pg_password]
     depends_on: { postgres: { condition: service_healthy } }
 
+  answers:  # the answer queue: /needs answers -> profile/answers.json -> one retry batch in batches/inbox
+    <<: *engine
+    entrypoint: ["python", "-m", "engine"]
+    command: ["answers", "--watch"]
+    deploy: { resources: { limits: { cpus: "0.25", memory: 256m } } }
+
   api:  # the control room reads the bank: http://127.0.0.1:8787 (read-only; writes need your own machine)
     <<: *engine
     entrypoint: ["python", "-m", "uvicorn", "apps.api.main:app", "--host", "0.0.0.0", "--port", "8787"]
     ports: ["127.0.0.1:8787:8787"]
-    environment: { REGEN_DB_HOST: postgres }
+    environment:
+      REGEN_DB_HOST: postgres
+      REGEN_API_ANSWERS: "1"     # the one write: /needs answers, queued for the answers container
+      REGEN_ANSWER_QUEUE: "1"
+      REGEN_API_TRUST_PORT: "1"  # published on 127.0.0.1 only: the bridge gateway is this machine
     secrets: [pg_password]
     depends_on: [ledger]
 

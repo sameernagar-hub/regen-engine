@@ -8,6 +8,8 @@ Write path, behind the same airbags as everything else:
     escaped (it matches that exact wording, case- and spacing-insensitive), never a broad regex from the browser.
   - An `answer` event records who/what/when, and the job is put back on workspace/batches/requeue.json so the
     next `engine apply batches/requeue.json` retries it with the new answer.
+  - In the Docker bank the API queues answers instead (engine/feedback/answer_queue.py): the `answers` container
+    saves them and drops the retry batch where the appliers look (batches/inbox).
 """
 import datetime, json, os, re
 
@@ -32,9 +34,8 @@ def missing_questions(detail):
     return [q.strip() for q in d[len("NEEDS YOU:"):].split(" | ") if q.strip() and not q.strip().startswith(("no adapter", "Ashby cooldown"))]
 
 
-def save(job, question, answer, profile=None, workspace=None):
-    """Validate and store one answer. Returns the stored record; raises ValueError with a reason when refused."""
-    profile, workspace = profile or PROFILE, workspace or WORKSPACE
+def validate(question, answer):
+    """(question, answer) normalized, or ValueError with the reason it is refused."""
     question, answer = " ".join((question or "").split()), (answer or "").strip()
     if not question or not answer:
         raise ValueError("question and answer are required")
@@ -42,6 +43,13 @@ def save(job, question, answer, profile=None, workspace=None):
         raise ValueError(f"answer longer than {MAX_ANSWER} characters")
     if LEGAL_OR_SENSITIVE.search(question):
         raise ValueError("legal, sponsorship, EEO and sensitive questions are answered from presets only")
+    return question, answer
+
+
+def save(job, question, answer, profile=None, workspace=None, requeue_job=True):
+    """Validate and store one answer. Returns the stored record; raises ValueError with a reason when refused."""
+    profile, workspace = profile or PROFILE, workspace or WORKSPACE
+    question, answer = validate(question, answer)
     path = os.path.join(profile, "answers.json")
     bank = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []
     pat = pattern_for(question)
@@ -51,7 +59,8 @@ def save(job, question, answer, profile=None, workspace=None):
     json.dump(bank, open(tmp, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     os.replace(tmp, path)  # atomic: a reader never sees half a file
     record("answer", job=job, question=question[:300], pattern=pat, source="web app")
-    requeue(job, workspace)
+    if requeue_job:
+        requeue(job, workspace)
     return rec
 
 

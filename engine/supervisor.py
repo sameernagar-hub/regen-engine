@@ -26,7 +26,7 @@ from engine.config import WORKSPACE
 
 FLEET = os.path.join(WORKSPACE, "fleet")
 BOX = os.path.join(WORKSPACE, "batches")
-STALE = {"applier": 120, "relay": 120, "pipeline": 30 * 60, "reposync": 5 * 60}  # pipeline sleeps between passes; it beats on wake-up
+STALE = {"applier": 120, "relay": 120, "pipeline": 30 * 60, "reposync": 5 * 60, "answers": 120}  # pipeline sleeps between passes; it beats on wake-up
 CLAIM_STALE = 45 * 60  # a claimed batch older than this with no live applier on it was lost with its container
 
 

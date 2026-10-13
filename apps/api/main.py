@@ -21,10 +21,15 @@ from engine.live.server import narrate, who
 
 from engine.notify import _env as _local_env
 WRITE = _local_env().get("REGEN_API_WRITE") == "1"  # env var, or REGEN_API_WRITE=1 in the git-ignored .env
+# the Docker bank: answers only (no run/stop/filter writes), queued for the `answers` container instead of written here
+ANSWERS = WRITE or os.environ.get("REGEN_API_ANSWERS") == "1"
+QUEUE = os.environ.get("REGEN_ANSWER_QUEUE") == "1"
+# the api container publishes its port on 127.0.0.1 only, so the Docker bridge gateway it sees IS this machine
+TRUST_PORT = os.environ.get("REGEN_API_TRUST_PORT") == "1"
 app = FastAPI(title="REGEN API", version="0.8.0",
               description="API over the REGEN job engine's append-only event log (read-only, plus POST /api/answers when enabled).")
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("REGEN_WEB_ORIGINS", "http://127.0.0.1:3000,http://localhost:3000").split(","),
-                   allow_methods=["GET", "POST"] if WRITE else ["GET"], allow_headers=["*"])
+                   allow_methods=["GET", "POST"] if ANSWERS else ["GET"], allow_headers=["*"])
 app.include_router(control.router)  # v0.10 control room: runs, filters, Fact Bank, resumes
 
 WAITING = ("NEEDS YOU", "FAILED", "FLAGGED")
@@ -105,11 +110,14 @@ def human():
 @app.post("/api/answers", response_model=AnswerOut)
 def answer(body: AnswerIn, request: Request):
     """Answer a waiting question once; the engine reuses it on every form and re-queues the job."""
-    if not WRITE:
+    if not ANSWERS:
         raise HTTPException(403, "writes are disabled (set REGEN_API_WRITE=1 on your own machine)")
-    if (request.client.host if request.client else "") not in ("127.0.0.1", "::1", "localhost", "testclient"):
+    if not TRUST_PORT and (request.client.host if request.client else "") not in ("127.0.0.1", "::1", "localhost", "testclient"):
         raise HTTPException(403, "answers can only be written from this computer")
     try:
+        if QUEUE:
+            from engine.feedback import answer_queue
+            return AnswerOut(**answer_queue.enqueue(body.job, body.question, body.answer))
         return AnswerOut(**A.save(body.job, body.question, body.answer))
     except ValueError as e:
         raise HTTPException(422, str(e))

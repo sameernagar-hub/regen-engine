@@ -72,6 +72,7 @@ def test_drafts_endpoint():
 
 def test_answers_write_is_off_by_default(monkeypatch):
     monkeypatch.setattr(M, "WRITE", False)
+    monkeypatch.setattr(M, "ANSWERS", False)
     r = client.post("/api/answers", json={"job": "Globex - AI Engineer", "question": "Are you open to travel?", "answer": "Yes"})
     assert r.status_code == 403
 
@@ -173,3 +174,31 @@ def test_stream_after_huge_means_from_now(monkeypatch):
         return out
     out = asyncio.run(asyncio.wait_for(first_two(), 20))
     assert out[0].startswith("event: snapshot") and "Platform Engineer" in out[-1]
+
+
+def test_answer_queue_end_to_end(monkeypatch, tmp_path, seeded):
+    """Bank mode: /needs answer -> answers/inbox -> the answers container saves it and drops ONE retry batch in
+    batches/inbox (found in batches/done, where container batches end up); submitted jobs are not retried."""
+    from engine.feedback import answer_queue as Q
+    from engine import pipeline
+    for k, v in (("QDIR", seeded / "answers"), ("BOX", seeded / "batches"), ("WORKSPACE", seeded)):
+        monkeypatch.setattr(Q, k, str(v))
+    monkeypatch.setattr(pipeline, "read", events.read)
+    monkeypatch.setattr(M, "ANSWERS", True); monkeypatch.setattr(M, "QUEUE", True)
+    (seeded / "batches" / "done").mkdir(parents=True, exist_ok=True)
+    (seeded / "batches" / "done" / "run_x_0.json").write_text(json.dumps(
+        [{"name": "Globex - AI Engineer", "url": "https://jobs.ashbyhq.com/globex/2", "resume": "out/r.pdf", "_answers": []}]))
+    r = client.post("/api/answers", json={"job": "Globex - AI Engineer", "question": "Are you open to travel?", "answer": "Yes"})
+    assert r.status_code == 200 and r.json()["source"].startswith("queued")
+    assert not (tmp_path / "answers.json").exists()  # nothing written by the API itself
+    assert client.post("/api/answers", json={"job": "J", "question": "Do you require visa sponsorship?", "answer": "No"}).status_code == 422
+    out = Q.drain()
+    assert out == {"saved": 1, "refused": 0, "retry": 1}
+    assert json.load(open(tmp_path / "answers.json", encoding="utf-8"))[0]["answer"] == "Yes"
+    batch = [f for f in os.listdir(seeded / "batches" / "inbox") if f.startswith("answers_")]
+    assert len(batch) == 1 and json.load(open(seeded / "batches" / "inbox" / batch[0])) == [
+        {"name": "Globex - AI Engineer", "url": "https://jobs.ashbyhq.com/globex/2", "resume": "out/r.pdf"}]
+    assert Q.drain() == {"saved": 0, "refused": 0, "retry": 0}  # drained once, never twice
+    (seeded / "KILL").write_text("x")
+    client.post("/api/answers", json={"job": "Globex - AI Engineer", "question": "Why us?", "answer": "Because."})
+    assert Q.drain() == {"held": True} and len(os.listdir(seeded / "answers" / "inbox")) == 1
