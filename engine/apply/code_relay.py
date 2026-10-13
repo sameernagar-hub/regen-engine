@@ -48,6 +48,34 @@ class Relay(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps({"written": sorted(written or {}), "waiting": len(waiting)}).encode())
 
+    def do_GET(self):
+        """http://127.0.0.1:8799/ : what the relay is doing (jobs waiting on a code, codes delivered, last post),
+        refreshed every 5 s; /status is the same as JSON. Never shows a code value, only which jobs wait."""
+        waiting = C.waiting()
+        st = {"waiting": [{"job": s, "company": co} for s, co in waiting], "delivered": LAST["codes"],
+              "last_post_s_ago": round(time.time() - LAST["last_post"]) if LAST["last_post"] else None}
+        if self.path.startswith("/status"):
+            body, ctype = json.dumps(st).encode(), "application/json"
+        elif self.path in ("/", "/index.html"):
+            rows = "".join(f"<tr><td>{html.escape(w['company'])}</td><td>{html.escape(w['job'])}</td></tr>" for w in st["waiting"])
+            body = (f"<!doctype html><meta charset=utf-8><meta http-equiv=refresh content=5><title>REGEN code relay</title>"
+                    f"<style>body{{background:#0b0f14;color:#e6edf3;font:14px system-ui;padding:16px}}td,th{{padding:4px 10px;"
+                    f"border-bottom:1px solid #223041;text-align:left}}.dim{{color:#8b98a8}}a{{color:#6fb7ff}}</style>"
+                    f"<h1 style='font-size:16px'>REGEN · code relay 127.0.0.1:8799</h1>"
+                    f"<p>{len(st['waiting'])} job(s) waiting on an email code · {st['delivered']} delivered by this relay · "
+                    f"last post from the Gmail tab: {str(st['last_post_s_ago']) + ' s ago' if st['last_post_s_ago'] is not None else 'never'}"
+                    f"</p><p class=dim>The supervisor's IMAP watcher delivers codes too; this page lists what still waits. "
+                    f"Refreshes every 5 s. <a href='/status'>JSON</a> · <a href='http://127.0.0.1:8787/'>API</a> · "
+                    f"<a href='http://127.0.0.1:3000/control'>Control room</a></p>"
+                    f"<table><tr><th>company</th><th>job (board_id)</th></tr>{rows or '<tr><td class=dim colspan=2>nothing waiting</td></tr>'}</table>").encode()
+            ctype = "text/html; charset=utf-8"
+        else:
+            self.send_response(404); self.end_headers(); return
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.end_headers()
+        self.wfile.write(body)
+
     def log_message(self, *a):
         pass  # quiet: one line per delivered code is printed above
 

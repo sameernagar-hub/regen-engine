@@ -31,6 +31,9 @@ app = FastAPI(title="REGEN API", version="0.8.0",
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("REGEN_WEB_ORIGINS", "http://127.0.0.1:3000,http://localhost:3000").split(","),
                    allow_methods=["GET", "POST"] if ANSWERS else ["GET"], allow_headers=["*"])
 app.include_router(control.router)  # v0.10 control room: runs, filters, Fact Bank, resumes
+from apps.api import explorer  # noqa: E402  the API's own page at / : request tracker + live database browser
+app.middleware("http")(explorer.track)
+app.include_router(explorer.router)
 
 WAITING = ("NEEDS YOU", "FAILED", "FLAGGED")
 
