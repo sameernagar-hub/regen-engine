@@ -78,7 +78,7 @@ def test_answers_write_is_off_by_default(monkeypatch):
 
 
 def test_answer_saved_logged_and_requeued(monkeypatch, tmp_path, seeded):
-    monkeypatch.setattr(M, "WRITE", True)
+    monkeypatch.setattr(M, "WRITE", True); monkeypatch.setattr(M, "ANSWERS", True); monkeypatch.setattr(M, "QUEUE", False)
     r = client.post("/api/answers", json={"job": "Globex - AI Engineer", "question": "Are you open to travel?", "answer": "Yes"})
     assert r.status_code == 200 and r.json()["answer"] == "Yes"
     bank = json.load(open(tmp_path / "answers.json", encoding="utf-8"))
@@ -97,13 +97,13 @@ def test_answer_saved_logged_and_requeued(monkeypatch, tmp_path, seeded):
 @pytest.mark.parametrize("q", ["Will you require visa sponsorship?", "What is your gender?", "Do you agree to arbitration?",
                                "What is your desired salary?", "Social security number"])
 def test_legal_and_sensitive_questions_are_refused(monkeypatch, q):
-    monkeypatch.setattr(M, "WRITE", True)
+    monkeypatch.setattr(M, "WRITE", True); monkeypatch.setattr(M, "ANSWERS", True); monkeypatch.setattr(M, "QUEUE", False)
     r = client.post("/api/answers", json={"job": "Globex - AI Engineer", "question": q, "answer": "x"})
     assert r.status_code == 422
 
 
 def test_answer_validation(monkeypatch):
-    monkeypatch.setattr(M, "WRITE", True)
+    monkeypatch.setattr(M, "WRITE", True); monkeypatch.setattr(M, "ANSWERS", True); monkeypatch.setattr(M, "QUEUE", False)
     assert client.post("/api/answers", json={"job": "J", "question": "Why us?", "answer": "  "}).status_code == 422
     assert client.post("/api/answers", json={"job": "J", "question": "Why us?", "answer": "x" * 2001}).status_code == 422
     assert A.requeue("Nobody - Nothing") is False
