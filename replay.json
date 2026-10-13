@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-12 23:41",
+"generated": "2026-10-12 23:49",
 "days": 7,
 "verified": 80,
 "verified_roles": [
@@ -327,18 +327,6 @@
 "boards": 2270,
 "last_poll": 1791700372.0784452,
 "events": [
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 7 facts in the Fact Bank, embedded lane.",
-"ts": "2026-10-11T20:52"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:52"
-},
 {
 "stage": "write",
 "tone": "calm",
@@ -1291,6 +1279,18 @@
 "tone": "quiet",
 "text": "A company didn't go through yet: Missing entry for required field: Location; Missing entry f….",
 "ts": "2026-10-12T23:40"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-12T23:46"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: Missing entry for required field: Location; Missing entry f….",
+"ts": "2026-10-12T23:46"
 }
 ],
 "graph": {
