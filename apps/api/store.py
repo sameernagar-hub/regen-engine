@@ -1,10 +1,29 @@
-"""Where events come from. Postgres when REGEN_DATABASE_URL is set (see migrate.py), otherwise the engine's own
-append-only workspace/events.jsonl. Both are read-only here: the engine stays the only writer."""
+"""Where events come from. Postgres when REGEN_DATABASE_URL (or REGEN_DB_HOST + a password file) is set (see
+migrate.py), otherwise the engine's own append-only workspace/events.jsonl. Both are read-only here: the engine stays
+the only writer."""
 import json, os
 
 from engine.config import WORKSPACE
 
-DSN = os.environ.get("REGEN_DATABASE_URL")
+
+def _dsn():
+    """REGEN_DATABASE_URL wins; else build one from REGEN_DB_HOST and the Docker secret file, so the password never
+    sits in an environment variable (the bank stack mounts it at /run/secrets/pg_password)."""
+    url = os.environ.get("REGEN_DATABASE_URL")
+    if url or not os.environ.get("REGEN_DB_HOST"):
+        return url
+    path = os.environ.get("REGEN_DB_PASSWORD_FILE", "/run/secrets/pg_password")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            pw = fh.read().strip()
+    except OSError:
+        return None
+    from urllib.parse import quote
+    user, db = os.environ.get("REGEN_DB_USER", "regen"), os.environ.get("REGEN_DB_NAME", "regen")
+    return f"postgresql://{user}:{quote(pw, safe='')}@{os.environ['REGEN_DB_HOST']}:5432/{db}"
+
+
+DSN = _dsn()
 EVENTS = os.path.join(WORKSPACE, "events.jsonl")
 
 

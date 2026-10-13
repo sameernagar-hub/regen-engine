@@ -112,3 +112,45 @@ def test_missing_questions_parser():
     assert A.missing_questions("NEEDS YOU: A? | B?") == ["A?", "B?"]
     assert A.missing_questions("NEEDS YOU: no adapter for workday yet; resume ready") == []
     assert A.missing_questions("SUBMITTED") == [] and A.missing_questions(None) == []
+
+
+def test_dsn_from_secret_file(tmp_path, monkeypatch):
+    pw = tmp_path / "pg"
+    pw.write_text("a/b c\n")
+    monkeypatch.delenv("REGEN_DATABASE_URL", raising=False)
+    monkeypatch.setenv("REGEN_DB_HOST", "postgres")
+    monkeypatch.setenv("REGEN_DB_PASSWORD_FILE", str(pw))
+    assert store._dsn() == "postgresql://regen:a%2Fb%20c@postgres:5432/regen"
+    monkeypatch.setenv("REGEN_DB_PASSWORD_FILE", str(tmp_path / "missing"))
+    assert store._dsn() is None
+    monkeypatch.setenv("REGEN_DATABASE_URL", "postgresql://x")
+    assert store._dsn() == "postgresql://x"
+
+
+def test_migrate_reads_only_whole_new_lines(tmp_path, monkeypatch):
+    from apps.api import migrate as MG
+
+    class Con:
+        rows = []
+        def cursor(self):
+            return self
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def execute(self, sql, row):
+            self.rows.append(row)
+            self.rowcount = 1
+
+    log = tmp_path / "events.jsonl"
+    log.write_bytes(b'{"kind": "code", "slug": "a"}\nnot json\n{"kind": "app')
+    monkeypatch.setattr(MG, "EVENTS", str(log))
+    con = Con()
+    added, off = MG.copy_events(con, 0)
+    assert added == 1 and con.rows[0][2] == "code" and con.rows[0][4] == 1
+    assert off == len(b'{"kind": "code", "slug": "a"}\nnot json\n')  # partial line waits for the next pass
+    with open(log, "ab") as fh:
+        fh.write(b'lication", "v": 2}\n')
+    added, off = MG.copy_events(con, off)
+    assert added == 1 and con.rows[-1][2] == "application" and con.rows[-1][4] == 2
+    assert off == log.stat().st_size

@@ -1,6 +1,10 @@
 # The bank: your data lives in Docker named volumes instead of local folders.
 #   regen-profile    Fact Bank, presets, answers, priority lists (the knowledge)
 #   regen-workspace  the ledger: events.jsonl, queue, resumes, proof, codes, logs
+#   regen-db         Postgres copy of the ledger (labeled tables/views; events.jsonl stays the source of truth)
+# Postgres password: a git-ignored file next to .env, created once:
+#   python -c "import secrets; print(secrets.token_urlsafe(24))" > .pg_password
+#   query it: docker exec -it deploy-postgres-1 psql -U regen   (or 127.0.0.1:5433 from this machine)
 # Every service mounts the volumes, never a host folder. Seed once from local folders:
 #   docker compose -f deploy/bank.compose.yml run --rm seed
 # Run:  REGEN_MAX_PER_DAY=150 REGEN_TABS=4 docker compose -f deploy/bank.compose.yml up -d --scale applier=7
@@ -67,11 +71,39 @@ services:
       - regen-workspace:/data/workspace
       - /var/run/docker.sock:/var/run/docker.sock
 
+  postgres:  # the ledger as SQL: 127.0.0.1 only, password from the .pg_password secret, never in an env var
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: regen
+      POSTGRES_DB: regen
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+    secrets: [pg_password]
+    ports: ["127.0.0.1:5433:5432"]
+    volumes: [regen-db:/var/lib/postgresql]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U regen"], interval: 5s, retries: 20 }
+    deploy: { resources: { limits: { memory: 384m } } }
+
+  ledger:  # copies new events.jsonl lines + fleet heartbeats into Postgres every 15 s (append-only, idempotent)
+    <<: *engine
+    entrypoint: ["python", "-m", "apps.api.migrate"]
+    command: ["--loop", "15"]
+    environment: { REGEN_DB_HOST: postgres }
+    secrets: [pg_password]
+    depends_on: { postgres: { condition: service_healthy } }
+
   api:  # the control room reads the bank: http://127.0.0.1:8787 (read-only; writes need your own machine)
     <<: *engine
     entrypoint: ["python", "-m", "uvicorn", "apps.api.main:app", "--host", "0.0.0.0", "--port", "8787"]
     ports: ["127.0.0.1:8787:8787"]
+    environment: { REGEN_DB_HOST: postgres }
+    secrets: [pg_password]
+    depends_on: [ledger]
+
+secrets:
+  pg_password: { file: ../.pg_password }
 
 volumes:
   regen-profile: { name: regen-profile }
   regen-workspace: { name: regen-workspace }
+  regen-db: { name: regen-db }

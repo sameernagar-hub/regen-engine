@@ -4,6 +4,23 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-12 · "Ledger"
+The ledger lived only in events.jsonl: every question about it (submissions per day, answers by source, supervisor
+actions) meant a script. Now the bank stack keeps a labeled Postgres copy next to it.
+
+### Added
+- **`postgres` + `ledger` services** in `deploy/bank.compose.yml` (named volume `regen-db`, 127.0.0.1:5433 only).
+  The password is a Docker secret from the git-ignored `.pg_password` file, never an env var, so the API does not
+  see the Gmail app password in `.env`. `ledger` runs `python -m apps.api.migrate --loop 15`: only new whole lines
+  after a byte offset, still idempotent by sha256, offset advanced only after the commit.
+- **Labeled relations**: `events` gains a schema version column `v` (1 when absent); views `applications`
+  (company, title, status, proof...), `answers`, `codes`, `outcomes`, `resumes`, `discoveries`, `supervisor_audit`;
+  table `fleet_heartbeats` (latest heartbeat per container). events.jsonl stays the append-only source of truth and
+  the `events` table still refuses UPDATE/DELETE.
+- The `api` service reads Postgres (`/api/health` -> `"backend": "postgres"`).
+  Verify: `docker exec deploy-postgres-1 psql -U regen -c "select date(ts), count(*) from applications where
+  status='SUBMITTED' group by 1 order by 1 desc"`; `pytest tests/test_api.py -k "dsn or migrate"`.
+
 ## [0.12.1] - 2026-10-11 · "Fleet"
 Completion, not supply, was the limit: one pass stopped 12 of 12 jobs on choice questions the engine could already
 answer, and B5 showed the same 5 appliers drop from 16.3 to 0.75 submissions per active hour when the Gmail tab froze.

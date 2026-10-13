@@ -27,3 +27,4 @@ site/
 coverage.xml
 htmlcov/
 .claude/launch.json
+.pg_password
