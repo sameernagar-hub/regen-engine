@@ -42,6 +42,9 @@ def public_graph():
     from engine.memory import graph as G
     g = G.build(questions=False)
     keep = {"You", "Lane", "Application", "ATS", "Outcome"}
+    # role titles can repeat the employer's name ("Tech Lead, <Co> Robotics"): scrub every company we know
+    cos = sorted({n["label"] for n in g["nodes"] if n["type"] == "Company" and len(n["label"]) >= 3}, key=len, reverse=True)
+    scrub = re.compile("|".join(re.escape(c) for c in cos), re.I) if cos else None
     ids, nodes = {}, []
     for n in g["nodes"]:
         if n["type"] not in keep:
@@ -49,6 +52,8 @@ def public_graph():
         i = "n%d" % len(ids)                       # opaque ids: the originals contain company names
         ids[n["id"]] = i
         label = {"You": "the candidate"}.get(n["type"], n["label"])
+        if n["type"] == "Application" and scrub:
+            label = scrub.sub("the company", label)
         data = {"status": n["data"].get("status")} if n["type"] == "Application" else {}
         nodes.append({"id": i, "type": n["type"], "label": label, "data": data})
     edges = [{"source": ids[e["source"]], "target": ids[e["target"]], "type": e["type"]}
@@ -114,7 +119,9 @@ def build(days=7):
         merged.append(ev)
     events = merged
     s = snapshot()
-    roles = [[role, lane] for _co, role, lane in s.get("verified_jobs", [])]  # role + lane only, never the company
+    # role + lane only, never the company: titles can repeat the company name ("Tech Lead, <Co> Robotics")
+    roles = [[re.sub(re.escape(_co), "the company", role, flags=re.I) if _co else role, lane]
+             for _co, role, lane in s.get("verified_jobs", [])]
     data = {"generated": time.strftime("%Y-%m-%d %H:%M"), "days": days, "verified": s["verified"],
             "verified_roles": roles, "boards": s["boards"], "last_poll": s.get("last_poll"),
             "events": events[-160:], "graph": public_graph()}
