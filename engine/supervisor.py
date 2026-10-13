@@ -9,6 +9,10 @@ codes written). A heartbeat older than STALE seconds reads as "down".
 
     python -m engine fleet        prints the same summary as GET /api/control/fleet
     python -m engine supervise    the supervisor container: autoscale appliers, requeue lost claims, IMAP codes
+    python -m engine supervise --kill REASON | --clear | --scale LO HI | --audit N | --quarantine | --status
+                                  one-shot control verbs (run inside the supervisor container; JSON out). The MCP
+                                  tools fleet_status / kill / clear_kill / scale / audit_log / quarantine_list call
+                                  these through `docker exec`, because the host's workspace/ is not the bank.
 
 Autoscaling (the `supervisor` service in deploy/bank.compose.yml): compose creates REGEN_MAX_APPLIERS applier
 containers; the supervisor keeps as many RUNNING as there are batches waiting or being applied (min
@@ -76,13 +80,14 @@ def fleet(now=None):
     if not any(m["up"] for m in members if m.get("role") == "pipeline"):
         problems.append("pipeline is not running")
     tab_age = now - relay["last_post"] if relay and relay.get("last_post") else None
-    if tab_age is None or tab_age > 120:
+    imap = any(m["up"] and m.get("imap") for m in members if m.get("role") == "supervisor")
+    if not imap and (tab_age is None or tab_age > 120):
         problems.append("Gmail tab is not posting codes (re-paste gmail_relay.js; keep the tab active)")
     if stale:
         problems.append(f"{len(stale)} claimed batch(es) lost with their container: python scripts/requeue.py --stale")
     return {"members": members, "inbox": len(_count(os.path.join(BOX, "inbox"))), "claimed": len(claimed),
             "done": len(_count(os.path.join(BOX, "done"))), "stale_claims": stale, "codes_waiting": waiting,
-            "gmail_tab_age": round(tab_age) if tab_age is not None else None, "problems": problems,
+            "gmail_tab_age": round(tab_age) if tab_age is not None else None, "imap_codes": imap, "problems": problems,
             "verdict": "ok" if not problems else "attention"}
 
 
@@ -307,15 +312,130 @@ def kill(reason):
     audit("KILL", reason)
 
 
+LIMITS = os.path.join(WORKSPACE, "fleet_limits.json")
+HARD_MAX = 12  # never more appliers than this, whatever the override says (one machine, one Gmail inbox)
+
+
+def limits(lo, hi):
+    """(min, max) appliers: the env defaults, unless `supervise --scale` wrote an override (kept across restarts)."""
+    try:
+        o = json.load(open(LIMITS, encoding="utf-8"))
+        lo, hi = int(o["min"]), int(o["max"])
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return _clamp(lo, hi)
+
+
+def _clamp(lo, hi):
+    hi = max(0, min(HARD_MAX, hi))
+    return max(0, min(lo, hi)), hi
+
+
+def audit_tail(n=30):
+    """The last n supervisor events (kind "supervisor") from the ledger, newest last. O(file) but read backwards."""
+    from engine.feedback.events import _path
+    out = []
+    try:
+        with open(_path(), "rb") as f:
+            f.seek(0, 2)
+            pos, buf = f.tell(), b""
+            while pos > 0 and len(out) < n:
+                step = min(65536, pos)
+                pos -= step
+                f.seek(pos)
+                buf = f.read(step) + buf
+                lines = buf.split(b"\n")
+                buf = lines[0]
+                if pos == 0:  # start of file: the first line is complete too
+                    lines, buf = [b""] + lines, b""
+                for line in reversed(lines[1:]):
+                    if b'"supervisor"' in line:
+                        try:
+                            e = json.loads(line)
+                        except ValueError:
+                            continue
+                        if e.get("kind") == "supervisor":
+                            out.append(e)
+                            if len(out) >= n:
+                                break
+    except OSError:
+        pass
+    return out[::-1]
+
+
+def quarantine_list():
+    """Files the leak guard moved aside (names, sizes, times; never contents: they may hold the secret)."""
+    q = os.path.join(WORKSPACE, "quarantine")
+    if not os.path.isdir(q):
+        return []
+    return [{"file": n, "bytes": os.path.getsize(os.path.join(q, n)),
+             "moved": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(os.path.getmtime(os.path.join(q, n))))}
+            for n in sorted(os.listdir(q))]
+
+
+def clear_kill(by="operator"):
+    removed = []
+    for x in (os.path.join("batches", "STOP"), "KILL"):
+        if os.path.exists(os.path.join(WORKSPACE, x)):
+            os.remove(os.path.join(WORKSPACE, x))
+            removed.append(x)
+    audit("clear", "kill switch", by=by)
+    return removed
+
+
+def status():
+    f = fleet()
+    k = os.path.join(WORKSPACE, "KILL")
+    f["kill"] = open(k, encoding="utf-8").read().strip() if os.path.exists(k) else None
+    f["limits"] = dict(zip(("min", "max"), limits(int(os.environ.get("REGEN_MIN_APPLIERS", "1")),
+                                                  int(os.environ.get("REGEN_MAX_APPLIERS", "7")))))
+    return f
+
+
+def control(argv):
+    """One-shot verbs for the operator (CLI or MCP via docker exec). Returns a JSON-able dict, or None when argv
+    holds no verb. Every change is audited."""
+    a = list(argv or [])
+    if "--status" in a:
+        return status()
+    if "--kill" in a:
+        reason = " ".join(a[a.index("--kill") + 1:]).strip() or "operator kill"
+        kill(reason[:200])
+        return {"killed": True, "reason": reason[:200]}
+    if "--clear" in a:
+        return {"cleared": clear_kill()}
+    if "--scale" in a:
+        i = a.index("--scale")
+        lo, hi = _clamp(int(a[i + 1]), int(a[i + 2]))
+        os.makedirs(os.path.dirname(LIMITS), exist_ok=True)
+        tmp = LIMITS + ".tmp"
+        json.dump({"min": lo, "max": hi}, open(tmp, "w", encoding="utf-8"))
+        os.replace(tmp, LIMITS)
+        audit("limits", f"{lo}..{hi}", min=lo, max=hi)
+        return {"min": lo, "max": hi, "note": "the supervisor applies it within 15 s"}
+    if "--audit" in a:
+        i = a.index("--audit")
+        n = int(a[i + 1]) if len(a) > i + 1 and a[i + 1].isdigit() else 30
+        return {"audit": audit_tail(min(n, 500))}
+    if "--quarantine" in a:
+        return {"quarantine": quarantine_list()}
+    return None
+
+
 def supervise(argv=None):
     """The container on top: every 15 s scale appliers to the backlog and requeue lost claims; if a Gmail app
     password is configured, watch IMAP for codes in a thread (hands-free, no browser tab)."""
     import threading
+    out = control(argv)
+    if out is not None:
+        print(json.dumps(out, default=str))
+        return
     lo = int(os.environ.get("REGEN_MIN_APPLIERS", "1"))
     hi = int(os.environ.get("REGEN_MAX_APPLIERS", "7"))
     from engine.notify import _env
     e = _env()
-    if e.get("REGEN_SMTP_USER") and e.get("REGEN_SMTP_APP_PASSWORD"):
+    imap = bool(e.get("REGEN_SMTP_USER") and e.get("REGEN_SMTP_APP_PASSWORD"))
+    if imap:
         from engine.apply.codes import watch
         def codes_forever():  # reconnect after a dropped IMAP connection; say why it failed instead of dying silently
             while True:
@@ -329,12 +449,6 @@ def supervise(argv=None):
         print("supervisor: IMAP code watcher on", flush=True)
     print(f"supervisor: appliers {lo}..{hi}", flush=True)
     n = 0
-    if "--clear" in (argv or []):  # after investigating a kill
-        for x in (os.path.join("batches", "STOP"), "KILL"):
-            if os.path.exists(os.path.join(WORKSPACE, x)):
-                os.remove(os.path.join(WORKSPACE, x))
-        audit("clear", "kill switch")
-        return
     while True:
         try:
             if os.path.exists(os.path.join(WORKSPACE, "KILL")):
@@ -342,12 +456,12 @@ def supervise(argv=None):
                 time.sleep(15)
                 continue
             guard()
-            want, running, jobs = scale(lo, hi)
+            want, running, jobs = scale(*limits(lo, hi))
             if n % 8 == 0:
                 requeue_stale()
             if n % 240 == 0:
                 prune_images()
-            beat("supervisor", state="supervising", want=want, running=running, jobs=jobs)
+            beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap)
         except Exception as ex:  # never die: a supervisor that crashes leaves the fleet at its last size
             print(f"supervisor: {ex}", flush=True)
             beat("supervisor", state=f"error: {str(ex)[:80]}")
@@ -356,6 +470,9 @@ def supervise(argv=None):
 
 
 def main(argv=None):
+    if "--json" in (argv or []):
+        print(json.dumps(status(), default=str))
+        return
     f = fleet()
     print(f"fleet: {f['verdict']} | inbox {f['inbox']}, claimed {f['claimed']}, done {f['done']}, "
           f"codes waiting {len(f['codes_waiting'])}, Gmail tab last post "

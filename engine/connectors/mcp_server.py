@@ -232,6 +232,64 @@ def outreach_drafts(days: int = 7, rebuild: bool = False) -> list[dict]:
     return json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []
 
 
+# ---- fleet oversight: the bank lives in Docker volumes, so these go through the supervisor container ----
+SUPERVISOR = os.environ.get("REGEN_SUPERVISOR", "deploy-supervisor-1")
+
+
+def _supervisor(*verb):
+    """Run `python -m engine supervise <verb>` inside the supervisor container (it has the bank volumes and is the
+    only one with the Docker socket) and return its JSON. Errors come back as {"error": ...}, never raised."""
+    try:
+        r = subprocess.run(["docker", "exec", SUPERVISOR, "python", "-m", "engine", "supervise", *verb],
+                           capture_output=True, text=True, timeout=60, encoding="utf-8")
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return {"error": f"docker exec failed: {e}"}
+    line = next((l for l in reversed(r.stdout.splitlines()) if l.startswith("{")), None)
+    if r.returncode or not line:
+        return {"error": (r.stderr or r.stdout).strip()[-400:] or f"exit {r.returncode}"}
+    return json.loads(line)
+
+
+@mcp.tool(description="Fleet health from the bank: every container's heartbeat (pipeline, appliers, relay, supervisor), "
+                      "batch queue (inbox/claimed/done), codes waiting, problems, whether the kill switch is on, and the "
+                      "applier min/max. Read-only.")
+def fleet_status() -> dict:
+    return _supervisor("--status")
+
+
+@mcp.tool(description="KILL SWITCH: stop all processing now. Workers stop after their current step, appliers and the "
+                      "pipeline are stopped, the supervisor holds until clear_kill. Always allowed (stopping is safe); "
+                      "give the reason you saw.")
+def kill(reason: str) -> dict:
+    return _supervisor("--kill", reason or "operator kill (MCP)")
+
+
+@mcp.tool(description="Lift the kill switch after the cause was investigated (check quarantine_list and audit_log first). "
+                      "Appliers come back as the supervisor scales to the backlog. Needs REGEN_MCP_WRITE=1.")
+def clear_kill() -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    return _supervisor("--clear")
+
+
+@mcp.tool(description="The supervisor's audit trail (start/create/remove/requeue/KILL/clear/limits), newest last.")
+def audit_log(n: int = 30) -> dict:
+    return _supervisor("--audit", str(max(1, min(n, 500))))
+
+
+@mcp.tool(description="Files the leak guard moved to quarantine (name, size, time; never contents).")
+def quarantine_list() -> dict:
+    return _supervisor("--quarantine")
+
+
+@mcp.tool(description="Set how many appliers the supervisor may run (min..max, hard cap 12; 0..0 parks the fleet without "
+                      "a kill). Kept across restarts. Needs REGEN_MCP_WRITE=1.")
+def scale(min_appliers: int, max_appliers: int) -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    return _supervisor("--scale", str(int(min_appliers)), str(int(max_appliers)))
+
+
 def main(argv=None):
     mcp.run("stdio")
 

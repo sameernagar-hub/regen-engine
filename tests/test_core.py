@@ -480,3 +480,42 @@ def test_supervisor_desired_follows_backlog(tmp_path, monkeypatch):
     (tmp_path / "claimed" / "c.json").write_text(json.dumps([{}] * 2))
     assert S.desired(1, 7) == (5, 14)
     assert S.desired(1, 4) == (4, 14)
+
+
+def test_supervisor_control_verbs(tmp_path, monkeypatch):
+    """Operator verbs (CLI + MCP): limits override clamps to the hard cap, kill/clear, audit tail, quarantine names."""
+    import json, os, time
+    from engine import supervisor as S
+    from engine.feedback import events
+    for k, v in (("FLEET", tmp_path / "fleet"), ("BOX", tmp_path / "batches"), ("WORKSPACE", tmp_path),
+                 ("LIMITS", tmp_path / "fleet_limits.json")):
+        monkeypatch.setattr(S, k, str(v))
+    monkeypatch.setattr(events, "WORKSPACE", str(tmp_path))
+    monkeypatch.setattr(S, "appliers", lambda: [])
+    monkeypatch.setattr(S, "_docker", lambda *a, **k: [])
+    assert S.limits(1, 7) == (1, 7)
+    assert S.control(["--scale", "3", "40"]) == {"min": 3, "max": 12, "note": "the supervisor applies it within 15 s"}
+    assert S.limits(1, 7) == (3, 12)
+    assert S.control(["--scale", "0", "0"])["max"] == 0 and S.limits(1, 7) == (0, 0)
+    S.control(["--kill", "test", "reason"])
+    assert (tmp_path / "KILL").exists() and (tmp_path / "batches" / "STOP").exists()
+    assert S.status()["kill"].endswith("test reason")
+    assert sorted(S.control(["--clear"])["cleared"]) == sorted([os.path.join("batches", "STOP"), "KILL"])
+    acts = [e["action"] for e in S.control(["--audit", "10"])["audit"]]
+    assert acts == ["limits", "limits", "KILL", "clear"]
+    (tmp_path / "quarantine").mkdir()
+    (tmp_path / "quarantine" / "1_x.log").write_text("secret")
+    q = S.control(["--quarantine"])["quarantine"]
+    assert q[0]["file"] == "1_x.log" and q[0]["bytes"] == 6 and "secret" not in json.dumps(q)
+    assert S.control([]) is None
+
+
+def test_fleet_skips_gmail_tab_warning_when_imap_delivers(tmp_path, monkeypatch):
+    from engine import supervisor as S
+    monkeypatch.setattr(S, "FLEET", str(tmp_path / "fleet"))
+    monkeypatch.setattr(S, "BOX", str(tmp_path / "batches"))
+    monkeypatch.setattr(S, "WORKSPACE", str(tmp_path))
+    assert any("Gmail tab" in p for p in S.fleet()["problems"])
+    S.beat("supervisor", state="supervising", imap=True)
+    f = S.fleet()
+    assert f["imap_codes"] and not any("Gmail tab" in p for p in f["problems"])

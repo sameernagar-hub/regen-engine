@@ -17,6 +17,18 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   (company, title, status, proof...), `answers`, `codes`, `outcomes`, `resumes`, `discoveries`, `supervisor_audit`;
   table `fleet_heartbeats` (latest heartbeat per container). events.jsonl stays the append-only source of truth and
   the `events` table still refuses UPDATE/DELETE.
+- **MCP oversight** (`engine/connectors/mcp_server.py`): `fleet_status`, `kill(reason)`, `clear_kill`, `audit_log(n)`,
+  `quarantine_list`, `scale(min, max)`. They run `python -m engine supervise --status|--kill|--clear|--audit|
+  --quarantine|--scale` inside the supervisor container through `docker exec`, because the host's `workspace/` is a
+  stale copy and the bank lives in volumes. `kill` is always allowed (stopping is safe); `clear_kill` and `scale`
+  need `REGEN_MCP_WRITE=1`. `scale` writes `workspace/fleet_limits.json` (hard cap 12, `0 0` parks the fleet), which
+  the supervisor re-reads every pass. `python -m engine fleet --json` prints the same status.
+  Verify: `docker exec deploy-supervisor-1 python -m engine supervise --status`; `pytest -k control_verbs`.
+
+### Fixed
+- `engine fleet` no longer reports "Gmail tab is not posting codes" while the supervisor's IMAP watcher delivers
+  codes (the supervisor heartbeat now carries `imap`).
+
 - The `api` service reads Postgres (`/api/health` -> `"backend": "postgres"`).
   Verify: `docker exec deploy-postgres-1 psql -U regen -c "select date(ts), count(*) from applications where
   status='SUBMITTED' group by 1 order by 1 desc"`; `pytest tests/test_api.py -k "dsn or migrate"`.
