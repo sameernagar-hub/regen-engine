@@ -17,7 +17,9 @@ const COLOR: Record<string, string> = {
   You: "#ffffff", Lane: "#f2c14e", Application: "#ffd88a", Company: "#6fb7ff", Fact: "#7ef0c1",
   ATS: "#b39dff", Outcome: "#ff9f43", Question: "#8b96a8",
 };
-const RING = [0, 170, 330, 500, 640];
+// ring radius per depth keeps growing: a fixed list once stacked every layer past the 4th on one circle
+const ring = (depth: number) => (depth === 0 ? 0 : 170 + (depth - 1) * 165);
+const MAX_BLOOM = 40;  // a Fact or ATS node links 100+ applications: open the first 40, report the rest
 const CHILD_TYPES: Record<string, string[]> = {
   You: ["Lane"], Lane: ["Application"], Application: ["Fact", "Company", "ATS", "Outcome"], ATS: ["Application"],
   Fact: ["Application"], Company: ["Application"],
@@ -41,19 +43,22 @@ export default function Graph() {
 
   const byId = useMemo(() => new Map((g?.nodes || []).map((n) => [n.id, n])), [g]);
   const adj = useMemo(() => {
-    const m = new Map<string, GEdge[]>();
+    const m = new Map<string, GEdge[]>();  // push, not spread: copying the list per edge was O(E^2)
     for (const e of g?.edges || []) {
-      m.set(e.source, [...(m.get(e.source) || []), e]);
-      m.set(e.target, [...(m.get(e.target) || []), e]);
+      for (const k of [e.source, e.target]) {
+        const l = m.get(k);
+        if (l) l.push(e); else m.set(k, [e]);
+      }
     }
     return m;
   }, [g]);
 
   // lay out visible layers: each opened node places its unplaced children in an arc around its own angle
-  const { pos, shown } = useMemo(() => {
+  const { pos, shown, hidden } = useMemo(() => {
     const pos = new Map<string, Pos>();
     const shown: GEdge[] = [];
-    if (!g) return { pos, shown };
+    let hidden = 0;
+    if (!g) return { pos, shown, hidden };
     const root = g.nodes.find((n) => n.type === "You")?.id || "you";  // "you" locally, "n0" in the anonymized feed
     pos.set(root, { x: 0, y: 0, a: -Math.PI / 2, depth: 0 });
     for (const id of open) {
@@ -61,17 +66,19 @@ export default function Graph() {
       if (!p || !n) continue;
       const kids = (adj.get(id) || []).map((e) => ({ e, other: e.source === id ? e.target : e.source }))
         .filter(({ other }) => CHILD_TYPES[n.type]?.includes(byId.get(other)?.type || ""));
-      const fresh = kids.filter(({ other }) => !pos.has(other));
-      const depth = Math.min(p.depth + 1, RING.length - 1);
+      const all = kids.filter(({ other }) => !pos.has(other));
+      const fresh = all.slice(0, MAX_BLOOM);
+      hidden += all.length - fresh.length;
+      const depth = p.depth + 1;
       const spread = depth === 1 ? Math.PI * 2 : Math.min(Math.PI * 0.9, 0.16 * fresh.length + 0.2);
       fresh.forEach(({ other }, i) => {
         const a = depth === 1 ? -Math.PI / 2 + (i / fresh.length) * Math.PI * 2
           : p.a + (fresh.length === 1 ? 0 : (i / (fresh.length - 1) - 0.5) * spread);
-        pos.set(other, { x: Math.cos(a) * RING[depth], y: Math.sin(a) * RING[depth], a, depth });
+        pos.set(other, { x: Math.cos(a) * ring(depth), y: Math.sin(a) * ring(depth), a, depth });
       });
-      for (const { e } of kids) shown.push(e);
+      for (const { e } of kids) if (pos.has(e.source) && pos.has(e.target)) shown.push(e);
     }
-    return { pos, shown };
+    return { pos, shown, hidden };
   }, [g, open, byId, adj]);
 
   const lit = useMemo(() => {
@@ -97,7 +104,7 @@ export default function Graph() {
       <a className="skip" href="#graph-text">Skip to the text version</a>
       <header className="top">
         <Nav />
-        <div className="count"><b style={{ fontSize: 28 }}>{pos.size}</b><span>of {g.nodes.length} nodes open · click to expand a layer</span></div>
+        <div className="count"><b style={{ fontSize: 28 }}>{pos.size}</b><span>of {g.nodes.length} nodes open · click to expand a layer{hidden ? ` · ${hidden} more behind busy nodes (first ${MAX_BLOOM} each)` : ""}</span></div>
       </header>
       <svg className="machine graph" role="group" aria-label="Memory graph: press Tab to move between nodes and Enter to expand one" viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} onWheel={onWheel}
            onMouseDown={(e) => (drag.current = { x: e.clientX, y: e.clientY })} onMouseUp={() => (drag.current = null)} onMouseLeave={() => (drag.current = null)}
@@ -108,7 +115,8 @@ export default function Graph() {
              drag.current = { x: e.clientX, y: e.clientY };
            }}>
         <defs><filter id="g2"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
-        {RING.slice(1).map((r) => <circle key={r} r={r} fill="none" stroke="#1b222c" strokeDasharray="2 8" />)}
+        {Array.from({ length: Math.max(4, ...[...pos.values()].map((p) => p.depth)) }, (_, i) => ring(i + 1)).map((r) =>
+          <circle key={r} r={r} fill="none" stroke="#1b222c" strokeDasharray="2 8" />)}
         {shown.map((e, i) => {
           const a = pos.get(e.source), b = pos.get(e.target);
           if (!a || !b) return null;

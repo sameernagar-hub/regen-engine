@@ -205,7 +205,10 @@ def factbank():
         "skills": [{"id": k, "label": v[0], "items": [s.strip() for s in v[1].split(",")]} for k, v in fb.get("skills", {}).items()],
         "education": [{"degree": e[0], "when": e[1]} for e in fb.get("education", []) if isinstance(e, list)],
         "awards": fb.get("awards", []), "publications": fb.get("publications", []),
-        "sources": fb.get("_sources", []), "overlaps": fb.get("_overlaps", []),
+        # a source is {date, file, added}; facts added from chat were logged as one plain line ("<date> <note>")
+        "sources": [s if isinstance(s, dict) else {"date": str(s)[:10], "file": str(s)[11:], "added": []}
+                    for s in fb.get("_sources", [])],
+        "overlaps": fb.get("_overlaps", []),
         "resumes_built": sum(1 for e in read() if e.get("kind") == "resume"),
     }
 

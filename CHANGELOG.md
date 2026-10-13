@@ -76,6 +76,12 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   Verify: `pytest -k reposync`; `docker logs deploy-reposync-1`.
 
 ### Fixed
+- **Fact Bank page blank**: one Fact Bank source was a plain line (facts added from chat) and `/facts` crashed on
+  `added.length`; the API now returns every source as `{date, file, added}`.
+- **Memory graph going deeper**: rings were a fixed list, so every layer past the 4th stacked on one circle; radius
+  now grows with depth. Busy nodes (a Fact or ATS links 100+ applications) open their first 40 and report the rest,
+  and the adjacency map is built in O(E) instead of copying a list per edge (a deep click froze the page ~1 s).
+- `app/error.tsx`: a page that throws shows the error with a retry button and the nav, not a blank page.
 - reposync's first live pass: one multi-ref fetch failed on the not-yet-existing bot branch and left `origin/main`
   stale (pushed commits looked local), and the feed push named `HEAD` of the main clone instead of the pages
   worktree (git rejected it as non-fast-forward). Fetches are per ref (main and gh-pages must succeed) and every push
