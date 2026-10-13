@@ -1,8 +1,12 @@
-"""`python -m engine scan [days] [--ats greenhouse,ashby,lever]`
+"""`python -m engine scan [days] [--ats greenhouse,ashby,lever] [--hot]`
 
 Scan every registered board (workspace/boards.json), keep jobs first published in the last `days`
 that pass the domain filter (engine/discovery/filters.py), drop anything already applied to,
 and write workspace/queue.json, newest first.
+
+Board ranking: every scan records each board's postings from the last 7 days in workspace/board_activity.json
+({"ats:token": {"week": n, "seen": iso}}). `--hot` (the pipeline's short loop passes) fetches only boards that
+posted in the last week plus any not fetched for COLD_HOURS, so quiet boards are still checked daily.
 """
 import json, os, sys, time
 from datetime import datetime, timezone, timedelta
@@ -49,13 +53,47 @@ def merge_queue(new, path=None):
     return q
 
 
-def scan(days=3, only=None):
+COLD_HOURS = 24
+ACTIVITY = os.path.join(WORKSPACE, "board_activity.json")
+
+
+def load_activity():
+    try:
+        return json.load(open(ACTIVITY, encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def hot_boards(boards, activity, now=None):
+    """"ats:token" boards worth fetching on a short pass: posted in the last week, or not fetched for COLD_HOURS
+    (never-fetched boards count as due). O(boards)."""
+    now = now or datetime.now(timezone.utc)
+    due = (now - timedelta(hours=COLD_HOURS)).isoformat()
+    out = set()
+    for a in A.ATS:
+        for t in boards.get(a, []):
+            k = f"{a}:{t}"
+            st = activity.get(k)
+            if not st or st.get("week", 0) > 0 or (st.get("seen") or "") < due:
+                out.add(k)
+    return out
+
+
+def scan(days=3, only=None, hot=False):
     t0 = time.time()
     boards = A.load_boards()
     if only:
         boards = {a: (boards[a] if a in only else []) for a in A.ATS}
     cut = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    jobs, dead, total = A.fetch_all(boards, keep=lambda j: (j.get("posted") or "") >= cut)  # stream: hold only fresh postings
+    activity, counts = load_activity(), {}
+    subset = hot_boards(boards, activity) if hot else None
+    jobs, dead, total = A.fetch_all(boards, keep=lambda j: (j.get("posted") or "") >= cut,  # stream: hold only fresh postings
+                                    activity=counts, only=subset)
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    activity.update({k: {"week": n, "seen": stamp} for k, n in counts.items()})
+    tmp = ACTIVITY + ".tmp"
+    json.dump(activity, open(tmp, "w", encoding="utf-8"))
+    os.replace(tmp, ACTIVITY)
     out, dropped = filter_jobs(jobs, days)
     os.makedirs(WORKSPACE, exist_ok=True)
     out = merge_queue(out)  # 10-10: a short rescan used to overwrite the queue and drop 70 untried jobs
@@ -63,8 +101,8 @@ def scan(days=3, only=None):
         b = A.load_boards()
         b["dead"] = sorted(set(b.get("dead", [])) | {f"{a}:{t}" for a, t in dead})
         A.save_boards(b)
-    n = sum(len(v) for k, v in boards.items() if k in A.ATS)
-    print(f"scanned {n} boards, {total} postings ({len(jobs)} fresh) in {time.time() - t0:.0f}s; dropped {dropped}; {len(dead)} dead boards")
+    n = len(subset) if subset is not None else sum(len(v) for k, v in boards.items() if k in A.ATS)
+    print(f"scanned {n} boards{' (hot)' if hot else ''}, {total} postings ({len(jobs)} fresh) in {time.time() - t0:.0f}s; dropped {dropped}; {len(dead)} dead boards")
     return out
 
 
@@ -79,7 +117,9 @@ def main(argv=None):
     only = None
     if "--ats" in argv:
         i = argv.index("--ats"); only = argv[i + 1].split(","); argv = argv[:i] + argv[i + 2:]
-    show(scan(float(argv[0]) if argv else 3, only))
+    hot = "--hot" in argv
+    argv = [a for a in argv if a != "--hot"]
+    show(scan(float(argv[0]) if argv else 3, only, hot))
 
 
 if __name__ == "__main__":

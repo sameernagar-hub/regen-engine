@@ -649,3 +649,51 @@ def test_clean_drops_day_old_codes_only(tmp_path, monkeypatch):
     files, _ = C.plan()
     assert [os.path.basename(f) for f in files] == ["a.tried"]
     assert C.PROOF_DAYS == 90 and C.LOG_DAYS == 14 and C.CODE_DAYS == 1
+
+
+def test_daily_hn_outreach_once_a_day(tmp_path, monkeypatch):
+    import threading, time
+    from engine import supervisor as S
+    monkeypatch.setattr(S, "FLEET", str(tmp_path / "fleet"))
+    monkeypatch.setattr(S, "WORKSPACE", str(tmp_path))
+    monkeypatch.setattr(S, "audit", lambda *a, **k: None)
+
+    class Sync:
+        def __init__(self, target, daemon): self.t = target
+        def start(self): self.t()
+    monkeypatch.setattr(threading, "Thread", Sync)
+    ran = []
+    fake = lambda cmd, **kw: ran.append(cmd[3:]) or type("R", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
+    at = lambda h, d=12: time.struct_time((2026, 10, d, h, 0, 0, 0, 285, 1))
+    assert not S.daily(True, at(6), fake)  # before DAILY_HOUR
+    assert S.daily(True, at(8), fake) and not S.daily(True, at(20), fake)
+    assert ran == [["hn", "2"], ["outreach", "hn", "20", "--gmail", "--new"]]
+    (tmp_path / "KILL").write_text("x")
+    assert not S.daily(True, at(8, 13), fake)  # killed: nothing runs
+    (tmp_path / "KILL").unlink()
+    assert S.daily(False, at(8, 13), fake) and ran[-1] == ["hn", "2"]  # no IMAP: no Gmail drafts
+
+
+def test_outreach_drafted_backfills_and_dedupes(tmp_path, monkeypatch):
+    import json
+    from engine import outreach as O
+    from engine.feedback import events
+    monkeypatch.setattr(O, "WORKSPACE", str(tmp_path))
+    monkeypatch.setattr(events, "WORKSPACE", str(tmp_path))
+    events._cache.update(path=None)
+    (tmp_path / "outreach").mkdir()
+    (tmp_path / "outreach" / "hn_drafts.json").write_text(json.dumps([{"to": "Hi@<Co>.invalid", "company": "<Co>"}]))
+    assert O.drafted() == {"hi@<co>.invalid"}
+    events._cache.update(path=None)
+    assert O.drafted() == {"hi@<co>.invalid"} and len(events.read("outreach")) == 1  # backfilled once
+
+
+def test_hot_boards_skip_quiet_boards_until_due():
+    from datetime import datetime, timedelta, timezone
+    from engine.discovery import scan as Sc
+    now = datetime(2026, 10, 12, 22, tzinfo=timezone.utc)
+    fresh, stale = (now - timedelta(hours=2)).isoformat(), (now - timedelta(hours=30)).isoformat()
+    boards = {"greenhouse": ["busy", "quiet", "old", "new"], "ashby": [], "lever": [], "workable": []}
+    act = {"greenhouse:busy": {"week": 4, "seen": fresh}, "greenhouse:quiet": {"week": 0, "seen": fresh},
+           "greenhouse:old": {"week": 0, "seen": stale}}
+    assert Sc.hot_boards(boards, act, now) == {"greenhouse:busy", "greenhouse:old", "greenhouse:new"}

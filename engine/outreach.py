@@ -172,6 +172,21 @@ def hn_draft(t, bank=None):
     return dict(t, subject=subject, body=body, compose=compose, sources=t["facts"][:2])
 
 
+def drafted():
+    """Recipients (lowercase) that already have a Gmail draft: `outreach` events, plus the 10-11 run that predates
+    them (outreach/hn_drafts.json is backfilled into events once). Nobody gets a second cold email. O(E)."""
+    from engine.feedback.events import read, record
+    evs = read("outreach")
+    if not any(e.get("backfilled") for e in evs):
+        p = os.path.join(WORKSPACE, "outreach", "hn_drafts.json")
+        if os.path.exists(p):
+            for d in json.load(open(p, encoding="utf-8")):
+                if d.get("to"):
+                    evs.append(record("outreach", channel="gmail_draft", to=d["to"], company=d.get("company", ""),
+                                      backfilled=True))
+    return {(e.get("to") or "").lower() for e in evs}
+
+
 def gmail_drafts(drafts, blocked=None):
     """Save drafts into the user's Gmail Drafts folder over IMAP (the app password in .env). APPEND only: nothing is
     sent, read or changed; the user reviews and sends each one. Every subject + body passes the leak guard first
@@ -207,26 +222,35 @@ def gmail_drafts(drafts, blocked=None):
         m["Date"] = email.utils.formatdate(localtime=True)
         m.set_content(d["body"])
         typ, _ = M.append('"[Gmail]/Drafts"', "\\Draft", imaplib.Time2Internaldate(T.time()), m.as_bytes())
-        n += typ == "OK"
+        if typ == "OK":
+            n += 1
+            record("outreach", channel="gmail_draft", to=d["to"], company=d.get("company", ""), subject=d["subject"])
     M.logout()
     return n
 
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    if argv and argv[0] == "hn":  # python -m engine outreach hn [limit] [--gmail]
+    if argv and argv[0] == "hn":  # python -m engine outreach hn [limit] [--gmail] [--new]
         bank = _bank()
-        ds = [hn_draft(t, bank) for t in hn_targets(int(argv[1]) if len(argv) > 1 and argv[1].isdigit() else 60)]
+        limit = int(argv[1]) if len(argv) > 1 and argv[1].isdigit() else 60
+        if "--new" in argv:  # only contacts without a draft yet (the supervisor's daily run), at most `limit`
+            have = drafted()
+            ts = [t for t in hn_targets(10 ** 6) if t["to"].lower() not in have][:limit]
+        else:
+            ts = hn_targets(limit)
+        ds = [hn_draft(t, bank) for t in ts]
         d = os.path.join(WORKSPACE, "outreach")
         os.makedirs(d, exist_ok=True)
-        json.dump(ds, open(os.path.join(d, "hn_drafts.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+        out = "hn_drafts_new.json" if "--new" in argv else "hn_drafts.json"
+        json.dump(ds, open(os.path.join(d, out), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
         for x in ds:
             print(f"  {x['company'][:28]:<28} {x['to']:<34} {x['role'][:40]}")
         blocked = []
         saved = gmail_drafts(ds, blocked) if "--gmail" in argv else 0
         for co, rules in blocked:
             print(f"  blocked by the leak guard: {co[:28]} ({'; '.join(rules)})")
-        print(f"{len(ds)} HN drafts -> workspace/outreach/hn_drafts.json" + (f"; {saved} saved to Gmail Drafts (nothing sent)" if saved else " (nothing sent)"))
+        print(f"{len(ds)} HN drafts -> workspace/outreach/{out}" + (f"; {saved} saved to Gmail Drafts (nothing sent)" if saved else " (nothing sent)"))
         return
     ds = build(int(argv[0]) if argv else 7)
     for x in ds:

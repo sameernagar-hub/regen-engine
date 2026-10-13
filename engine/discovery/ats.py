@@ -9,7 +9,7 @@ Boards live in workspace/boards.json  {"greenhouse": [...], "ashby": [...], "lev
 (seeded from the legacy workspace/boards.txt and grown by `python -m engine boards harvest`).
 """
 import json, os, re, time, urllib.request, urllib.error, concurrent.futures as cf
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from engine.config import PACKAGE, WORKSPACE
 
@@ -159,16 +159,20 @@ def save_boards(b):
               open(boards_path(), "w"), indent=1)
 
 
-def fetch_all(boards, workers=24, keep=None, keys=None):
+def fetch_all(boards, workers=24, keep=None, keys=None, activity=None, only=None):
     """Fetch every board in parallel and stream each one through `keep` as it arrives.
 
     keep(job) -> bool   only kept jobs are held in memory (default: keep all)
     keys: set | None    if given, every "ats:id" seen is added to it (cheap strings, for watch's seen-set)
+    activity: dict|None if given, "ats:token" -> postings first published in the last 7 days (board ranking)
+    only: set | None    "ats:token" boards to fetch (scan --hot); None = every live board
     Returns (kept jobs, dead boards, total postings). Boards that 404 are reported as dead; boards that fail
     with a network error are kept and retried on the next pass. Streaming keeps a full pass of ~110k postings
     at a fraction of the memory of holding them all."""
     dead_known = set(boards.get("dead", []))  # skipped to save calls (`boards recheck` retries them)
-    tasks = [(a, t) for a in ATS for t in boards.get(a, []) if f"{a}:{t}" not in dead_known]
+    tasks = [(a, t) for a in ATS for t in boards.get(a, [])
+             if f"{a}:{t}" not in dead_known and (only is None or f"{a}:{t}" in only)]
+    week = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
     kept, dead, total = [], [], 0
 
     def one(at):
@@ -179,6 +183,8 @@ def fetch_all(boards, workers=24, keep=None, keys=None):
         if r is None:
             return at, None, [], 0
         ids = [f"{j['ats']}:{j['id']}" for j in r] if keys is not None else []
+        if activity is not None:
+            activity[f"{at[0]}:{at[1]}"] = sum(1 for j in r if (j.get("posted") or "") >= week)
         return at, ([j for j in r if keep(j)] if keep else r), ids, len(r)
 
     with cf.ThreadPoolExecutor(workers) as ex:

@@ -47,6 +47,13 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   and email-code matching. Display names are unchanged.
   Verify: `pytest -k "slug or day_old"`.
 
+- **Daily HN + outreach in the supervisor**: after 07:00 (`REGEN_DAILY_HOUR`) once a day, `hn 2` then
+  `outreach hn 20 --gmail --new` (`REGEN_OUTREACH_PER_DAY`): Gmail drafts only for contacts that never got one
+  (`outreach` events; the 10-11 drafts are backfilled once). Nothing is sent. Skipped while killed; audited as `daily`.
+- **Hot boards**: every scan records postings-per-week per board (`workspace/board_activity.json`); the pipeline's
+  short loop passes run `scan --hot` (boards that posted this week + any not fetched for 24 h).
+  Verify: `pytest -k "daily or drafted or hot_boards"`.
+
 ### Fixed
 - **The supervisor killed an applier mid-batch** (10-12 22:21): it chose an idle applier from a "watching"
   heartbeat, then `docker stop -t 20` gave the worker 20 s in which it claimed a fresh 3-job batch and died holding

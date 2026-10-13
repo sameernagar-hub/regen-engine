@@ -213,7 +213,7 @@ def halted(stage):
     return bool(why)
 
 
-def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
+def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False):
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     t0 = time.monotonic()
     if halted("scan"):
@@ -223,7 +223,8 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
         ashby_ok = not ashby_cooling()
     if scan:
         ats = "greenhouse,ashby,lever,workable" if ashby_ok else "greenhouse,lever,workable"
-        subprocess.run([sys.executable, "-m", "engine", "scan", str(days), "--ats", ats], cwd=ROOT, check=False)
+        subprocess.run([sys.executable, "-m", "engine", "scan", str(days), "--ats", ats] + (["--hot"] if hot else []),
+                       cwd=ROOT, check=False)
     q = prune(json.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8")))
     chosen = select(q, max_jobs, ashby_ok)
     record("pipeline", stage="select", queued=len(q), chosen=len(chosen), ashby=ashby_ok)
@@ -310,7 +311,7 @@ def main(argv=None):
             time.sleep(30)
             continue
         beat("pipeline", state="scanning and tailoring", **{"pass": n + 1})
-        run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125)))
+        run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125), hot=n > 0))  # later passes: hot boards
         n += 1  # disk hygiene (engine/clean.py) is the supervisor's job: hourly, one owner
         print(f"loop: pass {n} done; next scan in {loop:g} min", flush=True)
         for _ in range(int(loop)):  # one heartbeat a minute while idle

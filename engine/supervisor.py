@@ -464,6 +464,38 @@ def control(argv):
     return None
 
 
+DAILY_HOUR = int(os.environ.get("REGEN_DAILY_HOUR", "7"))  # local time; the container runs TZ=America/Los_Angeles
+OUTREACH_PER_DAY = int(os.environ.get("REGEN_OUTREACH_PER_DAY", "20"))
+
+
+def daily(imap, now=None, run=None):
+    """Once a day after DAILY_HOUR: refresh HN "Who is hiring" boards + contacts, then save Gmail drafts for at most
+    OUTREACH_PER_DAY contacts that never got one (nothing is sent; the user reviews Drafts). Runs in a thread so
+    scaling never waits on it; skipped while killed. Returns True when it started today's run."""
+    import subprocess, sys, threading
+    now = now or time.localtime()
+    mark = os.path.join(FLEET, "daily_last")
+    today = time.strftime("%Y-%m-%d", now)
+    try:
+        last = open(mark, encoding="utf-8").read().strip()
+    except OSError:
+        last = ""
+    if now.tm_hour < DAILY_HOUR or last == today or os.path.exists(os.path.join(WORKSPACE, "KILL")):
+        return False
+    os.makedirs(FLEET, exist_ok=True)
+    open(mark, "w", encoding="utf-8").write(today)
+    steps = [["hn", "2"]] + ([["outreach", "hn", str(OUTREACH_PER_DAY), "--gmail", "--new"]] if imap else [])
+
+    def go():
+        for s in steps:
+            r = (run or subprocess.run)([sys.executable, "-m", "engine", *s], capture_output=True, text=True,
+                                        encoding="utf-8", errors="replace", timeout=1800)
+            tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
+            audit("daily", " ".join(s), rc=r.returncode, result=tail[0][:160])
+    threading.Thread(target=go, daemon=True).start()
+    return True
+
+
 def supervise(argv=None):
     """The container on top: every 15 s scale appliers to the backlog and requeue lost claims; if a Gmail app
     password is configured, watch IMAP for codes in a thread (hands-free, no browser tab)."""
@@ -501,6 +533,7 @@ def supervise(argv=None):
             want, running, jobs = scale(*limits(lo, hi))
             if n % 8 == 0:
                 requeue_stale()
+            daily(imap)
             if n % 240 == 0:  # hourly: dangling images, then the retention policy (engine/clean.py)
                 prune_images()
                 from engine.clean import main as clean
