@@ -25,7 +25,15 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   the supervisor re-reads every pass. `python -m engine fleet --json` prints the same status.
   Verify: `docker exec deploy-supervisor-1 python -m engine supervise --status`; `pytest -k control_verbs`.
 
+- **Kill switch per step**: `safety.killed()` reads `workspace/KILL`; `stop_requested()` honors it as well as `STOP`.
+  The runner checks again right before each submit click (a filled form is left as `STOPPED`, nothing sent); the
+  pipeline checks before scan, build and dispatch (`pipeline` event with `halted`), and its loop holds while killed.
+  `supervise --clear` restarts the pipeline container that `kill()` stopped.
+  Verify: `pytest -k kill_switch_reaches_every_step`.
+
 ### Fixed
+- A kill only reached workers between batches: `stop_requested()` looked at `workspace/STOP`, while `kill()` writes
+  `KILL` and `batches/STOP`, so a running applier kept submitting until its batch ended.
 - `engine fleet` no longer reports "Gmail tab is not posting codes" while the supervisor's IMAP watcher delivers
   codes (the supervisor heartbeat now carries `imap`).
 

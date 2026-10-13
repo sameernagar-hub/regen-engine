@@ -1129,6 +1129,9 @@ def job_task(page, job, dry, results, log_base=print):
             elif ash and ashby_cooling():
                 page.screenshot(path=shot, full_page=True)
                 status = "NEEDS YOU: Ashby cooldown after a bot-check; form is filled, submit it by hand (resume ready)"
+            elif safety.stop_requested():  # the kill switch is checked again right before the click: nothing is sent
+                page.screenshot(path=shot, full_page=True)
+                status = "STOPPED: kill switch before submit (" + (safety.killed() or "workspace/STOP")[:80] + ")"
             else:
                 sub = (lambda: submit_ashby(page)) if ash else (lambda: submit_lever(page)) if lev else \
                       (lambda: submit_workable(page)) if wk else (lambda: submit_gh(page, job))
@@ -1191,7 +1194,7 @@ def run(jobs, dry=False, concurrency=None):
     if not jobs:
         return []
     if safety.stop_requested():
-        print("STOP file present (workspace/STOP): not starting", flush=True); return []
+        print("kill switch on (workspace/STOP or KILL): not starting", flush=True); return []
     concurrency = concurrency or int(os.environ.get("REGEN_TABS", "3"))
     results = []
     t0 = time.monotonic()
@@ -1211,7 +1214,7 @@ def run(jobs, dry=False, concurrency=None):
             def make(page):
                 if safety.stop_requested():
                     def stopped():
-                        print("STOP file present (workspace/STOP): skipping " + (job.get("name") or job["url"]), flush=True)
+                        print("kill switch on (workspace/STOP or KILL): skipping " + (job.get("name") or job["url"]), flush=True)
                         return "STOPPED"
                         yield
                     return stopped()

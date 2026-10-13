@@ -379,7 +379,17 @@ def clear_kill(by="operator"):
         if os.path.exists(os.path.join(WORKSPACE, x)):
             os.remove(os.path.join(WORKSPACE, x))
             removed.append(x)
-    audit("clear", "kill switch", by=by)
+    started = []
+    try:  # kill() stopped the pipeline container; appliers come back through scale(), the pipeline does not
+        import urllib.parse
+        flt = urllib.parse.quote(json.dumps({"label": ["com.docker.compose.service=pipeline"]}))
+        for r in _docker("GET", f"/containers/json?all=1&filters={flt}") or []:
+            if r.get("State") != "running":
+                _docker("POST", f"/containers/{r['Id']}/start")
+                started.append((r.get("Names") or [r["Id"][:12]])[0].lstrip("/"))
+    except Exception as ex:
+        print(f"supervisor: clear could not restart the pipeline: {ex}", flush=True)
+    audit("clear", "kill switch", by=by, started=started)
     return removed
 
 

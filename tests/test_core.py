@@ -519,3 +519,16 @@ def test_fleet_skips_gmail_tab_warning_when_imap_delivers(tmp_path, monkeypatch)
     S.beat("supervisor", state="supervising", imap=True)
     f = S.fleet()
     assert f["imap_codes"] and not any("Gmail tab" in p for p in f["problems"])
+
+
+def test_kill_switch_reaches_every_step(tmp_path, monkeypatch):
+    """KILL (supervisor / MCP) is honored by safety.stop_requested and by each pipeline step, not only the workers."""
+    from engine import safety, pipeline
+    monkeypatch.setattr(safety, "WORKSPACE", str(tmp_path))
+    seen = []
+    monkeypatch.setattr(pipeline, "record", lambda kind, **kw: seen.append(kw))
+    assert safety.killed() is None and not safety.stop_requested() and not pipeline.halted("scan")
+    (tmp_path / "KILL").write_text("2026-10-12T22:00:00 secret in logs/x.log\n")
+    assert safety.killed().endswith("x.log") and safety.stop_requested()
+    assert pipeline.run(scan=True) == []  # returns before scanning, selecting or dispatching anything
+    assert seen == [{"stage": "scan", "halted": "2026-10-12T22:00:00 secret in logs/x.log"}]

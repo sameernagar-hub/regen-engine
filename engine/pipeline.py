@@ -202,9 +202,21 @@ def split(jobs, parts):
     return [b for b in out if b]
 
 
+def halted(stage):
+    """True when the kill switch is on: the step is skipped and the skip is recorded (kill per step, not per pass)."""
+    from engine.safety import killed
+    why = killed()
+    if why:
+        record("pipeline", stage=stage, halted=why[:120])
+        print(f"{stage}: kill switch on ({why[:80]}), skipped", flush=True)
+    return bool(why)
+
+
 def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     t0 = time.monotonic()
+    if halted("scan"):
+        return []
     with in_workspace():
         from engine.apply.runner import ashby_cooling
         ashby_ok = not ashby_cooling()
@@ -215,7 +227,7 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
     chosen = select(q, max_jobs, ashby_ok)
     record("pipeline", stage="select", queued=len(q), chosen=len(chosen), ashby=ashby_ok)
     print(f"select: {len(chosen)} of {len(q)} queued jobs" + ("" if ashby_ok else " (Ashby cooling down: skipped)"))
-    if not chosen:
+    if not chosen or halted("build"):
         return []
     from engine.tailoring.batch import build
     batch = build(f"run_{stamp}", [str(j["id"]) for j in chosen])
@@ -226,6 +238,8 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False):
     local_n = 0 if os.environ.get("REGEN_APPLIERS") == "docker" else appliers
     small = -(-len(batch) // int(os.environ.get("REGEN_BATCH_JOBS", "3")))  # docker: batches of ~3 jobs (autoscaling)
     parts = split(batch, local_n + (k or ((max(appliers, small) if os.environ.get("REGEN_APPLIERS") == "docker" else appliers) if not local_n else 0)))
+    if halted("dispatch"):  # resumes stay built; the jobs are selected again after the kill is cleared
+        return []
     boxed = _drop(parts[local_n:], stamp, local_n)
     procs = []
     for i, part in enumerate(parts[:local_n]):
@@ -289,6 +303,11 @@ def main(argv=None):
     # to whatever just opened. Runs until stopped (Ctrl+C or the control room's Stop): started by the user, never scheduled.
     n = 0
     while True:
+        from engine.safety import killed
+        if killed():  # held, not exited: the container restarts it anyway; it resumes once the kill is cleared
+            beat("pipeline", state="KILLED: " + killed()[:80], **{"pass": n})
+            time.sleep(30)
+            continue
         beat("pipeline", state="scanning and tailoring", **{"pass": n + 1})
         run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125)))
         n += 1

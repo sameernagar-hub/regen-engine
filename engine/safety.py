@@ -3,7 +3,8 @@
 Every check is cheap and local. When one fires, the current job is NOT submitted. The flag is written to
 workspace/flags.jsonl (and events.jsonl), and an SOS email goes out if SMTP is configured (engine/notify.py).
 
-  KILL SWITCH      create workspace/STOP and the runner halts before the next job (delete the file to resume)
+  KILL SWITCH      workspace/STOP (by hand) or workspace/KILL (the supervisor / MCP `kill`): the runner halts before
+                   the next job AND before each submit click, the pipeline before scan, build and dispatch
   SENSITIVE FIELD  a form asks for SSN, bank/card numbers, passwords, date of birth, driver's license... -> stop
   PAYMENT / FEES   a form field asks for money (application fee, "pay", card) -> stop: real employers don't charge
   RATE CAP         more than REGEN_MAX_PER_DAY submissions (default 25) or 3 per company per day -> stop
@@ -23,8 +24,18 @@ PAYMENT = re.compile(r"application fee|processing fee|pay (now|a fee|to apply)|p
 ATS_HOSTS = ("greenhouse.io", "ashbyhq.com", "lever.co", "workable.com")
 
 
+def killed():
+    """The supervisor's kill reason (workspace/KILL), or None. Checked at every step, so a kill lands before the next
+    side effect, not only between batches."""
+    try:
+        with open(os.path.join(WORKSPACE, "KILL"), encoding="utf-8") as fh:
+            return fh.read().strip() or "kill switch"
+    except OSError:
+        return None
+
+
 def stop_requested():
-    return os.path.exists(os.path.join(WORKSPACE, "STOP"))
+    return os.path.exists(os.path.join(WORKSPACE, "STOP")) or killed() is not None
 
 
 def flag(kind, job, detail, url=""):
