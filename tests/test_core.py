@@ -729,3 +729,44 @@ def test_errors_stop_being_retried_after_two(monkeypatch):
     assert Pl.latest_status()["u"] == "ERROR"
     evs.append({"url": "u", "status": "ERROR: Timeout", "ts": "2"})
     assert Pl.latest_status()["u"] == "FAILED"
+
+
+def test_reposync_push_allowlist_and_kill(tmp_path, monkeypatch):
+    """The repo-sync container can only push gh-pages and bot/*, force only as a lease on bot/*, never while killed."""
+    import pytest
+    from engine import reposync as R
+    ran = []
+    monkeypatch.setattr(R, "WORKSPACE", str(tmp_path))
+    monkeypatch.setattr(R, "git", lambda *a, **k: ran.append(a) or "")
+    for bad in ("refs/heads/main", "refs/heads/master", "refs/tags/v1", "main", "refs/heads/bot", "refs/heads/gh-pages-x"):
+        with pytest.raises(R.GuardError):
+            R.push("HEAD", bad)
+    with pytest.raises(R.GuardError):
+        R.push("HEAD", "refs/heads/gh-pages", lease="")  # no force on gh-pages
+    R.push("HEAD", "refs/heads/gh-pages")
+    R.push("abc", "refs/heads/bot/sync", lease="def")
+    assert ran[0][-1] == "HEAD:refs/heads/gh-pages" and ran[1][1] == "--force-with-lease=refs/heads/bot/sync:def"
+    (tmp_path / "KILL").write_text("x")
+    with pytest.raises(R.GuardError):
+        R.push("HEAD", "refs/heads/gh-pages")
+    assert len(ran) == 2
+
+
+def test_reposync_token_never_leaks(tmp_path, monkeypatch):
+    from engine import reposync as R
+    tok = tmp_path / "t"
+    tok.write_text("ghp_" + "x" * 36 + "\n")
+    monkeypatch.setattr(R, "TOKEN_FILE", str(tok))
+    seen = {}
+
+    def run(cmd, **kw):
+        seen["cmd"] = cmd
+        return type("R", (), {"returncode": 1, "stdout": "", "stderr": "fatal: auth ghp_" + "x" * 36 + " denied"})()
+    monkeypatch.setattr(R.subprocess, "run", run)
+    try:
+        R.git("push", "x", auth=True)
+    except RuntimeError as e:
+        assert "x" * 36 not in str(e) and "***" in str(e)
+    assert not any("x" * 36 in c for c in seen["cmd"])  # only the base64 header carries it, never the raw token
+    tok.write_text("PASTE_YOUR_GITHUB_TOKEN_HERE")
+    assert R.token() is None

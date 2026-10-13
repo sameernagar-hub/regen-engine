@@ -111,10 +111,25 @@ services:
     depends_on: [api]
     deploy: { resources: { limits: { memory: 384m } } }
 
+  reposync:  # keeps GitHub current: feed -> gh-pages, checked local commits -> bot/sync + PR (engine/reposync.py)
+    <<: *engine
+    entrypoint: ["python", "-m", "engine"]
+    command: ["reposync"]
+    secrets: [gh_token]
+    environment: { REGEN_SYNC_MIN: "${REGEN_SYNC_MIN:-15}" }
+    volumes:
+      - regen-profile:/data/profile
+      - regen-workspace:/data/workspace
+      - regen-repo:/repo
+      - ..:/src:ro  # the host repo, read-only: only committed `main` is ever taken from it
+    deploy: { resources: { limits: { cpus: "1.0", memory: 1g } } }
+
 secrets:
+  gh_token: { file: ../.gh_token }  # fine-grained PAT, this repo only (Contents + Pull requests: read/write)
   pg_password: { file: ../.pg_password }
 
 volumes:
   regen-profile: { name: regen-profile }
   regen-workspace: { name: regen-workspace }
   regen-db: { name: regen-db }
+  regen-repo: { name: regen-repo }

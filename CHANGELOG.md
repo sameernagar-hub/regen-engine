@@ -67,6 +67,14 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   directly (`NEXT_PUBLIC_REGEN_API`, CORS limited to the web origin, CSP `connect-src`/`img-src`/`frame-src` name it;
   resumes carry `frame-ancestors` for the web origin).
 
+- **`reposync` container** (`engine/reposync.py`): every 15 min rebuilds the anonymized feed from the bank and pushes
+  gh-pages when it changed (Render stays live); local `main` commits not on GitHub are checked in a clean worktree
+  (privacy scan with the real terms + full test suite) and pushed to `bot/sync` with a PR to main. Guardrails: push
+  allowlist (gh-pages, bot/* only; main raises before git runs), force only as a lease on bot/*, no pushes while
+  killed, diverged history reported not fixed, token only from the `gh_token` secret as a per-command header and
+  scrubbed from every message. Heartbeats like every member; audited as `reposync` events.
+  Verify: `pytest -k reposync`; `docker logs deploy-reposync-1`.
+
 ### Fixed
 - **Live narration never streamed**: clients open `/api/stream?after=999999999` for "only new events", but the
   server compared ids against that number literally, so only snapshots arrived. `after` is clamped to the newest id.

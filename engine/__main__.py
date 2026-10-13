@@ -110,6 +110,8 @@ def main():
         from engine.supervisor import main as m
     elif cmd == "supervise":
         from engine.supervisor import supervise as m
+    elif cmd == "reposync":
+        from engine.reposync import main as m
     elif cmd == "worker":
         from engine.apply.worker import main as m
     elif cmd == "newgrad":

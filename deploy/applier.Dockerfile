@@ -19,14 +19,17 @@ RUN pip install --no-cache-dir playwright reportlab pypdf "mcp>=2.0" \
  && apt-get update && apt-get install -y --no-install-recommends xvfb xauth tzdata \
  && rm -rf /var/lib/apt/lists/*
 # own layer so the browser layer above stays cached: the read-only API service (control room fleet view) and the Postgres ledger use it
-RUN pip install --no-cache-dir "fastapi>=0.142" "uvicorn>=0.54" "pydantic>=2.13" "psycopg[binary]>=3.3"
+RUN pip install --no-cache-dir "fastapi>=0.142" "uvicorn>=0.54" "pydantic>=2.13" "psycopg[binary]>=3.3" "pytest>=8"
+# repo-sync container: git for its own clone, pytest to check commits before they reach bot/sync
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 COPY engine/ engine/
 COPY apps/__init__.py apps/
 COPY apps/api/ apps/api/
 COPY profile.example/ profile.example/
 
 # Least privilege: an unprivileged user; the browser profile lives in the container, not on the shared volume.
-RUN useradd --create-home --uid 10001 regen && chmod -R a+rx /ms-playwright
+RUN useradd --create-home --uid 10001 regen && chmod -R a+rx /ms-playwright \
+ && mkdir -p /app/site /repo && chown regen /app/site /repo  # repo-sync: feed build dir + its own clone (volume seeded from here)
 USER regen
 
 # Xvfb started directly (xvfb-run as PID 1 waits forever for a signal it never gets), then the engine owns PID 1.
