@@ -88,6 +88,11 @@ actions) meant a script. Now the bank stack keeps a labeled Postgres copy next t
   bound parameters only). `127.0.0.1:8799/` shows jobs waiting on a code (never code values), `/status` as JSON.
   The control room nav links "Data". Postgres (5433) speaks its own protocol, so its browser is the API page.
 
+- **MCP at every level**: `mcp` container serves the MCP server over streamable HTTP at 127.0.0.1:8790/mcp
+  (`.mcp.json` `regen-bank`; DNS-rebinding protection, localhost hosts only). Inside the bank the fleet verbs run
+  in-process (kill writes the kill files every step honors); new tools `ledger_tables`, `ledger_rows`,
+  `answer_queue_add` (needs REGEN_MCP_WRITE), `answer_queue_status`, `reposync_status`. The supervisor probes it.
+
 ### Fixed
 - **Answers from /needs never reached the containers**: the bank API was read-only (and saw the browser as the
   Docker gateway, not 127.0.0.1), and `requeue()` wrote `batches/requeue.json`, which no container reads, after
