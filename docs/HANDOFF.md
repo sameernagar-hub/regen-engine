@@ -1,3 +1,38 @@
+# Handoff: 10-12 night session (~00:15 10-13). Stack is DOWN (volumes kept).
+
+## START HERE
+1. Start: `cd regen-engine && REGEN_MAX_PER_DAY=150 REGEN_TABS=4 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
+   (services: postgres, ledger, api, web, mcp, answers, reposync, relay, pipeline, supervisor, applier; supervisor scales 1..7).
+2. Health: `docker exec deploy-supervisor-1 python -m engine fleet` (services api/web/mcp/ledger/postgres/answers/reposync in its beat).
+3. Look: control room http://127.0.0.1:3000/control · API + live DB browser http://127.0.0.1:8787/ (/db) · relay http://127.0.0.1:8799/
+   · MCP http://127.0.0.1:8790/mcp (`.mcp.json` entry `regen-bank`) · public https://regen-engine.onrender.com
+4. **Git workflow changed: commit locally, do NOT push main.** The reposync container (every 15 min) runs privacy scan + tests on
+   local `main`, pushes `bot/sync`, opens/updates the PR (PR #11 open, Auto-fix on). User merges. Feed -> gh-pages automatically.
+   Token: git-ignored `.gh_token` (fine-grained, Contents + PRs RW, verified). Postgres password: git-ignored `.pg_password`.
+5. Local commits not yet on GitHub at shutdown are pushed to bot/sync by the last reposync pass (check PR #11).
+
+## Done 10-12 (all in CHANGELOG [Unreleased])
+Postgres ledger (views per kind, NOTIFY bus, ~1 s to browser, no web proxy); MCP oversight (fleet/kill/clear/audit/quarantine/scale)
++ in-bank HTTP MCP with ledger, answer-queue and reposync tools; kill switch per step; stricter leak guard (resume PDFs, outreach
+drafts); retention (proof 90 d, logs 14 d, codes 1 d) hourly in supervisor; company_slug/role_key; daily HN + outreach (20 new/day,
+dedupe); hot-board scans; drain handshake (fixed applier killed mid-batch); service probes/restarts; web container; reposync;
+answer queue + `answers` container (fixed: /needs answers never reached containers); API home page (request tracker + DB browser,
+filters, CSV/JSON); relay status page; Fact Bank crash + memory graph deep-layer fixes; error boundary; ERROR jobs retried once.
+
+## Next (user's list, in order)
+1. Verify MCP HTTP end to end with a real client (initialize + tools/list against 127.0.0.1:8790/mcp; GET returns 406 = alive).
+2. Supervisor strict guardrails: every created container bounded (cpu/mem limits, labels, max count per service, TTL), tracked
+   in an inventory, refuse anything outside the allowlist of services; audit + tests.
+3. Evaluation container: benchmarks (B1-B7 + new: fit-gate precision, ATS read-back, code latency, supervisor decisions/drain
+   correctness, bus latency, API p95) on a schedule/when commits land; autoscaled 0..N by the supervisor; results in Postgres + page.
+4. README + wiki pages for all of the above (Ledger, Data bus, Repo sync, Answer queue, MCP levels, Supervisor).
+5. SmartRecruiters adapter; Gmail cleanup (needs the user's OK on the exact search).
+
+## Tell the user
+- 33 Gmail drafts (nothing sent); delete Duets (malformed address), Furtim Modus (agency), "Early-stage Startup" (personal gmail).
+- 6 verified 10-12 (stack was off until 22:00). Old proofs older than 3 days were already deleted by the previous policy.
+- Ledger `ts` digits are local wall-clock (stored as UTC instants); the explorer shows them as local.
+
 # Handoff: v0.12 on main (2026-10-11 ~00:05)
 
 ## START HERE (10-12 morning): 5-minute checklist

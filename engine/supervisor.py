@@ -327,15 +327,21 @@ def guard():
     return hits
 
 
+def kill_files(reason):
+    """The part of the kill switch that needs no Docker socket: KILL + batches/STOP. Every step honors it (pipeline
+    before scan/build/dispatch, runner before each submit, workers before each claim, answers, reposync)."""
+    for n in (os.path.join("batches", "STOP"), "KILL"):
+        p = os.path.join(WORKSPACE, n)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        open(p, "w").write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {reason}\n")
+
+
 def kill(reason):
     """The kill switch: workers stop after their current step (batches/STOP), appliers and the pipeline are stopped
     now, the supervisor holds (KILL) and the reason is recorded. After investigating:
     docker exec deploy-supervisor-1 python -m engine supervise --clear"""
     import urllib.parse
-    for n in (os.path.join("batches", "STOP"), "KILL"):
-        p = os.path.join(WORKSPACE, n)
-        os.makedirs(os.path.dirname(p), exist_ok=True)
-        open(p, "w").write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {reason}\n")
+    kill_files(reason)
     try:
         for cid, name, up in appliers():
             if up:
@@ -469,13 +475,14 @@ def control(argv):
 
 
 # services without a heartbeat of their own: the supervisor probes them over the compose network
-SERVICES = {"api": "http://api:8787/api/health", "web": "http://web:3000/", "ledger": None, "postgres": None}
+SERVICES = {"api": "http://api:8787/api/health", "web": "http://web:3000/", "mcp": "http://mcp:8790/mcp",
+            "ledger": None, "postgres": None, "answers": None, "reposync": None}
 
 
 def services(_fails={}):  # _fails: consecutive failed probes per service (kept across calls)
     """Probe each service; restart one after 3 failed probes in a row (or when its container is not running).
     Returns {service: "ok" | "down: why" | "restarted"} and puts it in the supervisor heartbeat. O(services)."""
-    import urllib.parse, urllib.request
+    import urllib.error, urllib.parse, urllib.request
     out = {}
     for svc, url in SERVICES.items():
         flt = urllib.parse.quote(json.dumps({"label": [f"com.docker.compose.service={svc}"]}))
@@ -493,6 +500,8 @@ def services(_fails={}):  # _fails: consecutive failed probes per service (kept 
         elif url:
             try:
                 urllib.request.urlopen(url, timeout=5).read(64)
+            except urllib.error.HTTPError:
+                pass  # it answered: alive (an MCP endpoint answers a plain GET with 405/406)
             except Exception as ex:
                 why = str(ex)[:60]
         if not why:

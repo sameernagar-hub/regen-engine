@@ -92,6 +92,19 @@ services:
     secrets: [pg_password]
     depends_on: { postgres: { condition: service_healthy } }
 
+  mcp:  # MCP over HTTP into the live bank: http://127.0.0.1:8790/mcp (fleet, ledger, API views, answers, repo)
+    <<: *engine
+    entrypoint: ["python", "-m", "engine"]
+    command: ["mcp", "--http", "8790"]
+    environment:
+      REGEN_IN_BANK: "1"
+      REGEN_MCP_HOST: "0.0.0.0"
+      REGEN_MCP_WRITE: "${REGEN_MCP_WRITE:-0}"  # kill is always allowed; answers/scale/clear need 1
+      REGEN_DB_HOST: postgres
+    secrets: [pg_password]
+    ports: ["127.0.0.1:8790:8790"]
+    deploy: { resources: { limits: { cpus: "0.5", memory: 384m } } }
+
   answers:  # the answer queue: /needs answers -> profile/answers.json -> one retry batch in batches/inbox
     <<: *engine
     entrypoint: ["python", "-m", "engine"]

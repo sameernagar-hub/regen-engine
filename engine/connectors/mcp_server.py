@@ -236,9 +236,24 @@ def outreach_drafts(days: int = 7, rebuild: bool = False) -> list[dict]:
 SUPERVISOR = os.environ.get("REGEN_SUPERVISOR", "deploy-supervisor-1")
 
 
+IN_BANK = os.environ.get("REGEN_IN_BANK") == "1"  # the `mcp` container: same volumes as the fleet, no Docker socket
+
+
 def _supervisor(*verb):
     """Run `python -m engine supervise <verb>` inside the supervisor container (it has the bank volumes and is the
-    only one with the Docker socket) and return its JSON. Errors come back as {"error": ...}, never raised."""
+    only one with the Docker socket) and return its JSON. Errors come back as {"error": ...}, never raised.
+    Inside the bank (the `mcp` container) the verbs run in-process; a kill writes the kill files, which every step
+    honors, and the supervisor stops the containers on its next pass."""
+    if IN_BANK:
+        from engine import supervisor as S
+        try:
+            if verb and verb[0] == "--kill":
+                S.kill_files(verb[1] if len(verb) > 1 else "operator kill (MCP)")
+                S.audit("KILL", verb[1] if len(verb) > 1 else "operator kill (MCP)", by="mcp")
+                return {"killed": True}
+            return S.control(list(verb)) or {"error": "unknown verb"}
+        except Exception as e:
+            return {"error": str(e)[:300]}
     try:
         r = subprocess.run(["docker", "exec", SUPERVISOR, "python", "-m", "engine", "supervise", *verb],
                            capture_output=True, text=True, timeout=60, encoding="utf-8")
@@ -290,7 +305,70 @@ def scale(min_appliers: int, max_appliers: int) -> dict:
     return _supervisor("--scale", str(int(min_appliers)), str(int(max_appliers)))
 
 
+# ---- ledger level: the Postgres copy of the event log (same allowlist and bound parameters as the API's /db page) ----
+@mcp.tool(description="Ledger tables and views (events, applications, answers, codes, outcomes, resumes, discoveries, "
+                      "supervisor_audit, fleet_heartbeats) with row counts and columns. Read-only.")
+def ledger_tables() -> list[dict]:
+    from apps.api import explorer
+    return explorer.tables()
+
+
+@mcp.tool(description="Rows from one ledger table, newest first. q = text anywhere in the row; col + val = one column "
+                      "contains val (e.g. name='applications', col='company', val='acme' to see if an application "
+                      "reached the ledger). limit <= 1000. Read-only.")
+def ledger_rows(name: str, q: str = "", col: str = "", val: str = "", limit: int = 50) -> list[dict]:
+    from apps.api import explorer
+    try:
+        return json.loads(explorer.rows(name, q=q, col=col, val=val, limit=max(1, min(limit, 1000))).body)
+    except Exception as e:  # HTTPException for an unknown table/column
+        return [{"error": getattr(e, "detail", str(e))}]
+
+
+# ---- answer queue level ----
+@mcp.tool(description="Queue an answer to a blocking question (the answers container saves it and retries the job). "
+                      "Legal / sponsorship / EEO / sensitive questions are refused. Needs REGEN_MCP_WRITE=1.")
+def answer_queue_add(job: str, question: str, answer: str) -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    from engine.feedback import answer_queue
+    try:
+        return answer_queue.enqueue(job, question, answer)
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@mcp.tool(description="Answer queue state: waiting, claimed, done and refused counts, plus the latest refusals.")
+def answer_queue_status() -> dict:
+    from engine.feedback import answer_queue as Q
+    d = {k: os.path.join(Q.QDIR, k) for k in ("inbox", "claimed", "done", "refused")}
+    count = lambda p: len([n for n in os.listdir(p) if n.endswith(".json")]) if os.path.isdir(p) else 0
+    from engine.feedback.events import read
+    return {**{k: count(p) for k, p in d.items()}, "recent_refusals": read("answer_refused")[-5:]}
+
+
+# ---- repo level ----
+@mcp.tool(description="Repo-sync container: its last heartbeat (feed / code state, open PR) and its last audited actions.")
+def reposync_status(n: int = 10) -> dict:
+    from engine.feedback.events import read
+    from engine.supervisor import fleet
+    beat_ = next((m for m in fleet()["members"] if m.get("role") == "reposync"), None)
+    return {"heartbeat": beat_, "recent": read("reposync")[-max(1, min(n, 100)):]}
+
+
 def main(argv=None):
+    """stdio by default (Claude Code / Desktop on this machine); `--http [PORT]` serves streamable HTTP at /mcp (the
+    bank's `mcp` container, published on 127.0.0.1 only). DNS-rebinding protection allows only localhost hosts."""
+    argv = sys.argv[1:] if argv is None else argv
+    if "--http" in argv:
+        i = argv.index("--http")
+        port = int(argv[i + 1]) if len(argv) > i + 1 and argv[i + 1].isdigit() else 8790
+        from mcp.server.transport_security import TransportSecuritySettings
+        hosts = [f"127.0.0.1:{port}", f"localhost:{port}", f"mcp:{port}"]
+        sec = TransportSecuritySettings(enable_dns_rebinding_protection=True, allowed_hosts=hosts,
+                                        allowed_origins=[f"http://{h}" for h in hosts])
+        mcp.run("streamable-http", host=os.environ.get("REGEN_MCP_HOST", "127.0.0.1"), port=port,
+                transport_security=sec)
+        return
     mcp.run("stdio")
 
 

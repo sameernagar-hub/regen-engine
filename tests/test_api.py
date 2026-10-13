@@ -215,3 +215,17 @@ def test_explorer_page_tracker_and_rows():
     assert csv_.headers["content-type"].startswith("text/csv") and "attachment" in csv_.headers["content-disposition"]
     assert client.get("/api/db/rows/pg_shadow").status_code == 404  # allowlist only
     assert any(r["route"] == "GET /api/db/rows/{name}" for r in client.get("/api/track").json())
+
+
+def test_mcp_in_bank_levels(monkeypatch, seeded):
+    """The bank's MCP endpoint: fleet verbs run in-process (kill writes the kill files), ledger rows go through the
+    same allowlist as /db, answers need REGEN_MCP_WRITE."""
+    from engine.connectors import mcp_server as S
+    from engine import supervisor as Sup
+    monkeypatch.setattr(S, "IN_BANK", True)
+    monkeypatch.setattr(Sup, "WORKSPACE", str(seeded))
+    monkeypatch.setattr(Sup, "audit", lambda *a, **k: None)
+    assert S.kill("test reason") == {"killed": True} and (seeded / "KILL").read_text().strip().endswith("test reason")
+    assert S.ledger_rows("events", q="globex") and S.ledger_rows("pg_shadow")[0]["error"] == "unknown relation"
+    monkeypatch.setattr(S, "WRITE", False)
+    assert "error" in S.answer_queue_add("J", "Why us?", "Because.")

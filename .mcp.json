@@ -2,8 +2,18 @@
   "mcpServers": {
     "regen-engine": {
       "command": "python",
-      "args": ["-m", "engine", "mcp"],
-      "env": { "PYTHONIOENCODING": "utf-8" }
+      "args": [
+        "-m",
+        "engine",
+        "mcp"
+      ],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
+    "regen-bank": {
+      "type": "http",
+      "url": "http://127.0.0.1:8790/mcp"
     }
   }
 }
