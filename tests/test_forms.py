@@ -90,8 +90,11 @@ def test_ashby_late_required_question_goes_to_you(browser):
 def test_ashby_submits_when_follow_up_is_answerable(browser):
     job = {"name": "Globex - AI Engineer 2", "url": "https://jobs.ashbyhq.com/globex/3", "resume": "out/Resume_Initech_1.pdf",
            "extra": {"obscure mainframe": "No"}, "note": "A reviewed note for this job."}
-    status, _, _ = apply_one(browser, "ashby.html", job)
+    status, _, state = apply_one(browser, "ashby.html", job)
     assert status == "SUBMITTED", status
+    # region-only place search: the user's own state ("Springfield, IL" has an abbreviation -> the country), never
+    # another city; "How did you hear" outside a field entry -> Other + the careers-page answer in its box
+    assert state["w"] == {"loc": "United States", "hear": "Other", "other": "Company careers page"}, state["w"]
 
 
 def test_lever_end_to_end_declines_eeo(browser):

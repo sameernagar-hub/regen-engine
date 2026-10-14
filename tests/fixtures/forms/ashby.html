@@ -9,6 +9,12 @@
 <div class="ashby-application-form-field-entry"><label class="_required_q">Do you now or in the future require visa sponsorship?</label>
   <div><button type="button" class="yn">Yes</button><button type="button" class="yn">No</button></div></div>
 <div class="ashby-application-form-field-entry"><label class="_required_q">What excites you about Globex?</label><textarea id="excite"></textarea></div>
+<div class="ashby-application-form-field-entry"><label class="_required_q">Location</label>
+  <input type="text" role="combobox" id="loc"><div id="locmenu"></div></div>
+<fieldset class="ashby-application-form-input-radio-group"><label class="_required_q">How did you hear about Globex?</label>
+  <div><input type="radio" name="hear" id="h1" value="LinkedIn"><label for="h1">LinkedIn</label></div>
+  <div><input type="radio" name="hear" id="h2" value="Other"><label for="h2">Other (please specify)</label></div></fieldset>
+<div class="ashby-application-form-field-entry"><label>If other, please specify below</label><textarea id="hearother"></textarea></div>
 <div id="extra"></div>
 <button id="submit">Submit Application</button>
 <script>
@@ -20,7 +26,15 @@
     if (!document.getElementById('travel')) document.getElementById('extra').innerHTML =
       '<div class="ashby-application-form-field-entry"><label class="_required_q">Do you agree to the obscure mainframe arbitration terms?</label><input type="text" id="travel"></div>';
   }));
+  // a place search that knows regions, not cities (10-13)
+  const loc = document.getElementById('loc');
+  loc.addEventListener('input', () => {
+    document.getElementById('locmenu').innerHTML = ['San José, Costa Rica', 'Illinois, United States', 'United States']
+      .map(n => `<div role="option">${n}</div>`).join('');
+    document.querySelectorAll('#locmenu [role=option]').forEach(o => o.addEventListener('click', () => { loc.value = o.textContent; document.getElementById('locmenu').innerHTML = ''; }));
+  });
   document.getElementById('submit').addEventListener('click', () => {
+    window.__w = { loc: loc.value, hear: (document.querySelector('input[name=hear]:checked') || {}).value || '', other: document.getElementById('hearother').value };
     const t = document.getElementById('travel');
     if (t && !t.value) { document.body.insertAdjacentHTML('beforeend', '<p>Missing entry for required field: Do you agree to the obscure mainframe arbitration terms?</p>'); return; }
     document.body.innerHTML = '<p>Your application was successfully submitted.</p>';

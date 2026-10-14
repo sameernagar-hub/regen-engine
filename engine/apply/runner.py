@@ -584,7 +584,10 @@ def ashby_fields(page, job, log, first=True):
     label class, or a '*' drawn by CSS (seen 10-07: one board's asterisks were CSS-only, so blanks went to submit)."""
     missing = []
     seen = {a[0] for a in job.get("_answers", [])}
-    for f in page.query_selector_all(".ashby-application-form-field-entry"):
+    # 10-13: radio groups can sit outside a field entry (a required "How did you hear" was never seen)
+    for f in page.query_selector_all(".ashby-application-form-field-entry, fieldset.ashby-application-form-input-radio-group"):
+        if f.evaluate("e => e.tagName == 'FIELDSET' && !!e.parentElement.closest('.ashby-application-form-field-entry')"):
+            continue  # the usual case: already visited through its field entry
         lab_el = f.query_selector("label, legend")
         if not lab_el: continue
         label = lab_el.inner_text().strip()
@@ -593,12 +596,16 @@ def ashby_fields(page, job, log, first=True):
         if re.search(r"^resume", label, re.I): continue
         if first or label[:200] not in seen:
             ans = answer(label, job)
+            if re.match(r"if other,? please specify", label, re.I):
+                ans = job.get("_other_hear")  # only the follow-up of a "How did you hear" -> Other; never a draft
         else:
             ans = next((a for l, a in job.get("_answers", []) if l == label[:200]), None)
         try:
             if first or label[:200] not in seen:  # log follow-up questions that appear on later passes too
                 log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
             ok = yield from set_field(page, f, label, ans)
+            if ok and ans == "Company careers page":
+                job["_other_hear"] = ans
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
         if not ok and req: missing.append(label[:90])
@@ -644,6 +651,8 @@ def set_field(page, f, label, ans):
                 if not h.is_checked(): h.check(force=True)
             return bool(hs)
         h = pick_option(opts, ans)
+        if not h and ans == "Company careers page":  # no careers option: "Other", then the same answer in its box
+            h = pick_option(opts, "Careers page") or next((c for t, c in opts if re.match(r"\s*other\b", t or "", re.I)), None)
         if h and h.is_checked(): return True
         if h:
             lab = h.evaluate_handle("e => e.closest('label') || document.querySelector(`label[for='${e.id}']`) || e.parentElement").as_element()
@@ -659,6 +668,12 @@ def set_field(page, f, label, ans):
         opts = menu_options(page)
         names = [o.inner_text().strip() for o in opts]
         h = pick_option(list(zip(names, opts)), ans)
+        if not h and re.search(r"location|city|where .{0,20}(based|located|live)", label, re.I) and "," in ans:
+            # 10-13: one board's place search knows regions, not cities ("San Jose, California" -> Costa Rica,
+            # Uruguay, "California, United States"): take the user's own state, then the country; never another city
+            state = ans.split(",")[-1].strip().lower()
+            h = next((o for n, o in zip(names, opts) if n.lower() in (f"{state}, united states", f"{state}, usa")), None) \
+                or next((o for n, o in zip(names, opts) if n.lower() == "united states"), None)
         if h:
             want = names[opts.index(h)]
             h.click(); time.sleep(0.5)
