@@ -159,6 +159,10 @@ BLOCKERS = [
     ("grad window", r"(graduating|graduation date|expected to graduate|graduate) (in|between|from|during)[^.]{0,40}(2027|2028)|class of (2027|2028)|(2027|2028) (start|new grads?|graduates)|"
                     r"degree (by|in|before|no later than) [^.]{0,30}(2027|2028)|(currently|actively) (enrolled|pursuing)[^.]{0,60}(degree|program|university)|"
                     r"rising (junior|senior)|returning to school"),  # 10-07 rejection from a 2027-grad rotational program: "Bachelor's Degree by May/June 2027"
+    # 10-13 rejection review: 3 of 3 solutions-engineer / pre-sales roles were rejected; their JDs asked for years in a
+    # sales track the Fact Bank has none of
+    ("sales track", r"\d+\+?\s*(?:-|to|\u2013)?\s*\d*\+?\s*years?[^.]{0,30}\b(pre-?sales|sales engineering|solutions? engineering|"
+                    r"solution consulting|customer success|account management)\b"),  # not "OTE": pay-policy boilerplate in engineering JDs too
 ]
 
 
@@ -185,7 +189,9 @@ _STACK_RX = {name: (re.compile(r"(?<![a-z0-9])" + s + r"(?![a-z0-9])"),
                     re.compile(s)) for name, s in CORE_STACKS.items()}
 _MISSING = {"key": None, "stacks": ()}
 # "5+ years", "4-7 years", "5 to 15+ years": the lower bound is the requirement
-_YEARS = re.compile(r"(?<![\d.])(\d{1,2})\s*\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*\+?\s*)?years?(?: of)?[^.]{0,60}experience")
+# 10-13: "7+ years in firmware engineering" (no word "experience") let a 7-year lead role through
+_YEARS = re.compile(r"(?<![\d.])(\d{1,2})\s*\+?\s*(?:(?:-|–|to)\s*\d{1,2}\s*\+?\s*)?years?(?: of)?(?:[^.]{0,60}experience|"
+                    r"\s+in\s+[a-z][a-z /&+-]{1,40}?(?:engineering|development|programming|software|firmware|design|operations|industry|roles?))")
 
 
 def missing_stacks():

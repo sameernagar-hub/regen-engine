@@ -32,8 +32,24 @@ ran when someone typed the command.
   subprocess 5 min after start and every `REGEN_BENCH_HOURS` (6). It has to be a subprocess because B3 swaps the
   worker dirs. Results go to `workspace/bench/<stamp>.json` + `latest.json`, served by `GET /api/control/bench`.
 
+### Fixed (10-13 rejection review)
+- **Inbox classifier missed 30 rejections.** It read the first 1,500 raw MIME bytes from INBOX only, so the deciding
+  sentence ("unfortunately", "will not be moving forward") was usually base64/quoted-printable or filtered out of the
+  inbox. Now: decoded text/plain (or stripped HTML) from All Mail via a Gmail search, more rejection wordings, and
+  "if you are not selected..." stays a confirmation. A re-read can correct a message (latest per msg_id wins; a
+  `void` outcome retracts) in `events.read` and the Postgres `outcomes` view. Own sent mail and newsletters are never
+  outcomes; company is matched on sender + subject before the body.
+- **Fit gate, from 39 engine rejections:** "N+ years in <field>" counts as a years requirement (a 7-year lead role
+  got through); a "sales track" blocker (years of pre-sales / solutions engineering / customer success); admin,
+  consulting and sensor-integration titles are not engineering roles; one role posted per region is one role
+  (`role_key` drops region suffixes: three regional copies got three rejections). B7 on the bank: catch rate 9.1% ->
+  18.2% of rejections with a stored JD, at a cost of 2.2% of not-rejected submissions (was 1.1%).
+- **Discovery:** LinkedIn alert mail over IMAP (`alerts --imap`, hourly in the supervisor as the engine user).
+  Ashby forms: region-only location search, radio groups outside field entries, "If other" boxes never drafted.
+  Greenhouse: the Employment block is filled from the Fact Bank's current role.
+
 ### Verify
-- `python -m pytest -q` (150 passing; `tests/test_v013.py` fakes every HTTP call: harvest patterns, Workday paging
+- `python -m pytest -q` (157 passing; `tests/test_v013.py` fakes every HTTP call: harvest patterns, Workday paging
   stop, iCIMS first-seen dates, SmartRecruiters mapping, reach pick/write, CPU/mem math, inventory staleness, bench
   save, the three API routes). Live: `docker exec deploy-supervisor-1 python -m engine reach 12`, then open
   http://127.0.0.1:3000/control.

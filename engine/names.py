@@ -17,10 +17,16 @@ def company_slug(name):
     return re.sub(r"[^a-z0-9]", "", s)
 
 
+# one role posted per region is one role (10-13: three regional copies of one posting, three rejections)
+REGION = re.compile(r"\s*[-,(]\s*(?:(?:north|south|east|west|central|north ?east|north ?west|south ?east|south ?west|"
+                    r"north central|south central|mid-?west|mid-?atlantic|pacific|mountain|gulf)(?: region| us| u\.s\.)?|"
+                    r"(?:us|u\.s\.)[- ]remote|remote(?: - us)?)\s*\)?\s*$")
+
+
 def role_key(label, title=None):
     """'<company> - <title>' (or company, title) -> slug + normalized title, for "same role" checks."""
     if title is None:
         company, _, title = (label or "").partition(" - ")
     else:
         company = label
-    return f"{company_slug(company)} - {' '.join((title or '').lower().split())}"
+    return f"{company_slug(company)} - {' '.join(REGION.sub('', (title or '').lower()).split())}"

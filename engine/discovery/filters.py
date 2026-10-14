@@ -49,6 +49,11 @@ def us_location(loc):
     return bool(re.search(r"remote|anywhere|distributed", loc, re.I))
 
 
+# 10-13 rejection review: admin / consulting / hardware-integration titles were submitted and rejected; a "(Software)"
+# tag in the title doesn't make them engineering roles, so these are dropped even with a software word
+NOT_ENGINEERING = re.compile(r"salesforce admin|\brevenue cycle\b|^consultant\b|\bconsultant,|sensors? integration", re.I)
+
+
 def keep(dom, title, location, company=""):
     """Return None if the job passes the domain filter, else a short reason it was dropped."""
     if not dom["include_titles"].search(title):
@@ -57,6 +62,8 @@ def keep(dom, title, location, company=""):
         return "level/title excluded"
     if NON_SOFTWARE.search(title) and not SOFTWARE_WORDS.search(title):
         return "non-software discipline"
+    if NOT_ENGINEERING.search(title):
+        return "non-engineering role"
     if company and dom.get("exclude_companies") and (dom["exclude_companies"].search(company)
                                                      or dom["exclude_companies"].search(re.sub(r"[\s_-]+", " ", company))
                                                      or re.search(dom["exclude_companies"].pattern.replace(" ?", "").replace(" ", ""),

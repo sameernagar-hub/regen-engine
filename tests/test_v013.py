@@ -165,6 +165,25 @@ def test_rejection_wordings_seen_10_13():
     assert [classify(s, b) for s, b in ok] == ["confirmation"] * len(ok)
 
 
+def test_rejection_review_10_13_gate_rules():
+    """Lessons from the 10-13 review of 39 rejections: each rule blocks the case it came from, and only that."""
+    from engine.tailoring.tailor import fit
+    from engine.discovery.filters import keep, load_domain
+    from engine.names import role_key
+    assert fit("BS in EE with 7+ years in firmware engineering and a track record", 3) == ["7+ yrs"]
+    assert fit("2+ years of experience with Python. Founded 9 years ago; 2 years in a row on a best-places list.", 3) == []
+    assert "sales track" in fit("3+ years of pre-sales, solutions engineering, or technical sales experience", 3)
+    assert "sales track" not in fit("Work with our solutions engineering team on integrations. 2+ years of Python.", 3)
+    d = load_domain()
+    for t in ("Salesforce Administrator", "Consultant, Healthcare Revenue Cycle (Software)", "Sensors Integration Engineer"):
+        assert keep(d, t, "Austin, TX", "Initech") in ("non-engineering role", "title"), t  # dropped either way
+    assert "sales track" not in fit('The range is the role\'s on target earnings ("OTE") range. 2+ years of Python.', 3)
+    for t in ("Software Engineer", "Salesforce Developer"):
+        assert keep(d, t, "Austin, TX", "Initech") is None, t
+    assert role_key("Initech - AppSec Engineer - North Central region") == role_key("Initech - AppSec Engineer - Northeast region") \
+        == role_key("Initech - AppSec Engineer") != role_key("Initech - AppSec Engineer II")
+
+
 def test_body_text_decodes_html_parts():
     import email
     from engine.feedback.inbox import body_text

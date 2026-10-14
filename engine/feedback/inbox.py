@@ -89,6 +89,9 @@ def _match(msg, companies):
 STRENGTH = {"confirmation": 0, "action": 1, "rejection": 2, "oa": 3, "interview": 3, "offer": 4, "scam": 5}
 
 
+NEWSLETTER = re.compile(r"#\d+\b|\bnewsletter\b|\bdigest\b|\bwebinar\b|\bissue \d+|\bthis week in\b", re.I)
+
+
 def own_addresses():
     """The user's own addresses (sent mail shows up in All Mail; 10-13 the user's outreach was flagged as a scam)."""
     from engine.notify import _env
@@ -114,6 +117,8 @@ def ingest(messages):
     for m in messages:
         if any(a in (m.get("from") or "").lower() for a in mine):
             continue  # the user's own sent mail
+        if NEWSLETTER.search(m.get("subject") or ""):
+            continue  # a company newsletter (10-13: an issue "#48" read as a scam)
         mid = m.get("id") or hashlib.sha1(f"{m.get('date')}{m.get('from')}{m.get('subject')}".encode()).hexdigest()[:16]
         cls = classify(m.get("subject", ""), m.get("snippet", ""))
         if mid in seen and STRENGTH.get(cls, -1) <= seen[mid]:
