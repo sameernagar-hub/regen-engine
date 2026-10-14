@@ -220,7 +220,10 @@ def halted(stage):
     return bool(why)
 
 
-def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False):
+SOURCES_EVERY = int(os.environ.get("REGEN_SOURCES_EVERY", "6"))  # loop passes between new-grad + GitHub feed pulls
+
+
+def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False, sources=False):
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     t0 = time.monotonic()
     if halted("scan"):
@@ -233,6 +236,9 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
         ats += ",smartrecruiters,workday,icims"  # v0.13 reach: discovered + tailored, the user submits (engine/discovery/reach.py)
         subprocess.run([sys.executable, "-m", "engine", "scan", str(days), "--ats", ats] + (["--hot"] if hot else []),
                        cwd=ROOT, check=False)
+    if sources:  # boards miss companies we have no board for: new-grad sites (~25 s) + curated GitHub lists (~4 s)
+        for step in (["newgrad", "1"], ["feed", "1", "--queue"]):
+            subprocess.run([sys.executable, "-m", "engine", *step], cwd=ROOT, check=False, timeout=900)
     q = prune(json.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8")))
     if not halted("reach"):
         from engine.discovery.reach import run as reach
@@ -327,7 +333,8 @@ def main(argv=None):
             time.sleep(30)
             continue
         beat("pipeline", state="scanning and tailoring", **{"pass": n + 1})
-        run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125), hot=n > 0))  # later passes: hot boards
+        run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125), hot=n > 0,  # later passes: hot boards
+                   sources=n % SOURCES_EVERY == 0))
         n += 1  # disk hygiene (engine/clean.py) is the supervisor's job: hourly, one owner
         print(f"loop: pass {n} done; next scan in {loop:g} min", flush=True)
         for _ in range(int(loop)):  # one heartbeat a minute while idle
