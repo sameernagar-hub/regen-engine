@@ -1,3 +1,59 @@
+# Handoff: 10-13 session (v0.13 "Reach"), written ~00:15 10-14. Stack is DOWN (volumes kept).
+
+## START HERE (engine + Claude)
+1. Start (same throttle as the end of 10-13):
+   `cd regen-engine && REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_ASHBY_PER_PASS=2 REGEN_LOOP_MIN=3 REGEN_SOURCES_EVERY=10 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
+   (the supervisor scales appliers 1..7; first pass is a full ~5,100-board scan, ~4 min; later passes are hot boards).
+2. Health: `docker exec deploy-supervisor-1 python -m engine fleet`; UI http://127.0.0.1:3000/control (Containers,
+   Reach list, Benchmarks cards) and **http://127.0.0.1:3000/reach** (the user's Workday/iCIMS fill page).
+3. Run manual engine commands **as the engine user** in the pipeline container:
+   `MSYS_NO_PATHCONV=1 docker exec deploy-pipeline-1 python -m engine <cmd>`. The supervisor runs as root (Docker
+   socket): anything run there writes root-owned bank files and the pipeline then fails with EACCES. IMAP commands
+   need the supervisor's .env: `docker exec -u 10001 -e HOME=/home/regen deploy-supervisor-1 python -m engine inbox --imap 3`.
+4. Git: `main` on GitHub = local `main` (fast-forwarded 10-14 after CI). Keep merging by fast-forward (`git push
+   origin main` once CI on the branch is green): a merge in GitHub's UI stamps the user's personal Gmail as committer
+   (it happened again on PR #11: 10e9b99 and its parents). Commit email must stay the noreply one.
+5. Code is baked into the image: after a change `docker compose -f deploy/bank.compose.yml build` (pipeline/appliers/
+   supervisor share regen-applier:local) then `up -d --no-deps --force-recreate <services>` while appliers are idle
+   (fleet: claimed 0, no `state=applying`).
+
+## Done 10-13 (CHANGELOG [Unreleased] v0.13)
+- Discovery: SmartRecruiters / Workday / iCIMS adapters (+2.5k boards; 5,094 total), reach list (`engine reach`,
+  pipeline runs it every pass), LinkedIn alert mail over IMAP (supervisor, hourly), newgrad + GitHub feeds every 10th pass.
+- `/reach` page: posting link, resume preview + download (`/api/resume/<f>?download=1`), fill kit (`/api/reach/kit`,
+  presets + Fact Bank), per-job salary (posted range midpoint), mark submitted/skipped/undo (`/api/reach/mark`,
+  `reach_mark` + `application` events; undo = status RESET). Narrow write switch REGEN_API_REACH=1 in the bank.
+  Verified in the browser: PDF 200, download is an attachment, copy works (execCommand fallback), skip + undo reach the ledger.
+- Supervisor: container inventory (`workspace/containers.json`, /control), benchmarks every 6 h (`engine bench --save`),
+  daily jobs and alerts run as uid 10001.
+- Inbox: decoded bodies from All Mail (about 30 rejections had been stored as confirmations), new rejection wordings,
+  conditional "if not selected" stays a confirmation, latest-per-msg_id + `void` retractions (events.read and the
+  Postgres `outcomes` view), own sent mail / newsletters ignored, company matched on sender+subject first.
+- Fit gate from the 39-rejection review (memory `rejection-learnings`): years-in-field, sales-track blocker,
+  NOT_ENGINEERING titles, region-duplicate role keys. B7: catch 9.1% -> 18.2%, cost 1.1% -> 2.2%.
+- Forms: Greenhouse Employment block (Fact Bank current role), Ashby region-only location + radio groups outside
+  field entries + "If other" boxes; arbitration at one crypto exchange (user-approved for that employer only) -> 2 submitted.
+- Numbers: 165 submitted to date (96 with proof still on disk), 11 verified on 10-13, 38 rejections, 1 OA (a game company, old).
+
+## Next (in order)
+1. Throughput is supply-bound, not speed-bound: each pass finds 2-3 jobs that pass every gate; the queue is ~75%
+   Ashby (1-2 per pass to avoid its bot check). Watch for an Ashby flag at 2/pass (`workspace/ashby_cooldown`); one
+   "no confirmation seen (captcha?)" appeared right after raising it. If more show up, set REGEN_ASHBY_PER_PASS=1.
+2. Workday / iCIMS **form filler** (the reach list has 84 jobs waiting on the user). Needs the user's candidate
+   account per tenant: design it as "user signs in once in the applier's browser profile, engine fills".
+3. Lead roles: 3 of 3 rejected (user chose to allow them; report the number again, don't gate without asking).
+4. HANDOFF item from 10-12 still open: supervisor guardrails (cpu/mem limits per created container, inventory
+   allowlist), evaluation container, wiki pages (Ledger, Data bus, Repo sync, Answer queue, MCP, Supervisor, Reach).
+5. Inbox: run `inbox --imap 2` at session start (as uid 10001, see START 3) and review new rejections against their JD.
+
+## Needs the user
+- **A storage-hardware employer** (5 roles): "Does the deemed export rule affect your employment?" Yes/No. Claude recommended **Yes**
+  (a non-US national is who the rule covers); the user's first reply ("Indian citizen so I'm good") read it the other way.
+- **Reach list**: 84 Workday/SmartRecruiters jobs with resumes at /reach (user submits, then clicks "I submitted it").
+- Gmail drafts from outreach (nothing sent); the 10-12 list of three to delete still stands.
+- GitHub setting "Keep my email addresses private" (+ block pushes that expose it) is still not on: merges in the
+  GitHub UI keep stamping the personal address.
+
 # Handoff: 10-12 night session (~00:15 10-13). Stack is DOWN (volumes kept).
 
 ## START HERE

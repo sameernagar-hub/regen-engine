@@ -53,18 +53,38 @@ resume to every posting and make up answers to fill the gaps.
 
 | | |
 |---|---|
-| Verified applications (confirmation page on disk) | **118** to date; **46 in one day** (2026-10-10) · `python -m engine report 2026-10-10` |
-| Company boards polled directly | **2,469** on Greenhouse, Ashby, Lever, Workable (`workspace/boards.json`) |
-| Sources resolved back to the employer | Job-alert emails (7 platforms), newgrad-jobs.com, 13 GitHub job lists, big-tech careers APIs |
+| Applications submitted | **165** to date (latest status SUBMITTED in the ledger); **96** still have their confirmation screenshot on disk (older proofs were pruned by the retention policy) · best day **49** (2026-10-10) · `python -m engine report` |
+| Company boards polled directly | **5,094** on Greenhouse, Ashby, Lever, Workable, Workday, SmartRecruiters, iCIMS (`workspace/boards.json`) |
+| Sources resolved back to the employer | LinkedIn alert mail over IMAP, job-alert emails (7 platforms), newgrad-jobs.com, 25 GitHub job lists, HN "Who is hiring", big-tech careers APIs |
+| Outcomes read from your mail | **38** rejections, **1** assessment, 160 confirmations (decoded bodies from All Mail; each rejection reviewed against its JD) |
+| Fit gate vs past rejections (B7) | catches **18.2%** of rejections that had a stored JD, at a cost of **2.2%** of the rest (was 9.1% / 1.1% before the 10-13 review) |
 | Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF; coverage fill puts most at **100%** of the JD terms you have (build log: `resume covers 24/24 JD terms, ATS text 100%`) |
 | Email security codes | **hands-free** via the code relay: a Gmail tab posts codes from the Atom feed every 20 s (`engine relay`, `workspace/logs/relay_*.log` shows each delivery) |
 | Scheduler | ×2.05 throughput vs sequential (seeded benchmark, `scripts/bench_scheduler.py`) |
-| Tests | **108** passing; system benchmarks B1–B7 in `engine/bench.py` (`python -m engine bench`, rerun by the supervisor every 6 h) (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
+| Tests | **158** passing; system benchmarks B1–B7 in `engine/bench.py` (`python -m engine bench`, rerun by the supervisor every 6 h) (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
 | Resume claims outside your Fact Bank | **Rejected** by the validator before any PDF is written |
 | Model API keys required | **0** |
 | Applier capacity | **N containers** (`--scale applier=N`), each a headed Chromium with its own profile; 5 workers + 1 pipeline container on an 8 GB Docker VM |
 
 All numbers come from this repo's own logs and benchmarks. Run `python -m engine report` to check the verified count.
+
+## What's new (v0.13 "Reach")
+
+- **Workday, iCIMS and SmartRecruiters discovery.** 2,500+ more employer boards, read from public APIs (Workday's
+  cxs search JSON, the SmartRecruiters Posting API) and iCIMS portal pages. Those portals put the form behind a
+  candidate account, so the engine does everything up to the click: the same fit gate, trust gate and tailored resume.
+- **Reach page (`/reach`).** One job at a time: open the posting, preview or download its tailored resume, copy each
+  answer from the fill kit (your presets and Fact Bank, the same values the engine types elsewhere), then mark it
+  submitted. Marks go to the ledger, so a role you submitted is never listed or applied to again.
+- **The outcome loop reads your real mail.** Decoded bodies from All Mail, not raw MIME from the inbox: about 30
+  rejections had been read as confirmations. Every rejection was then checked against its job description, and the fit
+  gate learned from it ("N+ years in <field>", pre-sales "sales track" roles, non-engineering titles, one role posted
+  per region counts once). The log stays append-only: corrections are newer records, retractions are `void` records.
+- **More sources in the loop:** LinkedIn alert mail over IMAP (hourly), new-grad sites and GitHub lists every 30 min.
+- **Supervisor view in `/control`:** every container's state, uptime, CPU and memory, and benchmarks B1-B7 rerun
+  every 6 hours (`python -m engine bench`).
+- **Form fixes:** the Greenhouse Employment block (company, title, dates, current role) and Ashby's region-only
+  location search, plus radio groups outside field entries.
 
 ## What's new (v0.12): the engine runs in Docker
 
@@ -104,6 +124,7 @@ REGEN_MAX_PER_DAY=150 REGEN_PARTS=5 docker compose -f deploy/bank.compose.yml up
 | **Control room** (`/control`) | Start and stop runs with your filters (days, max jobs, appliers, tabs, daily cap, rescan interval, sources, ATSs), watch each stage process live, edit title/company filters. |
 | **Applications** (`/applications`) | Every application with the exact resume PDF that was sent, each question with the answer given, the Fact Bank ids used, and the proof screenshot. |
 | **Needs you** (`/needs`) | Blocking questions grouped across jobs: answer once, every job that asked it goes back in line. Legal items stay yours. |
+| **Reach** (`/reach`) | Workday / iCIMS / SmartRecruiters jobs: posting link, tailored resume (preview + download), copy-ready fill kit, mark submitted / skipped. |
 | **Fact Bank** (`/facts`) | A radial map of your roles and facts, sized by use and colored by lane. |
 | **First-applicant mode** | `engine run --loop 20` rescans the last hours every 20 minutes and applies to what just opened. |
 | **Job priority** | Queue ordered by level/lane fit, freshness, employer tier and learned reply rates; each batch ordered by JD match. |

@@ -6,3 +6,10 @@ d5835fe6653da313226103456fd1c2a25735f829
 e3eb012fa2aa9d012582024ba3bf5b00273285fe
 8e8b3b58ef06015ade81f841869b845afcad6afd
 4eaf375828c4c939f3e94f978c5d78cf90e3edc1
+# 2026-10-14: the 6 below came from merging PR #11 in GitHub's UI (committer = the account's primary email). Owner chose to keep history; merges are fast-forward only from here.
+10e9b999fe7b3882c1b7cab3f1bdbbb802c5b681
+fb69712ac2c765b1bfdb6e5c6063253e5641f8cd
+751f3a11e7e5b4f4839866db56eb872f313bbc86
+c21ca8a124002968e90370d420189ce737ae8280
+4a323f72bcaedf10f3eab9760d476270fb18a548
+4ad347ac6c3a17f69d86eb36565dbae25a63df47
