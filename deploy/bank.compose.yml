@@ -46,6 +46,8 @@ services:
       REGEN_APPLIERS: docker
       REGEN_SKIP_ATS: "${REGEN_SKIP_ATS:-workable}"
       REGEN_MAX_PER_DAY: "${REGEN_MAX_PER_DAY:-60}"
+      REGEN_ASHBY_PER_PASS: "${REGEN_ASHBY_PER_PASS:-1}"  # Ashby bot-checks bursts; a flag pauses Ashby 24 h on its own
+      REGEN_SOURCES_EVERY: "${REGEN_SOURCES_EVERY:-6}"    # loop passes between new-grad + GitHub list pulls
     command: ["run", "--days", "1", "--max", "${REGEN_MAX:-100}", "--appliers", "${REGEN_PARTS:-5}", "--loop", "${REGEN_LOOP_MIN:-5}"]
 
   relay:  # email codes from the Gmail tab land straight in the bank
