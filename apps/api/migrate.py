@@ -57,10 +57,13 @@ CREATE OR REPLACE VIEW answers AS
 CREATE OR REPLACE VIEW codes AS
   SELECT id, ts, payload->>'slug' AS slug, (payload->>'latency_s')::numeric AS latency_s, v
   FROM events WHERE kind = 'code';
-CREATE OR REPLACE VIEW outcomes AS
-  SELECT id, ts, payload->>'company' AS company, payload->>'outcome' AS outcome, payload->>'subject' AS subject,
-         payload->>'sender' AS sender, payload->'jobs' AS jobs, v
-  FROM events WHERE kind = 'outcome';
+CREATE OR REPLACE VIEW outcomes AS  -- latest record per message wins; "void" retracts (same rule as events.read)
+  SELECT id, ts, company, outcome, subject, sender, jobs, v FROM (
+    SELECT DISTINCT ON (COALESCE(payload->>'msg_id', id::text)) id, ts, payload->>'company' AS company,
+           payload->>'outcome' AS outcome, payload->>'subject' AS subject, payload->>'sender' AS sender,
+           payload->'jobs' AS jobs, v
+    FROM events WHERE kind = 'outcome' ORDER BY COALESCE(payload->>'msg_id', id::text), id DESC) last
+  WHERE outcome <> 'void';
 CREATE OR REPLACE VIEW resumes AS
   SELECT id, ts, job, payload->>'lane' AS lane, payload->>'file' AS file, payload->'coverage' AS coverage, v
   FROM events WHERE kind = 'resume';

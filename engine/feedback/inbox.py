@@ -22,9 +22,14 @@ CLASSES = [  # first match wins. Order matters: scam > offer > rejection > OA > 
              r"send (us )?your (ssn|social security|bank)|check (will be )?deposit|telegram|whatsapp interview"),
     ("offer", r"offer letter|pleased to offer|extend(ing)? (you )?an offer|offer of employment"),
     ("rejection", r"not (be )?(moving|move) forward|other candidates|not selected|decided not to|regret to inform|"
-                  r"position has been filled|no longer (being )?considered|will not be (moving|proceeding)|unfortunately,? (we|after)|"
+                  r"position has been filled|no longer (being )?considered|will not be (moving|proceeding)|unfortunately,? (we(?! (cannot|can.t|are unable to|aren.t able to) (respond|reply))|after)|"
                   r"(move|moving|go|going) ahead with other|unfortunately,? (have |has )?(decided|chosen)|weren.t selected|"
-                  r"high volume of (applicants|applications).{0,40}unfortunately|after careful consideration,? we(.ve| have)? decided"),  # snippets often stop mid-sentence
+                  r"high volume of (applicants|applications).{0,40}unfortunately|after careful consideration,? we(.ve| have)? decided|"
+                  # 10-13: 30 rejections were read as confirmations; these are the wordings they used
+                  r"won.t be proceeding|not be proceeding|(move|moving|progress|proceed)( forward| ahead)? with (an)?other|another candidate|"
+                  r"filled all (of )?(our|the) openings|not be able to (explore|consider|move)|do not have an? (immediate )?opening|"
+                  r"wasn.t selected|not (an exact|a strong) match for the requirements|(going|go) in a (different )?direction|"
+                  r"not to (proceed|move forward|pursue)|unable to (move|offer|proceed)"),  # snippets often stop mid-sentence
     ("oa", r"online assessment|coding (challenge|assessment|test)|hackerrank|codesignal|codility|karat|take-?home|"
            r"assessment invitation|complete the (following )?assessment"),
     # strong signals only: confirmations often say "if selected, we'll reach out to schedule an interview"
@@ -46,7 +51,8 @@ def classify(subject, snippet=""):
     # "If there is a fit, we'll reach out to schedule an interview" is a confirmation, not an invite
     firm = " ".join(s for s in re.split(r"(?<=[.!?])\s+", text) if not CONDITIONAL.search(s))
     for name, rx in CLASSES:
-        if re.search(rx, firm if name == "interview" else text):
+        # "If you are not selected, ..." inside a confirmation is not a rejection either (10-13)
+        if re.search(rx, firm if name in ("interview", "rejection") else text):
             return name
     return "other"
 
@@ -61,6 +67,13 @@ def applied_companies():
 
 
 def match_company(msg, companies):
+    """Sender + subject first; the body only when they name no company we applied to (a full body mentions plenty of
+    other names: 10-13 a rejection from one company matched a different company's name in its footer)."""
+    head = {"from": msg.get("from", ""), "subject": msg.get("subject", "")}
+    return _match(head, companies) or _match(dict(head, snippet=(msg.get("snippet") or "")[:400]), companies)
+
+
+def _match(msg, companies):
     hay = f"{msg.get('from', '')} {msg.get('subject', '')} {msg.get('snippet', '')}".lower()
     squashed = re.sub(r"[^a-z0-9]", "", hay)  # "Acme Robotics" vs a board token "acmerobotics"
     best = None
@@ -73,20 +86,43 @@ def match_company(msg, companies):
     return best[0] if best else None
 
 
+STRENGTH = {"confirmation": 0, "action": 1, "rejection": 2, "oa": 3, "interview": 3, "offer": 4, "scam": 5}
+
+
+def own_addresses():
+    """The user's own addresses (sent mail shows up in All Mail; 10-13 the user's outreach was flagged as a scam)."""
+    from engine.notify import _env
+    out = {(_env().get("REGEN_SMTP_USER") or "").lower()}
+    try:
+        from engine.apply.runner import P
+        out.add((P.get("email") or "").lower())
+    except Exception:
+        pass
+    return {a for a in out if a}
+
+
 def ingest(messages):
-    seen = {e.get("msg_id") for e in read("outcome")}
+    # a message read before can still be corrected upward (10-13: rejections whose decisive sentence sat past the
+    # old 600-char snippet were stored as confirmations); the newer outcome event wins in every reader
+    seen = {}
+    for e in read("outcome"):
+        if e.get("msg_id"):
+            seen[e["msg_id"]] = max(STRENGTH.get(e.get("outcome"), 0), seen.get(e["msg_id"], -1))
     companies = applied_companies()
+    mine = own_addresses()
     new = []
     for m in messages:
+        if any(a in (m.get("from") or "").lower() for a in mine):
+            continue  # the user's own sent mail
         mid = m.get("id") or hashlib.sha1(f"{m.get('date')}{m.get('from')}{m.get('subject')}".encode()).hexdigest()[:16]
-        if mid in seen:
-            continue
         cls = classify(m.get("subject", ""), m.get("snippet", ""))
+        if mid in seen and STRENGTH.get(cls, -1) <= seen[mid]:
+            continue
+        if cls == "other":
+            continue  # newsletters, events, marketing: not about an application (checked before the scam flags, 10-13)
         from engine.discovery.trust import message_flags
         if message_flags(m.get("from", ""), m.get("subject", ""), m.get("snippet", "")):
             cls = "scam"  # money / identity / chat-app asks or a free-mail "recruiter": never reply, tell the user
-        if cls == "other":
-            continue
         co = match_company(m, companies)
         if not co and cls not in ("scam",):
             continue  # not about an application we made
@@ -121,6 +157,24 @@ def write_report():
     open(os.path.join(WORKSPACE, "outcomes.md"), "w", encoding="utf-8").write("\n".join(lines) + "\n")
 
 
+def body_text(m):
+    """Decoded text of a parsed message: text/plain if present, else tag-stripped HTML; whitespace collapsed.
+    (Before 10-13 the classifier saw the first 1500 raw MIME bytes: base64 / quoted-printable, so the deciding
+    sentence was usually missing.)"""
+    import html as H
+    for want in ("text/plain", "text/html"):
+        for part in m.walk():
+            if part.get_content_type() == want:
+                try:
+                    t = part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8", "replace")
+                except (AttributeError, LookupError):
+                    continue
+                if want == "text/html":
+                    t = H.unescape(re.sub(r"<(script|style)[^>]*>.*?</\1>|<[^>]+>", " ", t, flags=re.S | re.I))
+                return re.sub(r"\s+", " ", t).strip()
+    return ""
+
+
 def fetch_imap(days=3):
     from engine.notify import _env
     e = _env()
@@ -129,17 +183,23 @@ def fetch_imap(days=3):
         raise SystemExit("IMAP needs REGEN_SMTP_USER and REGEN_SMTP_APP_PASSWORD in .env (see engine/notify.py)")
     M = imaplib.IMAP4_SSL(e.get("REGEN_IMAP_HOST", "imap.gmail.com"))
     M.login(user, pw)
-    M.select("INBOX", readonly=True)  # read-only: never marks, moves or deletes anything
-    since = (datetime.date.today() - datetime.timedelta(days=days)).strftime("%d-%b-%Y")
-    _, data = M.search(None, f'(SINCE "{since}")')
+    gmail = M.select('"[Gmail]/All Mail"', readonly=True)[0] == "OK"
+    if not gmail:
+        M.select("INBOX", readonly=True)
+    if gmail:  # server-side search: only recruiting-looking mail, so a busy mailbox never pushes it past the cap
+        q = (f"newer_than:{max(1, int(days))}d (application OR applying OR applied OR candidacy OR candidate OR interview OR "
+             "assessment OR offer OR position)")
+        _, data = M.search(None, "X-GM-RAW", '"' + q + '"')
+    else:
+        since = (datetime.date.today() - datetime.timedelta(days=days)).strftime("%d-%b-%Y")
+        _, data = M.search(None, f'(SINCE "{since}")')
     out = []
-    for num in data[0].split()[-400:]:
-        _, msg_data = M.fetch(num, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID)] BODY.PEEK[TEXT]<0.1500>)")
-        hdr = email.message_from_bytes(msg_data[0][1])
-        body = msg_data[1][1].decode("utf-8", "replace") if len(msg_data) > 1 and isinstance(msg_data[1], tuple) else ""
+    for num in data[0].split()[-600:]:
+        _, msg_data = M.fetch(num, "(BODY.PEEK[])")
+        m = email.message_from_bytes(msg_data[0][1])
         dec = lambda v: "".join((t.decode(c or "utf-8", "replace") if isinstance(t, bytes) else t) for t, c in decode_header(v or ""))
-        out.append({"id": (hdr.get("Message-ID") or "").strip(), "date": hdr.get("Date", ""), "from": dec(hdr.get("From")),
-                    "subject": dec(hdr.get("Subject")), "snippet": re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", body))[:600]})
+        out.append({"id": (m.get("Message-ID") or "").strip(), "date": m.get("Date", ""), "from": dec(m.get("From")),
+                    "subject": dec(m.get("Subject")), "snippet": body_text(m)[:3000]})
     M.logout()
     return out
 

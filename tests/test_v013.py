@@ -145,3 +145,52 @@ See all jobs: https://www.linkedin.com/comm/jobs/search"""
     assert [(r["title"], r["company"], r["location"]) for r in rows] == [
         ("Software Engineer, Voice Agents", "Initech", "Mountain View, CA"),
         ("Full Stack Engineer", "Globex", "California, United States")]
+
+
+def test_rejection_wordings_seen_10_13():
+    """Real rejection sentences that were stored as confirmations before 10-13 (names replaced), plus two
+    confirmations whose conditional "if not selected" wording must stay confirmations."""
+    from engine.feedback.inbox import classify
+    rej = [("Thank you for applying to Initech", "After careful review, we unfortunately do not have an immediate opening that aligns."),
+           ("Important information about your application", "After careful consideration, unfortunately, we won't be proceeding with your application any further."),
+           ("Application: Status update", "we have decided to progress with other candidates"),
+           ("Update on your application", "unfortunately are going in a direction that better fits our needs at this time."),
+           ("[Update] Your Job Application", "We have now filled all of our openings for this role and will not be moving forward"),
+           ("Thank you for your application", "The hiring manager has chosen to move forward with another candidate"),
+           ("Application Status", "are not an exact match for the requirements of this role. As a result, we will not be moving forward")]
+    ok = [("Thank You for Applying at Globex", "we get hundreds of applications and unfortunately we cannot respond individually. If you are not selected, we keep you in mind."),
+          ("Thank you for applying", "If you don't get selected to move forward, we hope you consider us."),
+          ("Thank you for applying", "If it is not a strong match for this position, we will keep your application on file")]
+    assert [classify(s, b) for s, b in rej] == ["rejection"] * len(rej)
+    assert [classify(s, b) for s, b in ok] == ["confirmation"] * len(ok)
+
+
+def test_body_text_decodes_html_parts():
+    import email
+    from engine.feedback.inbox import body_text
+    raw = ("Content-Type: text/html; charset=utf-8\nContent-Transfer-Encoding: base64\n\n"
+           + __import__("base64").b64encode(b"<p>Thank you.</p><style>p{}</style><p>Unfortunately, we&#39;ve decided not to move forward.</p>").decode())
+    assert body_text(email.message_from_string(raw)) == "Thank you. Unfortunately, we've decided not to move forward."
+
+
+def test_outcomes_latest_per_message_and_void():
+    from engine.feedback import events
+    events._cache.update(path=None)
+    events.record("outcome", msg_id="<m1>", outcome="confirmation", company="Initech")
+    events.record("outcome", msg_id="<m1>", outcome="rejection", company="Initech")   # corrected on a re-read
+    events.record("outcome", msg_id="<m2>", outcome="scam", company=None)
+    events.record("outcome", msg_id="<m2>", outcome="void", reason="own sent mail")  # retracted
+    got = {e["msg_id"]: e["outcome"] for e in events.read("outcome") if e.get("msg_id") in ("<m1>", "<m2>")}
+    assert got == {"<m1>": "rejection"}
+
+
+def test_own_mail_and_newsletters_are_not_outcomes(monkeypatch):
+    from engine.feedback import inbox
+    monkeypatch.setattr(inbox, "own_addresses", lambda: {"jane.doe@example.com"})
+    monkeypatch.setattr(inbox, "applied_companies", lambda: {"Initech": [{"job": "Initech - SWE"}]})
+    new = inbox.ingest([
+        {"id": "<a>", "from": "Jane <jane.doe@example.com>", "subject": "Re: your hiring post", "snippet": "interview offer position"},
+        {"id": "<b>", "from": "news@initech.com", "subject": "Top demos #48", "snippet": "web agents and classifiers"},
+        {"id": "<c>", "from": "no-reply@initech.com", "subject": "Update on your Initech application",
+         "snippet": "Unfortunately, we have decided to move forward with other candidates. Globex Box"}])
+    assert [(e["outcome"], e["company"]) for e in new] == [("rejection", "Initech")]

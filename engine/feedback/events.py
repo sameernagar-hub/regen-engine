@@ -97,7 +97,24 @@ def read(kind=None):
                 c["bad"] += 1
         c["offset"] += end
     evs = c["events"]
+    if kind == "outcome":
+        return _outcomes(evs)
     return list(evs) if kind is None else [e for e in evs if e.get("kind") == kind]
+
+
+def _outcomes(evs):
+    """Outcome events, latest per msg_id (a re-read can correct a message: confirmation -> rejection), and none whose
+    latest record is outcome "void" (a retraction: the log stays append-only, nothing is deleted). Events without a
+    msg_id are kept as they are. O(E)."""
+    last, order = {}, []
+    for e in evs:
+        if e.get("kind") != "outcome":
+            continue
+        k = e.get("msg_id") or id(e)
+        if k not in last:
+            order.append(k)
+        last[k] = e
+    return [last[k] for k in order if last[k].get("outcome") != "void"]
 
 
 def bad_lines():
