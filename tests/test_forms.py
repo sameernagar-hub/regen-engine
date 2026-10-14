@@ -64,6 +64,7 @@ def test_greenhouse_end_to_end(browser):
     assert status == "SUBMITTED", status
     assert state["submitted"]["spons"] == R.P["needs_sponsorship_now_or_future"]       # legal answer from presets
     assert "I built 12 production REST APIs" in state["submitted"]["why"]                # Fact Bank draft, no LLM
+    assert state["submitted"]["employment"] == ["Acme Corp", "Software Engineer", "2023", "January", True]  # Fact Bank role
     ev = latest(job["name"])
     assert ev["status"] == "SUBMITTED" and os.path.exists(os.path.join(WORKSPACE, ev["proof"]))   # proof on disk
     assert ev["drafted"][0][2] == ["x_api"]                                                       # draft is traceable
@@ -187,3 +188,14 @@ def test_years_question_is_yes_no():
     assert R.years_yesno(f"Do you have at least {int(y) + 2} years of experience with Kubernetes?") == "No"
     assert R.years_yesno("Do you have at least two years of professional experience developing backend applications?") in ("Yes", None)
     assert R.years_yesno("What is your name?") is None
+
+
+def test_current_role_picks_present_then_latest():
+    roles = {"a": ["Old Co", "Engineer", "X", "Jan 2020 - Mar 2022"], "b": ["Now Co", "Lead", "Y", "July 2026 - Present"],
+             "c": ["Mid Co", "SWE", "Z", "Apr 2022 - Jun 2026"], "bad": ["?", "?"]}
+    r = R.current_role({"roles": roles})
+    assert r == {"company": "Now Co", "title": "Lead", "start_month": "July", "start_year": "2026", "end_month": None,
+                 "end_year": None, "current": True}
+    del roles["b"]
+    assert R.current_role({"roles": roles})["company"] == "Mid Co"
+    assert R.current_role({"roles": {}}) is None

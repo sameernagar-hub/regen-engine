@@ -835,6 +835,63 @@ def gh_embed_url(url):
     return f"https://job-boards.greenhouse.io/embed/job_app?for={m.group(1)}&token={m.group(2)}" if m else url
 
 
+def current_role(fb=None):
+    """The Fact Bank's current (or most recent) role -> {company, title, start_month, start_year, end_month,
+    end_year, current}. Roles are [company, title, location, "July 2026 - Present"]; None when no date parses."""
+    def when(x):
+        for fmt in ("%B %Y", "%b %Y"):
+            try:
+                return datetime.datetime.strptime(x.strip().replace("Sept ", "Sep "), fmt)
+            except ValueError:
+                pass
+        return None
+    best = None
+    for _, r in ((fb if fb is not None else fact_bank()).get("roles") or {}).items():
+        try:
+            company, title, _, span = r[:4]
+            a_s, b_s = [x.strip() for x in re.split(r"\s+[-–]\s+", span, maxsplit=1)]
+        except (ValueError, TypeError):
+            continue
+        a, cur = when(a_s), bool(re.fullmatch(r"present|current|now", b_s, re.I))
+        b = None if cur else when(b_s)
+        if not a or (not cur and not b):
+            continue
+        key = (cur, b or a, a)
+        if best is None or key > best[0]:
+            best = (key, {"company": company, "title": title, "start_month": a.strftime("%B"), "start_year": str(a.year),
+                          "end_month": b.strftime("%B") if b else None, "end_year": str(b.year) if b else None, "current": cur})
+    return best[1] if best else None
+
+
+def fill_employment(page, log):
+    """Greenhouse's "Employment" block (company, title, start/end month + year, "Current role"): the first entry is the
+    Fact Bank's current role, typed exactly as stored. 10-13: two forms of one employer failed on these required fields
+    because the field loop only knew the education block. Generator: yields between fields."""
+    box = page.query_selector(".employment--container")
+    r = current_role() if box else None
+    if not box or not r:
+        return
+    def text(sel, v):
+        el = box.query_selector(sel)
+        if el and v:
+            el.fill(v); log(f"   . employment {sel} -> {v[:30]}")
+    text("#company-name-0", r["company"]); text("#title-0", r["title"])
+    yield
+    for which in ("start", "end"):
+        if which == "end" and r["current"]:
+            cb = box.query_selector("#current-role-0_1, input[name='current-role-0']")
+            if cb and not cb.is_checked():
+                cb.check(force=True); log("   . employment current role -> checked")
+            yield 0.3
+            continue  # a current role has no end date: never invented (if the form still demands one, it fails visibly)
+        sel = box.query_selector(f"#{which}-date-month-0")
+        cont = sel and sel.evaluate_handle("e => e.closest('.select__container')").as_element()
+        if cont:
+            yield from set_gh(page, cont, r[f"{which}_month"], f"{which} date month")
+        text(f"#{which}-date-year-0", r[f"{which}_year"])
+        yield
+
+
 def fill_gh(page, job, log):
     url = gh_embed_url(job["url"])
     page.goto(url); page.wait_for_selector("#application-form, form", timeout=30000)
@@ -868,6 +925,7 @@ def fill_gh(page, job, log):
                 if "United States" not in shown and "+1" not in shown:  # retry once; never ArrowDown (it moves off US)
                     cc.click(timeout=3000, force=True); cc.type("United States"); time.sleep(0.8); page.keyboard.press("Enter")
             except Exception as e: log(f"  ! phone country: {str(e)[:160]}")
+    yield from fill_employment(page, log)
     seen = set()
     for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question, .eeoc__question__wrapper, .education--form .select__container, .education--form .text-input-wrapper"):
         key = f.evaluate("e => e.innerText.slice(0,120)")
