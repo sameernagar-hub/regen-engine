@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-12 23:51",
+"generated": "2026-10-13 21:42",
 "days": 7,
 "verified": 80,
 "verified_roles": [
@@ -327,24 +327,6 @@
 "boards": 2270,
 "last_poll": 1791700372.0784452,
 "events": [
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-11T20:52"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-11T20:52"
-},
-{
-"stage": "apply",
-"tone": "quiet",
-"text": "A company didn't go through yet: no confirmation seen (captcha?).",
-"ts": "2026-10-11T20:53"
-},
 {
 "stage": "apply",
 "tone": "quiet",
@@ -1291,6 +1273,24 @@
 "tone": "quiet",
 "text": "A company didn't go through yet: Missing entry for required field: Location; Missing entry f….",
 "ts": "2026-10-12T23:46"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-12T23:52"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-12T23:52"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: not a fit.",
+"ts": "2026-10-12T23:52"
 }
 ],
 "graph": {
