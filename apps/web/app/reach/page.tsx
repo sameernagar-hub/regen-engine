@@ -47,9 +47,22 @@ function ReachView() {
   const cur = (data?.rows || []).find((r) => r.url === sel) || null;
   useEffect(() => { if (!cur && rows.length) setSel(rows[0].url); }, [rows, cur]);
 
-  const copy = async (k: string, v: string) => {
-    try { await navigator.clipboard.writeText(v); setCopied(k); setTimeout(() => setCopied(""), 1200); }
-    catch { setMsg("The browser blocked the clipboard: select the text and copy it instead."); }
+  const copy = async (k: string, v: string, el?: HTMLElement) => {
+    let ok = false;
+    try { await navigator.clipboard.writeText(v); ok = true; } catch { /* permission denied: fall back below */ }
+    if (!ok) {  // a selected hidden textarea + execCommand works where the async clipboard API is not allowed
+      const ta = document.createElement("textarea");
+      ta.value = v; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch { ok = false; }
+      ta.remove();
+    }
+    if (ok) { setCopied(k); setMsg(""); setTimeout(() => setCopied(""), 1200); return; }
+    if (el) {  // last resort: leave the value selected, so one Ctrl+C copies it
+      const r = document.createRange(); r.selectNodeContents(el);
+      const s = window.getSelection(); s?.removeAllRanges(); s?.addRange(r);
+    }
+    setMsg("This browser blocks copying from pages. The value is selected: press Ctrl+C.");
   };
   const mark = async (r: Row, m: Row["mark"]) => {
     setBusy(true);
@@ -123,7 +136,7 @@ function ReachView() {
             <p className="dim small">Your presets and Fact Bank, exactly as the engine uses them. Click a value to copy it.</p>
             <dl className="qa">
               <div><dt>Salary for this job</dt>
-                <dd><button className="chip" onClick={() => copy("salary", salary || "")} disabled={!salary}>
+                <dd><button className="chip" onClick={(e) => copy("salary", salary || "", e.currentTarget)} disabled={!salary}>
                   {salary ? `${salary} (posted range midpoint)` : "No range posted: use the market rate below"}</button>{copied === "salary" && <small> copied</small>}</dd></div>
               {!kit && <div><dt>Fill kit</dt><dd className="dim">Loading…</dd></div>}
               {kit?.groups.map((g) => (
@@ -131,7 +144,7 @@ function ReachView() {
                   <summary>{g.group} <small className="dim">({g.fields.length})</small></summary>
                   {g.fields.map(([k, v]) => (
                     <div key={g.group + k}><dt>{k}</dt>
-                      <dd><button className="chip" onClick={() => copy(g.group + k, v)} title="Copy">{v}</button>
+                      <dd><button className="chip" onClick={(e) => copy(g.group + k, v, e.currentTarget)} aria-label={`Copy ${k}: ${v}`}>{v}</button>
                         {copied === g.group + k && <small> copied</small>}</dd></div>))}
                 </details>))}
             </dl>
