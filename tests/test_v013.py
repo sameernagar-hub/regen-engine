@@ -190,7 +190,7 @@ def test_own_mail_and_newsletters_are_not_outcomes(monkeypatch):
     monkeypatch.setattr(inbox, "applied_companies", lambda: {"Initech": [{"job": "Initech - SWE"}]})
     new = inbox.ingest([
         {"id": "<a>", "from": "Jane <jane.doe@example.com>", "subject": "Re: your hiring post", "snippet": "interview offer position"},
-        {"id": "<b>", "from": "news@initech.example.com", "subject": "Top demos #48", "snippet": "web agents and classifiers"},
-        {"id": "<c>", "from": "no-reply@initech.example.com", "subject": "Update on your Initech application",
+        {"id": "<b>", "from": "news@example.com", "subject": "Top demos #48", "snippet": "web agents and classifiers"},
+        {"id": "<c>", "from": "no-reply@example.com", "subject": "Update on your Initech application",
          "snippet": "Unfortunately, we have decided to move forward with other candidates. Globex Box"}])
     assert [(e["outcome"], e["company"]) for e in new] == [("rejection", "Initech")]
