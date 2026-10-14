@@ -119,3 +119,29 @@ def test_api_reach_bench_containers():
     r = c.get("/api/control/reach").json()
     assert set(r) == {"rows", "listed", "gated", "by_ats"}
     assert "containers" in c.get("/api/control/containers").json()
+
+
+def test_linkedin_alert_cards_from_plain_text():
+    from engine.discovery.alerts import linkedin_cards
+    text = """Your job alert for Software Engineer in California
+Manage your job alerts:  https://www.linkedin.com/comm/jobs/alerts?x=1
+
+Software Engineer, Voice Agents
+Initech
+Mountain View, CA
+
+2 school alumni
+View job: https://www.linkedin.com/comm/jobs/view/1/?a=b
+
+---------------------------------------------------------
+
+Full Stack Engineer
+Globex
+California, United States
+View job: https://www.linkedin.com/comm/jobs/view/2/?a=b
+
+See all jobs: https://www.linkedin.com/comm/jobs/search"""
+    rows = linkedin_cards(text, "Tue, 13 Oct 2026")
+    assert [(r["title"], r["company"], r["location"]) for r in rows] == [
+        ("Software Engineer, Voice Agents", "Initech", "Mountain View, CA"),
+        ("Full Stack Engineer", "Globex", "California, United States")]

@@ -8,6 +8,11 @@ Ashby / Lever / Workable board and matches the title there.
 
 Input is what engine/discovery/gmail_alerts.js writes into the Gmail page: rows split by '§', fields by '¦'
 (source ¦ title ¦ company ¦ location ¦ email date). Plain tab-separated lines work too.
+
+`python -m engine alerts --imap [days=2]` (v0.13) reads LinkedIn alert mail straight over IMAP with the same Gmail
+app password the code watcher uses: no browser tab. Only the text/plain part is read; each card is the three lines
+(title, company, location) above its "View job:" link. Message ids already read are kept in
+workspace/alerts_imap_seen.json, so a pass fetches only new mail (1 search + 1 fetch per new message).
 Only listing text is used; no links, tracking ids or message bodies are stored.
 """
 import json, os, re, sys
@@ -78,12 +83,73 @@ def save_unresolved(unresolved, path=None):
     return len(by)
 
 
+NOISE = re.compile(r"^(\d+ (school )?alumni|\d+ connections?|actively recruiting|easy apply|promoted|be an early applicant|"
+                   r"apply with resume.*|new|top applicant|.*\$\d.*|see all jobs.*|-+)$", re.I)
+
+
+def linkedin_cards(text, date=""):
+    """Rows from one LinkedIn alert's text/plain body: the last three non-noise lines before each "View job:" link,
+    after the previous card's separator. Cards that don't have exactly title/company/location are skipped. O(len)."""
+    rows = []
+    for chunk in re.split(r"View job:\s*\S+", text)[:-1]:
+        lines = [l.strip() for l in chunk.splitlines()]
+        lines = [l for l in lines if l and not NOISE.match(l) and not l.startswith("http") and "job alert" not in l.lower()]
+        if len(lines) >= 3:
+            title, company, loc = lines[-3:]
+            rows.append(dict(source="linkedin", title=title, company=company.strip(" ,"), location=loc, date=date))
+    return rows
+
+
+def imap_rows(days=2):
+    """LinkedIn alert cards from mail of the last `days` days that was not read before. Read-only mailbox."""
+    import email, imaplib
+    from datetime import timedelta
+    from engine.notify import _env
+    e = _env()
+    if not (e.get("REGEN_SMTP_USER") and e.get("REGEN_SMTP_APP_PASSWORD")):
+        raise SystemExit("alerts --imap needs REGEN_SMTP_USER + REGEN_SMTP_APP_PASSWORD in .env")
+    seen_p = os.path.join(WORKSPACE, "alerts_imap_seen.json")
+    try:
+        seen = set(json.load(open(seen_p, encoding="utf-8")))
+    except (OSError, ValueError):
+        seen = set()
+    M = imaplib.IMAP4_SSL(e.get("REGEN_IMAP_HOST", "imap.gmail.com"))
+    M.login(e["REGEN_SMTP_USER"], e["REGEN_SMTP_APP_PASSWORD"])
+    M.select('"[Gmail]/All Mail"', readonly=True)
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%d-%b-%Y")
+    _, data = M.search(None, f'(SINCE {since} FROM "linkedin.com" BODY "View job:")')
+    rows, read = [], 0
+    for i in data[0].split():
+        _, d = M.fetch(i, "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID DATE)])")
+        h = email.message_from_bytes(d[0][1])
+        mid = h.get("Message-ID", "").strip() or i.decode()
+        if mid in seen:
+            continue
+        _, d = M.fetch(i, "(BODY.PEEK[])")
+        m = email.message_from_bytes(d[0][1])
+        for part in m.walk():
+            if part.get_content_type() == "text/plain":
+                text = part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8", "replace")
+                rows += linkedin_cards(text, h.get("Date", "")[:16])
+                break
+        seen.add(mid); read += 1
+    M.logout()
+    tmp = seen_p + ".tmp"
+    json.dump(sorted(seen)[-5000:], open(tmp, "w", encoding="utf-8"))
+    os.replace(tmp, seen_p)
+    print(f"alerts --imap: {read} new alert emails, {len(rows)} listings")
+    return rows
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     if not argv:
-        print("usage: python -m engine alerts <workspace/alerts/YYYY-MM-DD.txt>")
+        print("usage: python -m engine alerts <workspace/alerts/YYYY-MM-DD.txt> | --imap [days]")
         return
-    rows = parse(open(argv[0], encoding="utf-8").read())
+    if argv[0] == "--imap":
+        rows = imap_rows(float(argv[1]) if len(argv) > 1 else 2)
+    else:
+        rows = parse(open(argv[0], encoding="utf-8").read())
     leads, dropped = leads_from(rows)
     resolved, unresolved = resolve(leads, source="email-alert")
     now = datetime.now(timezone.utc).isoformat()

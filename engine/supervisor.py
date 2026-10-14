@@ -604,7 +604,7 @@ def daily(imap, now=None, run=None):
     def go():
         for s in steps:
             r = (run or subprocess.run)([sys.executable, "-m", "engine", *s], capture_output=True, text=True,
-                                        encoding="utf-8", errors="replace", timeout=1800)
+                                        encoding="utf-8", errors="replace", timeout=1800, preexec_fn=_as_engine_user)
             tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
             audit("daily", " ".join(s), rc=r.returncode, result=tail[0][:160])
     threading.Thread(target=go, daemon=True).start()
@@ -621,6 +621,23 @@ def bench():
     r = subprocess.run([sys.executable, "-m", "engine", "bench", "--save"], capture_output=True, text=True,
                        encoding="utf-8", errors="replace", timeout=900)
     audit("bench", "B1-B7", rc=r.returncode, seconds=round(time.time() - t))
+
+
+def _as_engine_user():
+    """preexec_fn for subprocesses that write the bank: the supervisor runs as root (Docker socket), the bank's files
+    belong to the engine user (uid 10001); a root-owned queue.json made the pipeline fail with EACCES (10-13)."""
+    if os.name != "nt" and os.getuid() == 0:
+        os.setgid(10001); os.setuid(10001)
+
+
+def alerts():
+    """`engine alerts --imap 2` as the engine user (only the supervisor has the Gmail app password); audited."""
+    import subprocess, sys
+    r = subprocess.run([sys.executable, "-m", "engine", "alerts", "--imap", "2"], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", timeout=1800, preexec_fn=_as_engine_user,
+                       env=dict(os.environ, HOME="/home/regen"))
+    tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
+    audit("alerts", "imap", rc=r.returncode, result=tail[0][:160])
 
 
 def supervise(argv=None):
@@ -665,6 +682,8 @@ def supervise(argv=None):
                 prune_images()
                 from engine.clean import main as clean
                 clean([])
+            if imap and n % 240 == 40:  # hourly (10 min after start): LinkedIn alert mail -> leads -> queue
+                threading.Thread(target=alerts, daemon=True).start()
             if n % (240 * BENCH_HOURS) == 20:  # 5 min after start, then every BENCH_HOURS
                 threading.Thread(target=bench, daemon=True).start()
             if n % 4 == 0:  # every minute
