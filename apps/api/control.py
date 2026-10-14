@@ -97,6 +97,32 @@ def fleet():
     return dict(status(), audit=audit_tail(12), ledger=store.backend())
 
 
+@router.get("/control/containers")
+def containers():
+    """The supervisor's container inventory (service, state, uptime, CPU, memory), refreshed every minute; null
+    when the supervisor is not running (only it holds the Docker socket)."""
+    from engine.supervisor import containers as inv
+    return inv() or {"containers": [], "stale": True}
+
+
+@router.get("/control/reach")
+def reach(limit: int = 100):
+    """Reach list (engine/discovery/reach.py): Workday / iCIMS / SmartRecruiters jobs with a tailored resume, newest
+    first, for the user to submit; plus how many were gated out."""
+    from engine.discovery.reach import load
+    rows = load()
+    live = [r for r in rows if r.get("resume")][::-1]
+    by = collections.Counter(r["ats"] for r in live)
+    return {"rows": live[:max(1, min(limit, 500))], "listed": len(live), "gated": len(rows) - len(live), "by_ats": dict(by)}
+
+
+@router.get("/control/bench")
+def bench():
+    """Latest benchmark run B1-B7 (engine/bench.py; the supervisor saves one every REGEN_BENCH_HOURS)."""
+    from engine.bench import latest
+    return latest() or {"ts": None, "results": {}}
+
+
 @router.post("/control/run")
 def run(body: dict, request: Request):
     _guard(request)

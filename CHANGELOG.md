@@ -4,6 +4,40 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-13 · v0.13 "Reach"
+Most new-grad leads that never resolved pointed at Workday, iCIMS or SmartRecruiters boards, and the engine could not
+see those ATSs at all. The fleet's containers were only visible through heartbeats, and the B5-B7 benchmarks only
+ran when someone typed the command.
+
+### Added
+- **Three new discovery adapters** (`engine/discovery/ats.py`): `smartrecruiters` (public Posting API, US only, 100
+  per page), `workday` (the public `cxs` search JSON the careers page calls itself, 20 per POST, stops at the first
+  page with postings older than 7 days) and `icims` (portal search HTML, since iCIMS has no public JSON). iCIMS lists
+  no posted date, so `posted` is the first time the engine saw the job: the first fetch of a board marks every open
+  job as old, so it doesn't flood the queue. JDs come from the posting API, the cxs detail call, and the job page's
+  JSON-LD. `ATS = OPEN_ATS + REACH`, and `SLUGGABLE` keeps newgrad from guessing slugs for Workday/iCIMS tokens.
+- **Harvest** finds these boards in the public lists and in the local `leads.json` / `alert_leads.json` (no network
+  calls). First run: 1,952 Workday, 295 SmartRecruiters and 278 iCIMS boards.
+- **Reach list** (`engine/discovery/reach.py`, `python -m engine reach [max]`): Workday and iCIMS put the form
+  behind a candidate account, so the engine does everything up to the click. That covers the title filter, fit gate,
+  trust gate and tailored resume (`batch.build`). Each job becomes one row in `workspace/reach.json` + `reach.md`.
+  The pipeline runs it after every scan (`REGEN_REACH_PER_PASS`, default 12, newest first), and `select()` leaves
+  these ATSs out of apply batches. First run: 7 of 12 listed, 5 gated (years, stack, no sponsorship).
+- **Supervisor container view**: `supervisor.inventory()` polls the Docker API (state, uptime, CPU %, memory/limit
+  from one stats sample each, 8 threads) once a minute, off the 15 s loop. It writes `workspace/containers.json`, and
+  `GET /api/control/containers` and the fleet status return it. The API never gets the socket. /control has new
+  **Containers**, **Reach list** and **Benchmarks** cards.
+- **Benchmarks in the bank**: `scripts/bench_system.py` moved to `engine/bench.py` (`python -m engine bench
+  --save`; the script is now a thin wrapper) because the images don't ship `scripts/`. The supervisor runs it in a
+  subprocess 5 min after start and every `REGEN_BENCH_HOURS` (6). It has to be a subprocess because B3 swaps the
+  worker dirs. Results go to `workspace/bench/<stamp>.json` + `latest.json`, served by `GET /api/control/bench`.
+
+### Verify
+- `python -m pytest -q` (150 passing; `tests/test_v013.py` fakes every HTTP call: harvest patterns, Workday paging
+  stop, iCIMS first-seen dates, SmartRecruiters mapping, reach pick/write, CPU/mem math, inventory staleness, bench
+  save, the three API routes). Live: `docker exec deploy-supervisor-1 python -m engine reach 12`, then open
+  http://127.0.0.1:3000/control.
+
 ## [Unreleased] - 2026-10-12 · "Ledger"
 The ledger lived only in events.jsonl: every question about it (submissions per day, answers by source, supervisor
 actions) meant a script. Now the bank stack keeps a labeled Postgres copy next to it.

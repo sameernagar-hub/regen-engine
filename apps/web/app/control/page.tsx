@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Nav } from "../nav";
 import { LocalOnly } from "../local-only";
 import { PUBLIC } from "@/lib/engine";
-import { get, post } from "@/lib/types";
+import { api, get, post } from "@/lib/types";
 
 type Step = { name: string; status: string; started?: number; finished?: number };
 type Applier = { name: string; updated: number; jobs: { job: string; state: string }[]; results: Record<string, number>;
@@ -23,7 +23,15 @@ type Audit = { ts: string; action: string; target: string; reason?: string; jobs
 type Fleet = { members: Member[]; inbox: number; claimed: number; done: number; stale_claims: string[];
                codes_waiting: string[]; gmail_tab_age: number | null; imap_codes?: boolean; problems: string[];
                verdict: string; kill?: string | null; limits?: { min: number; max: number }; audit?: Audit[];
-               ledger?: string };
+               ledger?: string; containers?: Inventory | null };
+type Box = { id: string; name: string; service: string; state: string; status: string; image: string; created: number;
+             scaled: boolean; cpu?: number; mem_mb?: number; mem_limit_mb?: number };
+type Inventory = { ts: number; age: number; stale?: boolean; project: string; containers: Box[];
+                   totals: { running: number; all: number; cpu: number; mem_mb: number } };
+type ReachRow = { listed: string; ats: string; company: string; title: string; url: string; location: string;
+                  lane?: string; jd_match?: number; resume: string };
+type Reach = { rows: ReachRow[]; listed: number; gated: number; by_ats: Record<string, number> };
+type Bench = { ts: number | null; results: Record<string, Record<string, any>> };
 type Filters = { filters: Record<string, string>; terms: Record<string, string[]>; years_experience: number | null };
 
 const STAGES = [
@@ -32,7 +40,18 @@ const STAGES = [
   { key: "feed", label: "GitHub feeds", about: "curated lists" },
   { key: "apply", label: "Gate → Compose → Apply", about: "fit gate, resume, forms" },
 ];
-const ATS = ["greenhouse", "lever", "ashby", "workable"];
+const ATS = ["greenhouse", "lever", "ashby", "workable", "smartrecruiters", "workday", "icims"];
+// one line per benchmark: the headline number (engine/bench.py; full JSON in workspace/bench/latest.json)
+const BENCH: [string, string, (r: Record<string, any>) => string][] = [
+  ["B1_select", "Selection (lazy heap vs sort)", (r) => `x${r.speedup} (${r.heap_ms} ms vs ${r.sort_ms} ms)`],
+  ["B2_answers", "Questions answerable now", (r) => `${r.answerable_pct}% of non-legal (${r.answerable_now})`],
+  ["B3_claims", "Batch claims exactly once", (r) => `${r.exactly_once ? "yes" : "NO"}: ${r.unique}/${r.batches}`],
+  ["B4_coverage", "JD terms on the resume", (r) => `median ${r.median_coverage_pct}%, ATS read-back ${r.median_ats_readback}`],
+  ["B5_rate", "Verified submissions / active hour", (r) => `best ${r.best_per_h}/h` + (r.days ? `, latest day ${(Object.values(r.days).pop() as any)?.per_h ?? "?"}/h` : "")],
+  ["B6_codes", "Email-code latency", (r) => r.median_s == null ? `no codes yet (${r.code_timeouts} timeouts)` : `median ${r.median_s}s, p90 ${r.p90_s}s, ${r.code_timeouts} timeouts`],
+  ["B7_fitgate", "Fit gate on past rejections", (r) => `catch ${r.catch_rate_pct ?? "-"}%, would block ${r.would_block_ok_pct ?? "-"}% of the rest (${r.submitted_with_jd} JDs)`],
+];
+const uptime = (s: number) => { const x = Date.now() / 1000 - s; return x < 3600 ? `${(x / 60) | 0}m` : x < 86400 ? `${(x / 3600).toFixed(1)}h` : `${(x / 86400).toFixed(1)}d`; };
 const TONE: Record<string, string> = { SUBMITTED: "var(--gold)", "NEEDS YOU": "var(--amber)", FAILED: "var(--alarm)",
                                        SKIPPED: "var(--dim)", filling: "var(--calm)", FLAGGED: "var(--alarm)" };
 
@@ -54,15 +73,20 @@ function ControlView() {
   const [edit, setEdit] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<string>("");
   const [fl, setFl] = useState<Fleet | null>(null);
+  const [rc, setRc] = useState<Reach | null>(null);
+  const [bn, setBn] = useState<Bench | null>(null);
 
   useEffect(() => {
     const pull = () => get<State>("/api/control/state").then((s) => { setSt(s); setP((cur) => cur || s.defaults); }).catch((e) => setMsg(String(e.message)));
     const pullFleet = () => get<Fleet>("/api/control/fleet").then(setFl).catch(() => {});
     pull(); pullFleet();
     const tf = setInterval(pullFleet, 5000);  // heartbeats land every 30-60 s
+    const pullSlow = () => { get<Reach>("/api/control/reach").then(setRc).catch(() => {}); get<Bench>("/api/control/bench").then(setBn).catch(() => {}); };
+    pullSlow();
+    const ts = setInterval(pullSlow, 60000);  // reach rows land once per pipeline pass; benchmarks every few hours
     get<Filters>("/api/control/filters").then((x) => { setF(x); setEdit(x.filters); }).catch(() => {});
     const t = setInterval(pull, 2000);  // processing view: every 2 s while you watch
-    return () => { clearInterval(t); clearInterval(tf); };
+    return () => { clearInterval(t); clearInterval(tf); clearInterval(ts); };
   }, []);
 
   const start = () => post("/api/control/run", p).then(() => setMsg("Run started.")).catch((e) => setMsg(e.message));
@@ -185,6 +209,72 @@ function ControlView() {
                   <span>{a.action} {a.target}{a.reason ? ` (${a.reason})` : ""}</span>
                   <b className="dim small">{a.jobs != null ? `${a.jobs} jobs → ${a.want}` : ""}</b></li>))}
             </ul></>)}
+        </section>
+      )}
+
+      {fl?.containers && (
+        <section className="card" aria-label="Containers">
+          <h2 className="sub">Containers <small className="dim">({fl.containers.totals.running}/{fl.containers.totals.all} running ·
+            CPU {fl.containers.totals.cpu}% · {fl.containers.totals.mem_mb} MiB · {fl.containers.stale ? "STALE " : ""}inventory {fl.containers.age}s old)</small></h2>
+          <p className="dim small">What the supervisor sees over the Docker socket (only it holds the socket). It creates and removes appliers; any other service is restarted after 3 failed probes.</p>
+          <div style={{ overflowX: "auto" }}>
+            <table className="apps">
+              <thead><tr><th>Service</th><th>Container</th><th>State</th><th>Up</th><th>CPU</th><th>Memory</th></tr></thead>
+              <tbody>
+                {fl.containers.containers.map((c) => {
+                  const hot = c.mem_limit_mb && c.mem_mb ? c.mem_mb / c.mem_limit_mb : 0;
+                  return (
+                    <tr key={c.id} style={{ cursor: "default" }}>
+                      <td>{c.service}{c.scaled && <small className="dim"> · scaled</small>}</td>
+                      <td className="mono small">{c.name}</td>
+                      <td style={{ color: c.state === "running" ? "var(--calm)" : "var(--alarm)" }} title={c.status}>{c.state}</td>
+                      <td className="small">{c.state === "running" ? uptime(c.created) : c.status}</td>
+                      <td className="mono small">{c.cpu != null ? `${c.cpu}%` : "-"}</td>
+                      <td className="mono small" style={{ color: hot > 0.85 ? "var(--alarm)" : undefined }}>
+                        {c.mem_mb != null ? `${c.mem_mb} MiB` : "-"}{c.mem_limit_mb && hot ? ` / ${c.mem_limit_mb}` : ""}</td>
+                    </tr>);
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {rc && (
+        <section className="card" aria-label="Reach list">
+          <h2 className="sub">Reach list <small className="dim">({rc.listed} ready · {rc.gated} gated out)</small></h2>
+          <p className="dim small">Workday, iCIMS and SmartRecruiters jobs go through the same fit gate, trust gate and resume tailoring. The portal needs your own candidate account, so you click submit.
+            {" "}{Object.entries(rc.by_ats).map(([k, v]) => `${k} ${v}`).join(" · ")}</p>
+          {!rc.rows.length ? <p className="dim small">Nothing listed yet. Rows appear after a pipeline pass finds a fresh posting on these boards.</p> : (
+            <div style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
+              <table className="apps">
+                <thead><tr><th>Listed</th><th>Role</th><th>ATS</th><th>Lane</th><th>Resume</th></tr></thead>
+                <tbody>
+                  {rc.rows.map((r) => (
+                    <tr key={r.url} style={{ cursor: "default" }}>
+                      <td className="mono small">{r.listed.slice(5, 16).replace("T", " ")}</td>
+                      <td><a href={r.url} target="_blank" rel="noreferrer">{r.company} · {r.title}</a><br /><small className="dim">{r.location}</small></td>
+                      <td className="small">{r.ats}</td>
+                      <td className="small">{r.lane}</td>
+                      <td className="small"><a href={api(`/api/resume/${encodeURIComponent(r.resume.split("/").pop() || "")}`)} target="_blank" rel="noreferrer">PDF</a></td>
+                    </tr>))}
+                </tbody>
+              </table>
+            </div>)}
+        </section>
+      )}
+
+      {bn && (
+        <section className="card" aria-label="Benchmarks">
+          <h2 className="sub">Benchmarks <small className="dim">{bn.ts ? `(run ${ago(bn.ts)}; the supervisor reruns them every 6 h)` : "(not run yet: the supervisor runs them 5 min after it starts)"}</small></h2>
+          <ul className="tabs">
+            {BENCH.filter(([k]) => bn.results[k]).map(([k, label, fmt]) => {
+              const r = bn.results[k];
+              let v = "";
+              try { v = r.error ? `error: ${r.error}` : fmt(r); } catch { v = JSON.stringify(r).slice(0, 80); }
+              return <li key={k}><span><b className="mono small">{k.split("_")[0]}</b> {label}</span><b className="small" style={{ color: r.error ? "var(--alarm)" : "var(--calm)" }}>{v}</b></li>;
+            })}
+          </ul>
         </section>
       )}
 

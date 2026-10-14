@@ -1,6 +1,6 @@
 # Benchmarks
 
-`python scripts/bench_system.py` runs every benchmark and prints one JSON line per benchmark. Each one compares a component
+`python -m engine bench [--save]` (or `python scripts/bench_system.py`) runs every benchmark and prints one JSON line per benchmark. Each one compares a component
 against a baseline or a real corpus, so a gap shows up as a number. **Rule: when a new failure mode is found,
 add a benchmark for it.** The list only grows.
 

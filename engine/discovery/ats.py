@@ -1,11 +1,19 @@
-"""Source-first discovery across the three open ATS APIs: Greenhouse, Ashby and Lever.
+"""Source-first discovery across the open ATS APIs: Greenhouse, Ashby, Lever, Workable, plus (v0.13 "Reach")
+SmartRecruiters, Workday and iCIMS.
 
 A posting appears on these public board APIs the moment a recruiter publishes it, hours or days before
 LinkedIn/Indeed syndication. Every job is normalized to one record:
 
   {source, ats, token, id, company, title, location, posted (ISO UTC), url, jd_url}
 
-Boards live in workspace/boards.json  {"greenhouse": [...], "ashby": [...], "lever": [...]}
+Boards live in workspace/boards.json  {"greenhouse": [...], "ashby": [...], "lever": [...], ...}
+
+Reach ATSs (REACH): the engine discovers, fit-gates and tailors for them, but does not fill their forms (Workday and
+iCIMS put the form behind a candidate account; SmartRecruiters has no filler yet). Their jobs go to the reach list
+(engine/discovery/reach.py) for the user to submit. Board tokens:
+  smartrecruiters  company identifier            (jobs.smartrecruiters.com/<Company>)
+  workday          "<tenant>.wd<N>/<site>"       (<tenant>.wd<N>.myworkdayjobs.com/[locale/]<site>)
+  icims            "<subdomain>"                 (<subdomain>.icims.com/jobs)
 (seeded from the legacy workspace/boards.txt and grown by `python -m engine boards harvest`).
 """
 import json, os, re, time, urllib.request, urllib.error, concurrent.futures as cf
@@ -13,7 +21,10 @@ from datetime import datetime, timedelta, timezone
 
 from engine.config import PACKAGE, WORKSPACE
 
-ATS = ("greenhouse", "ashby", "lever", "workable")
+OPEN_ATS = ("greenhouse", "ashby", "lever", "workable")   # board token = a guessable company slug
+REACH = ("smartrecruiters", "workday", "icims")             # discovered + tailored; the user submits
+ATS = OPEN_ATS + REACH
+SLUGGABLE = OPEN_ATS + ("smartrecruiters",)                 # newgrad/probe may guess these from a company name
 APPLY_SUPPORTED = ("greenhouse", "ashby")  # the runner fills these; other ATS jobs get a resume + a human click
 UA = {"User-Agent": "regen-engine/0.4 (+https://github.com/sameernagar-hub/regen-engine)"}
 
@@ -106,7 +117,156 @@ def workable(token):
     return out
 
 
-FETCH = {"greenhouse": greenhouse, "ashby": ashby, "lever": lever, "workable": workable}
+def _post(url, body, timeout=20):
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=dict(UA, **{"Content-Type": "application/json",
+                                                                                     "Accept": "application/json"}))
+    try:
+        return json.load(urllib.request.urlopen(req, timeout=timeout))
+    except urllib.error.HTTPError as e:
+        if e.code in (404, 410, 422):
+            return None
+        raise
+
+
+def _html(url, timeout=20):
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (regen-engine)"})
+        return urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        if e.code in (404, 410):
+            return None
+        raise
+
+
+def smartrecruiters(token, pages=5):
+    """Public Posting API, US postings, newest first (100 per page, at most `pages` pages). O(postings)."""
+    out = []
+    for p in range(pages):
+        d = _get(f"https://api.smartrecruiters.com/v1/companies/{token}/postings?limit=100&offset={100 * p}&country=us")
+        if d is None:
+            return None if p == 0 else out
+        for j in d.get("content", []):
+            loc = j.get("location") or {}
+            where = loc.get("fullLocation") or ", ".join(x for x in (loc.get("city"), loc.get("region"), "US") if x)
+            if loc.get("remote") and "remote" not in where.lower():
+                where += " (Remote)"
+            out.append(dict(ats="smartrecruiters", token=token, id=str(j["id"]),
+                            company=(j.get("company") or {}).get("name") or token, title=j["name"], location=where,
+                            posted=_iso(j.get("releasedDate")), url=f"https://jobs.smartrecruiters.com/{token}/{j['id']}"))
+        if 100 * (p + 1) >= d.get("totalFound", 0):
+            break
+    return out
+
+
+def _wd_days(s):
+    """Workday's "Posted Today / Yesterday / 3 Days Ago / 30+ Days Ago" -> days (None when unreadable)."""
+    s = (s or "").lower()
+    if "today" in s:
+        return 0
+    if "yesterday" in s:
+        return 1
+    m = re.search(r"(\d+)\+? days", s)
+    return int(m.group(1)) if m else None
+
+
+def _wd_split(token):
+    host, site = token.split("/", 1)
+    return f"https://{host}.myworkdayjobs.com", host.split(".")[0], site
+
+
+def _wd_where(j):
+    """Location text; "3 Locations" falls back to the first location in the posting path ("/job/US-CA-Irvine/...")."""
+    t = (j.get("locationsText") or "").strip()
+    if re.fullmatch(r"\d+ Locations?", t):
+        seg = ((j.get("externalPath") or "").split("/") + ["", "", ""])[2]
+        t = re.sub(r"\s+", " ", seg.replace("---", ", ").replace("-", " ")).strip() + f" (+{t.split()[0]} locations)"
+    return t
+
+
+def workday(token, pages=8, days=7):
+    """Workday's public cxs search API (the JSON the careers page itself calls): 20 postings per POST, newest first;
+    stops at the first page that reaches postings older than `days`. At most `pages` calls per board."""
+    base, tenant, site = _wd_split(token)
+    api = f"{base}/wday/cxs/{tenant}/{site}/jobs"
+    now, out = datetime.now(timezone.utc), []
+    for p in range(pages):
+        d = _post(api, {"appliedFacets": {}, "limit": 20, "offset": 20 * p, "searchText": ""})
+        if d is None:
+            return None if p == 0 else out
+        rows = d.get("jobPostings") or []
+        old = False
+        for j in rows:
+            n = _wd_days(j.get("postedOn"))
+            if n is None or n > days:
+                old = True
+                continue
+            path = j.get("externalPath") or ""
+            jid = path.rsplit("_", 1)[-1] if "_" in path else path.rsplit("/", 1)[-1]
+            # unique part first: batch.build names files Resume_<company>_<id[:12]>
+            out.append(dict(ats="workday", token=token, id=f"{jid}_{tenant}", company=tenant, title=j["title"],
+                            location=_wd_where(j), posted=(now - timedelta(days=n)).isoformat(timespec="seconds"),
+                            url=f"{base}/en-US/{site}{path}", path=path))
+        if old or len(rows) < 20:
+            break
+    return out
+
+
+def _icims_where(t):
+    """iCIMS "US-VA-Norfolk" -> "Norfolk, VA, US" (so the US-location filter reads it)."""
+    m = re.fullmatch(r"([A-Z]{2})-([A-Z]{2})-(.+)", (t or "").strip())
+    return f"{m.group(3)}, {m.group(2)}, {m.group(1)}" if m else (t or "").strip()
+
+
+ICIMS_SEEN = os.path.join(WORKSPACE, "icims_seen.json")
+ICIMS_CARD = re.compile(r'href="(https://[^"]+/jobs/(\d+)/[^"?]*/job)[^"]*"[^>]*>.*?<h3[^>]*>\s*(.*?)\s*</h3>(.*?)(?=<li class="iCIMS_JobCardItem"|</ul>)', re.S)
+ICIMS_LOC = re.compile(r"Location[^<]*</span>\s*</dt>\s*<dd[^>]*>\s*<span[^>]*>\s*([^<]+?)\s*</span>", re.S)
+
+
+def icims(token, pages=5, _seen=None):
+    """iCIMS career portal search pages (HTML; no public JSON). The list shows no posted date, so `posted` is when
+    the engine first saw the job: the first fetch of a board marks everything already open as old (no flood), later
+    fetches date new ids to that pass. The job page's JSON-LD (read in job_description) has the JD.
+    At most `pages` GETs per board."""
+    seen = _seen if _seen is not None else _load_json(ICIMS_SEEN)
+    first = token not in seen
+    mine = seen.setdefault(token, {})
+    out, now = [], datetime.now(timezone.utc).isoformat(timespec="seconds")
+    for p in range(pages):
+        page = _html(f"https://{token}.icims.com/jobs/search?ss=1&in_iframe=1&pr={p}")
+        if page is None:
+            return None if p == 0 else out
+        cards = ICIMS_CARD.findall(page)
+        if not cards:
+            break
+        for url, jid, title, rest in cards:
+            loc = ICIMS_LOC.search(rest)
+            mine.setdefault(jid, "2000-01-01T00:00:00+00:00" if first else now)
+            out.append(dict(ats="icims", token=token, id=f"{jid}_{token}", company=re.sub(r"^(careers|jobs|uscareers)-", "", token),
+                            title=re.sub(r"\s+", " ", title), location=_icims_where(loc.group(1) if loc else ""),
+                            posted=mine[jid], url=url))
+        if f"pr={p + 1}" not in page:
+            break
+    if _seen is None:
+        _save_json(ICIMS_SEEN, seen)
+    return out
+
+
+def _load_json(path):
+    try:
+        return json.load(open(path, encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_json(path, obj):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + f".{os.getpid()}.tmp"
+    json.dump(obj, open(tmp, "w", encoding="utf-8"))
+    os.replace(tmp, path)
+
+
+FETCH = {"greenhouse": greenhouse, "ashby": ashby, "lever": lever, "workable": workable,
+         "smartrecruiters": smartrecruiters, "workday": workday, "icims": icims}
 
 
 def job_description(job):
@@ -131,6 +291,27 @@ def job_description(job):
             return None, "", []
         lists = " ".join(f"{x.get('text', '')}: {clean(x.get('content'))}" for x in d.get("lists", []))
         return d, " ".join([d.get("descriptionPlain") or "", lists, d.get("additionalPlain") or ""]), []
+    if job["ats"] == "smartrecruiters":
+        d = _get(f"https://api.smartrecruiters.com/v1/companies/{job['token']}/postings/{job['id']}")
+        if not d:
+            return None, "", []
+        secs = (d.get("jobAd") or {}).get("sections") or {}
+        return d, clean(" ".join((secs.get(k) or {}).get("text", "") for k in
+                                 ("companyDescription", "jobDescription", "qualifications", "additionalInformation"))), []
+    if job["ats"] == "workday":
+        base, tenant, site = _wd_split(job["token"])
+        d = _get(f"{base}/wday/cxs/{tenant}/{site}{job.get('path') or ''}")
+        return d, clean(((d or {}).get("jobPostingInfo") or {}).get("jobDescription")), []
+    if job["ats"] == "icims":
+        page = _html(job["url"] + "?in_iframe=1")
+        for blob in re.findall(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', page or "", re.S):
+            try:
+                d = json.loads(blob)
+            except ValueError:
+                continue
+            if isinstance(d, dict) and d.get("@type") == "JobPosting":
+                return d, clean(d.get("description")), []
+        return None, "", []
     return None, "", []
 
 
@@ -204,6 +385,9 @@ HARVEST = {
     "ashby": r"jobs\.ashbyhq\.com/([^/?#]+)",
     "lever": r"jobs\.lever\.co/([^/?#]+)",
     "workable": r"apply\.workable\.com/(?!j/|api/)([^/?#]+)",
+    "smartrecruiters": r"(?:jobs|careers)\.smartrecruiters\.com/(?!oneclick|sr-jobs|api)([A-Za-z0-9_-]+)",
+    "workday": r"([a-z0-9-]+\.wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([A-Za-z0-9_-]+)",
+    "icims": r"//((?:careers|jobs|uscareers)-[a-z0-9-]+)\.icims\.com",
 }
 HARVEST_FEEDS = [  # machine-readable lists (JSON with "url") and READMEs (any ATS link in the markdown)
     "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
@@ -243,8 +427,13 @@ def harvest_urls(urls):
     for u in urls:
         for a, pat in HARVEST.items():
             m = re.search(pat, u or "")
-            if m and m.group(1).lower() not in ("embed", "v1", "jobs", "job_app"):
-                found[a].add(m.group(1) if a == "ashby" else m.group(1).lower())
+            if not m or m.group(1).lower() in ("embed", "v1", "jobs", "job_app"):
+                continue
+            if a == "workday":
+                if m.group(2).lower() not in ("job", "wday", "details"):
+                    found[a].add(f"{m.group(1).lower()}/{m.group(2)}")
+            else:
+                found[a].add(m.group(1) if a in ("ashby", "smartrecruiters") else m.group(1).lower())
     return found
 
 
@@ -262,6 +451,11 @@ def harvest(feeds=HARVEST_FEEDS):
                 urls += re.findall(r"https?://[^\s)\]\"'<>]+", text)
         except Exception as e:
             print("  ! harvest", f, e)
+    for name in ("leads.json", "alert_leads.json"):  # unresolved leads often point at Workday / iCIMS boards (local, no calls)
+        try:
+            urls += re.findall(r"https?://[^\s\"'<>]+", open(os.path.join(WORKSPACE, name), encoding="utf-8").read())
+        except OSError:
+            pass
     for a, toks in harvest_urls(urls).items():
         b[a] = list(set(b[a]) | toks)
     save_boards(b)

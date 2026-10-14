@@ -439,6 +439,7 @@ def status():
     f = fleet()
     k = os.path.join(WORKSPACE, "KILL")
     f["kill"] = open(k, encoding="utf-8").read().strip() if os.path.exists(k) else None
+    f["containers"] = containers()
     f["limits"] = dict(zip(("min", "max"), limits(int(os.environ.get("REGEN_MIN_APPLIERS", "1")),
                                                   int(os.environ.get("REGEN_MAX_APPLIERS", "7")))))
     return f
@@ -477,6 +478,65 @@ def control(argv):
 # services without a heartbeat of their own: the supervisor probes them over the compose network
 SERVICES = {"api": "http://api:8787/api/health", "web": "http://web:3000/", "mcp": "http://mcp:8790/mcp",
             "ledger": None, "postgres": None, "answers": None, "reposync": None}
+
+
+CONTAINERS = os.path.join(WORKSPACE, "containers.json")  # not under fleet/: those files are heartbeats
+
+
+def _cpu_mem(st):
+    """(cpu %, mem MiB, mem limit MiB) from one Docker stats sample (stream=false carries precpu_stats). O(1)."""
+    c, pc = st.get("cpu_stats") or {}, st.get("precpu_stats") or {}
+    dc = (c.get("cpu_usage") or {}).get("total_usage", 0) - (pc.get("cpu_usage") or {}).get("total_usage", 0)
+    ds = c.get("system_cpu_usage", 0) - pc.get("system_cpu_usage", 0)
+    n = c.get("online_cpus") or len((c.get("cpu_usage") or {}).get("percpu_usage") or []) or 1
+    cpu = round(100.0 * dc / ds * n, 1) if dc > 0 and ds > 0 else 0.0
+    m = st.get("memory_stats") or {}
+    used = m.get("usage", 0) - ((m.get("stats") or {}).get("inactive_file") or 0)
+    return cpu, round(used / 2 ** 20), round(m.get("limit", 0) / 2 ** 20)
+
+
+def inventory():
+    """Every container of this compose project, for the control room: service, state, uptime, health, image, CPU and
+    memory (one stats sample each, fetched in parallel threads). Written to workspace/containers.json so the API
+    reads it from the shared volume (only the supervisor holds the Docker socket). O(containers) calls, ~2 s."""
+    import concurrent.futures as cf, urllib.parse
+    proj = os.environ.get("REGEN_COMPOSE_PROJECT", "deploy")
+    flt = urllib.parse.quote(json.dumps({"label": [f"com.docker.compose.project={proj}"]}))
+    rows = _docker("GET", f"/containers/json?all=1&filters={flt}") or []
+
+    def one(r):
+        lab = r.get("Labels") or {}
+        out = {"id": r["Id"][:12], "name": (r.get("Names") or ["/?"])[0].lstrip("/"),
+               "service": lab.get("com.docker.compose.service", "?"), "state": r.get("State"),
+               "status": r.get("Status"), "image": (r.get("Image") or "")[:60], "created": r.get("Created"),
+               "scaled": lab.get("com.docker.compose.service") == "applier"}  # appliers are the ones the supervisor creates/removes
+        if r.get("State") == "running":
+            try:
+                out["cpu"], out["mem_mb"], out["mem_limit_mb"] = _cpu_mem(_docker("GET", f"/containers/{r['Id']}/stats?stream=false") or {})
+            except Exception:
+                pass
+        return out
+    with cf.ThreadPoolExecutor(8) as ex:
+        items = sorted(ex.map(one, rows), key=lambda x: (x["service"], x["name"]))
+    snap = {"ts": time.time(), "project": proj, "containers": items,
+            "totals": {"running": sum(x["state"] == "running" for x in items), "all": len(items),
+                       "cpu": round(sum(x.get("cpu", 0) for x in items), 1),
+                       "mem_mb": sum(x.get("mem_mb", 0) for x in items)}}
+    tmp = CONTAINERS + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(snap, f)
+    os.replace(tmp, CONTAINERS)
+    return snap
+
+
+def containers(max_age=300):
+    """The supervisor's last inventory (None when missing or older than max_age s: the supervisor is down)."""
+    try:
+        snap = json.load(open(CONTAINERS, encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    snap["age"] = round(time.time() - snap.get("ts", 0))
+    return snap if snap["age"] <= max_age else dict(snap, stale=True)
 
 
 def services(_fails={}):  # _fails: consecutive failed probes per service (kept across calls)
@@ -551,6 +611,18 @@ def daily(imap, now=None, run=None):
     return True
 
 
+BENCH_HOURS = int(os.environ.get("REGEN_BENCH_HOURS", "6"))
+
+
+def bench():
+    """Benchmarks B1-B7 in a subprocess (engine/bench.py --save -> workspace/bench/latest.json); audited."""
+    import subprocess, sys
+    t = time.time()
+    r = subprocess.run([sys.executable, "-m", "engine", "bench", "--save"], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", timeout=900)
+    audit("bench", "B1-B7", rc=r.returncode, seconds=round(time.time() - t))
+
+
 def supervise(argv=None):
     """The container on top: every 15 s scale appliers to the backlog and requeue lost claims; if a Gmail app
     password is configured, watch IMAP for codes in a thread (hands-free, no browser tab)."""
@@ -593,8 +665,11 @@ def supervise(argv=None):
                 prune_images()
                 from engine.clean import main as clean
                 clean([])
+            if n % (240 * BENCH_HOURS) == 20:  # 5 min after start, then every BENCH_HOURS
+                threading.Thread(target=bench, daemon=True).start()
             if n % 4 == 0:  # every minute
                 svc = services()
+                threading.Thread(target=inventory, daemon=True).start()  # stats take ~1 s each: off the 15 s loop
             beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap, services=svc)
         except Exception as ex:  # never die: a supervisor that crashes leaves the fleet at its last size
             print(f"supervisor: {ex}", flush=True)

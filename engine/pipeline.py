@@ -23,6 +23,7 @@ from engine.config import ROOT, WORKSPACE, in_workspace
 from engine.feedback.events import read, record
 from engine.names import company_slug, role_key
 from engine.supervisor import beat
+from engine.discovery.ats import REACH
 
 
 def _arg(argv, name, default, cast=int):
@@ -168,6 +169,8 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
             continue
         if j.get("ats") in SKIP_ATS or j.get("ats") in walled:  # REGEN_SKIP_ATS, or learned from captcha walls
             continue
+        if j.get("ats") in REACH:
+            continue  # no filler (account-gated portals): the reach list covers these
         co = company_slug(j["company"])
         if co in blocked:
             continue  # this company is waiting on the user (arbitration, assessment, captcha)
@@ -192,7 +195,7 @@ def prune(queue):
     st = latest_status()
     walled, _ = history()
     keep = [j for j in queue if st.get(j["url"]) not in ("SUBMITTED", "SKIPPED", "FLAGGED", "FAILED")
-            and j.get("ats") not in SKIP_ATS and j.get("ats") not in walled]
+            and j.get("ats") not in SKIP_ATS and j.get("ats") not in walled]  # reach jobs stay: reach.py reads them
     if len(keep) != len(queue):
         json.dump(keep, open(os.path.join(WORKSPACE, "queue.json"), "w", encoding="utf-8"), indent=1)
         print(f"prune: {len(queue) - len(keep)} unusable jobs dropped, {len(keep)} kept")
@@ -227,9 +230,18 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
         ashby_ok = not ashby_cooling()
     if scan:
         ats = "greenhouse,ashby,lever,workable" if ashby_ok else "greenhouse,lever,workable"
+        ats += ",smartrecruiters,workday,icims"  # v0.13 reach: discovered + tailored, the user submits (engine/discovery/reach.py)
         subprocess.run([sys.executable, "-m", "engine", "scan", str(days), "--ats", ats] + (["--hot"] if hot else []),
                        cwd=ROOT, check=False)
     q = prune(json.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8")))
+    if not halted("reach"):
+        from engine.discovery.reach import run as reach
+        try:
+            listed = reach(q)
+            if listed:
+                record("pipeline", stage="reach", listed=len(listed))
+        except Exception as ex:  # the reach list is a side output: never stop the apply pass for it
+            print(f"reach: {ex}", flush=True)
     chosen = select(q, max_jobs, ashby_ok)
     record("pipeline", stage="select", queued=len(q), chosen=len(chosen), ashby=ashby_ok)
     print(f"select: {len(chosen)} of {len(q)} queued jobs" + ("" if ashby_ok else " (Ashby cooling down: skipped)"))

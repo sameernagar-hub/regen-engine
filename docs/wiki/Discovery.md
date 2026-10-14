@@ -15,6 +15,7 @@ resolved back to the employer's own posting before anything is applied to.
 | Job-alert emails | `gmail_alerts.js` runs inside your signed-in Gmail tab, reads LinkedIn, Indeed, Glassdoor, ZipRecruiter, Handshake, Monster and Ladders alerts through Gmail's print view; extracts title, company, location only | 0 external | `gmail_alerts.js`, `alerts.py` |
 | newgrad-jobs.com | listing pages → leads | few GETs | `newgrad.py` |
 | SimplifyJobs | `listings.json` (community new-grad list) | 1 GET | `simplify.py` (`engine feed`) |
+| Reach ATSs (v0.13) | SmartRecruiters Posting API (100/page), Workday `cxs` search (20/POST, stops at week-old postings), iCIMS search HTML (first-seen dates) | 1-8 per board | `ats.py`, `reach.py` |
 | Big-tech careers APIs | Amazon `search.json` (full JD inline), NVIDIA Workday `cxs` (search + 1 GET per kept job) | ~8 + kept | `bigtech.py` |
 
 ## Board registry

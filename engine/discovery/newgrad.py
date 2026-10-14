@@ -87,7 +87,7 @@ def resolve(leads, miss_ttl_days=7, source="newgrad-jobs"):
             return [tuple(c["board"])]
         if c.get("miss") and (today - datetime.fromisoformat(c["miss"]).date()).days < miss_ttl_days:
             return []                                   # saves ~15 calls per company per run
-        return [(a, s) for s in slugs(co) for a in A.ATS]
+        return [(a, s) for s in slugs(co) for a in A.SLUGGABLE]  # Workday/iCIMS tokens are not guessable
 
     def board_jobs(at):
         try:

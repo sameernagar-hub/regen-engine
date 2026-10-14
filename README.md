@@ -59,7 +59,7 @@ resume to every posting and make up answers to fill the gaps.
 | Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF; coverage fill puts most at **100%** of the JD terms you have (build log: `resume covers 24/24 JD terms, ATS text 100%`) |
 | Email security codes | **hands-free** via the code relay: a Gmail tab posts codes from the Atom feed every 20 s (`engine relay`, `workspace/logs/relay_*.log` shows each delivery) |
 | Scheduler | ×2.05 throughput vs sequential (seeded benchmark, `scripts/bench_scheduler.py`) |
-| Tests | **108** passing; system benchmarks B1–B4 in `scripts/bench_system.py` (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
+| Tests | **108** passing; system benchmarks B1–B7 in `engine/bench.py` (`python -m engine bench`, rerun by the supervisor every 6 h) (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
 | Resume claims outside your Fact Bank | **Rejected** by the validator before any PDF is written |
 | Model API keys required | **0** |
 | Applier capacity | **N containers** (`--scale applier=N`), each a headed Chromium with its own profile; 5 workers + 1 pipeline container on an 8 GB Docker VM |
@@ -463,7 +463,7 @@ Claims and their proof: [Evidence](docs/wiki/Evidence.md) · [Efficiency](docs/w
 | Hands-free email codes (Atom-feed relay; or IMAP with an app password) | ✅ v0.12 |
 | MCP in every container; control room, applications, needs, Fact Bank pages | ✅ |
 | Disk hygiene (`engine clean` every pass) | ✅ v0.12 |
-| Workday / iCIMS adapters, SmartRecruiters source | 🔜 |
+| Workday / iCIMS / SmartRecruiters discovery + reach list (you submit on their portal) | ✅ v0.13 |
 | Gmail cleanup (old codes and alerts to Trash, on request) | 🔜 |
 
 ## Roadmap
@@ -473,7 +473,7 @@ Claims and their proof: [Evidence](docs/wiki/Evidence.md) · [Efficiency](docs/w
 | v0.1–0.9 ✅ | Engine and platform | Discovery, Fact-Bank tailoring, adapters, proof, inbox loop, FastAPI + Postgres + Next.js, MCP, scheduler, composer |
 | v0.10–0.11 ✅ | Control | Control room, applications/needs/facts pages, trust gate, first-applicant loop, priority, design layer |
 | **v0.12** ✅ | Scale-out | Docker execution room and bank, atomic-claim workers, freshness bands, code relay, prune, clean, benchmarks |
-| v0.13 | Reach | Workday/iCIMS, SmartRecruiters, supervisor view of containers in /control, benchmarks B5–B7 |
+| v0.13 ✅ | Reach | Workday/iCIMS, SmartRecruiters, supervisor view of containers in /control, benchmarks B5–B7 |
 | v1.0 | Public release | REGEN as an MCP connector/plugin, one-command setup, docs site |
 
 ## Repository layout
@@ -485,13 +485,13 @@ regen-engine/
 ├── deploy/            bank (pipeline + appliers + relay, data volumes), appliers, watcher, platform, memory compose files
 ├── profile.example/   templates for your private profile/
 ├── tests/             pytest suite (fictional persona, never real data)
-├── scripts/           privacy gate, benchmarks (bench_system.py B1–B4, bench_scheduler.py, bench_tailor.py)
+├── scripts/           privacy gate, benchmarks (bench_system.py -> engine/bench.py B1–B7, bench_scheduler.py, bench_tailor.py)
 ├── site/              anonymized public demo (built by `python -m engine site`)
 └── docs/              architecture, original plan, frontend research, handoff
 ```
 
 ## Contributing
-Good first contributions: Workday and iCIMS adapters, more discovery sources, graph-view polish, pgvector retrieval. Read [CONTRIBUTING.md](CONTRIBUTING.md) and use the fictional fixtures (`tests/fixtures/`, `profile.example/`), never real data.
+Good first contributions: Workday / iCIMS form fillers (discovery is in), more discovery sources, graph-view polish, pgvector retrieval. Read [CONTRIBUTING.md](CONTRIBUTING.md) and use the fictional fixtures (`tests/fixtures/`, `profile.example/`), never real data.
 
 ## License
 [MIT](LICENSE)

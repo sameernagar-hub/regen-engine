@@ -4,6 +4,8 @@
   newgrad [days]                   newgrad-jobs.com leads, resolved to the employer's ATS -> queue.json / leads.json
   outreach [days]                  recruiter / founder notes for recent submissions (Fact Bank only; nothing sent)
   bigtech [days]                   Amazon + NVIDIA careers APIs -> fit-gated roles with tailored resumes (workspace/bigtech.md)
+  reach   [max]                    Workday / iCIMS / SmartRecruiters jobs -> fit-gated, tailored, you submit (workspace/reach.md)
+  bench   [--save]                 system benchmarks B1-B7 (selection, answers, claims, coverage, rate, codes, fit gate)
 alerts  <file>                   job-alert emails (gmail_alerts.js output) resolved to the employer's ATS -> queue.json
   watch   [min] [--once] [--newgrad] poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)
   feed    [days]                   SimplifyJobs new-grad feed -> workspace/feed_queue.json
@@ -120,6 +122,10 @@ def main():
         from engine.discovery.newgrad import main as m
     elif cmd == "bigtech":
         from engine.discovery.bigtech import main as m
+    elif cmd == "reach":
+        from engine.discovery.reach import main as m
+    elif cmd == "bench":
+        from engine.bench import main as m
     elif cmd == "alerts":
         from engine.discovery.alerts import main as m
     elif cmd == "mcp":
