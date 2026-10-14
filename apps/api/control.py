@@ -105,15 +105,111 @@ def containers():
     return inv() or {"containers": [], "stale": True}
 
 
+REACH_WRITE = WRITE or os.environ.get("REGEN_API_REACH") == "1"  # bank: only the reach status write, nothing else
+TRUST_PORT = os.environ.get("REGEN_API_TRUST_PORT") == "1"        # published on 127.0.0.1 only (see apps/api/main.py)
+REACH_STATUS = {"submitted": "SUBMITTED", "skipped": "SKIPPED", "todo": None}
+
+
+def _reach_status():
+    """url -> (status, ts) of the user's own reach marks (latest wins). O(E)."""
+    from engine.feedback.events import read
+    out = {}
+    for e in read("reach_mark"):
+        out[e.get("url")] = (e.get("status"), e.get("ts"))
+    return out
+
+
 @router.get("/control/reach")
 def reach(limit: int = 100):
     """Reach list (engine/discovery/reach.py): Workday / iCIMS / SmartRecruiters jobs with a tailored resume, newest
-    first, for the user to submit; plus how many were gated out."""
+    first, for the user to submit; each row carries the user's own mark (todo / submitted / skipped)."""
     from engine.discovery.reach import load
     rows = load()
-    live = [r for r in rows if r.get("resume")][::-1]
+    marks = _reach_status()
+    live = [dict(r, mark=(marks.get(r["url"]) or ("todo", None))[0], marked=(marks.get(r["url"]) or (None, None))[1])
+            for r in rows if r.get("resume")][::-1]
     by = collections.Counter(r["ats"] for r in live)
-    return {"rows": live[:max(1, min(limit, 500))], "listed": len(live), "gated": len(rows) - len(live), "by_ats": dict(by)}
+    return {"rows": live[:max(1, min(limit, 500))], "listed": len(live), "gated": len(rows) - len(live), "by_ats": dict(by),
+            "marks": dict(collections.Counter(r["mark"] for r in live)), "write": REACH_WRITE}
+
+
+def _kit_fields():
+    """The answers a Workday / iCIMS form asks for, straight from presets + Fact Bank (the same values the engine
+    types into Greenhouse/Ashby forms), grouped the way those portals ask. Nothing new is generated."""
+    from engine.apply.runner import P, EDU, current_role, fact_bank
+    g = lambda k: P.get(k) if not str(P.get(k) or "").startswith("<") else None
+    fb = fact_bank()
+    roles = []
+    for _, r in (fb.get("roles") or {}).items():
+        try:
+            company, title, where, span = r[:4]
+            roles.append({"company": company, "title": title, "location": where, "dates": span})
+        except (ValueError, TypeError):
+            continue
+    cur = current_role(fb) or {}
+    return [
+        {"group": "Contact", "fields": [["First name", g("first_name")], ["Last name", g("last_name")], ["Email", g("email")],
+                                        ["Phone", g("phone")], ["Address line 1", g("address_line1")], ["City", g("city")],
+                                        ["State", g("state")], ["ZIP", g("zip")], ["Country", g("country")],
+                                        ["LinkedIn", g("linkedin")], ["GitHub", g("github")]]},
+        {"group": "Work authorization", "fields": [
+            ["Authorized to work in the US?", g("work_authorized_us")],
+            ["Require sponsorship now or in the future?", g("needs_sponsorship_now_or_future")],
+            ["Authorized without sponsorship (today)?", g("authorized_without_sponsorship")],
+            ["Work authorization status", g("work_auth_status")], ["Citizenship", g("citizenship_country")],
+            ["US citizen / US person (ITAR)?", g("us_citizen_or_us_person_itar")], ["Security clearance", g("security_clearance")]]},
+        {"group": "Education", "fields": [["School", g("school")], ["Degree", g("degree")], ["Major", g("major")],
+                                          ["GPA", g("gpa")], ["Start", " ".join(x for x in (EDU.get("start_month"), EDU.get("start_year")) if x) or None],
+                                          ["End / graduation", " ".join(x for x in (EDU.get("end_month"), EDU.get("end_year")) if x) or g("grad_year")]]},
+        {"group": "Current role", "fields": [["Company", cur.get("company")], ["Title", cur.get("title")],
+                                             ["Start", " ".join(x for x in (cur.get("start_month"), cur.get("start_year")) if x) or None],
+                                             ["Current role", "Yes" if cur.get("current") else None]]},
+        {"group": "Experience (Fact Bank, as written)", "fields": [[f"{r['title']} · {r['company']}", f"{r['dates']} · {r['location']}"] for r in roles]},
+        {"group": "Other answers", "fields": [
+            ["Years of experience", g("years_experience")], ["Earliest start date", g("start_date")],
+            ["Open to onsite / relocation", g("open_to_onsite_or_relocation")], ["Needs relocation assistance", g("needs_relocation_assistance")],
+            ["Willing to do a background check", g("willing_background_check")], ["Over 18", g("over_18")],
+            ["How did you hear about us", g("how_heard")],
+            ["Salary", "the posting's range midpoint; no range: " + str(g("market_salary") or "?")],
+            ["Gender / race / veteran / disability", "Decline to answer"]]},
+    ]
+
+
+@router.get("/reach/kit")
+def reach_kit(request: Request):
+    """Copy-ready answers for filling a Workday / iCIMS application by hand (presets + Fact Bank). Personal data:
+    only for this computer (127.0.0.1-published port in the bank, localhost otherwise)."""
+    if not TRUST_PORT and (request.client.host if request.client else "") not in LOCAL:
+        raise HTTPException(403, "only from this computer")
+    return {"groups": [dict(g, fields=[[k, str(v)] for k, v in g["fields"] if v not in (None, "")]) for g in _kit_fields()]}
+
+
+@router.post("/reach/mark")
+def reach_mark(body: dict, request: Request):
+    """The user marks a reach job submitted / skipped / back to to-do. Recorded as a `reach_mark` event; "submitted"
+    also records an application event (status SUBMITTED, detail "by you on <ats>") so the engine never re-lists or
+    re-applies to that role. Needs REGEN_API_REACH=1 (or REGEN_API_WRITE=1) and a request from this computer."""
+    if not REACH_WRITE:
+        raise HTTPException(403, "reach writes are disabled (REGEN_API_REACH=1 in the bank, REGEN_API_WRITE=1 locally)")
+    if not TRUST_PORT and (request.client.host if request.client else "") not in LOCAL:
+        raise HTTPException(403, "only from this computer")
+    from engine.discovery.reach import load
+    from engine.feedback.events import record
+    url, mark = str(body.get("url") or ""), str(body.get("mark") or "")
+    if mark not in REACH_STATUS:
+        raise HTTPException(400, "mark must be submitted, skipped or todo")
+    row = next((r for r in load() if r.get("url") == url and r.get("resume")), None)
+    if not row:
+        raise HTTPException(404, "not on the reach list")
+    prev = (_reach_status().get(url) or (None,))[0]
+    ev = record("reach_mark", url=url, status=mark, job=f"{row['company']} - {row['title']}", ats=row["ats"])
+    if REACH_STATUS[mark]:
+        record("application", job=f"{row['company']} - {row['title']}", url=url, status=REACH_STATUS[mark],
+               detail=f"by you on {row['ats']} (reach list)", resume=row["resume"], dry=False, by="user")
+    elif prev and prev != "todo":  # undo: the latest application status for this url is no longer final
+        record("application", job=f"{row['company']} - {row['title']}", url=url, status="RESET",
+               detail=f"your {prev} mark was undone (reach list)", dry=False, by="user")
+    return {"ok": True, "url": url, "mark": mark, "ts": ev.get("ts") if isinstance(ev, dict) else None}
 
 
 @router.get("/control/bench")
@@ -240,13 +336,15 @@ def factbank():
 
 
 @router.get("/resume/{name}")
-def resume(name: str):
+def resume(name: str, download: int = 0):
     """A resume PDF the engine built, by file name only, from workspace/out."""
     if not re.fullmatch(r"[A-Za-z0-9_.\-]+\.pdf", name):
         raise HTTPException(400, "bad name")
     p = os.path.join(WORKSPACE, "out", name)
     if not os.path.exists(p):
         raise HTTPException(404)
+    if download:  # the reach page's "Download" button: a file to upload into the portal
+        return FileResponse(p, media_type="application/pdf", filename=name)
     origins = " ".join(os.environ.get("REGEN_WEB_ORIGINS", "http://127.0.0.1:3000 http://localhost:3000").replace(",", " ").split())
     return FileResponse(p, media_type="application/pdf", headers={  # framed by the control room's Applications page only
         "Content-Disposition": f'inline; filename="{name}"', "Content-Security-Policy": f"frame-ancestors {origins}"})

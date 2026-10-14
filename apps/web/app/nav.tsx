@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/control", label: "Control" },
   { href: "/applications", label: "Applications" },
   { href: "/needs", label: "Needs you" },
+  { href: "/reach", label: "Reach" },
   { href: "/outreach", label: "Outreach" },
   { href: "/room", label: "Engine room" },
   { href: "/facts", label: "Fact Bank" },

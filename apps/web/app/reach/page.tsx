@@ -1,0 +1,149 @@
+"use client";
+// Reach: Workday / iCIMS / SmartRecruiters jobs the engine found, fit-gated and wrote a resume for, but cannot submit
+// (the form sits behind your own candidate account). One job at a time: open the posting, upload the tailored resume,
+// copy each answer from the fill kit (your presets + Fact Bank, the same values the engine types elsewhere), then mark
+// it submitted so it is counted and never listed or applied to again.
+import { useEffect, useMemo, useState } from "react";
+import { Nav } from "../nav";
+import { LocalOnly } from "../local-only";
+import { PUBLIC } from "@/lib/engine";
+import { api, get, post } from "@/lib/types";
+
+type Row = { listed: string; ats: string; company: string; title: string; url: string; location: string; posted?: string;
+             lane?: string; jd_match?: number; resume: string; salary_range?: [number, number] | null;
+             mark: "todo" | "submitted" | "skipped"; marked?: string | null };
+type Reach = { rows: Row[]; listed: number; gated: number; by_ats: Record<string, number>; marks: Record<string, number>; write: boolean };
+type Kit = { groups: { group: string; fields: [string, string][] }[] };
+
+const TABS = [["todo", "To do"], ["submitted", "Submitted"], ["skipped", "Skipped"]] as const;
+const file = (p: string) => p.split("/").pop() || p;
+const money = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
+
+export default function ReachPage() {
+  if (PUBLIC) return <LocalOnly title="Reach list" what="Workday and iCIMS jobs with a tailored resume and a fill kit, for you to submit." />;
+  return <ReachView />;
+}
+
+function ReachView() {
+  const [data, setData] = useState<Reach | null>(null);
+  const [kit, setKit] = useState<Kit | null>(null);
+  const [tab, setTab] = useState<(typeof TABS)[number][0]>("todo");
+  const [q, setQ] = useState("");
+  const [sel, setSel] = useState<string | null>(null);
+  const [copied, setCopied] = useState("");
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const pull = () => get<Reach>("/api/control/reach?limit=500").then(setData).catch((e) => setMsg(e.message));
+  useEffect(() => {
+    pull();
+    get<Kit>("/api/reach/kit").then(setKit).catch((e) => setMsg(`Fill kit: ${e.message}`));
+    const t = setInterval(pull, 30000);  // new rows land once per pipeline pass
+    return () => clearInterval(t);
+  }, []);
+
+  const rows = useMemo(() => (data?.rows || []).filter((r) => r.mark === tab
+    && (!q || `${r.company} ${r.title} ${r.location} ${r.ats}`.toLowerCase().includes(q.toLowerCase()))), [data, tab, q]);
+  const cur = (data?.rows || []).find((r) => r.url === sel) || null;
+  useEffect(() => { if (!cur && rows.length) setSel(rows[0].url); }, [rows, cur]);
+
+  const copy = async (k: string, v: string) => {
+    try { await navigator.clipboard.writeText(v); setCopied(k); setTimeout(() => setCopied(""), 1200); }
+    catch { setMsg("The browser blocked the clipboard: select the text and copy it instead."); }
+  };
+  const mark = async (r: Row, m: Row["mark"]) => {
+    setBusy(true);
+    try {
+      await post("/api/reach/mark", { url: r.url, mark: m });
+      setMsg(m === "submitted" ? `Marked submitted: ${r.company}. It is in your applications and won't be listed again.`
+        : m === "skipped" ? `Skipped: ${r.company}.` : `Back to to-do: ${r.company}.`);
+      const next = rows.find((x) => x.url !== r.url);
+      await pull();
+      setSel(next ? next.url : null);
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  };
+  const salary = cur?.salary_range?.length === 2 ? money((cur.salary_range[0] + cur.salary_range[1]) / 2) : null;
+
+  return (
+    <main className="page">
+      <Nav />
+      <header className="hero">
+        <h1>Reach list</h1>
+        <p>Jobs on Workday, iCIMS and SmartRecruiters. Each one already passed the fit gate and the trust gate and has a resume tailored to its description. These portals put the form behind your own candidate account, so you submit: open the posting, upload the resume, copy the answers, then mark it submitted.</p>
+      </header>
+      {msg && <p className="note" role="status">{msg}</p>}
+
+      <div className="toolbar">
+        <div className="seg" role="tablist" aria-label="Status">
+          {TABS.map(([k, label]) => (
+            <button key={k} role="tab" aria-selected={tab === k} onClick={() => { setTab(k); setSel(null); }}>
+              {label}<small>{data?.marks?.[k] ?? 0}</small></button>))}
+        </div>
+        <input type="search" placeholder="Search company, role, place" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search" />
+      </div>
+      {data && !data.write && <p className="dim small">Marking is off: the API needs REGEN_API_REACH=1 (bank) or REGEN_API_WRITE=1 (local).</p>}
+
+      <div className={`split ${cur ? "open" : ""}`}>
+        <div style={{ overflowX: "auto" }}>
+          <table className="apps">
+            <thead><tr><th>Listed</th><th>Role</th><th>ATS</th><th>Lane</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.url} aria-selected={r.url === sel} onClick={() => setSel(r.url)} tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && setSel(r.url)}>
+                  <td className="mono small">{r.listed.slice(5, 16).replace("T", " ")}</td>
+                  <td><b>{r.company}</b> · {r.title}<br /><small className="dim">{r.location}</small></td>
+                  <td className="small">{r.ats}</td>
+                  <td className="small">{r.lane}</td>
+                </tr>))}
+              {!rows.length && <tr><td colSpan={4} className="dim">{data ? "Nothing here." : "Loading…"}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+
+        {cur && (
+          <aside className="detail" aria-label={`${cur.company} ${cur.title}`}>
+            <button className="close" onClick={() => setSel(null)} aria-label="Close">×</button>
+            <h2>{cur.title}</h2>
+            <p className="dim small">{cur.company} · {cur.location} · {cur.ats}{cur.lane ? ` · ${cur.lane} resume` : ""}
+              {cur.jd_match != null ? ` · JD match ${cur.jd_match}` : ""}{cur.marked ? ` · marked ${cur.mark} ${cur.marked.slice(5, 16).replace("T", " ")}` : ""}</p>
+
+            <h3 className="sub">1 · Open the posting</h3>
+            <p><a className="btn gold" href={cur.url} target="_blank" rel="noreferrer">Open on {cur.ats} ↗</a>
+              <span className="dim small"> Sign in or create your candidate account there.</span></p>
+
+            <h3 className="sub">2 · Upload this resume</h3>
+            <p className="row">
+              <a className="btn" href={api(`/api/resume/${encodeURIComponent(file(cur.resume))}?download=1`)}>Download PDF</a>
+              <a className="small" href={api(`/api/resume/${encodeURIComponent(file(cur.resume))}`)} target="_blank" rel="noreferrer">{file(cur.resume)} ↗</a>
+            </p>
+            <iframe className="pdf" src={api(`/api/resume/${encodeURIComponent(file(cur.resume))}`)} title={`Resume for ${cur.company}`} />
+
+            <h3 className="sub">3 · Copy the answers</h3>
+            <p className="dim small">Your presets and Fact Bank, exactly as the engine uses them. Click a value to copy it.</p>
+            <dl className="qa">
+              <div><dt>Salary for this job</dt>
+                <dd><button className="chip" onClick={() => copy("salary", salary || "")} disabled={!salary}>
+                  {salary ? `${salary} (posted range midpoint)` : "No range posted: use the market rate below"}</button>{copied === "salary" && <small> copied</small>}</dd></div>
+              {!kit && <div><dt>Fill kit</dt><dd className="dim">Loading…</dd></div>}
+              {kit?.groups.map((g) => (
+                <details key={g.group} open={g.group === "Contact" || g.group === "Work authorization"}>
+                  <summary>{g.group} <small className="dim">({g.fields.length})</small></summary>
+                  {g.fields.map(([k, v]) => (
+                    <div key={g.group + k}><dt>{k}</dt>
+                      <dd><button className="chip" onClick={() => copy(g.group + k, v)} title="Copy">{v}</button>
+                        {copied === g.group + k && <small> copied</small>}</dd></div>))}
+                </details>))}
+            </dl>
+
+            <h3 className="sub">4 · Mark it</h3>
+            <p className="row">
+              {cur.mark !== "submitted" && <button className="btn gold" disabled={!data?.write || busy} onClick={() => mark(cur, "submitted")}>I submitted it</button>}
+              {cur.mark !== "skipped" && <button className="btn" disabled={!data?.write || busy} onClick={() => mark(cur, "skipped")}>Skip</button>}
+              {cur.mark !== "todo" && <button className="btn" disabled={!data?.write || busy} onClick={() => mark(cur, "todo")}>Back to to-do</button>}
+            </p>
+          </aside>)}
+      </div>
+    </main>
+  );
+}

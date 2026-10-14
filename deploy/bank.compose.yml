@@ -119,7 +119,8 @@ services:
     ports: ["127.0.0.1:8787:8787"]
     environment:
       REGEN_DB_HOST: postgres
-      REGEN_API_ANSWERS: "1"     # the one write: /needs answers, queued for the answers container
+      REGEN_API_ANSWERS: "1"     # write 1: /needs answers, queued for the answers container
+      REGEN_API_REACH: "1"       # write 2: the reach page marks a Workday/iCIMS job submitted / skipped (your own click)
       REGEN_ANSWER_QUEUE: "1"
       REGEN_API_TRUST_PORT: "1"  # published on 127.0.0.1 only: the bridge gateway is this machine
     secrets: [pg_password]

@@ -68,7 +68,7 @@ def run(queue=None, limit=PER_PASS):
         if b:
             new.append({"listed": now, "ats": j["ats"], "company": j["company"], "title": j["title"], "url": j["url"],
                         "location": j.get("location", ""), "posted": j.get("posted"), "lane": b.get("lane"),
-                        "jd_match": b.get("jd_match"), "resume": b["resume"]})
+                        "jd_match": b.get("jd_match"), "resume": b["resume"], "salary_range": b.get("salary_range")})
         else:  # fit gate / trust gate / posting gone: remembered so it is not fetched again
             rows.append({"listed": now, "ats": j["ats"], "company": j["company"], "title": j["title"],
                          "url": j["url"], "skipped": True})

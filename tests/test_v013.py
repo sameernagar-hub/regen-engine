@@ -117,7 +117,7 @@ def test_api_reach_bench_containers():
     c = TestClient(app)
     assert "results" in c.get("/api/control/bench").json()
     r = c.get("/api/control/reach").json()
-    assert set(r) == {"rows", "listed", "gated", "by_ats"}
+    assert set(r) == {"rows", "listed", "gated", "by_ats", "marks", "write"}
     assert "containers" in c.get("/api/control/containers").json()
 
 
@@ -213,3 +213,31 @@ def test_own_mail_and_newsletters_are_not_outcomes(monkeypatch):
         {"id": "<c>", "from": "no-reply@example.com", "subject": "Update on your Initech application",
          "snippet": "Unfortunately, we have decided to move forward with other candidates. Globex Box"}])
     assert [(e["outcome"], e["company"]) for e in new] == [("rejection", "Initech")]
+
+
+def test_reach_page_api_kit_and_marks(monkeypatch):
+    from fastapi.testclient import TestClient
+    from apps.api import control as C
+    from apps.api.main import app
+    from engine.discovery import reach as R
+    from engine.feedback.events import read
+    R.write([{"listed": "2026-10-13T10:00:00", "ats": "workday", "company": "Initech", "title": "Platform Engineer",
+              "url": "https://initech.wd5.myworkdayjobs.com/en-US/Careers/job/x_R1", "resume": "out/Resume_Initech_R1.pdf",
+              "salary_range": [120000, 160000]}])
+    c = TestClient(app)
+    kit = {g["group"]: dict(g["fields"]) for g in c.get("/api/reach/kit").json()["groups"]}
+    assert kit["Contact"]["First name"] == "Jane" and kit["Contact"]["Email"] == "jane.doe@example.com"  # fixture persona
+    assert "Require sponsorship now or in the future?" in kit["Work authorization"]
+    monkeypatch.setattr(C, "REACH_WRITE", False)
+    url = "https://initech.wd5.myworkdayjobs.com/en-US/Careers/job/x_R1"
+    assert c.post("/api/reach/mark", json={"url": url, "mark": "submitted"}).status_code == 403  # switch off: refused
+    monkeypatch.setattr(C, "REACH_WRITE", True)
+    assert c.post("/api/reach/mark", json={"url": url, "mark": "maybe"}).status_code == 400
+    assert c.post("/api/reach/mark", json={"url": "https://elsewhere.example.com/x", "mark": "submitted"}).status_code == 404
+    assert c.post("/api/reach/mark", json={"url": url, "mark": "submitted"}).json()["ok"]
+    row = next(r for r in c.get("/api/control/reach").json()["rows"] if r["url"] == url)
+    assert row["mark"] == "submitted" and row["salary_range"] == [120000, 160000]
+    apps = [e for e in read("application") if e.get("url") == url]
+    assert apps[-1]["status"] == "SUBMITTED" and apps[-1]["by"] == "user"
+    c.post("/api/reach/mark", json={"url": url, "mark": "todo"})
+    assert [e for e in read("application") if e.get("url") == url][-1]["status"] == "RESET"  # undo reaches the ledger
