@@ -243,3 +243,23 @@ def test_public_feed_masks_names_in_titles_and_ignores_json_keys(tmp_path, monke
     monkeypatch.setattr(X, "snapshot", lambda: {"verified": 1, "boards": 1, "verified_jobs": [], "last_poll": "target"})
     with pytest.raises(SystemExit, match="target"):
         X.build(7)
+
+
+@pytest.mark.parametrize("q,want", [
+    ("Do you currently reside in the Pacific or Mountain Time Zone?", "tz"),
+    ("Do you hold U.S. and/or Canadian citizenship?", "No"),
+    ("Please identify your sex.", "__DECLINE__"),
+])
+def test_rule_gaps_seen_10_14(q, want, monkeypatch):
+    """Stops on 10-14 queue jobs: residence time zone (not only 'based in'), held citizenship from the preset,
+    sex as an EEO question (decline, user policy)."""
+    from engine.apply.runner import answer, P
+    monkeypatch.setitem(P, "timezone", "Pacific Time (PT)")
+    monkeypatch.setitem(P, "citizenship_country", "India")
+    got = answer(q, {"extra": {}})
+    if want == "tz":
+        assert got == ("Yes" if re.search(r"pacific|mountain", P.get("timezone", ""), re.I) else "No")
+    elif want == "No":
+        assert got == ("Yes" if P.get("citizenship_country", "").lower() in ("united states", "canada") else "No")
+    else:
+        assert got == want

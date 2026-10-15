@@ -64,7 +64,7 @@ RULES = [
     (r"transitioning (service ?member|military)", P.get("transitioning_service_member", P.get("us_military_reserve"))),  # B2: before the EEO decline  # acknowledgements, not salary/degree answers
     (r"(unlimited|unrestricted) (and (unlimited|unrestricted) )?(authori[sz]ation|right) to work", P.get("unrestricted_work_authorization")),  # OPT is time-limited
     # demographic / EEO questions are always declined, and checked before anything else can match their long labels
-    (r"gender|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun|chronic condition|armed forces|military status", "__DECLINE__"),
+    (r"gender|\bsex\b|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun|chronic condition|armed forces|military status", "__DECLINE__"),
     # "If you were referred, the referring individual's first and last name": the engine applies cold, so this is never
     # the candidate's own name (v0.8 bug: matched "last name" below)
     (r"(?<![a-z])referr(ed|ing|er|al)\b.{0,80}(name|individual)|name of .{0,30}referr", "N/A"),  # (?<![a-z]): not "preferred"
@@ -352,10 +352,15 @@ def derived(label):
                   r"( in (the|a|this|similar) (job|role|position|field)[^?]*| as an? [a-z ]*(engineer|developer))?\s*\??\s*$", l)
     if m and YESNO_Q.search(l) and str(P.get("years_experience", "")).isdigit():
         return "Yes" if int(P["years_experience"]) >= int(m.group(1)) else "No"  # "Do you have 2 or more years...?"
-    m = re.search(r"based in (the )?((pacific|mountain|central|eastern)( time ?zone)?( or (the )?(pacific|mountain|central|eastern))?)( time ?zone)?", l)
+    m = re.search(r"\bhold .{0,30}\b(u\.?s\.?|united states)( and/or | or | and |/)?(canadian|canada)? citizenship", l)
+    if m and YESNO_Q.search(l) and P.get("citizenship_country"):  # 10-14: "Do you hold U.S. and/or Canadian citizenship?"
+        held = {"united states", "usa", "us"} | ({"canada"} if m.group(3) else set())
+        return "Yes" if P["citizenship_country"].strip().lower() in held else "No"
+    m = re.search(r"(based|reside|residing|located|live|living) in (the )?((pacific|mountain|central|eastern)( time ?zone)?"
+                  r"( or (the )?(pacific|mountain|central|eastern))?)( time ?zone)?", l)
     if m and P.get("timezone"):
         mine = re.search(r"pacific|mountain|central|eastern", P["timezone"].lower())
-        return ("Yes" if mine.group(0) in m.group(2) else "No") if mine else None
+        return ("Yes" if mine.group(0) in m.group(3) else "No") if mine else None
     m = re.search(r"(able|available) to start( working)? within (\d+)(-(\d+))? (days|weeks)", l)
     if m and P.get("start_date"):
         limit = int(m.group(5) or m.group(3)) * (7 if m.group(6) == "weeks" else 1)
