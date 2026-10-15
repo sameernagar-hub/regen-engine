@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/reach", label: "Reach" },
   { href: "/outreach", label: "Outreach" },
   { href: "/room", label: "Engine room" },
+  { href: "/evals", label: "Evals" },
   { href: "/facts", label: "Fact Bank" },
   { href: "/graph", label: "Memory graph" },
 ];

@@ -35,7 +35,9 @@ SUBMIT_BTN = ", ".join(AID(a) for a in ("pageFooterSubmitButton", "bottom-naviga
     ", button:has-text('Submit')"
 SIGN_IN = ", ".join(AID(a) for a in ("signInContent", "signInForm", "createAccountLink", "signInLink",
                                      "createAccountSubmitButton", "password"))
-ERRORS = ", ".join(AID(a) for a in ("errorMessage", "inputAlert")) + ", [role=alert]"
+SIGN_STEP = re.compile(r"sign in|create account|log ?in", re.I)  # the wizard's first step on most tenants
+DECLINE_COOKIES = AID("legalNoticeDeclineButton")
+ERRORS =", ".join(AID(a) for a in ("errorMessage", "inputAlert")) + ", [role=alert]"
 FILE = AID("file-upload-input-ref") + ", input[type=file]"
 DONE = re.compile(r"thank(s| you) for (applying|your application)|application (has been |was )?(submitted|received)|"
                   r"you('ve| have) (successfully )?applied", re.I)
@@ -143,13 +145,30 @@ def fill_page(page, job, log):
 def walk(page, job, log, submit=SUBMIT):
     """Posting -> Apply -> Apply Manually -> every wizard step. Returns the final status string."""
     page.goto(job["url"], wait_until="domcontentloaded")
-    page.wait_for_timeout(2500)
+    try:  # the posting is rendered by script after the shell loads
+        page.wait_for_selector(", ".join((APPLY, MANUAL, NEXT, SIGN_IN)), timeout=20000)
+    except Exception:
+        pass
+    if page.query_selector(DECLINE_COOKIES):  # the most private cookie choice (functional cookies only)
+        try:
+            page.click(DECLINE_COOKIES, timeout=3000)
+        except Exception:
+            pass
     if page.query_selector(APPLY):
-        page.click(APPLY); page.wait_for_timeout(1500)
+        page.click(APPLY)
+        try:  # the Apply menu (Autofill with Resume / Apply Manually / Use My Last Application) is a popup
+            page.wait_for_selector(MANUAL, timeout=8000)
+        except Exception:
+            pass
     if page.query_selector(MANUAL):
         page.click(MANUAL); page.wait_for_timeout(2500)
     for step in range(MAX_STEPS):
-        if page.query_selector(SIGN_IN):
+        try:  # each step renders after its data loads: wait for a button, a sign-in control or the confirmation
+            page.wait_for_selector(", ".join((NEXT, SUBMIT_BTN, SIGN_IN)), timeout=20000)
+        except Exception:
+            pass
+        active = page.query_selector(AID("progressBarActiveStep"))
+        if page.query_selector(SIGN_IN) or active and SIGN_STEP.search(active.inner_text() or ""):
             host = re.sub(r"^https?://([^/]+).*", r"\1", page.url)
             return f"NEEDS YOU: sign in to {host} in the desk (http://127.0.0.1:6080), then press Fill again"
         body = page.inner_text("body")

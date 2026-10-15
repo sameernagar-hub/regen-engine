@@ -14,6 +14,8 @@ type Row = { listed: string; ats: string; company: string; title: string; url: s
              mark: "todo" | "submitted" | "skipped"; marked?: string | null };
 type Reach = { rows: Row[]; listed: number; gated: number; by_ats: Record<string, number>; marks: Record<string, number>; write: boolean };
 type Kit = { groups: { group: string; fields: [string, string][] }[] };
+type Desk = { desk: { up: boolean; state: string; queued: number; last: string } | null; open: string;
+              results: Record<string, { status: string; detail: string; ts: string }> };
 
 const TABS = [["todo", "To do"], ["submitted", "Submitted"], ["skipped", "Skipped"]] as const;
 const file = (p: string) => p.split("/").pop() || p;
@@ -34,7 +36,23 @@ function ReachView() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const [desk, setDesk] = useState<Desk | null>(null);
   const pull = () => get<Reach>("/api/control/reach?limit=500").then(setData).catch((e) => setMsg(e.message));
+  const pullDesk = () => get<Desk>("/api/reach/desk").then(setDesk).catch(() => setDesk(null));
+  useEffect(() => {
+    pullDesk();
+    const t = setInterval(pullDesk, 5000);  // the desk beats every 3 s; its result lands within a minute of a fill
+    return () => clearInterval(t);
+  }, []);
+  const fill = async (r: Row) => {
+    setBusy(true);
+    try {
+      const out = await post<{ desk: string }>("/api/reach/fill", { url: r.url });
+      setMsg(out.desk === "up" ? `Queued for the desk: ${r.company}. Watch it fill in the desk tab.`
+        : `Queued, but the desk is not running (docker compose -f deploy/bank.compose.yml up -d desk).`);
+      pullDesk();
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  };
   useEffect(() => {
     pull();
     get<Kit>("/api/reach/kit").then(setKit).catch((e) => setMsg(`Fill kit: ${e.message}`));
@@ -120,6 +138,18 @@ function ReachView() {
             <h2>{cur.title}</h2>
             <p className="dim small">{cur.company} · {cur.location} · {cur.ats}{cur.lane ? ` · ${cur.lane} resume` : ""}
               {cur.jd_match != null ? ` · JD match ${cur.jd_match}` : ""}{cur.marked ? ` · marked ${cur.mark} ${cur.marked.slice(5, 16).replace("T", " ")}` : ""}</p>
+
+            {cur.ats === "workday" && (<>
+              <h3 className="sub">Let the desk fill it</h3>
+              <p className="dim small">The desk is a browser on this computer that you sign in to once per employer. The engine fills the form there with your presets and Fact Bank, uploads this resume, and stops at Review for your Submit click.</p>
+              <p className="row">
+                <button className="btn gold" disabled={!data?.write || busy} onClick={() => fill(cur)}>Fill it in the desk</button>
+                <a className="btn" href={desk?.open || "http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale"} target="_blank" rel="noreferrer">Open the desk ↗</a>
+                <span className="small" style={{ color: desk?.desk?.up ? "var(--calm)" : "var(--alarm)" }}>
+                  desk {desk?.desk?.up ? `${desk.desk.state}${desk.desk.queued ? ` (${desk.desk.queued} queued)` : ""}` : "down"}</span>
+              </p>
+              {desk?.results?.[cur.url] && <p className="note small">Last fill {desk.results[cur.url].ts.slice(5, 16).replace("T", " ")}: {desk.results[cur.url].detail}</p>}
+            </>)}
 
             <h3 className="sub">1 · Open the posting</h3>
             <p><a className="btn gold" href={cur.url} target="_blank" rel="noreferrer">Open on {cur.ats} ↗</a>

@@ -50,6 +50,9 @@ const BENCH: [string, string, (r: Record<string, any>) => string][] = [
   ["B5_rate", "Verified submissions / active hour", (r) => `best ${r.best_per_h}/h` + (r.days ? `, latest day ${(Object.values(r.days).pop() as any)?.per_h ?? "?"}/h` : "")],
   ["B6_codes", "Email-code latency", (r) => r.median_s == null ? `no codes yet (${r.code_timeouts} timeouts)` : `median ${r.median_s}s, p90 ${r.p90_s}s, ${r.code_timeouts} timeouts`],
   ["B7_fitgate", "Fit gate on past rejections", (r) => `catch ${r.catch_rate_pct ?? "-"}%, would block ${r.would_block_ok_pct ?? "-"}% of the rest (${r.submitted_with_jd} JDs)`],
+  ["B8_supervisor", "Supervisor decisions (faked Docker)", (r) => `${r.passed}/${r.total} pass` + (r.failed?.length ? `: ${r.failed.join(", ")}` : "")],
+  ["B9_api", "API latency", (r) => r.skipped ? "skipped" : `p50 ${r.p50_ms} ms, p95 ${r.p95_ms} ms`],
+  ["B10_bus", "Event -> Postgres", (r) => r.skipped ? "skipped" : r.ok ? `${r.latency_ms} ms` : "NOT COPIED"],
 ];
 const uptime = (s: number) => { const x = Date.now() / 1000 - s; return x < 3600 ? `${(x / 60) | 0}m` : x < 86400 ? `${(x / 3600).toFixed(1)}h` : `${(x / 86400).toFixed(1)}d`; };
 const TONE: Record<string, string> = { SUBMITTED: "var(--gold)", "NEEDS YOU": "var(--amber)", FAILED: "var(--alarm)",
@@ -266,7 +269,7 @@ function ControlView() {
 
       {bn && (
         <section className="card" aria-label="Benchmarks">
-          <h2 className="sub">Benchmarks <small className="dim">{bn.ts ? `(run ${ago(bn.ts)}; the supervisor reruns them every 6 h)` : "(not run yet: the supervisor runs them 5 min after it starts)"}</small></h2>
+          <h2 className="sub">Benchmarks <small className="dim">{bn.ts ? <>(run {ago(bn.ts)}; eval containers rerun them on every commit and every 6 h · <a href="/evals">history</a>)</> : "(not run yet: the supervisor runs them 5 min after it starts)"}</small></h2>
           <ul className="tabs">
             {BENCH.filter(([k]) => bn.results[k]).map(([k, label, fmt]) => {
               const r = bn.results[k];
