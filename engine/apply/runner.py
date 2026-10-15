@@ -237,6 +237,8 @@ def experience_answer(label):
     phrase = m.group(6).lower()
     if _hits(phrase, vocab):
         return "Yes"
+    if re.search(r"\bgit(hub|lab)?\b", phrase) and str(P.get("github") or "").startswith("http"):
+        return "Yes"  # your GitHub profile (presets) is the evidence; 10-15 a Rippling form got "No" from autofill
     for rx, terms in CONCEPTS.items():
         if re.search(rx, phrase) and any(t in vocab for t in terms):
             return "Yes"
@@ -785,6 +787,147 @@ def submit_lever(page):
         if errs and _ > 3: return False, "; ".join(e.inner_text()[:80] for e in errs[:5])
     return False, "no confirmation seen"
 
+# ---------------- Rippling (ats.rippling.com/<board>/jobs/<uuid>/apply) ----------------
+# One page, no account. Field ids and names are random per render and labels are not linked to inputs, so the
+# question is read from the nearest ancestor whose first text line is not the control's own placeholder/option
+# ("Select", an option name). Verified on a real US posting 10-15 (dry run).
+RIP_Q = """(e) => { const own = new Set(['', 'select', 'select...', 'search'].concat(
+      [...e.querySelectorAll('[role=radio], [role=checkbox], label')].map(x => (x.innerText || '').trim().toLowerCase())));
+    let n = e;
+    for (let i = 0; i < 10 && n; i++) { n = n.parentElement; if (!n) break;
+      const t = (n.innerText || '').trim(); if (!t || t.length > 1500) continue;
+      const first = t.split(String.fromCharCode(10))[0].trim();
+      if (!own.has(first.toLowerCase()) && first.length > 1) return first.slice(0, 300); }
+    return ''; }"""
+SMS_Q = re.compile(r"text message|\bsms\b", re.I)
+
+
+def rippling_apply_url(url):
+    u = url.split("?")[0].rstrip("/")
+    return (u if u.endswith("/apply") else u + "/apply") + "?step=application"
+
+
+def fill_rippling(page, job, log):
+    page.goto(rippling_apply_url(job["url"]), wait_until="networkidle")
+    page.wait_for_selector("button:has-text('Apply')", timeout=30000)
+    yield 1.5
+    missing = []
+    files = page.query_selector_all("input[type=file], input[type=File]")
+    if files:
+        files[0].set_input_files(job["resume"])
+        yield 5  # the resume is parsed into the form: let it fill name/email first
+    ask = lambda e: re.sub(r"[*✱]\s*$", "", (e.evaluate(RIP_Q) or "").strip()).strip()
+    note = lambda label, ans: (log(f"   . {label[:60]} -> {str(ans)[:30]}"), job.setdefault("_answers", []).append([label[:200], ans]))
+    # free text: inputs that are not files, choices or comboboxes
+    for el in page.query_selector_all("input:not([type=file]):not([type=File]):not([type=hidden]):not([type=checkbox])"
+                                      ":not([type=radio]):not([role=combobox]):visible, textarea:visible"):
+        req = el.get_attribute("aria-required") == "true" or el.get_attribute("required") is not None
+        label = ask(el)
+        if not label or (el.input_value() or "").strip():
+            continue
+        ans = answer(label, job)
+        if re.search(r"^current (company|employer)", label, re.I):
+            ans = P.get("current_company") or (current_role() or {}).get("company") or ans
+        if re.fullmatch(r"location", label, re.I):
+            ans = f"{P['city']}, {P['state']}"
+        note(label, ans)
+        ok = bool(ans) and not str(ans).startswith("__") and (text_ok(label, ans) or (NOTE_Q.search(label) and job.get("note"))
+                                                               or drafts.is_open(label))
+        if ok:
+            el.fill(str(ans))
+            if re.fullmatch(r"location", label, re.I):  # a places box: take a suggestion in the home state when one shows
+                yield 1.5
+                us = re.escape(P["state"]) + r"|\b" + re.escape(P.get("state_abbr") or "##") + r"\b|United States|\bUSA?\b"
+                opts = [o for o in page.query_selector_all("[role=option]:visible, li[role=option]") if re.search(us, o.inner_text())]
+                if opts:
+                    opts[0].click()
+        if not ok and req:
+            missing.append(label[:90])
+        yield
+    # dropdowns (react-select style comboboxes): open, read the options, pick
+    for el in page.query_selector_all("[role=combobox]:visible"):
+        label = ask(el)
+        req = el.get_attribute("aria-required") == "true"
+        cur = ((el.input_value() if el.evaluate("e => e.tagName") == "INPUT" else el.inner_text()) or "").strip()
+        if not label or re.search(r"pronoun", label, re.I) or (cur and not re.fullmatch(r"select\.*|search", cur, re.I)):
+            continue
+        ans = answer(label, job)
+        note(label, ans)
+        h = None
+        if ans:
+            try:
+                el.click(); yield 0.6
+                opts = [(o.inner_text().strip(), o) for o in page.query_selector_all("[role=option]:visible")]
+                h = pick_option(opts, str(ans)) if opts else None
+                if h:
+                    h.click()
+                else:
+                    page.keyboard.press("Escape")
+            except Exception as e:
+                log(f"  ! {label[:60]}: {e}")
+        if not h and req:
+            missing.append(label[:90])
+        yield
+    # single choice: radio groups (an SMS opt-in is always No: the user never asked for text messages)
+    for grp in page.query_selector_all("[role=radiogroup]:visible"):
+        opts = [(o.inner_text().strip(), o) for o in grp.query_selector_all("label, [role=radio]") if o.inner_text().strip()]
+        if not opts or grp.query_selector("input[type=radio]:checked, [role=radio][aria-checked=true]"):
+            continue
+        label = ask(grp)
+        ans = "No" if SMS_Q.search(label + " " + " ".join(t for t, _ in opts)) else answer(label, job)
+        note(label, ans)
+        h = pick_option(opts, str(ans)) if ans else None
+        if h:
+            h.click()
+        elif grp.get_attribute("aria-required") == "true":
+            missing.append(label[:90])
+        yield
+    # multiple choice: checkbox groups (one name per question). Skills lists check what your Fact Bank names.
+    groups = {}
+    for box in page.query_selector_all("input[type=checkbox]"):
+        groups.setdefault(box.get_attribute("name") or "", []).append(box)
+    for name, boxes in groups.items():
+        if not name or any(b.is_checked() for b in boxes):
+            continue
+        holder = boxes[0].evaluate_handle("""e => { let n = e; for (let i = 0; i < 8 && n; i++) { n = n.parentElement;
+            if (n && n.querySelectorAll('input[type=checkbox]').length >= %d) return n; } return e.parentElement; }""" % len(boxes))
+        label = ask(holder.as_element()) if holder.as_element() else ""
+        text = (holder.as_element().inner_text() if holder.as_element() else "") or ""
+        req = bool(re.search(r"\*", text.split("\n")[0])) or any(b.get_attribute("aria-required") == "true" for b in boxes)
+        opts = [((b.evaluate("e => (e.labels[0] || e.closest('label') || e.parentElement).innerText") or "").strip(), b) for b in boxes]
+        ans = answer(label, job)
+        picked = skill_options(opts) if ans == "__SKILLS__" or re.search(r"language|skill|technolog|framework|tool", label, re.I) else \
+            [h for h in [pick_option(opts, str(ans))] if h] if ans else []
+        note(label, ", ".join(t for t, h in opts if h in picked) or None)
+        for h in picked:
+            h.evaluate("e => (e.labels[0] || e.closest('label') || e).click()")
+            yield 0.2
+        if not picked and req:
+            missing.append(label[:90])
+        yield
+    return missing
+
+
+def submit_rippling(page):
+    btn = page.query_selector("button:has-text('Apply'):visible")
+    if btn and not btn.is_enabled():  # Rippling disables Apply until every required answer is in
+        return False, "NEEDS YOU: Rippling kept Apply disabled (a required answer is missing); form filled, finish by hand"
+        yield
+    page.click("button:has-text('Apply'):visible")
+    for _ in range(40):
+        yield 1
+        body = page.inner_text("body")
+        if re.search(r"thank(s| you) for (applying|your application|your interest)|application (has been |was )?(submitted|received)", body, re.I):
+            return True, "success"
+        cap = page.query_selector("iframe[src*=hcaptcha]:visible, iframe[src*=recaptcha]:visible, iframe[src*=challenges]:visible")
+        if cap and _ > 2:
+            return False, "CAPTCHA: Rippling asked for a human check; finish this one by hand (form filled, resume ready)"
+        errs = [e.inner_text().strip()[:80] for e in page.query_selector_all("[role=alert]:visible, [class*=error]:visible") if e.inner_text().strip()]
+        if errs and _ > 3:
+            return False, "; ".join(errs[:5])
+    return False, "no confirmation seen"
+
+
 # ---------------- Workable (apply.workable.com/<co>/j/<id>/apply) ----------------
 def workable_apply_url(url):
     u = url.split("?")[0].rstrip("/")
@@ -1196,8 +1339,9 @@ def job_task(page, job, dry, results, log_base=print):
     log = lambda s: log_base(f"[{tag}] {s.strip()}", flush=True)
     log(f"== {name}")
     ash = "ashbyhq" in job["url"]; lev = "jobs.lever.co" in job["url"]; wk = "workable.com" in job["url"]
+    rip = "ats.rippling.com" in job["url"]
     shot = ""
-    if not (ash or lev or wk) and "greenhouse" not in job["url"]:
+    if not (ash or lev or wk or rip) and "greenhouse" not in job["url"]:
         status = f"NEEDS YOU: no adapter for {job.get('ats') or 'this site'} yet; resume ready at {job.get('resume')}"
     elif ash and not dry and ashby_cooling():
         # the tab is reused right after, so a filled-but-unsubmitted form would be lost anyway: don't spend the time
@@ -1205,7 +1349,8 @@ def job_task(page, job, dry, results, log_base=print):
     else:
         try:
             missing = yield from (fill_ashby(page, job, log) if ash else fill_lever(page, job, log) if lev
-                                  else fill_workable(page, job, log) if wk else fill_gh(page, job, log))
+                                  else fill_workable(page, job, log) if wk
+                                  else fill_rippling(page, job, log) if rip else fill_gh(page, job, log))
             stamp = datetime.datetime.now().strftime("%m%d-%H%M%S")
             shot = f"proof/{re.sub(r'[^A-Za-z0-9]+', '_', name)[:50]}_{stamp}.png"
             # airbags: anything sensitive, unexpected or over the limits stops this job before submit
@@ -1231,7 +1376,7 @@ def job_task(page, job, dry, results, log_base=print):
                 status = "STOPPED: kill switch before submit (" + (safety.killed() or "workspace/STOP")[:80] + ")"
             else:
                 sub = (lambda: submit_ashby(page)) if ash else (lambda: submit_lever(page)) if lev else \
-                      (lambda: submit_workable(page)) if wk else (lambda: submit_gh(page, job))
+                      (lambda: submit_workable(page)) if wk else (lambda: submit_rippling(page)) if rip else (lambda: submit_gh(page, job))
                 ok, msg = yield from sub()
                 if not ok and ash and msg.startswith("Missing entry"):
                     # fields that only appeared after earlier answers: fill them and submit once more
@@ -1260,7 +1405,8 @@ def job_task(page, job, dry, results, log_base=print):
 
 
 def ats_key(url):
-    return "ashby" if "ashbyhq" in url else "lever" if "lever.co" in url else "workable" if "workable.com" in url else "greenhouse"
+    return "ashby" if "ashbyhq" in url else "lever" if "lever.co" in url else "workable" if "workable.com" in url \
+        else "rippling" if "rippling.com" in url else "greenhouse"
 
 
 def interleave(jobs):
