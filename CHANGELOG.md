@@ -38,7 +38,18 @@ started without them), and nothing noticed a container in the project that compo
   missing). A sign-in wall, a missing answer or a validation error goes to the user with the tab left open; a
   password field is never typed into. `GET /api/reach/desk` = desk heartbeat + latest result per URL.
 
+- **SmartRecruiters in the desk** (`walk_sr`): the Easy apply form sits behind a DataDome bot check (an unattended
+  browser gets "An error occurred"), so SmartRecruiters is filled only in the desk, where the user is present: a
+  bot check goes to the user ("solve it, then press Fill again"), the engine never tries to get around it, fills
+  from presets + Fact Bank, uploads the resume and stops before Submit. Verified live 10-14 up to the bot check.
+- **Workday sign-in list** (`GET /api/reach/signins`, `POST /api/reach/open`, /reach "Workday sign-ins"): employers
+  by open reach jobs (one account per tenant host); "Open in desk" opens that employer's site in the desk and
+  presses Sign In. Only hosts on the list are accepted. Verified live: the Salesforce sign-in dialog opened.
+- Workday sites for employees / contractors (internal, contractor, restricted, private posting, conversion) are no
+  longer listed (7 rows hidden).
+
 ### Fixed
+- Desk text pass now covers `type=email`, `tel` and `url` inputs.
 - **Age question answered "No"** (`answer_for`): "Are you at least 18 years of age / old?" matched the years-of-
   experience rule (18 > preset years -> No) before the over_18 preset. 11 forms got "No", 3 of them were
   submitted (one was later rejected). The age wording now skips that rule; regression test for four wordings.

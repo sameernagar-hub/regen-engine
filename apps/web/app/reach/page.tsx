@@ -14,6 +14,7 @@ type Row = { listed: string; ats: string; company: string; title: string; url: s
              mark: "todo" | "submitted" | "skipped"; marked?: string | null };
 type Reach = { rows: Row[]; listed: number; gated: number; by_ats: Record<string, number>; marks: Record<string, number>; write: boolean };
 type Kit = { groups: { group: string; fields: [string, string][] }[] };
+type Signins = { jobs: number; employers: { host: string; company: string; jobs: number; url: string }[] };
 type Desk = { desk: { up: boolean; state: string; queued: number; last: string } | null; open: string;
               results: Record<string, { status: string; detail: string; ts: string }> };
 
@@ -44,6 +45,14 @@ function ReachView() {
     const t = setInterval(pullDesk, 5000);  // the desk beats every 3 s; its result lands within a minute of a fill
     return () => clearInterval(t);
   }, []);
+  const [signins, setSignins] = useState<Signins | null>(null);
+  useEffect(() => { get<Signins>("/api/reach/signins").then(setSignins).catch(() => setSignins(null)); }, []);
+  const openSignin = async (e: Signins["employers"][number]) => {
+    try {
+      await post("/api/reach/open", { url: e.url });
+      setMsg(`Opening ${e.host} in the desk. Switch to the desk tab, sign in (or create the account), then use "Fill it in the desk" on its jobs.`);
+    } catch (err: any) { setMsg(err.message); }
+  };
   const fill = async (r: Row) => {
     setBusy(true);
     try {
@@ -104,6 +113,24 @@ function ReachView() {
       </header>
       {msg && <p className="note" role="status">{msg}</p>}
 
+      {!!signins?.employers.length && (
+        <details className="card" aria-label="Workday sign-ins">
+          <summary><b>Workday sign-ins</b> <small className="dim">{signins.employers.length} employers · {signins.jobs} jobs · one account per employer, most jobs first</small></summary>
+          <p className="dim small">1. <a href={desk?.open || "http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale"} target="_blank" rel="noreferrer">Open the desk ↗</a> in another tab.
+            2. Press "Open in desk" for an employer: its site opens there at Sign In. 3. Sign in or create the account in the desk (your password stays with you; the engine never types it). The login is kept, so this is once per employer.</p>
+          <table className="apps">
+            <thead><tr><th>Employer</th><th>Jobs</th><th>Site</th><th></th></tr></thead>
+            <tbody>
+              {signins.employers.map((e) => (
+                <tr key={e.host}>
+                  <td><b>{e.company}</b></td><td>{e.jobs}</td>
+                  <td className="mono small"><a href={e.url} target="_blank" rel="noreferrer">{e.host}</a></td>
+                  <td><button className="btn" disabled={!data?.write} onClick={() => openSignin(e)}>Open in desk</button></td>
+                </tr>))}
+            </tbody>
+          </table>
+        </details>)}
+
       <div className="toolbar">
         <div className="seg" role="tablist" aria-label="Status">
           {TABS.map(([k, label]) => (
@@ -139,7 +166,7 @@ function ReachView() {
             <p className="dim small">{cur.company} · {cur.location} · {cur.ats}{cur.lane ? ` · ${cur.lane} resume` : ""}
               {cur.jd_match != null ? ` · JD match ${cur.jd_match}` : ""}{cur.marked ? ` · marked ${cur.mark} ${cur.marked.slice(5, 16).replace("T", " ")}` : ""}</p>
 
-            {cur.ats === "workday" && (<>
+            {(cur.ats === "workday" || cur.ats === "smartrecruiters") && (<>
               <h3 className="sub">Let the desk fill it</h3>
               <p className="dim small">The desk is a browser on this computer that you sign in to once per employer. The engine fills the form there with your presets and Fact Bank, uploads this resume, and stops at Review for your Submit click.</p>
               <p className="row">

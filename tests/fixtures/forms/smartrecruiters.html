@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- A small SmartRecruiters look-alike: posting with "I'm interested" -> one-page Easy apply form.
+     ?bot=1 shows a bot-check iframe instead of the form (the engine must hand it to the user, never solve it). -->
+<html><head><meta charset="utf-8"><title>Initech - Software Engineer</title></head>
+<body>
+<div id="app"><h1>Software Engineer</h1><a id="st-apply" href="#" onclick="form();return false">I'm interested</a></div>
+<script>
+window.__w = {};
+function form() {
+  const app = document.getElementById('app');
+  if (location.search.includes('bot=1')) {
+    app.innerHTML = '<iframe src="about:blank#captcha-delivery"></iframe><p>An error occurred, please try again later.</p>';
+    return;
+  }
+  app.innerHTML = '<form onsubmit="return false">' +
+    '<div><label for=fn>First name*</label><input id=fn required></div>' +
+    '<div><label for=ln>Last name*</label><input id=ln required></div>' +
+    '<div><label for=em>Email*</label><input id=em type=email required></div>' +
+    '<div><label for=cv>Resume</label><input id=cv type=file></div>' +
+    '<fieldset><legend>Are you legally authorized to work in the United States?*</legend>' +
+    '<label><input type=radio name=auth value=Yes required>Yes</label><label><input type=radio name=auth value=No>No</label></fieldset>' +
+    '<button type=submit onclick="window.__submitted=true">Submit</button></form>';
+}
+</script>
+</body></html>

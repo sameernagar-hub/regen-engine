@@ -27,10 +27,47 @@ def load():
         return []
 
 
+import re
+
+# Workday sites only employees / contractors can apply on (10-14: 7 of 173 reach rows): never listed
+INTERNAL = re.compile(r"myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?[^/]*(internal|contractor|restricted|private_posting|conversion)",
+                      re.I)
+
+
+def internal(url):
+    return bool(INTERNAL.search(url or ""))
+
+
+def tenant(url):
+    """(host, site) of a Workday posting: one candidate account per host (the employer's tenant)."""
+    m = re.match(r"https://([^/]+)/(?:[a-z]{2}-[A-Z]{2}/)?([^/?#]+)", url or "")
+    return (m.group(1).lower(), m.group(2)) if m else (None, None)
+
+
+def signins(rows, done=()):
+    """Workday employers to sign in to, most open jobs first: [{host, company, jobs, url}] where url is the site's
+    home (the desk clicks its Sign In button). Rows already submitted/skipped (`done`) don't count. O(rows)."""
+    by = {}
+    for r in rows:
+        if r.get("ats") != "workday" or not r.get("resume") or r["url"] in done or internal(r["url"]):
+            continue
+        host, site = tenant(r["url"])
+        if not host:
+            continue
+        e = by.setdefault(host, {"host": host, "company": r["company"], "jobs": 0, "sites": {}})
+        e["jobs"] += 1
+        e["sites"][site] = e["sites"].get(site, 0) + 1
+    out = []
+    for e in by.values():
+        site = max(e.pop("sites").items(), key=lambda x: x[1])[0]
+        out.append(dict(e, url=f"https://{e['host']}/{site}"))
+    return sorted(out, key=lambda e: (-e["jobs"], e["host"]))
+
+
 def pick(queue, rows, limit):
     """Newest REACH jobs in the queue that were never listed (or skipped). O(Q log Q)."""
     seen = {r["url"] for r in rows}
-    todo = [j for j in queue if j.get("ats") in REACH and j.get("url") not in seen]
+    todo = [j for j in queue if j.get("ats") in REACH and j.get("url") not in seen and not internal(j.get("url"))]
     todo.sort(key=lambda j: j.get("posted") or "", reverse=True)
     return todo[:limit]
 

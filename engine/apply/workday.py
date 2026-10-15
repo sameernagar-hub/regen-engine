@@ -47,13 +47,15 @@ FIXED = {"legalNameSection_firstName": "first_name", "legalNameSection_lastName"
          "addressSection_postalCode": "zip", "email": "email", "phone-number": "phone"}
 
 
-def request(url, name=None, resume=None):
-    """Queue one job for the desk (atomic write). Returns the request path."""
+def request(url, name=None, resume=None, kind="fill"):
+    """Queue one desk request (atomic write): kind "fill" (walk the form) or "open" (open a Workday employer's site
+    and press Sign In, for the user to sign in). Returns the request path."""
     os.makedirs(INBOX, exist_ok=True)
     key = re.sub(r"[^A-Za-z0-9]+", "_", url)[-80:]
     path = os.path.join(INBOX, key + ".json")
     tmp = os.path.join(INBOX, "." + key + ".json")
-    json.dump({"url": url, "name": name or url, "resume": resume, "ts": time.time()}, open(tmp, "w", encoding="utf-8"))
+    json.dump({"url": url, "name": name or url, "resume": resume, "kind": kind, "ts": time.time()},
+              open(tmp, "w", encoding="utf-8"))
     os.replace(tmp, path)
     return path
 
@@ -86,7 +88,8 @@ def fill_page(page, job, log):
             job["_uploaded"] = True
             page.wait_for_timeout(3000)  # Workday parses the resume into the experience sections
     fixed = {AID(a) for a in FIXED}
-    for el in page.query_selector_all("input[type=text]:visible, input:not([type]):visible, textarea:visible, input[type=number]:visible"):
+    for el in page.query_selector_all("input[type=text]:visible, input:not([type]):visible, textarea:visible, input[type=number]:visible, "
+                                     "input[type=email]:visible, input[type=tel]:visible, input[type=url]:visible"):
         if any(el.evaluate(f"e => e.matches(\"{s}\")") for s in fixed) or (el.input_value() or "").strip():
             continue
         label = _label(page, el)
@@ -202,16 +205,78 @@ def walk(page, job, log, submit=SUBMIT):
     return "FAILED: more than %d wizard steps" % MAX_STEPS
 
 
+# ---------------- SmartRecruiters (in the desk only) ----------------
+# The one-page "Easy apply" form (jobs.smartrecruiters.com/oneclick-ui/...) is behind a DataDome bot check: in an
+# unattended applier it answers "An error occurred". In the desk the user is at the screen: if the check appears,
+# they solve it, and the engine fills. The engine never tries to get around the check, and never clicks the final
+# Submit here (the user does, after looking at the filled form).
+SR_APPLY = "a#st-apply, a:has-text(\"I'm interested\"), button:has-text(\"I'm interested\")"
+BOT_CHECK = "iframe[src*='captcha-delivery'], iframe[src*='datadome'], iframe[src*='hcaptcha'], iframe[src*='recaptcha']"
+SR_SUBMIT = "button:has-text('Submit'), button[type=submit]:has-text('Apply'), spl-button:has-text('Submit')"
+
+
+def walk_sr(page, job, log):
+    """Posting -> Easy apply form -> fill from presets + Fact Bank + resume upload. Returns the status string."""
+    page.goto(job["url"], wait_until="domcontentloaded")
+    try:
+        page.wait_for_selector(SR_APPLY, timeout=20000)
+        page.click(SR_APPLY)
+    except Exception:
+        pass
+    try:
+        page.wait_for_selector(", ".join(("input[type=email]", "input[type=file]", BOT_CHECK)), timeout=25000)
+    except Exception:
+        pass
+    if page.query_selector(BOT_CHECK) or re.search(r"an error occurred, please try again", page.inner_text("body"), re.I):
+        return "NEEDS YOU: SmartRecruiters shows a human check in the desk (http://127.0.0.1:6080); solve it, then press Fill again"
+    missing = []
+    for _ in range(3):  # the form may reveal more questions after the first answers / a Next step
+        missing = fill_page(page, job, log)
+        nxt = page.query_selector("button:has-text('Next'):visible, spl-button:has-text('Next')")
+        if missing or not nxt:
+            break
+        nxt.click(); page.wait_for_timeout(2500)
+    if job.get("resume") and not job.get("_uploaded"):
+        f = page.query_selector("input[type=file]")
+        if f:
+            f.set_input_files(job["resume"]); job["_uploaded"] = True; page.wait_for_timeout(3000)
+        else:
+            return "NEEDS YOU: no resume upload field found; attach the resume in the desk"
+    if missing:
+        return "NEEDS YOU: " + " | ".join(missing)
+    if not page.query_selector(SR_SUBMIT):
+        return "FAILED: filled, but no Submit button found (check the form in the desk)"
+    return "FILLED: review and submit in the desk (http://127.0.0.1:6080)"
+
+
+def open_signin(page, url):
+    """Open a Workday employer's site and press its Sign In button: the user signs in (or creates the account)."""
+    page.goto(url, wait_until="domcontentloaded")
+    try:
+        page.wait_for_selector(AID("utilityButtonSignIn"), timeout=20000)
+        page.click(AID("utilityButtonSignIn"))
+        return "opened sign-in"
+    except Exception:
+        return "opened (no Sign In button found: use the page's own menu)"
+
+
 def handle(ctx, req, log=print):
-    """One fill request in a fresh tab of the desk's browser; the tab stays open for the user. Records the event."""
+    """One request in a fresh tab of the desk's browser; the tab stays open for the user. A fill records the event."""
     from engine.feedback.events import record
+    page = ctx.new_page()
+    page.set_default_timeout(15000)
+    if req.get("kind") == "open":
+        try:
+            st = open_signin(page, req["url"])
+        except Exception as e:
+            st = f"open failed: {str(e)[:80]}"
+        log(f"desk: {req.get('name')} -> {st}")
+        return st
     job = {"name": req.get("name") or req["url"], "url": req["url"], "resume": req.get("resume"), "extra": {}}
     if job["resume"] and not os.path.isabs(job["resume"]):
         job["resume"] = os.path.join(WORKSPACE, job["resume"].replace("\\", "/"))
-    page = ctx.new_page()
-    page.set_default_timeout(15000)
     try:
-        status = walk(page, job, log)
+        status = (walk_sr if "smartrecruiters.com" in job["url"] else walk)(page, job, log)
     except Exception as e:
         status = f"FAILED: {str(e)[:160]}"
     shot = ""
@@ -255,7 +320,7 @@ def loop(poll=3):
                 os.remove(path)
                 if req and req.get("url"):
                     last = handle(ctx, req)
-            for p in ctx.pages[1:][:-6]:  # keep the 6 newest tabs for the user; older ones close
+            for p in ctx.pages[1:][:-10]:  # keep the 10 newest tabs for the user (sign-ins, filled forms); older ones close
                 try:
                     p.close()
                 except Exception:

@@ -185,3 +185,41 @@ def test_resume_in_blocks_a_form_without_the_file(browser, tmp_path):
     page.set_input_files("#r", job["resume"])
     assert resume_in(page, job) and resume_in(page, {})
     page.close()
+
+
+def test_smartrecruiters_desk_fill_stops_before_submit(browser, tmp_path):
+    from engine.apply import workday as W
+    from engine.apply.runner import P
+    page = browser.new_page(); page.set_default_timeout(5000)
+    job = _job(tmp_path)
+    job["url"] = job["url"].replace("workday.html", "smartrecruiters.html")
+    status = W.walk_sr(page, job, lambda s: None)
+    assert status.startswith("FILLED"), status
+    assert page.input_value("#fn") == P["first_name"] and page.input_value("#em") == P["email"]
+    assert page.evaluate("() => document.getElementById('cv').files.length") == 1
+    assert page.evaluate("() => window.__submitted || null") is None  # the user clicks Submit
+    page.close()
+
+
+def test_smartrecruiters_bot_check_goes_to_the_user(browser, tmp_path):
+    from engine.apply import workday as W
+    page = browser.new_page(); page.set_default_timeout(5000)
+    job = _job(tmp_path, "?bot=1")
+    job["url"] = job["url"].replace("workday.html", "smartrecruiters.html")
+    assert W.walk_sr(page, job, lambda s: None).startswith("NEEDS YOU: SmartRecruiters shows a human check")
+    page.close()
+
+
+def test_workday_signin_list_and_internal_sites():
+    from engine.discovery.reach import signins, internal, tenant
+    row = lambda url: {"ats": "workday", "company": "initech", "url": url, "resume": "out/r.pdf"}
+    rows = [row("https://initech.wd5.myworkdayjobs.com/en-US/External/job/A_1"),
+            row("https://initech.wd5.myworkdayjobs.com/External/job/B_2"),
+            row("https://initech.wd5.myworkdayjobs.com/Contractor_Conversion/job/C_3"),
+            row("https://globex.wd1.myworkdayjobs.com/careers/job/D_4"),
+            dict(row("https://globex.wd1.myworkdayjobs.com/careers/job/E_5"), resume=None)]
+    assert internal(rows[2]["url"]) and not internal(rows[0]["url"])
+    assert tenant(rows[0]["url"]) == ("initech.wd5.myworkdayjobs.com", "External")
+    s = signins(rows, done={"https://globex.wd1.myworkdayjobs.com/careers/job/D_4"})
+    assert s == [{"host": "initech.wd5.myworkdayjobs.com", "company": "initech", "jobs": 2,
+                  "url": "https://initech.wd5.myworkdayjobs.com/External"}]

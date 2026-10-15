@@ -123,11 +123,11 @@ def _reach_status():
 def reach(limit: int = 100):
     """Reach list (engine/discovery/reach.py): Workday / iCIMS / SmartRecruiters jobs with a tailored resume, newest
     first, for the user to submit; each row carries the user's own mark (todo / submitted / skipped)."""
-    from engine.discovery.reach import load
+    from engine.discovery.reach import load, internal
     rows = load()
     marks = _reach_status()
     live = [dict(r, mark=(marks.get(r["url"]) or ("todo", None))[0], marked=(marks.get(r["url"]) or (None, None))[1])
-            for r in rows if r.get("resume")][::-1]
+            for r in rows if r.get("resume") and not internal(r["url"])][::-1]
     by = collections.Counter(r["ats"] for r in live)
     return {"rows": live[:max(1, min(limit, 500))], "listed": len(live), "gated": len(rows) - len(live), "by_ats": dict(by),
             "marks": dict(collections.Counter(r["mark"] for r in live)), "write": REACH_WRITE}
@@ -198,13 +198,40 @@ def reach_fill(body: dict, request: Request):
     row = next((r for r in load() if r.get("url") == url and r.get("resume")), None)
     if not row:
         raise HTTPException(404, "not on the reach list")
-    if row.get("ats") != "workday":
-        raise HTTPException(400, f"the desk fills Workday forms; {row.get('ats')} is not supported yet")
+    if row.get("ats") not in ("workday", "smartrecruiters"):
+        raise HTTPException(400, f"the desk fills Workday and SmartRecruiters forms; {row.get('ats')} is not supported yet")
     queue(url, f"{row['company']} - {row['title']}", row["resume"])
     from engine.supervisor import fleet
     desk = next((m for m in fleet()["members"] if m.get("role") == "desk"), None)
     return {"ok": True, "queued": url, "desk": "up" if desk and desk.get("up") else "down",
             "open": "http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale"}
+
+
+@router.get("/reach/signins")
+def reach_signins():
+    """Workday employers to sign in to in the desk, most open reach jobs first (one account per employer host)."""
+    from engine.discovery.reach import load, signins
+    done = {u for u, (m, _) in _reach_status().items() if m in ("submitted", "skipped")}
+    rows = signins(load(), done)
+    return {"employers": rows, "jobs": sum(r["jobs"] for r in rows)}
+
+
+@router.post("/reach/open")
+def reach_open(body: dict, request: Request):
+    """Open one Workday employer's site in the desk and press its Sign In button, so the user signs in there.
+    Only URLs of employers on the sign-in list are accepted (the desk never opens arbitrary pages from the API)."""
+    if not REACH_WRITE:
+        raise HTTPException(403, "reach writes are disabled (REGEN_API_REACH=1 in the bank, REGEN_API_WRITE=1 locally)")
+    if not TRUST_PORT and (request.client.host if request.client else "") not in LOCAL:
+        raise HTTPException(403, "only from this computer")
+    from engine.discovery.reach import load, signins
+    from engine.apply.workday import request as queue
+    url = str(body.get("url") or "")
+    row = next((e for e in signins(load()) if e["url"] == url), None)
+    if not row:
+        raise HTTPException(404, "not a Workday employer on the reach list")
+    queue(url, f"Sign in: {row['company']}", kind="open")
+    return {"ok": True, "opening": url}
 
 
 @router.get("/reach/desk")
