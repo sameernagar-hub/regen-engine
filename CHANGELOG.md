@@ -4,7 +4,29 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
-## [Unreleased] - 2026-10-13 · v0.13 "Reach"
+## [Unreleased] - 2026-10-14 · v0.14 supervisor guardrails
+The supervisor is the only container with the Docker socket, so whatever it creates runs with root-equivalent
+reach on the host. Until now a cloned applier copied whatever limits its source had (none, if a container was ever
+started without them), and nothing noticed a container in the project that compose never declared.
+
+### Added
+- **Bounded creates** (`engine/supervisor.py` `bound()`): every container the supervisor creates must be an
+  allowlisted service (`SCALABLE` = applier), under `HARD_MAX` (12), never privileged, never with `CapAdd`, never with
+  the Docker socket mounted, and gets CPU / memory / pids at or below the caps (`REGEN_APPLIER_CPUS` 1.5,
+  `REGEN_APPLIER_MEM_MB` 2048, `REGEN_APPLIER_PIDS` 1024; missing or 0 = the cap). Labeled `regen.managed-by=supervisor`
+  + `regen.created`. A refusal is audited (`supervisor` event, action `refuse`) once per pass.
+- **Enforcement every minute** (`enforce()`): a running container of this compose project whose service is not in
+  `DECLARED` is stopped and audited; a running applier without limits (or above the caps) gets them live via
+  `docker update` (audited `bound`); a supervisor-made applier older than `REGEN_APPLIER_TTL_H` (12 h) is drained
+  (audited `expire`) and an expiry drain is never cancelled by new work: a fresh applier is created instead.
+- `containers.json` rows carry `managed` and `declared`.
+
+### Verify
+- `pytest tests/test_v014.py` (DECLARED matches deploy/bank.compose.yml, caps, refusals, enforce, expiry drain).
+- Live 10-14: after the rebuild the supervisor logged `bound deploy-applier-N {'pidslimit': 1024}` for all 6
+  appliers; `docker inspect` shows 1.5 CPU / 2 GiB / 1024 pids; an applying applier uses ~225 pids.
+
+## [Released in v0.13] - 2026-10-13 · v0.13 "Reach"
 Most new-grad leads that never resolved pointed at Workday, iCIMS or SmartRecruiters boards, and the engine could not
 see those ATSs at all. The fleet's containers were only visible through heartbeats, and the B5-B7 benchmarks only
 ran when someone typed the command.

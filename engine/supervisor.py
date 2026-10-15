@@ -147,6 +147,14 @@ def drain_path(host):
     return os.path.join(FLEET, f"drain_{host}")
 
 
+def _expired(cid):
+    """True when enforce() wrote this drain because the container outlived TTL: such a drain is never cancelled."""
+    try:
+        return open(drain_path(cid[:12]), encoding="utf-8").read().startswith("expire")
+    except OSError:
+        return False
+
+
 def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container was seen idle (kept across calls)
     """Start/create appliers up to desired(); retire idle ones above it. O(containers).
 
@@ -164,7 +172,7 @@ def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container
     active = [r for r in running if r not in drains]
     if len(active) < want:
         need = want - len(active)
-        for r in drains[:need]:  # cancel a drain before adding a container
+        for r in [d for d in drains if not _expired(d[0])][:need]:  # cancel a drain before adding a container
             os.remove(drain_path(r[0][:12]))
             drains.remove(r)
             need -= 1
@@ -174,7 +182,11 @@ def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container
             audit("start", name, jobs=jobs, want=want)
         for _ in range(max(0, need - len(stopped))):  # none left to start: create one
             if running:
-                audit("create", clone(running[0][0], appliers()), jobs=jobs, want=want)
+                try:
+                    audit("create", clone(running[0][0], appliers()), jobs=jobs, want=want)
+                except Refused as ex:  # a guardrail said no: say why once per pass, create nothing else
+                    audit("refuse", "create applier", reason=str(ex)[:120], jobs=jobs, want=want)
+                    break
     elif len(active) > want:
         for cid, name, up in reversed(active[:]):
             if len(active) <= want:
@@ -250,16 +262,93 @@ def clone(cid, rows):
     name = re.sub(r"-\d+$", f"-{n}", i["Name"].lstrip("/"))
     labels = dict(i["Config"].get("Labels") or {}, **{"com.docker.compose.container-number": str(n)})
     hc = {k: i["HostConfig"].get(k) for k in ("Binds", "Mounts", "ShmSize", "NanoCpus", "Memory", "RestartPolicy",
-                                              "NetworkMode", "SecurityOpt", "CapDrop", "ReadonlyRootfs")
+                                              "NetworkMode", "SecurityOpt", "CapDrop", "ReadonlyRootfs", "PidsLimit")
           if i["HostConfig"].get(k) is not None}
     nets = {k: {"Aliases": [f"applier-{n}"]} for k in (i["NetworkSettings"].get("Networks") or {})}
     body = {"Image": i["Config"]["Image"], "Env": i["Config"].get("Env"), "Entrypoint": i["Config"].get("Entrypoint"),
             "Cmd": i["Config"].get("Cmd"), "User": i["Config"].get("User"), "Labels": labels, "HostConfig": hc,
             "NetworkingConfig": {"EndpointsConfig": nets}}
+    body = bound(body, len(rows))  # raises Refused: nothing unbounded or outside the allowlist is ever created
     new = _docker("POST", f"/containers/create?name={name}", body) or {}
     if new.get("Id"):
         _docker("POST", f"/containers/{new['Id']}/start")
     return name
+
+
+# ---------------- container guardrails ----------------
+# The supervisor holds the Docker socket, so it is the one place that can create containers: everything it creates
+# is bounded, labeled, counted and audited, and a container of this project that compose did not declare is stopped.
+SCALABLE = {"applier"}  # the only service the supervisor may create containers for
+DECLARED = {"seed", "applier", "pipeline", "relay", "supervisor", "postgres", "ledger", "mcp", "answers", "api", "web",
+            "reposync"}  # deploy/bank.compose.yml services (tests/test_v014.py keeps the two in step)
+CAPS = {"applier": {"NanoCpus": int(float(os.environ.get("REGEN_APPLIER_CPUS", "1.5")) * 1e9),
+                    "Memory": int(os.environ.get("REGEN_APPLIER_MEM_MB", "2048")) * 2 ** 20,
+                    "PidsLimit": int(os.environ.get("REGEN_APPLIER_PIDS", "1024"))}}
+TTL = float(os.environ.get("REGEN_APPLIER_TTL_H", "12")) * 3600  # a supervisor-made applier is recycled after this
+MANAGED = "regen.managed-by"  # label on every container the supervisor creates
+
+
+class Refused(Exception):
+    """A guardrail refused to create a container (the reason is audited)."""
+
+
+def bound(body, existing):
+    """The create request, bounded: allowlisted service, under HARD_MAX containers, CPU/memory/pids at or below the
+    service caps (missing = the cap), never privileged, never the Docker socket, labeled as supervisor-made with a
+    creation time. Raises Refused otherwise. O(binds)."""
+    labels = dict(body.get("Labels") or {})
+    svc = labels.get("com.docker.compose.service")
+    if svc not in SCALABLE:
+        raise Refused(f"service {svc!r} is not scalable (allowlist: {sorted(SCALABLE)})")
+    if existing >= HARD_MAX:
+        raise Refused(f"{existing} {svc} containers already (hard max {HARD_MAX})")
+    hc = dict(body.get("HostConfig") or {})
+    mounts = [str(b) for b in hc.get("Binds") or []] + [str(m.get("Source", "")) for m in hc.get("Mounts") or []]
+    if any("docker.sock" in m for m in mounts):
+        raise Refused("the Docker socket is never mounted into a created container")
+    for k, cap in CAPS[svc].items():
+        hc[k] = min(hc[k], cap) if hc.get(k) else cap  # 0 / missing means unlimited to Docker: never allowed
+    hc["Privileged"] = False
+    hc.pop("CapAdd", None)
+    labels.update({MANAGED: "supervisor", "regen.created": str(int(time.time()))})
+    return dict(body, Labels=labels, HostConfig=hc)
+
+
+def enforce(now=None):
+    """Every pass: stop any container of this project whose service compose does not declare; give a scalable
+    container without CPU/memory limits its caps (live `docker update`); drain supervisor-made appliers older than
+    TTL (the drain handshake in scale() stops them once idle, and a fresh one replaces them if work is waiting).
+    Returns the actions taken, each audited. O(containers)."""
+    import urllib.parse
+    now = now or time.time()
+    proj = os.environ.get("REGEN_COMPOSE_PROJECT", "deploy")
+    flt = urllib.parse.quote(json.dumps({"label": [f"com.docker.compose.project={proj}"]}))
+    acts = []
+    for r in _docker("GET", f"/containers/json?all=1&filters={flt}") or []:
+        lab, name = r.get("Labels") or {}, (r.get("Names") or ["/?"])[0].lstrip("/")
+        svc = lab.get("com.docker.compose.service")
+        if svc not in DECLARED:
+            if r.get("State") == "running":
+                _docker("POST", f"/containers/{r['Id']}/stop?t=10")
+                audit("refuse", name, reason=f"service {svc!r} is not declared in the compose file: stopped")
+                acts.append(("stop", name))
+            continue
+        if svc not in SCALABLE or r.get("State") != "running":
+            continue
+        hc = (_docker("GET", f"/containers/{r['Id']}/json") or {}).get("HostConfig") or {}
+        fix = {k: cap for k, cap in CAPS[svc].items() if not hc.get(k) or hc[k] > cap}
+        if fix:
+            _docker("POST", f"/containers/{r['Id']}/update", fix)
+            audit("bound", name, **{k.lower(): v for k, v in fix.items()})
+            acts.append(("bound", name))
+        made = lab.get("regen.created")
+        if lab.get(MANAGED) == "supervisor" and made and made.isdigit() and now - int(made) > TTL \
+                and not os.path.exists(drain_path(r["Id"][:12])):
+            os.makedirs(FLEET, exist_ok=True)
+            open(drain_path(r["Id"][:12]), "w").write(f"expire {now}")
+            audit("expire", name, age_h=round((now - int(made)) / 3600, 1))
+            acts.append(("expire", name))
+    return acts
 
 
 def prune_images():
@@ -509,7 +598,8 @@ def inventory():
         out = {"id": r["Id"][:12], "name": (r.get("Names") or ["/?"])[0].lstrip("/"),
                "service": lab.get("com.docker.compose.service", "?"), "state": r.get("State"),
                "status": r.get("Status"), "image": (r.get("Image") or "")[:60], "created": r.get("Created"),
-               "scaled": lab.get("com.docker.compose.service") == "applier"}  # appliers are the ones the supervisor creates/removes
+               "scaled": lab.get("com.docker.compose.service") == "applier",  # appliers are the ones the supervisor creates/removes
+               "managed": lab.get(MANAGED) == "supervisor", "declared": lab.get("com.docker.compose.service") in DECLARED}
         if r.get("State") == "running":
             try:
                 out["cpu"], out["mem_mb"], out["mem_limit_mb"] = _cpu_mem(_docker("GET", f"/containers/{r['Id']}/stats?stream=false") or {})
@@ -687,6 +777,7 @@ def supervise(argv=None):
             if n % (240 * BENCH_HOURS) == 20:  # 5 min after start, then every BENCH_HOURS
                 threading.Thread(target=bench, daemon=True).start()
             if n % 4 == 0:  # every minute
+                enforce()
                 svc = services()
                 threading.Thread(target=inventory, daemon=True).start()  # stats take ~1 s each: off the 15 s loop
             beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap, services=svc)
