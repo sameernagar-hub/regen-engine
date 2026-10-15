@@ -25,11 +25,10 @@
 
 ## Next (in order)
 1. **User signs in to Workday employers**: /reach -> "Workday sign-ins" -> "Open in desk" (list sorted by job count). SmartRecruiters jobs
-   fill in the desk too (bot check is the user's to solve; never automated). Then, then press "Fill it in the desk" on /reach; watch the first one
+   fill in the desk too (bot check is the user's to solve; never automated). Then press "Fill it in the desk" on /reach; watch the first one
    and fix selectors for My Information / My Experience / Application Questions / Voluntary Disclosures from what the
    real DOM shows (proof screenshot + `application` event detail). 172 Workday jobs are waiting on this.
 2. SmartRecruiters: done in the desk (stops before Submit). Next: verify the real Easy apply form once the user solves a check.
-   Add to APPLY_SUPPORTED with a look-alike fixture; watch for hCaptcha.
 3. New open-ATS adapters (public job JSON + account-free apply form): Recruitee (`{co}.recruitee.com/api/offers`),
    Breezy (`{co}.breezy.hr/json`), Pinpoint (`{co}.pinpointhq.com/postings.json`), BambooHR (`{co}.bamboohr.com/careers/list`),
    Rippling ATS, Teamtailor. Discovery first (reach rows), filler per ATS once a look-alike test exists.
