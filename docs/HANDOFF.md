@@ -16,7 +16,7 @@
 - Eval containers: B8 supervisor (7/7), B9 API p95 (~340-580 ms), B10 bus (~1.2-1.7 s). Triggers: reposync commit,
   6 h schedule, `supervise --eval`. Verified live: manual + commit evals ran, rc 0, reaped, history at /evals.
 - **Bug fixed: "Are you at least 18 years of age/old?" was answered No** (years-of-experience rule). 11 forms, 3
-  SUBMITTED with "No": TeleTracking SWE I (10-11, since rejected), Coinbase CDP Foundations + CDP Stablecoin (10-13).
+  SUBMITTED with "No": one health-tech SWE I (10-11, since rejected) and two roles at one crypto exchange (10-13).
   User confirmed (10-14) they are 26. Fix deployed + regression test.
 - Resume-attached check before every submit on every ATS (was Greenhouse only): `RESUME UPLOAD FAILED`, not submitted.
 - Workday desk + filler: verified on a real tenant up to the sign-in step (stops: "sign in to <tenant> in the desk").
@@ -36,9 +36,9 @@
 5. Wiki pages still open: Ledger, Data bus, Repo sync, Answer queue, MCP, Supervisor (guardrails), Evals, Desk.
 
 ## Needs the user
-- Tell Coinbase (2 roles) the 18+ answer was a form-filler error, if you want: the submitted answer was "No".
+- Tell the crypto exchange (2 roles) the 18+ answer was a form-filler error, if you want: the submitted answer was "No".
 - Sign in to Workday tenants in the desk (your accounts; the engine never types passwords).
-- Everpure deemed-export Yes/No still pending; GitHub "Keep my email private" still off; 3 Gmail drafts to delete.
+- The storage-hardware employer deemed-export Yes/No still pending; GitHub "Keep my email private" still off; 3 Gmail drafts to delete.
 
 # Handoff: 10-13 session (v0.13 "Reach"), written ~00:15 10-14. Stack is DOWN (volumes kept).
 
