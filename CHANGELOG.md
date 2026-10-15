@@ -21,7 +21,34 @@ started without them), and nothing noticed a container in the project that compo
   (audited `expire`) and an expiry drain is never cancelled by new work: a fresh applier is created instead.
 - `containers.json` rows carry `managed` and `declared`.
 
+- **Eval containers** (`evals()`, `engine/bench.py` B8-B10): benchmarks no longer run inside the supervisor. It
+  creates one-shot `eval` containers (from the api container's config: image, bank volumes, Postgres secret, network;
+  no ports, no write switches; 1 CPU / 1 GiB / 256 pids) when reposync pushed a commit not yet evaluated, when the
+  last run is older than REGEN_BENCH_HOURS, or on `supervise --eval`; at most REGEN_MAX_EVALS (2), one launch per
+  pass, the same trigger at most every 30 min; finished ones are reaped and audited with their exit code. New:
+  **B8 supervisor** (7 decision scenarios on a faked Docker API: scale to backlog, drain before stop, never stop
+  mid-form, stop after drain ack, refuse unsafe creates, caps, stop undeclared), **B9 api** (p50/p95 per endpoint),
+  **B10 bus** (events.jsonl line -> Postgres row latency). Each run saves a summary and records an `eval` event, so
+  the history is in Postgres; `GET /api/control/evals` returns it plus the running eval containers.
+- **Workday filler + the desk** (`engine/apply/workday.py`, `desk` service): a headed Chromium with a persistent
+  profile (volume regen-desk) served through noVNC at http://127.0.0.1:6080 (this machine only). The user signs in
+  to a Workday tenant there once; `POST /api/reach/fill` (or `engine desk --fill URL`) queues a reach job, the desk
+  walks Apply -> Apply Manually -> every wizard step by data-automation-id, fills from presets + Fact Bank, uploads
+  the tailored resume, and stops at Review (submit is the user's click unless REGEN_WORKDAY_SUBMIT=1 and nothing was
+  missing). A sign-in wall, a missing answer or a validation error goes to the user with the tab left open; a
+  password field is never typed into. `GET /api/reach/desk` = desk heartbeat + latest result per URL.
+
+### Fixed
+- **Age question answered "No"** (`answer_for`): "Are you at least 18 years of age / old?" matched the years-of-
+  experience rule (18 > preset years -> No) before the over_18 preset. 11 forms got "No", 3 of them were
+  submitted (one was later rejected). The age wording now skips that rule; regression test for four wordings.
+- **Resume must be attached before any submit** (`resume_in`): only the Greenhouse filler checked the upload; now
+  every ATS stops with `RESUME UPLOAD FAILED` (not submitted) unless the page shows a file in an input, the file
+  name, or the ATS's "Replace" / "uploaded" marker. The Workday filler refuses Review without an upload.
+
 ### Verify
+- `pytest tests/test_v014b.py` (B8, B9 skip, history, eval triggers / reaping / max, Workday walk on a local
+  look-alike: fill + stop at Review, submit when allowed, sign-in wall; age wordings; resume check).
 - `pytest tests/test_v014.py` (DECLARED matches deploy/bank.compose.yml, caps, refusals, enforce, expiry drain).
 - Live 10-14: after the rebuild the supervisor logged `bound deploy-applier-N {'pidslimit': 1024}` for all 6
   appliers; `docker inspect` shows 1.5 CPU / 2 GiB / 1024 pids; an applying applier uses ~225 pids.

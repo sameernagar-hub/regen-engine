@@ -184,6 +184,42 @@ def reach_kit(request: Request):
     return {"groups": [dict(g, fields=[[k, str(v)] for k, v in g["fields"] if v not in (None, "")]) for g in _kit_fields()]}
 
 
+@router.post("/reach/fill")
+def reach_fill(body: dict, request: Request):
+    """Queue one reach-list Workday job for the desk (engine/apply/workday.py): the desk opens it in the browser you
+    signed in to and fills it. Same switch and same this-computer rule as /reach/mark."""
+    if not REACH_WRITE:
+        raise HTTPException(403, "reach writes are disabled (REGEN_API_REACH=1 in the bank, REGEN_API_WRITE=1 locally)")
+    if not TRUST_PORT and (request.client.host if request.client else "") not in LOCAL:
+        raise HTTPException(403, "only from this computer")
+    from engine.discovery.reach import load
+    from engine.apply.workday import request as queue
+    url = str(body.get("url") or "")
+    row = next((r for r in load() if r.get("url") == url and r.get("resume")), None)
+    if not row:
+        raise HTTPException(404, "not on the reach list")
+    if row.get("ats") != "workday":
+        raise HTTPException(400, f"the desk fills Workday forms; {row.get('ats')} is not supported yet")
+    queue(url, f"{row['company']} - {row['title']}", row["resume"])
+    from engine.supervisor import fleet
+    desk = next((m for m in fleet()["members"] if m.get("role") == "desk"), None)
+    return {"ok": True, "queued": url, "desk": "up" if desk and desk.get("up") else "down",
+            "open": "http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale"}
+
+
+@router.get("/reach/desk")
+def reach_desk():
+    """The desk's heartbeat (ready / filling, queue length, last result) and its latest results per reach URL."""
+    from engine.supervisor import fleet
+    from engine.feedback.events import read
+    desk = next((m for m in fleet()["members"] if m.get("role") == "desk"), None)
+    last = {}
+    for e in read("application"):
+        if e.get("by") == "desk" and e.get("url"):
+            last[e["url"]] = {"status": e.get("status"), "detail": e.get("detail"), "ts": e.get("ts"), "proof": e.get("proof")}
+    return {"desk": desk, "open": "http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale", "results": last}
+
+
 @router.post("/reach/mark")
 def reach_mark(body: dict, request: Request):
     """The user marks a reach job submitted / skipped / back to to-do. Recorded as a `reach_mark` event; "submitted"
@@ -217,6 +253,16 @@ def bench():
     """Latest benchmark run B1-B7 (engine/bench.py; the supervisor saves one every REGEN_BENCH_HOURS)."""
     from engine.bench import latest
     return latest() or {"ts": None, "results": {}}
+
+
+@router.get("/control/evals")
+def evals(n: int = 30):
+    """Eval history (B1-B10 summaries, oldest first) plus the eval containers the supervisor runs right now."""
+    from engine.bench import history
+    from engine.supervisor import containers
+    snap = containers() or {}
+    return {"runs": history(max(1, min(n, 200))),
+            "running": [c for c in snap.get("containers", []) if c.get("service") == "eval"]}
 
 
 @router.post("/control/run")

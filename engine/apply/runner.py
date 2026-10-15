@@ -253,8 +253,8 @@ def years_yesno(label):
     a number (10-11: answered "3"). More years than you have -> No; within your years -> Yes only when the area
     itself is backed by your Fact Bank (experience_answer), else None (the human queue)."""
     m = YEARS_YN.search(" ".join(label.split()))
-    if not m or not str(P.get("years_experience", "")).isdigit():
-        return None
+    if not m or not str(P.get("years_experience", "")).isdigit() or re.match(r"(of )?(age|old)\b", m.group(8).strip(), re.I):
+        return None  # "Are you at least 18 years of age / old?" is the age question, not experience (10-14: answered No)
     n = int(m.group(4)) if m.group(4).isdigit() else WORD_N[m.group(4).lower()]
     if n > int(P["years_experience"]):
         return "No"
@@ -264,7 +264,8 @@ def years_yesno(label):
 
 def answer_for(label, extra):
     l = " ".join(label.split()).lower()
-    if YEARS_YN.search(" ".join(label.split())) and not any(re.search(p, l, re.I) for p, _ in list(extra.items()) + BANK):
+    age = re.search(r"\byears?( of)? (age|old)\b", l)  # the age question goes to the over_18 rule below
+    if not age and YEARS_YN.search(" ".join(label.split())) and not any(re.search(p, l, re.I) for p, _ in list(extra.items()) + BANK):
         return years_yesno(label)  # yes/no, never the "years of experience" number; None -> you (a saved answer wins)
     # per-job extras first, then your approved answer bank, then the built-in rules
     for pat, ans in list(extra.items()) + BANK + RULES:
@@ -1167,6 +1168,22 @@ def already_submitted():
     return {u for u, s in latest.items() if s == "SUBMITTED"}
 
 
+RESUME_IN = """(name) => { const files = [...document.querySelectorAll('input[type=file]')].some(i => i.files && i.files.length);
+  const t = document.body.innerText; return files || t.includes(name) || /\\bReplace\\b|upload(ed)? successful|successfully uploaded/i.test(t); }"""
+
+
+def resume_in(page, job):
+    """True when the page shows the tailored resume attached: a file input holding a file, the file name on the page,
+    or the ATS's own "Replace" / "uploaded" marker. No resume in the job -> nothing to check. 10-14: the user asked
+    that every application carries the resume; only Greenhouse checked it before. O(file inputs)."""
+    if not job.get("resume"):
+        return True
+    try:
+        return bool(page.evaluate(RESUME_IN, os.path.basename(job["resume"])))
+    except Exception:
+        return False
+
+
 def job_task(page, job, dry, results, log_base=print):
     """One application as a generator: fill, airbags, submit, record. The scheduler interleaves several."""
     name = job.get("name") or job["url"]
@@ -1191,6 +1208,8 @@ def job_task(page, job, dry, results, log_base=print):
                         + safety.check_page(page.inner_text("body"), page.url, job["url"])
                         + safety.check_answers(job.get("_answers"), P)
                         + ([] if dry else safety.check_rate(name.split(" - ")[0])))
+            if not resume_in(page, job) and "RESUME UPLOAD FAILED" not in missing:
+                missing = list(missing) + ["RESUME UPLOAD FAILED (no attached file seen; not submitted)"]
             if problems:
                 page.screenshot(path=shot, full_page=True)
                 status = "FLAGGED: " + safety.flag("airbag", name, " | ".join(problems), job["url"])

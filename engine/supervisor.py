@@ -278,12 +278,13 @@ def clone(cid, rows):
 # ---------------- container guardrails ----------------
 # The supervisor holds the Docker socket, so it is the one place that can create containers: everything it creates
 # is bounded, labeled, counted and audited, and a container of this project that compose did not declare is stopped.
-SCALABLE = {"applier"}  # the only service the supervisor may create containers for
+SCALABLE = {"applier", "eval"}  # the only services the supervisor may create containers for
 DECLARED = {"seed", "applier", "pipeline", "relay", "supervisor", "postgres", "ledger", "mcp", "answers", "api", "web",
-            "reposync"}  # deploy/bank.compose.yml services (tests/test_v014.py keeps the two in step)
+            "reposync", "eval", "desk"}  # deploy/bank.compose.yml services (tests/test_v014.py keeps the two in step)
 CAPS = {"applier": {"NanoCpus": int(float(os.environ.get("REGEN_APPLIER_CPUS", "1.5")) * 1e9),
                     "Memory": int(os.environ.get("REGEN_APPLIER_MEM_MB", "2048")) * 2 ** 20,
-                    "PidsLimit": int(os.environ.get("REGEN_APPLIER_PIDS", "1024"))}}
+                    "PidsLimit": int(os.environ.get("REGEN_APPLIER_PIDS", "1024"))},
+        "eval": {"NanoCpus": 1_000_000_000, "Memory": 1024 * 2 ** 20, "PidsLimit": 256}}
 TTL = float(os.environ.get("REGEN_APPLIER_TTL_H", "12")) * 3600  # a supervisor-made applier is recycled after this
 MANAGED = "regen.managed-by"  # label on every container the supervisor creates
 
@@ -333,7 +334,7 @@ def enforce(now=None):
                 audit("refuse", name, reason=f"service {svc!r} is not declared in the compose file: stopped")
                 acts.append(("stop", name))
             continue
-        if svc not in SCALABLE or r.get("State") != "running":
+        if svc != "applier" or r.get("State") != "running":  # eval containers are bounded at create and short-lived
             continue
         hc = (_docker("GET", f"/containers/{r['Id']}/json") or {}).get("HostConfig") or {}
         fix = {k: cap for k, cap in CAPS[svc].items() if not hc.get(k) or hc[k] > cap}
@@ -559,6 +560,12 @@ def control(argv):
         i = a.index("--audit")
         n = int(a[i + 1]) if len(a) > i + 1 and a[i + 1].isdigit() else 30
         return {"audit": audit_tail(min(n, 500))}
+    if "--eval" in a:  # ask for one eval container now (the supervisor launches it within a minute)
+        os.makedirs(_bench_dir(), exist_ok=True)
+        _own(_bench_dir())
+        open(os.path.join(_bench_dir(), "REQUEST"), "w").write(str(time.time()))
+        audit("eval_request", "B1-B10")
+        return {"requested": True, "note": "an eval container starts within a minute; results at /evals"}
     if "--quarantine" in a:
         return {"quarantine": quarantine_list()}
     return None
@@ -566,7 +573,8 @@ def control(argv):
 
 # services without a heartbeat of their own: the supervisor probes them over the compose network
 SERVICES = {"api": "http://api:8787/api/health", "web": "http://web:3000/", "mcp": "http://mcp:8790/mcp",
-            "ledger": None, "postgres": None, "answers": None, "reposync": None}
+            "ledger": None, "postgres": None, "answers": None, "reposync": None,
+            "desk": "http://desk:6080/"}
 
 
 CONTAINERS = os.path.join(WORKSPACE, "containers.json")  # not under fleet/: those files are heartbeats
@@ -704,8 +712,141 @@ def daily(imap, now=None, run=None):
 BENCH_HOURS = int(os.environ.get("REGEN_BENCH_HOURS", "6"))
 
 
+# ---------------- evaluation containers ----------------
+# Benchmarks B1-B10 (engine/bench.py) run in one-shot `eval` containers, never inside the supervisor: 0 of them most
+# of the time, one per pending trigger up to MAX_EVALS. Triggers: a commit reposync pushed that was not evaluated
+# yet, the last run being older than BENCH_HOURS, or workspace/bench/REQUEST (`supervise --eval`). Each container is
+# built from the api container's config (engine image, bank volumes, the Postgres secret, the compose network),
+# bounded like everything the supervisor creates, reaped and audited with its exit code when it ends.
+MAX_EVALS = int(os.environ.get("REGEN_MAX_EVALS", "2"))
+EVAL_GAP = 30 * 60  # the same trigger never launches twice within this (a failing run must not loop)
+
+
+def _project_rows(service):
+    import urllib.parse
+    proj = os.environ.get("REGEN_COMPOSE_PROJECT", "deploy")
+    flt = urllib.parse.quote(json.dumps({"label": [f"com.docker.compose.project={proj}",
+                                                   f"com.docker.compose.service={service}"]}))
+    return _docker("GET", f"/containers/json?all=1&filters={flt}") or []
+
+
+def _bench_dir():
+    return os.path.join(WORKSPACE, "bench")
+
+
+def _own(path):
+    """The supervisor runs as root; anything it creates in the bank must stay writable by the engine user (10001),
+    or the eval container cannot save its results there (the 10-13 EACCES lesson)."""
+    if os.name != "nt" and os.getuid() == 0:
+        try:
+            os.chown(path, 10001, 10001)
+        except OSError:
+            pass
+
+
+def eval_triggers(now=None):
+    """[(reason, sha)] pending right now, most specific first. O(events) via the cached ledger reader."""
+    now = now or time.time()
+    d = _bench_dir()
+    out = []
+    if os.path.exists(os.path.join(d, "REQUEST")):
+        out.append(("manual", None))
+    try:
+        from engine.feedback.events import read
+        pushed = [e for e in read("reposync") if e.get("action") == "code_pushed" and e.get("sha")]
+    except Exception:
+        pushed = []
+    if pushed:
+        try:
+            last = open(os.path.join(d, "last_sha"), encoding="utf-8").read().strip()
+        except OSError:
+            last = ""
+        if pushed[-1]["sha"] != last:
+            out.append(("commit", pushed[-1]["sha"]))
+    try:
+        ts = json.load(open(os.path.join(d, "latest.json"), encoding="utf-8")).get("ts") or 0
+    except (OSError, ValueError):
+        ts = 0
+    if now - ts > BENCH_HOURS * 3600:
+        out.append(("schedule", None))
+    return out
+
+
+def launch_eval(reason, sha, existing):
+    """Create + start one eval container from the api container's config. Returns its name. Raises Refused."""
+    tmpl = next((r for r in _project_rows("api") if r.get("State") == "running"), None)
+    if not tmpl:
+        raise Refused("no running api container to take the eval config from")
+    i = _docker("GET", f"/containers/{tmpl['Id']}/json") or {}
+    proj = os.environ.get("REGEN_COMPOSE_PROJECT", "deploy")
+    n = int(time.time()) % 100000
+    name = f"{proj}-eval-{n}"
+    labels = {"com.docker.compose.project": proj, "com.docker.compose.service": "eval",
+              "regen.eval-reason": reason, "regen.eval-sha": sha or ""}
+    hc = {k: i["HostConfig"].get(k) for k in ("Binds", "Mounts", "NetworkMode", "SecurityOpt", "CapDrop")
+          if i["HostConfig"].get(k) is not None}
+    nets = {k: {} for k in (i["NetworkSettings"].get("Networks") or {})}
+    cmd = ["bench", "--save", "--reason", reason] + (["--sha", sha] if sha else [])
+    env = [e for e in (i["Config"].get("Env") or []) if not e.startswith("REGEN_API_")] + ["REGEN_API_URL=http://api:8787"]
+    body = bound({"Image": i["Config"]["Image"], "Env": env, "Entrypoint": ["python", "-m", "engine"], "Cmd": cmd,
+                  "User": i["Config"].get("User"), "Labels": labels, "HostConfig": hc,
+                  "NetworkingConfig": {"EndpointsConfig": nets}}, existing)
+    new = _docker("POST", f"/containers/create?name={name}", body) or {}
+    if not new.get("Id"):
+        raise Refused(f"docker create failed: {str(new)[:80]}")
+    _docker("POST", f"/containers/{new['Id']}/start")
+    return name
+
+
+def evals(now=None, _last={}):  # _last: when each trigger last launched (kept across calls)
+    """Reap finished eval containers (audit exit code, delete), then launch one per pending trigger up to MAX_EVALS.
+    Returns (launched, running). O(eval containers)."""
+    now = now or time.time()
+    rows = _project_rows("eval")
+    running = []
+    for r in rows:
+        name = (r.get("Names") or ["/?"])[0].lstrip("/")
+        if r.get("State") in ("exited", "dead"):
+            st = (_docker("GET", f"/containers/{r['Id']}/json") or {}).get("State") or {}
+            audit("eval_done", name, rc=st.get("ExitCode"), reason=(r.get("Labels") or {}).get("regen.eval-reason"))
+            _docker("DELETE", f"/containers/{r['Id']}")
+        elif r.get("State") != "created" or now - (r.get("Created") or now) < 600:
+            running.append((r.get("Labels") or {}).get("regen.eval-reason"))
+        else:  # created but never started for 10 min: remove it
+            _docker("DELETE", f"/containers/{r['Id']}?force=1")
+    launched = []
+    for reason, sha in eval_triggers(now):
+        if len(running) >= MAX_EVALS:
+            break
+        if reason in running or reason in _last and now - _last[reason] < EVAL_GAP:
+            continue
+        _last[reason] = now
+        try:
+            name = launch_eval(reason, sha, len(running))
+        except Refused as ex:
+            audit("refuse", "create eval", reason=str(ex)[:120], trigger=reason)
+            continue
+        d = _bench_dir()
+        os.makedirs(d, exist_ok=True)
+        _own(d)
+        if reason == "manual":
+            try:
+                os.remove(os.path.join(d, "REQUEST"))
+            except OSError:
+                pass
+        if sha:
+            open(os.path.join(d, "last_sha"), "w", encoding="utf-8").write(sha)
+            _own(os.path.join(d, "last_sha"))
+        audit("eval", name, trigger=reason, sha=sha)
+        running.append(reason)
+        launched.append(name)
+        break  # one per pass: a commit run also refreshes latest.json, which settles the schedule trigger
+    return launched, len(running)
+
+
 def bench():
-    """Benchmarks B1-B7 in a subprocess (engine/bench.py --save -> workspace/bench/latest.json); audited."""
+    """Benchmarks in a subprocess (engine/bench.py --save -> workspace/bench/latest.json); audited. Fallback for a
+    stack without the eval path (no api container); evals() is the normal route."""
     import subprocess, sys
     t = time.time()
     r = subprocess.run([sys.executable, "-m", "engine", "bench", "--save"], capture_output=True, text=True,
@@ -774,8 +915,8 @@ def supervise(argv=None):
                 clean([])
             if imap and n % 240 == 40:  # hourly (10 min after start): LinkedIn alert mail -> leads -> queue
                 threading.Thread(target=alerts, daemon=True).start()
-            if n % (240 * BENCH_HOURS) == 20:  # 5 min after start, then every BENCH_HOURS
-                threading.Thread(target=bench, daemon=True).start()
+            if n % 4 == 2 and n >= 20:  # every minute from 5 min after start: eval containers for pending triggers
+                evals()
             if n % 4 == 0:  # every minute
                 enforce()
                 svc = services()

@@ -150,6 +150,30 @@ services:
       - ..:/src:ro  # the host repo, read-only: only committed `main` is ever taken from it
     deploy: { resources: { limits: { cpus: "1.0", memory: 1g } } }
 
+
+  eval:  # one-shot benchmarks B1-B10; the supervisor creates these on a commit / schedule / request (0..REGEN_MAX_EVALS)
+    <<: *engine  # by hand: docker compose -f deploy/bank.compose.yml --profile eval run --rm eval
+    profiles: [eval]
+    restart: "no"
+    entrypoint: ["python", "-m", "engine"]
+    command: ["bench", "--save", "--reason", "manual"]
+    environment: { REGEN_DB_HOST: postgres, REGEN_API_URL: "http://api:8787" }
+    secrets: [pg_password]
+    deploy: { resources: { limits: { cpus: "1.0", memory: 1g, pids: 256 } } }
+
+  desk:  # a visible browser you sign in to: http://127.0.0.1:6080 (noVNC, this machine only); fills Workday forms there
+    <<: *engine
+    entrypoint: ["sh", "-c", "rm -f /tmp/.X99-lock; Xvfb :99 -screen 0 1366x900x24 -nolisten tcp >/dev/null 2>&1 & sleep 1; x11vnc -display :99 -forever -shared -nopw -localhost -rfbport 5900 -quiet >/dev/null 2>&1 & websockify --web /usr/share/novnc 6080 localhost:5900 >/dev/null 2>&1 & exec python -m engine desk"]
+    environment:
+      REGEN_WORKDAY_SUBMIT: "${REGEN_WORKDAY_SUBMIT:-0}"  # 1 = submit when every required answer came from presets / Fact Bank
+    ports: ["127.0.0.1:6080:6080"]
+    volumes:
+      - regen-profile:/data/profile
+      - regen-workspace:/data/workspace
+      - regen-desk:/home/regen/desk-profile  # your tenant sign-ins survive a recreate
+    shm_size: "1gb"
+    deploy: { resources: { limits: { cpus: "1.5", memory: 2g, pids: 1024 } } }
+
 secrets:
   gh_token: { file: ../.gh_token }  # fine-grained PAT, this repo only (Contents + Pull requests: read/write)
   pg_password: { file: ../.pg_password }
@@ -159,3 +183,4 @@ volumes:
   regen-workspace: { name: regen-workspace }
   regen-db: { name: regen-db }
   regen-repo: { name: regen-repo }
+  regen-desk: { name: regen-desk }

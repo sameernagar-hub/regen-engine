@@ -1,0 +1,61 @@
+<!doctype html>
+<!-- A small Workday look-alike: Apply -> Apply Manually -> My Information -> Application Questions -> Review.
+     Uses Workday's data-automation-id attributes. ?signin=1 shows the sign-in wall instead. -->
+<html><head><meta charset="utf-8"><title>Initech - Software Engineer</title></head>
+<body>
+<div id="app"></div>
+<script>
+const app = document.getElementById('app');
+const signin = location.search.includes('signin=1');
+window.__w = {};
+function step(n) {
+  if (n === 0) {
+    app.innerHTML = '<h1>Software Engineer</h1><a data-automation-id="adventureButton" href="#" onclick="step(1);return false">Apply</a>';
+  } else if (n === 1) {
+    app.innerHTML = '<button data-automation-id="applyManually" onclick="step(' + (signin ? 9 : 2) + ')">Apply Manually</button>';
+  } else if (n === 9) {
+    app.innerHTML = '<div data-automation-id="signInContent"><label>Email Address<input type="text"></label>' +
+      '<label>Password<input data-automation-id="password" type="password"></label></div>';
+  } else if (n === 2) {
+    app.innerHTML = '<h2 data-automation-id="progressBarActiveStep">My Information</h2>' +
+      '<div data-automation-id="formField-firstName"><label>First Name*</label><input data-automation-id="legalNameSection_firstName" aria-required="true"></div>' +
+      '<div data-automation-id="formField-lastName"><label>Last Name*</label><input data-automation-id="legalNameSection_lastName" aria-required="true"></div>' +
+      '<div data-automation-id="formField-city"><label>City*</label><input data-automation-id="addressSection_city" aria-required="true"></div>' +
+      '<input data-automation-id="file-upload-input-ref" type="file">' +
+      '<button data-automation-id="pageFooterNextButton" onclick="save2()">Save and Continue</button>';
+  } else if (n === 3) {
+    app.innerHTML = '<h2 data-automation-id="progressBarActiveStep">Application Questions</h2>' +
+      '<div data-automation-id="formField-sponsor"><label>Will you now or in the future require sponsorship for employment visa status?*</label>' +
+      '<button aria-haspopup="listbox" aria-required="true" id="spons" onclick="menu()">Select One</button></div>' +
+      '<fieldset><legend>Are you at least 18 years of age?*</legend>' +
+      '<label><input type="radio" name="age" value="Yes" aria-required="true">Yes</label><label><input type="radio" name="age" value="No">No</label></fieldset>' +
+      '<button data-automation-id="pageFooterNextButton" onclick="save3()">Save and Continue</button>';
+  } else if (n === 4) {
+    app.innerHTML = '<h2 data-automation-id="progressBarActiveStep">Review</h2>' +
+      '<button data-automation-id="pageFooterSubmitButton" onclick="done()">Submit</button>';
+  }
+}
+function menu() {
+  const ul = document.createElement('ul'); ul.setAttribute('role', 'listbox');
+  for (const t of ['Yes', 'No']) {
+    const li = document.createElement('li'); li.setAttribute('role', 'option'); li.textContent = t;
+    li.onclick = () => { document.getElementById('spons').textContent = t; ul.remove(); };
+    ul.appendChild(li);
+  }
+  document.body.appendChild(ul);
+}
+function save2() {
+  for (const k of ['legalNameSection_firstName', 'legalNameSection_lastName', 'addressSection_city'])
+    window.__w[k] = document.querySelector('[data-automation-id=' + k + ']').value;
+  window.__w.file = document.querySelector('[data-automation-id=file-upload-input-ref]').files.length;
+  step(3);
+}
+function save3() {
+  window.__w.spons = document.getElementById('spons').textContent;
+  const r = document.querySelector('input[name=age]:checked'); window.__w.age = r ? r.value : null;
+  step(4);
+}
+function done() { window.__submitted = true; app.innerHTML = '<h1>Thank you for applying</h1>'; }
+step(0);
+</script>
+</body></html>
