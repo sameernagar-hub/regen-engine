@@ -1,4 +1,9 @@
-# Handoff: 10-15 ~00:30 (after v0.14). Stack is UP (12 containers incl. desk). PR #13 merged by fast-forward.
+# Handoff: 10-15 ~00:45 (after v0.14). Stack is DOWN (stopped cleanly, 0 claimed; volumes kept). main = this commit.
+
+## START
+`cd regen-engine && REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_ASHBY_PER_PASS=1 REGEN_LOOP_MIN=3 REGEN_SOURCES_EVERY=10 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
+then `docker exec deploy-supervisor-1 python -m engine fleet`; inbox: `docker exec -u 10001 -e HOME=/home/regen deploy-supervisor-1 python -m engine inbox --imap 2`.
+Pushing: this machine has no host Python, so the pre-push privacy hook needs the docker `python` shim (see 10-15 session) or a host Python.
 
 ## Do first (in order)
 1. **Rippling filler (engine/apply/runner.py fill_rippling)**: dry run on a real US posting filled every field except
