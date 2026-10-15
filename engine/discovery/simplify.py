@@ -19,7 +19,7 @@ NO_SPONSOR = ("U.S. Citizenship is Required", "Does Not Offer Sponsorship")
 
 def ats_of(url):
     for key, name in (("greenhouse", "greenhouse"), ("ashbyhq", "ashby"), ("lever.co", "lever"),
-                      ("myworkdayjobs", "workday"), ("icims", "icims")):
+                      ("myworkdayjobs", "workday"), ("icims", "icims"), ("rippling.com", "rippling"), ("applytojob.com", "jazzhr")):
         if key in url:
             return name
     return "other"

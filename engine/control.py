@@ -12,7 +12,7 @@ import datetime, json, os, signal, subprocess, sys, time
 from engine.config import ROOT, WORKSPACE
 
 STATE = os.path.join(WORKSPACE, "run_ui.json")
-ATS_ALL = ("greenhouse", "lever", "ashby", "workable", "smartrecruiters", "workday", "icims")
+ATS_ALL = ("greenhouse", "lever", "ashby", "workable", "smartrecruiters", "workday", "icims", "rippling", "jazzhr")
 
 
 def defaults():

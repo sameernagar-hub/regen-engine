@@ -1,3 +1,24 @@
+# Handoff: 10-15 ~00:30 (after v0.14). Stack is UP (12 containers incl. desk). PR #13 merged by fast-forward.
+
+## Do first (in order)
+1. **Rippling filler (engine/apply/runner.py fill_rippling)**: dry run on a real US posting filled every field except
+   (a) required checkbox groups ("Which coding languages...": use skill_options from the Fact Bank, flag required
+   ones as missing), (b) "experience with GitHub and Git?" answered No (Git is not in the Fact Bank vocabulary:
+   ask the user / add Git to the Fact Bank, don't guess), (c) submit_rippling must check the Apply button is enabled.
+   Then move "rippling" from REACH to OPEN_ATS + APPLY_SUPPORTED in engine/discovery/ats.py (161 boards, no account,
+   no captcha seen). Until then Rippling jobs land on the reach list.
+2. Harvest the new boards: `docker exec deploy-pipeline-1 python -m engine boards harvest` (rippling + jazzhr
+   adapters are new; JazzHR has a required reCAPTCHA -> desk only, like SmartRecruiters).
+3. Ashby cooldown ends ~22:40 10-15; pipeline now runs REGEN_ASHBY_PER_PASS=1.
+4. User: sign in to Workday employers via /reach "Workday sign-ins" -> watch the first real desk fill.
+
+## Done since the 10-14 handoff
+- Desk: Workday sign-in list + Open in desk; SmartRecruiters fill in the desk (bot check is the user's); internal /
+  contractor Workday sites hidden. Public feed airbag false alarm fixed (values only; names in titles masked).
+- Answers: residence time zone, held US/Canadian citizenship, sex = EEO decline. Age-18 fix + resume check live.
+- Discovery adapters: rippling (JSON, first-seen dates), jazzhr (HTML, real dates). Source research: Oracle Cloud
+  132 boards (account, like Workday), JazzHR 187, Rippling 161; Recruitee/Breezy too small to matter.
+
 # Handoff: 10-14 night session (v0.14 guardrails, evals, desk), written ~23:45 10-14. Stack is UP.
 
 ## START HERE

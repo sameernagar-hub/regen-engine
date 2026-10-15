@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 from engine.config import PACKAGE, WORKSPACE
 
 OPEN_ATS = ("greenhouse", "ashby", "lever", "workable")   # board token = a guessable company slug
-REACH = ("smartrecruiters", "workday", "icims")             # discovered + tailored; the user submits
+REACH = ("smartrecruiters", "workday", "icims", "jazzhr", "rippling")  # discovered + tailored; the user / the desk submits
 ATS = OPEN_ATS + REACH
 SLUGGABLE = OPEN_ATS + ("smartrecruiters",)                 # newgrad/probe may guess these from a company name
 APPLY_SUPPORTED = ("greenhouse", "ashby")  # the runner fills these; other ATS jobs get a resume + a human click
@@ -251,6 +251,51 @@ def icims(token, pages=5, _seen=None):
     return out
 
 
+RIPPLING_SEEN = os.path.join(WORKSPACE, "rippling_seen.json")
+
+
+def rippling(token, _seen=None):
+    """Rippling ATS public board JSON (api.rippling.com/platform/api/ats/v1/board/<slug>/jobs). The list has no
+    posted date (the job detail has createdOn, read in job_description), so `posted` is first-seen like iCIMS: the
+    first fetch of a board marks what is already open as old. One GET per board."""
+    d = _get(f"https://api.rippling.com/platform/api/ats/v1/board/{token}/jobs")
+    if d is None:
+        return None
+    seen = _seen if _seen is not None else _load_json(RIPPLING_SEEN)
+    first = token not in seen
+    mine = seen.setdefault(token, {})
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    out = []
+    for j in d if isinstance(d, list) else []:
+        mine.setdefault(j["uuid"], "2000-01-01T00:00:00+00:00" if first else now)
+        out.append(dict(ats="rippling", token=token, id=j["uuid"], company=re.sub(r"-careers?$", "", token),
+                        title=(j.get("name") or "").strip(), location=(j.get("workLocation") or {}).get("label", ""),
+                        posted=mine[j["uuid"]], url=j.get("url") or f"https://ats.rippling.com/{token}/jobs/{j['uuid']}"))
+    if _seen is None:
+        _save_json(RIPPLING_SEEN, seen)
+    return out
+
+
+JAZZ_ROW = re.compile(r'<tr id="row_job_(\d{14})_[A-Z0-9]+"[^>]*>\s*<td>\s*<a class="job_title_link" href="/apply/jobs/details/'
+                      r'([A-Za-z0-9]+)[^"]*">([^<]+)</a>.*?</td>\s*<td>\s*([^<]*?)\s*</td>', re.S)
+
+
+def jazzhr(token):
+    """JazzHR (<co>.applytojob.com/apply/jobs) listing HTML. Each row id carries the job's creation time
+    (row_job_YYYYMMDDhhmmss_...), so `posted` is real. One GET per board."""
+    import html as H
+    page = _html(f"https://{token}.applytojob.com/apply/jobs")
+    if page is None:
+        return None
+    out = []
+    for stamp, jid, title, where in JAZZ_ROW.findall(page):
+        posted = datetime.strptime(stamp, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc).isoformat()
+        out.append(dict(ats="jazzhr", token=token, id=jid, company=token, title=H.unescape(title).strip(),
+                        location=H.unescape(where).strip(), posted=posted,
+                        url=f"https://{token}.applytojob.com/apply/{jid}"))
+    return out
+
+
 def _load_json(path):
     try:
         return json.load(open(path, encoding="utf-8"))
@@ -266,7 +311,7 @@ def _save_json(path, obj):
 
 
 FETCH = {"greenhouse": greenhouse, "ashby": ashby, "lever": lever, "workable": workable,
-         "smartrecruiters": smartrecruiters, "workday": workday, "icims": icims}
+         "smartrecruiters": smartrecruiters, "workday": workday, "icims": icims, "rippling": rippling, "jazzhr": jazzhr}
 
 
 def job_description(job):
@@ -304,6 +349,21 @@ def job_description(job):
         return d, clean(((d or {}).get("jobPostingInfo") or {}).get("jobDescription")), []
     if job["ats"] == "icims":
         page = _html(job["url"] + "?in_iframe=1")
+        for blob in re.findall(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', page or "", re.S):
+            try:
+                d = json.loads(blob)
+            except ValueError:
+                continue
+            if isinstance(d, dict) and d.get("@type") == "JobPosting":
+                return d, clean(d.get("description")), []
+        return None, "", []
+    if job["ats"] == "rippling":
+        d = _get(f"https://api.rippling.com/platform/api/ats/v1/board/{job['token']}/jobs/{job['id']}")
+        desc = (d or {}).get("description") or {}
+        text = " ".join(str(v) for v in desc.values()) if isinstance(desc, dict) else str(desc)
+        return d, clean(text), []
+    if job["ats"] == "jazzhr":
+        page = _html(f"https://{job['token']}.applytojob.com/apply/jobs/details/{job['id']}")
         for blob in re.findall(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', page or "", re.S):
             try:
                 d = json.loads(blob)
@@ -388,6 +448,8 @@ HARVEST = {
     "smartrecruiters": r"(?:jobs|careers)\.smartrecruiters\.com/(?!oneclick|sr-jobs|api)([A-Za-z0-9_-]+)",
     "workday": r"([a-z0-9-]+\.wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([A-Za-z0-9_-]+)",
     "icims": r"//((?:careers|jobs|uscareers)-[a-z0-9-]+)\.icims\.com",
+    "rippling": r"ats\.rippling\.com/(?!api)([A-Za-z0-9-]+)",
+    "jazzhr": r"//([a-z0-9-]+)\.applytojob\.com",
 }
 HARVEST_FEEDS = [  # machine-readable lists (JSON with "url") and READMEs (any ATS link in the markdown)
     "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",

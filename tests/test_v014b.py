@@ -254,7 +254,7 @@ def test_rule_gaps_seen_10_14(q, want, monkeypatch):
     """Stops on 10-14 queue jobs: residence time zone (not only 'based in'), held citizenship from the preset,
     sex as an EEO question (decline, user policy)."""
     from engine.apply.runner import answer, P
-    monkeypatch.setitem(P, "timezone", "Pacific Time (PT)")
+    monkeypatch.setitem(P, "timezone", "Mountain Time (MT)")
     monkeypatch.setitem(P, "citizenship_country", "India")
     got = answer(q, {"extra": {}})
     if want == "tz":
