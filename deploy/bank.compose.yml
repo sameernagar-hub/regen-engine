@@ -37,7 +37,7 @@ services:
     environment:
       REGEN_TABS: "${REGEN_TABS:-3}"
       REGEN_MAX_PER_DAY: "${REGEN_MAX_PER_DAY:-60}"
-    deploy: { resources: { limits: { cpus: "1.5", memory: 2g } } }
+    deploy: { resources: { limits: { cpus: "1.5", memory: 2g, pids: 1024 } } }
 
   pipeline:
     <<: *engine

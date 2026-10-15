@@ -1,3 +1,45 @@
+# Handoff: 10-14 night session (v0.14 guardrails, evals, desk), written ~23:45 10-14. Stack is UP.
+
+## START HERE
+1. Stack running? `docker ps --format '{{.Names}} {{.Status}}' | grep deploy` -> 12 containers incl. `desk`. If not:
+   `cd regen-engine && REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_ASHBY_PER_PASS=2 REGEN_LOOP_MIN=3 REGEN_SOURCES_EVERY=10 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
+2. Health: `docker exec deploy-supervisor-1 python -m engine fleet` (desk role should say `ready`). Pages: /control,
+   /reach (Fill it in the desk), **/evals** (new), desk = http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale.
+3. Inbox at start: `docker exec -u 10001 -e HOME=/home/regen deploy-supervisor-1 python -m engine inbox --imap 2`.
+4. Same git rule: commit locally (noreply email), reposync opens the PR. Local commits this session:
+   a783e43 guardrails, 87df584 evals + desk + age fix + resume check, 6e13353 desk on real Workday + pages, + handoff.
+
+## Done 10-14
+- Supervisor guardrails: bounded creates (allowlist applier/eval, HARD_MAX 12, cpu/mem/pids caps, no privileged /
+  CapAdd / Docker socket), enforce() every minute (stop undeclared, live-bound unlimited appliers, 12 h TTL for
+  supervisor-made appliers). Live: all appliers bounded, ~225 pids used while applying.
+- Eval containers: B8 supervisor (7/7), B9 API p95 (~340-580 ms), B10 bus (~1.2-1.7 s). Triggers: reposync commit,
+  6 h schedule, `supervise --eval`. Verified live: manual + commit evals ran, rc 0, reaped, history at /evals.
+- **Bug fixed: "Are you at least 18 years of age/old?" was answered No** (years-of-experience rule). 11 forms, 3
+  SUBMITTED with "No": TeleTracking SWE I (10-11, since rejected), Coinbase CDP Foundations + CDP Stablecoin (10-13).
+  User confirmed (10-14) they are 26. Fix deployed + regression test.
+- Resume-attached check before every submit on every ATS (was Greenhouse only): `RESUME UPLOAD FAILED`, not submitted.
+- Workday desk + filler: verified on a real tenant up to the sign-in step (stops: "sign in to <tenant> in the desk").
+  Past sign-in the wizard steps are only verified on the local look-alike: **first real fill needs watching**.
+- Supply sweep: boards 5,094 -> ~5,105, +22 queue jobs (queue 531), reach list 179 (workday 172).
+
+## Next (in order)
+1. **User signs in to Workday tenants in the desk**, then press "Fill it in the desk" on /reach; watch the first one
+   and fix selectors for My Information / My Experience / Application Questions / Voluntary Disclosures from what the
+   real DOM shows (proof screenshot + `application` event detail). 172 Workday jobs are waiting on this.
+2. SmartRecruiters filler (34 queued + 7 reach): public posting -> "I'm interested" -> one-page form, no account.
+   Add to APPLY_SUPPORTED with a look-alike fixture; watch for hCaptcha.
+3. New open-ATS adapters (public job JSON + account-free apply form): Recruitee (`{co}.recruitee.com/api/offers`),
+   Breezy (`{co}.breezy.hr/json`), Pinpoint (`{co}.pinpointhq.com/postings.json`), BambooHR (`{co}.bamboohr.com/careers/list`),
+   Rippling ATS, Teamtailor. Discovery first (reach rows), filler per ATS once a look-alike test exists.
+4. Ashby queue (271) is the bottleneck at 2/pass; no new cooldown seen today. Consider 3/pass only after a clean day.
+5. Wiki pages still open: Ledger, Data bus, Repo sync, Answer queue, MCP, Supervisor (guardrails), Evals, Desk.
+
+## Needs the user
+- Tell Coinbase (2 roles) the 18+ answer was a form-filler error, if you want: the submitted answer was "No".
+- Sign in to Workday tenants in the desk (your accounts; the engine never types passwords).
+- Everpure deemed-export Yes/No still pending; GitHub "Keep my email private" still off; 3 Gmail drafts to delete.
+
 # Handoff: 10-13 session (v0.13 "Reach"), written ~00:15 10-14. Stack is DOWN (volumes kept).
 
 ## START HERE (engine + Claude)
