@@ -223,3 +223,23 @@ def test_workday_signin_list_and_internal_sites():
     s = signins(rows, done={"https://globex.wd1.myworkdayjobs.com/careers/job/D_4"})
     assert s == [{"host": "initech.wd5.myworkdayjobs.com", "company": "initech", "jobs": 2,
                   "url": "https://initech.wd5.myworkdayjobs.com/External"}]
+
+
+def test_public_feed_masks_names_in_titles_and_ignores_json_keys(tmp_path, monkeypatch):
+    """10-14: the feed was blocked by an edge key ("target") and a role title naming a product that is also an
+    employer. Keys are schema, not data; a name inside a public title is masked; a real leak still blocks."""
+    import engine.live.export as X
+    ev = tmp_path / "events.jsonl"
+    ev.write_text("\n".join(json.dumps(e) for e in [
+        {"kind": "application", "job": "Initech - Platform Engineer", "status": "SUBMITTED", "ts": "2026-10-14T10:00:00"},
+        {"kind": "discovered", "company": "target", "ts": "2026-10-14T10:00:00"}]) + "\n")
+    monkeypatch.setattr(X, "WORKSPACE", str(tmp_path)); monkeypatch.setattr(X, "SITE", str(tmp_path / "site"))
+    monkeypatch.setattr(X, "narrate", lambda e: None)
+    monkeypatch.setattr(X, "snapshot", lambda: {"verified": 1, "boards": 1, "verified_jobs": [["Globex", "Initech Administrator", "crm"]]})
+    graph = {"nodes": [{"id": "n1", "label": "Initech Administrator"}], "edges": [{"source": "n0", "target": "n1"}]}
+    monkeypatch.setattr(X, "public_graph", lambda: graph)
+    d = X.build(7)
+    assert d["graph"]["nodes"][0]["label"] == "[name] Administrator" and d["verified_roles"][0][0] == "[name] Administrator"
+    monkeypatch.setattr(X, "snapshot", lambda: {"verified": 1, "boards": 1, "verified_jobs": [], "last_poll": "target"})
+    with pytest.raises(SystemExit, match="target"):
+        X.build(7)

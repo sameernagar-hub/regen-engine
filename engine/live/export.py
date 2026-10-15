@@ -125,8 +125,6 @@ def build(days=7):
     data = {"generated": time.strftime("%Y-%m-%d %H:%M"), "days": days, "verified": s["verified"],
             "verified_roles": roles, "boards": s["boards"], "last_poll": s.get("last_poll"),
             "events": events[-160:], "graph": public_graph()}
-    # airbag: refuse to publish if any company name we've ever touched would appear on the public page
-    raw = json.dumps(data, ensure_ascii=False).lower()
     names = set()
     for line in open(path, encoding="utf-8") if os.path.exists(path) else []:
         try:
@@ -140,6 +138,29 @@ def build(days=7):
     # "applied - role", "at applied", "applied's"; the verb in "Applied to a fintech..." is not a leak
     word = lambda c: r"(?:" + re.escape(c) + r" [-–:]|\bat " + re.escape(c) + r"\b|" + re.escape(c) + r"'s\b)"
     any_ = lambda c: r"(?<![a-z])" + re.escape(c) + r"(?![a-z])"
+    # role titles can name a product that is also an employer ("<Co> Administrator" at another company, 10-14):
+    # titles are masked, never published with the name
+    alts = sorted((re.escape(c) for c in names if c not in COMMON_WORD_NAMES), key=len, reverse=True)
+    one = re.compile(r"(?<![a-z])(?:" + "|".join(alts) + r")(?![a-z])", re.I) if alts else None
+    mask = lambda t: one.sub("[name]", t) if one else t  # one compiled alternation: O(len(t)), not O(names * len(t))
+    for n in (data["graph"] or {}).get("nodes", []):
+        if isinstance(n.get("label"), str):
+            n["label"] = mask(n["label"])
+    data["verified_roles"] = [[mask(r), lane] for r, lane in data["verified_roles"]]
+    # airbag: refuse to publish if any company name we've ever touched would appear on the public page. Values only:
+    # JSON keys are the feed's own schema ("target" is an edge key and an employer, 10-14)
+    vals = []
+    def walk(o):
+        if isinstance(o, dict):
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+        elif isinstance(o, str):
+            vals.append(o)
+    walk(data)
+    raw = "\n".join(vals).lower()
     leaks = sorted(c for c in names if re.search(word(c) if c in COMMON_WORD_NAMES else any_(c), raw))
     if leaks:
         raise SystemExit(f"refusing to build site/: company names would be public: {leaks}")
