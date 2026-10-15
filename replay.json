@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-15 00:10",
+"generated": "2026-10-15 00:22",
 "days": 7,
 "verified": 99,
 "verified_roles": [
@@ -403,12 +403,6 @@
 "boards": 4755,
 "last_poll": 1791700372.0784452,
 "events": [
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: not a fit.",
-"ts": "2026-10-14T22:40"
-},
 {
 "stage": "judge",
 "tone": "quiet",
@@ -1362,6 +1356,12 @@
 "tone": "calm",
 "text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
 "ts": "2026-10-14T23:53"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, sre lane.",
+"ts": "2026-10-15T00:14"
 }
 ],
 "graph": {
