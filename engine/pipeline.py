@@ -233,7 +233,8 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
         ashby_ok = not ashby_cooling()
     if scan:
         ats = "greenhouse,ashby,lever,workable" if ashby_ok else "greenhouse,lever,workable"
-        ats += ",smartrecruiters,workday,icims"  # v0.13 reach: discovered + tailored, the user submits (engine/discovery/reach.py)
+        ats += ",rippling"  # 10-15: filled by the runner (ats.FILLED); it was never scanned, so the queue had none
+        ats += ",smartrecruiters,workday,icims,jazzhr"  # reach: discovered + tailored, the user submits (engine/discovery/reach.py)
         subprocess.run([sys.executable, "-m", "engine", "scan", str(days), "--ats", ats] + (["--hot"] if hot else []),
                        cwd=ROOT, check=False)
     if sources:  # boards miss companies we have no board for: new-grad sites (~25 s) + curated GitHub lists (~4 s)
