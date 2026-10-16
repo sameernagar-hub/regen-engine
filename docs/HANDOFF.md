@@ -1,3 +1,41 @@
+# Handoff: 10-15 late night (~23:15). Stack is DOWN (stopped cleanly; volumes kept). main = this commit.
+
+## START
+`cd regen-engine && REGEN_DAYS=7 REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_ASHBY_PER_PASS=1 REGEN_LOOP_MIN=3 REGEN_SOURCES_EVERY=10 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
+then `docker exec deploy-supervisor-1 python -m engine fleet`; inbox: `docker exec -u 10001 -e HOME=/home/regen deploy-supervisor-1 python -m engine inbox --imap 2`.
+UI: http://127.0.0.1:3000/needs (answers), /reach (Workday sign-ins), /control. If `curl 127.0.0.1:8787/api/health` fails, check
+`docker ps` shows `127.0.0.1:8787->8787/tcp` for deploy-api-1; if not: `docker compose -f deploy/bank.compose.yml up -d --no-deps --force-recreate api`.
+
+## Done 10-15
+- Stale image fixed (Rippling/JazzHR code was not in the running image). Harvest: +161 Rippling, +187 JazzHR boards.
+- **Rippling promoted to auto-apply** (ats.FILLED + APPLY_SUPPORTED) after dry runs on 2 real postings filled every field.
+  Submit check no longer reads a wrapper `[class*=error]` (the page heading) as an error while the form is submitting:
+  2 Rippling applications were logged FAILED mid-submit; confirm from the inbox before any resubmit.
+- **Throughput**: discovery window was fixed at 1 day -> `REGEN_DAYS` (now 7). One pass went from 0-1 selected to 20
+  selected / 14 dispatched; supervisor scaled to 5 appliers. Pipeline scan list now includes rippling + jazzhr.
+- **/needs answers**: your own legal / sponsorship answers were refused (422). Now accepted and kept on THAT job only
+  (`answers/job_extra.json` -> the retry batch's `extra`), never in answers.json; EEO / demographic stays decline-only.
+  "Apply now" (`/api/control/retry`) 403 in the bank -> returns "already queued" (the answers container retries).
+  Answered jobs whose old batch file was cleaned are rebuilt from the ledger (url + resume), so they retry too.
+- Tried an automatic "re-check parked jobs" pass: its dry run produced wrong answers (arbitration "No", degree year
+  "Master's"), so it was NOT shipped. Parked jobs stay on /needs.
+
+## Do first (in order)
+1. **New job-board drivers (user request 10-15): Glassdoor, Indeed, Monster, ZipRecruiter.** Discovery first: pull
+   their postings, resolve each to the employer's own ATS link where one exists (then the normal filler applies), else
+   list on the reach page with a tailored resume. Their own "easy apply" flows need the user's signed-in account and
+   have bot checks: per PLAN.md guardrails these run in ASSIST mode in the desk (user signed in, engine fills, user
+   solves any check and clicks submit); never automate captchas or log in with the user's password.
+2. Rippling jobs still did not reach queue.json after a 7-day pass (scan date filter / first-seen dates / --hot):
+   find why. Some Ashby forms (one employer, 10 jobs): "Missing entry for required field: Location" - fix the places box.
+3. Supervisor replaced the api container without its port/network once (probe "Name or service not known" loop):
+   make the probe restart via compose config, not a bare container.
+4. Ashby 1/pass (215 selectable Ashby jobs wait); raise to 2 only after a clean day.
+
+## Needs the user
+- /needs: re-enter answers that were refused before the fix (arbitration, authorization, sponsorship questions).
+- Workday sign-ins on /reach (273 Workday jobs). Deemed-export Yes/No for the storage employer still pending.
+
 # Handoff: 10-15 ~00:45 (after v0.14). Stack is DOWN (stopped cleanly, 0 claimed; volumes kept). main = this commit.
 
 ## START

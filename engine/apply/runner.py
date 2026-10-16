@@ -412,7 +412,7 @@ def answer(label, job, field=None):
     ans = answer_for(label, job.get("extra", {}))
     if NOTE_Q.search(label) and job.get("note"):
         return job["note"]
-    if SALARY_Q.search(label) and not job.get("extra"):
+    if SALARY_Q.search(label) and not any(re.search(p, label, re.I) for p in (job.get("extra") or {})):  # any extra used to skip this
         from engine.tailoring.salary import expected
         ans = expected(job, P) or ans  # midpoint of the posted range, else the market rate (user policy)
     lists = country_list_answer(label) or area_answer(label)

@@ -31,7 +31,7 @@ def _dirs():
 
 def enqueue(job, question, answer):
     """Validate (same rules as save) and queue one answer. Returns the record the page shows; raises ValueError."""
-    question, answer = A.validate(question, answer)
+    question, answer = A.validate(question, answer, allow_legal=True)  # typed by the user; legal ones stay on this job
     d = _dirs()
     ts = datetime.datetime.now().isoformat(timespec="seconds")
     name = f"{ts.replace(':', '')}_{hashlib.sha1(f'{job}|{question}'.encode()).hexdigest()[:8]}.json"
@@ -40,6 +40,26 @@ def enqueue(job, question, answer):
     os.replace(tmp, os.path.join(d["inbox"], name))  # appears whole: the container never reads half a file
     record("answer_queued", job=job, question=question[:300])
     return {"pattern": A.pattern_for(question), "answer": answer, "source": f"queued {ts}, for {job}"}
+
+
+JOB_EXTRA = "job_extra.json"  # under QDIR
+
+
+def job_extras():
+    """{job label: {question pattern: answer}}: legal / sensitive answers the user typed for one job only."""
+    try:
+        return json.load(open(os.path.join(QDIR, JOB_EXTRA), encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def keep_for_job(job, question, answer):
+    """Kept across retries, so a job answered one question at a time carries every earlier answer. Atomic write."""
+    cur = job_extras()
+    cur.setdefault(job, {})[A.pattern_for(question)] = answer
+    tmp = os.path.join(QDIR, JOB_EXTRA + ".tmp")
+    json.dump(cur, open(tmp, "w", encoding="utf-8"), indent=1)
+    os.replace(tmp, os.path.join(QDIR, JOB_EXTRA))
 
 
 def find_entry(job):
@@ -54,7 +74,11 @@ def find_entry(job):
             continue
         if hit:
             return {k: v for k, v in hit.items() if not k.startswith("_")}
-    return None
+    # 10-15: batch files of older runs are cleaned, so 6 answered jobs were never retried. The ledger still has
+    # the job's URL and resume: that is all the runner needs to fill it again.
+    from engine.feedback.events import read
+    last = next((e for e in reversed(read("application")) if e.get("job") == job and e.get("url") and e.get("resume")), None)
+    return {"name": job, "url": last["url"], "resume": last["resume"]} if last else None
 
 
 def drain():
@@ -73,14 +97,19 @@ def drain():
             continue
         try:
             item = json.load(open(mine, encoding="utf-8"))
-            A.save(item["job"], item["question"], item["answer"], requeue_job=False)
+            if A.job_scoped(item["question"]):
+                A.validate(item["question"], item["answer"], allow_legal=True)
+                keep_for_job(item["job"], item["question"], item["answer"])
+            else:
+                A.save(item["job"], item["question"], item["answer"], requeue_job=False)
         except (ValueError, KeyError, OSError) as e:
             refused += 1
             record("answer_refused", job=str(locals().get("item", {}).get("job", "?")), reason=str(e)[:200])
             os.replace(mine, os.path.join(d["refused"], n))
             continue
         saved += 1
-        record("answer_applied", job=item["job"], question=item["question"][:300])
+        record("answer_applied", job=item["job"], question=item["question"][:300],
+               scope="job" if A.job_scoped(item["question"]) else "all forms")
         jobs.append(item["job"])
         os.replace(mine, os.path.join(d["done"], n))
     retry = _retry(jobs)
@@ -98,6 +127,9 @@ def _retry(jobs):
         if not e or e.get("url") in seen or st.get(e.get("url")) == "SUBMITTED":
             continue
         seen.add(e["url"])
+        mine = job_extras().get(job)
+        if mine:
+            e["extra"] = {**(e.get("extra") or {}), **mine}
         out.append(e)
     if out:
         os.makedirs(os.path.join(BOX, "inbox"), exist_ok=True)

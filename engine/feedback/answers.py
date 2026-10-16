@@ -34,16 +34,26 @@ def missing_questions(detail):
     return [q.strip() for q in d[len("NEEDS YOU:"):].split(" | ") if q.strip() and not q.strip().startswith(("no adapter", "Ashby cooldown"))]
 
 
-def validate(question, answer):
-    """(question, answer) normalized, or ValueError with the reason it is refused."""
+DEMOGRAPHIC = re.compile(r"gender|\brace\b|ethnic|veteran|disab|pronoun|orientation|hispanic|latin|transgender|\bsex\b", re.I)
+
+
+def validate(question, answer, allow_legal=False):
+    """(question, answer) normalized, or ValueError with the reason it is refused. allow_legal: the user typed it
+    (10-15: the /needs page refused the user's own arbitration / authorization answers with a 422); such answers are
+    then kept on that one job only (answer_queue), never in answers.json. EEO / demographic stays decline-only."""
     question, answer = " ".join((question or "").split()), (answer or "").strip()
     if not question or not answer:
         raise ValueError("question and answer are required")
     if len(answer) > MAX_ANSWER:
         raise ValueError(f"answer longer than {MAX_ANSWER} characters")
-    if LEGAL_OR_SENSITIVE.search(question):
+    if DEMOGRAPHIC.search(question) or (LEGAL_OR_SENSITIVE.search(question) and not allow_legal):
         raise ValueError("legal, sponsorship, EEO and sensitive questions are answered from presets only")
     return question, answer
+
+
+def job_scoped(question):
+    """Legal / sensitive answers the user typed apply to that job only (like a per-company arbitration approval)."""
+    return bool(LEGAL_OR_SENSITIVE.search(" ".join((question or "").split())))
 
 
 def save(job, question, answer, profile=None, workspace=None, requeue_job=True):

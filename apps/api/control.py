@@ -313,6 +313,12 @@ def _appliers_busy(window=120):
 def retry(request: Request):
     """Apply again to jobs that are answerable now (pipeline.answerable_now). If appliers are already working, the
     running loop picks them up on its next pass instead (two appliers must not share a browser profile)."""
+    if not WRITE and os.environ.get("REGEN_ANSWER_QUEUE") == "1":
+        # Docker bank (10-15: "Apply now" hit this 403): the answers container already dropped a retry batch for
+        # every saved answer and the supervisor scales appliers to it, so there is nothing to start here.
+        if (request.client.host if request.client else "") not in LOCAL and os.environ.get("REGEN_API_TRUST_PORT") != "1":
+            raise HTTPException(403, "only from this computer")
+        return {"started": False, "note": "Answered jobs are already queued for the appliers (answers container)."}
     _guard(request)
     if C.read_state().get("running") or _appliers_busy():
         return {"started": False, "note": "The engine is already applying; answered jobs join its next pass."}

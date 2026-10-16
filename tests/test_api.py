@@ -191,7 +191,7 @@ def test_answer_queue_end_to_end(monkeypatch, tmp_path, seeded):
     r = client.post("/api/answers", json={"job": "Globex - AI Engineer", "question": "Are you open to travel?", "answer": "Yes"})
     assert r.status_code == 200 and r.json()["source"].startswith("queued")
     assert not (tmp_path / "answers.json").exists()  # nothing written by the API itself
-    assert client.post("/api/answers", json={"job": "J", "question": "Do you require visa sponsorship?", "answer": "No"}).status_code == 422
+    assert client.post("/api/answers", json={"job": "J", "question": "What is your gender?", "answer": "x"}).status_code == 422
     out = Q.drain()
     assert out == {"saved": 1, "refused": 0, "retry": 1}
     assert json.load(open(tmp_path / "answers.json", encoding="utf-8"))[0]["answer"] == "Yes"
@@ -229,3 +229,25 @@ def test_mcp_in_bank_levels(monkeypatch, seeded):
     assert S.ledger_rows("events", q="globex") and S.ledger_rows("pg_shadow")[0]["error"] == "unknown relation"
     monkeypatch.setattr(S, "WRITE", False)
     assert "error" in S.answer_queue_add("J", "Why us?", "Because.")
+
+
+def test_typed_legal_answer_stays_on_its_job(monkeypatch, tmp_path, seeded):
+    """10-15: the user's own arbitration / authorization answer on /needs was refused (422). Now it is accepted, kept
+    on that job only (answers/job_extra.json -> the retry batch's extra), never written to answers.json."""
+    from engine.feedback import answer_queue as Q
+    from engine import pipeline
+    for k, v in (("QDIR", seeded / "answers"), ("BOX", seeded / "batches"), ("WORKSPACE", seeded)):
+        monkeypatch.setattr(Q, k, str(v))
+    monkeypatch.setattr(pipeline, "read", events.read)
+    monkeypatch.setattr(M, "ANSWERS", True); monkeypatch.setattr(M, "QUEUE", True)
+    (seeded / "batches" / "done").mkdir(parents=True, exist_ok=True)
+    (seeded / "batches" / "done" / "run_y_0.json").write_text(json.dumps(
+        [{"name": "Initech - SWE", "url": "https://job-boards.greenhouse.io/initech/jobs/99", "resume": "out/r.pdf"}]))
+    q = "Please review and acknowledge Initech's Candidate Arbitration Agreement"
+    assert client.post("/api/answers", json={"job": "Initech - SWE", "question": q, "answer": "I acknowledge"}).status_code == 200
+    assert Q.drain() == {"saved": 1, "refused": 0, "retry": 1}
+    assert not (tmp_path / "answers.json").exists()
+    batch = [f for f in os.listdir(seeded / "batches" / "inbox") if f.startswith("answers_")][0]
+    extra = json.load(open(seeded / "batches" / "inbox" / batch))[0]["extra"]
+    from engine.apply.runner import answer_for
+    assert answer_for(q, extra) == "I acknowledge" and answer_for(q, {}) != "I acknowledge"

@@ -4,6 +4,17 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-15 · v0.15 supply + answers
+- **Rippling auto-apply**: `ats.FILLED` + `APPLY_SUPPORTED`; pipeline scans rippling + jazzhr. Why: 161 boards, no
+  account, no captcha seen; dry runs on two real postings filled every field. Verify: `tests/test_v015.py`.
+- **Submit check**: Rippling submit ignores `[class*=error]` wrappers and the disabled/submitting state (two good
+  submits were logged FAILED). Verify: proof screenshot shows the greyed form + spinner.
+- **Discovery window** `REGEN_DAYS` (compose; was fixed at 1 day): one pass went from 0-1 to 20 selected jobs.
+- **/needs**: the user's own legal / sponsorship answers are accepted and kept on that job only
+  (`answers/job_extra.json` -> retry batch `extra`); EEO stays refused. "Apply now" works in the bank. Answered jobs
+  whose batch file was cleaned are rebuilt from the ledger. Salary midpoint no longer skipped for jobs with extras.
+  Verify: `tests/test_api.py::test_typed_legal_answer_stays_on_its_job`.
+
 ## [Unreleased] - 2026-10-14 · v0.14 supervisor guardrails
 The supervisor is the only container with the Docker socket, so whatever it creates runs with root-equivalent
 reach on the host. Until now a cloned applier copied whatever limits its source had (none, if a container was ever
