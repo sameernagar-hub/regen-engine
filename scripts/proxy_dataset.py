@@ -318,19 +318,19 @@ def resume_html(lane):
     by_role = {}
     for f in LANE_FACTS[lane]:
         by_role.setdefault(FACT_ROLE[f[:2]], []).append(FACTS[f])
-    sec = "".join(f"<div class=r><b>{roles[r][1]}</b> · {roles[r][0]}<span>{roles[r][2]}</span></div><ul>"
+    sec = "".join(f"<div class=r><div><b>{roles[r][1]}</b> · {roles[r][0]}</div><span>{roles[r][2]}</span></div><ul>"
                   + "".join(f"<li>{x}</li>" for x in xs) + "</ul>" for r, xs in by_role.items() if r in roles)
     proj = "".join(f"<li>{x}</li>" for r, xs in by_role.items() if r not in roles for x in xs)
     return ("<!doctype html><meta charset=utf-8><title>Jane Doe resume (demo)</title><style>"
             "body{margin:0;background:#fff;color:#111;font:13px/1.45 Georgia,serif}main{max-width:720px;margin:0 auto;padding:36px 40px}"
             "h1{margin:0;font:600 24px/1.1 Helvetica,Arial,sans-serif;letter-spacing:.04em}.c{color:#555;margin:4px 0 14px}"
             "h2{font:600 11px Helvetica,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid #ccc;margin:16px 0 6px;padding-bottom:3px}"
-            ".r{display:flex;gap:6px}.r span{margin-left:auto;color:#555}ul{margin:4px 0 10px 18px;padding:0}li{margin:2px 0}"
+            ".r{display:flex;gap:12px;align-items:baseline}.r span{margin-left:auto;color:#555;white-space:nowrap}ul{margin:4px 0 10px 18px;padding:0}li{margin:2px 0}"
             ".demo{margin-top:22px;color:#888;font-size:11px}</style><main>"
             f"<h1>JANE DOE</h1><div class=c>Example City, CA · jane@example.com · github.com/janedoe-demo · {lane} lane</div>"
             f"<h2>Experience</h2>{sec}" + (f"<h2>Projects</h2><ul>{proj}</ul>" if proj else "")
             + "<h2>Skills</h2><div>Python, TypeScript, Go, SQL · React, Next.js, FastAPI · PostgreSQL, Kafka · Docker, AWS</div>"
-            "<h2>Education</h2><div class=r>M.S. Computer Science · Example State University<span>2022 - 2024</span></div>"
+            "<h2>Education</h2><div class=r><div>M.S. Computer Science · Example State University</div><span>2022 - 2024</span></div>"
             "<p class=demo>Synthetic resume for the public REGEN demo: a fictional candidate. Every line comes from the demo Fact Bank, "
             "the way a real resume comes only from yours.</p></main>")
 
