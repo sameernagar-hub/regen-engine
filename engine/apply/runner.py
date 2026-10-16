@@ -922,7 +922,11 @@ def submit_rippling(page):
         cap = page.query_selector("iframe[src*=hcaptcha]:visible, iframe[src*=recaptcha]:visible, iframe[src*=challenges]:visible")
         if cap and _ > 2:
             return False, "CAPTCHA: Rippling asked for a human check; finish this one by hand (form filled, resume ready)"
-        errs = [e.inner_text().strip()[:80] for e in page.query_selector_all("[role=alert]:visible, [class*=error]:visible") if e.inner_text().strip()]
+        if page.query_selector("button:has-text('Apply'):visible:disabled, fieldset:disabled, input:disabled[value]"):
+            continue  # still submitting (form greys out, Apply spins): 10-15 a wrapper with "error" in its class name
+        # holding the page heading was read as an error and two good submissions were logged FAILED
+        errs = [t[:80] for e in page.query_selector_all("[role=alert]:visible, [class*=error]:visible")
+                for t in [e.inner_text().strip()] if t and len(t) < 200 and not e.query_selector("input, button, h1, h2")]
         if errs and _ > 3:
             return False, "; ".join(errs[:5])
     return False, "no confirmation seen"

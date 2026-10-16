@@ -22,10 +22,12 @@ from datetime import datetime, timedelta, timezone
 from engine.config import PACKAGE, WORKSPACE
 
 OPEN_ATS = ("greenhouse", "ashby", "lever", "workable")   # board token = a guessable company slug
-REACH = ("smartrecruiters", "workday", "icims", "jazzhr", "rippling")  # discovered + tailored; the user / the desk submits
-ATS = OPEN_ATS + REACH
+FILLED = ("rippling",)  # board token is not a guessable slug, but the runner fills the form (no account, no captcha seen)
+REACH = ("smartrecruiters", "workday", "icims", "jazzhr")  # discovered + tailored; the user / the desk submits
+ATS = OPEN_ATS + FILLED + REACH
 SLUGGABLE = OPEN_ATS + ("smartrecruiters",)                 # newgrad/probe may guess these from a company name
-APPLY_SUPPORTED = ("greenhouse", "ashby")  # the runner fills these; other ATS jobs get a resume + a human click
+APPLY_SUPPORTED = ("greenhouse", "ashby", "rippling")  # the runner fills these; other ATS jobs get a resume + a human click
+# 10-15: Rippling dry runs on two real US postings filled every required field and left Apply enabled -> FILLED.
 UA = {"User-Agent": "regen-engine/0.4 (+https://github.com/sameernagar-hub/regen-engine)"}
 
 
