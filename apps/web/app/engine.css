@@ -1,9 +1,13 @@
 /* The engine front door (app/page.tsx) and the dock that replaced the top tab bar (app/nav.tsx). */
 .engine-home { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; }
 .engine-title { padding: 22px 32px 0; position: relative; z-index: 2; }
-.engine-title h1 { margin: 0; font-size: clamp(20px, 2.6vw, 30px); font-weight: 600; letter-spacing: -.01em; }
-.engine-title h1 .brand { font-size: inherit; color: var(--gold); letter-spacing: .2em; margin-right: .35em; }
-.engine-title p { margin: 6px 0 0; color: var(--dim); font-size: 14px; }
+.engine-title .eyebrow { margin: 0 0 8px; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--dim); }
+.engine-title .eyebrow .brand { color: var(--gold); letter-spacing: .3em; margin-right: .6em; font-weight: 600; }
+.engine-title h1 { margin: 0; max-width: 18ch; font-size: clamp(24px, 3.2vw, 40px); font-weight: 650; line-height: 1.08; letter-spacing: -.025em; }
+.engine-title h1 em { font-style: normal; background: linear-gradient(90deg, #f2c14e, #ff7eb6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.engine-title p { margin: 10px 0 0; max-width: 56ch; color: var(--dim); font-size: 14px; line-height: 1.5; }
+.proof-strip { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--dim); }
+.proof-strip b { color: var(--ink); font-family: var(--mono); font-weight: 600; margin-right: 4px; }
 .engine-title .demo-pill { display: inline-block; margin-top: 10px; padding: 4px 10px; border: 1px solid var(--faint); border-radius: 999px;
   font-size: 12px; color: var(--ink); background: color-mix(in oklab, var(--bg) 70%, transparent); }
 
@@ -80,6 +84,12 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
   transition: color .2s, border-color .2s, box-shadow .2s; }
 .engine-list a.hot, .engine-list a:focus-visible { color: var(--ink); border-color: var(--tone); box-shadow: 0 0 18px color-mix(in oklab, var(--tone) 35%, transparent); outline: none; }
 
+@media (min-width: 1000px) {  /* desktop: the pitch on the left, the engine beside it */
+  .engine-home { grid-template-columns: minmax(380px, 36%) 1fr; grid-template-rows: 1fr auto; }
+  .engine-title { grid-column: 1; grid-row: 1; align-self: center; padding: 0 0 0 clamp(32px, 4vw, 72px); }
+  svg.engine { grid-column: 2; grid-row: 1; }
+  .engine-list { grid-column: 1 / -1; grid-row: 2; }
+}
 @media (max-width: 720px) {
   .engine-title { padding: 16px 16px 0; }
   .engine-card { right: 16px; left: 16px; top: auto; bottom: 96px; width: auto; }

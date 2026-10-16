@@ -76,9 +76,14 @@ export default function EngineHome() {
   return (
     <main className={`engine-home${launch ? " launching" : ""}`} id="main">
       <header className="engine-title">
-        <h1><span className="brand">REGEN</span> the job engine</h1>
-        <p>Every part of the engine is a part of the app. Hover to light it up, click to go inside.</p>
-        {PUBLIC && <p className="demo-pill" title="Built by scripts/proxy_dataset.py: the real API over a synthetic engine">Public demo · fictional candidate and companies · the live view is real</p>}
+        <p className="eyebrow"><span className="brand">REGEN</span> open-source job engine</p>
+        <h1>Be the first application they read, <em>not the 400th.</em></h1>
+        <p>REGEN catches roles the hour they go live, writes a resume that only claims what you can prove, applies, and
+          keeps a receipt for every submit. Zero model spend. Your machine, your data.</p>
+        <ul className="proof-strip" aria-label="Measured in production">
+          <li><b>5,094</b> company boards watched</li><li><b>165</b> applications sent with proof</li><li><b>$0</b> in model costs</li>
+        </ul>
+        {PUBLIC && <p className="demo-pill" title="Built by scripts/proxy_dataset.py: the real API over a synthetic engine">Interactive demo on synthetic data. Every part of the engine is a door: hover to wake it, click to step inside.</p>}
       </header>
 
       <svg className="engine" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" aria-label="The REGEN engine. Each part opens a view.">
