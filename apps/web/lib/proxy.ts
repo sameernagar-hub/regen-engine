@@ -70,7 +70,7 @@ export async function proxyGet<T>(path: string): Promise<T> {
       if (limit) d = d.slice(-limit);
       break;
     case "/api/control/state":
-      d = { ...d, write: true, run: overlay.run ?? { ...d.run, running: true } };
+      d = { ...d, write: true, ...(overlay.run ? playRun(overlay.run) : { run: { ...d.run, running: true } }) };
       break;
     case "/api/control/filters":
       if (overlay.filters) d = overlay.filters;
@@ -82,6 +82,31 @@ export async function proxyGet<T>(path: string): Promise<T> {
   }
   if (limit && Array.isArray(d)) d = d.slice(0, limit);
   return d as T;
+}
+
+// A run started here plays out on a clock: each step takes STEP seconds and writes the lines the real runner would.
+const STEP = 6;
+const LINES: Record<string, string[]> = {
+  discover: ["discover: polling 5,094 boards (greenhouse, lever, ashby)", "discover: 38 new postings in the window"],
+  newgrad: ["newgrad: 11 leads resolved to the employer's own ATS"],
+  feed: ["feed: 6 roles from curated GitHub lists, 2 already seen"],
+  apply: ["fit gate: 21 of 55 pass (14 years, 9 sponsorship, 6 grad window, 5 stack)", "compose: 21 one-page resumes, median JD coverage 88%",
+          "apply: 3 appliers x 4 tabs, round-robin", "apply: 15 submitted with proof, 4 need you, 2 stopped by the airbag"],
+};
+function playRun(run: any) {
+  if (run.finished && !run.running) return { run, run_log: run.log || [] };
+  const t = Date.now() / 1000, log: string[] = [];
+  let done = true;
+  const steps = run.steps.map((s: any, i: number) => {
+    const start = run.started + i * STEP, end = start + STEP;
+    if (t < start) { done = false; return { ...s, status: "waiting" }; }
+    const lines = LINES[s.name] || [];
+    log.push(...lines.slice(0, Math.max(1, Math.ceil(((Math.min(t, end) - start) / STEP) * lines.length))));
+    if (t < end) { done = false; return { ...s, status: "running", started: start }; }
+    return { ...s, status: "done", started: start, finished: end };
+  });
+  if (done) log.push("run finished: open Applications for the proof of each submit");
+  return { run: { ...run, steps, running: !done, finished: done ? run.started + run.steps.length * STEP : null, log }, run_log: log };
 }
 
 // Writes are acted out in this tab: the page behaves the way it does on your machine, and a reload resets it.
@@ -102,7 +127,9 @@ export async function proxyPost<T>(path: string, body: any): Promise<T> {
       return overlay.run as T;
     }
     case "/api/control/stop":
-      overlay.run = { ...(overlay.run || (await proxyGet<any>("/api/control/state")).run), running: false, finished: Date.now() / 1000 };
+      overlay.run = { ...(overlay.run ? playRun(overlay.run).run : (await proxyGet<any>("/api/control/state")).run),
+                      running: false, finished: Date.now() / 1000 };
+      overlay.run.log = [...(overlay.run.log || []), "stopped by you"];
       return overlay.run as T;
     case "/api/control/filters": {
       const cur = await proxyGet<any>("/api/control/filters");
