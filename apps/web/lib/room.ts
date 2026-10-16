@@ -30,6 +30,11 @@ export function useStations(recent = 8) {
     };
     pull();
     let es: EventSource | null = null;
+    if (process.env.NEXT_PUBLIC_REGEN_MODE === "public") {  // no stream on the hosted site: replay the dataset's rhythm
+      const order = ["listen", "judge", "write", "apply", "hear"];
+      const sim = setInterval(() => setBeat((b) => ({ stage: order[(b?.n || 0) % order.length], n: (b?.n || 0) + 1 })), 2400);
+      return () => { alive = false; clearInterval(sim); };
+    }
     try {
       es = new EventSource(api("/api/stream?after=999999999"));
       es.addEventListener("narration", (m) => {

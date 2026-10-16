@@ -19,7 +19,7 @@
 
 <sub>The live view, company names hidden. Each gold bead is an application with a saved confirmation page, grouped by the resume lane that wrote it; the field behind it pulses with every real engine event.</sub>
 
-**[Live demo](https://regen-engine.onrender.com)** · **[Why REGEN](#why-regen)** · **[What's new](#whats-new-v010--v011)** · **[Features](#features)** · **[Quick start](#quick-start)** · **[Architecture](#architecture)** · **[Platform](#the-platform-v07)** · **[Roadmap](#roadmap)**
+**[Live demo](https://regen-engine.onrender.com)** · **[Why REGEN](#why-regen)** · **[What's new](#whats-new-v016-front-door-the-engine-is-the-menu-and-the-public-site-works-end-to-end)** · **[Features](#features)** · **[Quick start](#quick-start)** · **[Architecture](#architecture)** · **[Platform](#the-platform-v07)** · **[Roadmap](#roadmap)**
 
 </div>
 
@@ -67,6 +67,25 @@ resume to every posting and make up answers to fill the gaps.
 | Applier capacity | **N containers** (`--scale applier=N`), each a headed Chromium with its own profile; 5 workers + 1 pipeline container on an 8 GB Docker VM |
 
 All numbers come from this repo's own logs and benchmarks. Run `python -m engine report` to check the verified count.
+
+## What's new (v0.16 "Front door"): the engine is the menu, and the public site works end to end
+
+**[Open the live engine →](https://regen-engine.onrender.com)** Hover any part to light it up, click to go inside.
+
+- **The engine is the navigation.** The front page is an animated radial engine: seven cylinders are the working
+  views (Live, Control, Applications, Needs you, Reach, Outreach, Evals), the crankcase is the Engine room, the fuel
+  tank is the Fact Bank, and the ignition harness wires every cylinder to the Memory graph. Each part shows its live
+  number on hover; a click zooms into the part as its page opens. The top tab bar is gone: inner pages carry a dock
+  back to the engine. Keyboard, screen-reader and phone users get the same parts as a list.
+- **Every page works on the public site.** Render can't reach an engine running in Docker on your machine, so
+  `scripts/proxy_dataset.py` builds a synthetic engine (a fictional candidate, made-up companies on `example.com`
+  boards, a week of events of every kind, fleet heartbeats, reach list, evals, outreach), runs the **real API** over
+  it and saves every response to `apps/web/public/proxy/`. In public mode `lib/proxy.ts` serves those files with
+  timestamps moved to "now", and acts out the writes in your tab: answer a question on Needs you, start or stop a
+  run in Control, edit filters, mark a reach job submitted, open resume PDFs and proof pages. Same shapes as your
+  machine, zero personal data (the privacy gate scans the dataset like any other file). The Live view still plays
+  the real anonymized feed.
+- Rebuild the dataset after an API change: `python scripts/proxy_dataset.py`.
 
 ## What's new (v0.13 "Reach")
 

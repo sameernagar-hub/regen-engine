@@ -4,6 +4,17 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.16.0] - 2026-10-16 · "Front door": engine navigation + public proxy dataset
+- **Engine front page** (`apps/web/app/page.tsx`, `engine.css`): a radial engine replaces the top tab bar; each
+  part (cylinders, crankcase, fuel tank, ignition harness) opens a view, lights up with its live number on hover and
+  zooms in on click. The old live view moved to `/live`; inner pages use a dock (`nav.tsx`). Why: the user asked for
+  the engine itself to be the way in. Verify: open `/`, hover "Needs you", click it.
+- **Proxy dataset** (`scripts/proxy_dataset.py` -> `apps/web/public/proxy/`, `apps/web/lib/proxy.ts`): the real API
+  over a synthetic workspace + profile, snapshotted per route; public mode serves it and simulates writes in the tab.
+  `LocalOnly` gates removed: Control, Applications, Needs you, Reach, Outreach and Fact Bank now work on Render.
+  Why: the hosted site could not reach the Docker engine. Verify: `NEXT_PUBLIC_REGEN_MODE=public npm run dev`,
+  answer a question on `/needs`; `python scripts/privacy_scan.py` stays clean.
+
 ## [Unreleased] - 2026-10-15 · v0.15 supply + answers
 - **Rippling auto-apply**: `ats.FILLED` + `APPLY_SUPPORTED`; pipeline scans rippling + jazzhr. Why: 161 boards, no
   account, no captcha seen; dry runs on two real postings filled every field. Verify: `tests/test_v015.py`.

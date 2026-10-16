@@ -1,0 +1,104 @@
+/* The engine front door (app/page.tsx) and the dock that replaced the top tab bar (app/nav.tsx). */
+.engine-home { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; }
+.engine-title { padding: 22px 32px 0; position: relative; z-index: 2; }
+.engine-title h1 { margin: 0; font-size: clamp(20px, 2.6vw, 30px); font-weight: 600; letter-spacing: -.01em; }
+.engine-title h1 .brand { font-size: inherit; color: var(--gold); letter-spacing: .2em; margin-right: .35em; }
+.engine-title p { margin: 6px 0 0; color: var(--dim); font-size: 14px; }
+.engine-title .demo-pill { display: inline-block; margin-top: 10px; padding: 4px 10px; border: 1px solid var(--faint); border-radius: 999px;
+  font-size: 12px; color: var(--ink); background: color-mix(in oklab, var(--bg) 70%, transparent); }
+
+svg.engine { width: 100%; height: 100%; min-height: 0; }
+.engine-body { transition: transform .56s cubic-bezier(.6, 0, .3, 1), opacity .56s ease-in; transform-box: view-box; }
+.launching .engine-body { transform: scale(3.2); opacity: 0; }
+.launching .engine-card, .launching .engine-list, .launching .engine-title { opacity: 0; transition: opacity .3s; }
+
+/* parts: dim metal at rest, their own color when lit */
+.part { cursor: pointer; outline: none; }
+.part .hit { fill: transparent; }
+.part-label { fill: var(--dim); font-size: 15px; letter-spacing: .06em; text-anchor: middle; transition: fill .25s; pointer-events: none; }
+.part-badge { fill: var(--amber); font-size: 13px; font-weight: 600; text-anchor: middle; pointer-events: none; }
+.part.hot .part-label, .part:focus-visible .part-label { fill: var(--tone); }
+.part.hot, .part:focus-visible { filter: url(#lit); }
+.part.launch { filter: url(#lit) brightness(1.4); }
+
+.barrel { fill: url(#barrel); stroke: #4a5668; stroke-width: 1; transition: stroke .25s; }
+.fin { fill: #232b37; stroke: #3a4554; stroke-width: .6; transition: fill .25s, stroke .25s; }
+.head { fill: #2c3542; stroke: #56647a; transition: fill .25s, stroke .25s; }
+.plug { fill: #8a96a8; }
+.part.hot .barrel, .part:focus-visible .barrel { stroke: var(--tone); }
+.part.hot .fin, .part:focus-visible .fin { fill: color-mix(in oklab, var(--tone) 35%, #1a212c); stroke: var(--tone); }
+.part.hot .head, .part:focus-visible .head { fill: color-mix(in oklab, var(--tone) 55%, #1a212c); stroke: var(--tone); }
+
+.piston rect { fill: #9aa6b8; stroke: #cdd6e3; stroke-width: .6; }
+.piston line { stroke: #7d8796; stroke-width: 6; stroke-linecap: round; }
+.piston { animation: stroke 1.4s cubic-bezier(.45, 0, .55, 1) infinite; }
+@keyframes stroke { 0%, 100% { transform: translateY(-34px); } 50% { transform: translateY(26px); } }
+.part.hot .piston { animation-duration: .7s; }
+.part.hot .piston rect { fill: var(--tone); }
+.spark { fill: var(--tone); opacity: 0; animation: spark 1.4s linear infinite; }
+@keyframes spark { 0%, 4% { opacity: 1; r: 9; } 14%, 100% { opacity: 0; r: 3; } }
+
+.case { fill: url(#case); stroke: #4a5668; stroke-width: 2; }
+.crank { animation: turn 1.4s linear infinite; }
+@keyframes turn { to { transform: rotate(360deg); } }
+.tooth { stroke: #56647a; stroke-width: 5; stroke-linecap: round; }
+.crank-pin { fill: #f2c14e; opacity: .8; }
+.hub { fill: #0d1117; stroke: #f2c14e; stroke-opacity: .5; stroke-width: 2; }
+.hub-text { fill: var(--gold); font-size: 15px; letter-spacing: .28em; text-anchor: middle; pointer-events: none; }
+.part.hot .case, .part:focus-visible .case { stroke: var(--tone); }
+.part.hot .tooth, .part:focus-visible .tooth { stroke: var(--tone); }
+.part.hot .crank { animation-duration: .6s; }
+
+.wire { fill: none; stroke: #3a4554; stroke-width: 2; stroke-dasharray: 4 10; animation: flow 1.2s linear infinite; transition: stroke .25s; }
+.wire.live, .part.hot .wire, .part:focus-visible .wire { stroke: var(--tone, #5ee6b5); stroke-width: 2.5; }
+.wire.live { stroke: #5ee6b5; }
+@keyframes flow { to { stroke-dashoffset: -28; } }
+.graph-edge { stroke: #3a4554; stroke-width: 1.5; }
+.graph-node { fill: #5ee6b5; opacity: .55; animation: blink 2.4s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: 1; } }
+.part.hot .graph-edge { stroke: #5ee6b5; }
+
+.tank { fill: #141a23; stroke: #56647a; stroke-width: 2; }
+.tank-fuel { fill: url(#fuel); animation: slosh 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; }
+@keyframes slosh { 50% { transform: scaleY(.92); } }
+.tank-gauge { stroke: #0b0f15; stroke-width: 2; stroke-dasharray: 2 8; }
+.fuel-line { fill: none; stroke: #f2c14e; stroke-opacity: .4; stroke-width: 3; stroke-dasharray: 10 8; animation: flow 1s linear infinite; }
+.part.hot .tank { stroke: var(--tone); }
+.part.hot .fuel-line { stroke-opacity: 1; }
+
+.engine-card { position: absolute; right: 32px; top: 22px; width: min(340px, calc(100vw - 32px)); padding: 14px 16px; border-radius: 14px;
+  border: 1px solid var(--faint); background: color-mix(in oklab, var(--bg) 78%, transparent); backdrop-filter: blur(10px);
+  transition: border-color .25s, transform .25s; }
+.engine-card.on { border-color: var(--tone); transform: translateY(-4px); box-shadow: 0 0 40px color-mix(in oklab, var(--tone) 20%, transparent); }
+.engine-card b { display: block; font-size: 17px; color: var(--tone, var(--ink)); }
+.engine-card .stat { display: block; margin-top: 2px; font-size: 13px; color: var(--ink); font-family: var(--mono); }
+.engine-card p { margin: 8px 0 4px; color: var(--dim); font-size: 13px; line-height: 1.45; }
+.engine-card small { color: var(--dim); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+
+.engine-list { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 0 16px 20px; position: relative; z-index: 2; }
+.engine-list a { font-size: 13px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--faint); color: var(--dim); text-decoration: none;
+  transition: color .2s, border-color .2s, box-shadow .2s; }
+.engine-list a.hot, .engine-list a:focus-visible { color: var(--ink); border-color: var(--tone); box-shadow: 0 0 18px color-mix(in oklab, var(--tone) 35%, transparent); outline: none; }
+
+@media (max-width: 720px) {
+  .engine-title { padding: 16px 16px 0; }
+  .engine-card { right: 16px; left: 16px; top: auto; bottom: 96px; width: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .piston, .crank, .spark, .wire, .fuel-line, .graph-node, .tank-fuel { animation: none; }
+  .engine-body { transition: none; }
+}
+
+/* the dock: replaces the top tab bar on every inner page. One way home (the engine), and where you are. */
+.dock { position: sticky; top: 0; z-index: 6; display: flex; align-items: center; gap: 14px; padding: 14px 0;
+  background: color-mix(in oklab, var(--bg) 70%, transparent); backdrop-filter: blur(12px); }
+.dock .home { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-size: 13px;
+  padding: 6px 12px 6px 8px; border: 1px solid var(--faint); border-radius: 999px; transition: border-color .2s, box-shadow .2s; view-transition-name: brand; }
+.dock .home:hover, .dock .home:focus-visible { border-color: var(--gold); box-shadow: 0 0 18px #f2c14e33; outline: none; }
+.dock .gear { width: 22px; height: 22px; animation: turn 6s linear infinite; }
+.dock .home:hover .gear { animation-duration: 1s; }
+.dock .here { color: var(--dim); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.dock .data { margin-left: auto; color: var(--dim); font-size: 13px; text-decoration: none; }
+.dock .data:hover { color: var(--ink); }
+.stage .top .dock { padding: 0; position: static; background: none; backdrop-filter: none; }
+@media (prefers-reduced-motion: reduce) { .dock .gear { animation: none; } }

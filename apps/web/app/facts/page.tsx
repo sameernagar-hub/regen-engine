@@ -4,8 +4,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Nav } from "../nav";
-import { LocalOnly } from "../local-only";
-import { PUBLIC } from "@/lib/engine";
 import { get } from "@/lib/types";
 
 type Fact = { id: string; text: string; role: string | null; uses: number; lanes: Record<string, number>;
@@ -21,7 +19,6 @@ const LANE: Record<string, string> = { ai: "#f2c14e", fullstack: "#6fb7ff", back
 const topLane = (l: Record<string, number>) => Object.entries(l).sort((a, b) => b[1] - a[1])[0]?.[0] || "?";
 
 export default function Facts() {
-  if (PUBLIC) return <LocalOnly title="Fact Bank" what="Every claim a resume may make, drawn as a map of roles and facts." />;
   return <FactsView />;
 }
 

@@ -5,8 +5,6 @@
 // it submitted so it is counted and never listed or applied to again.
 import { useEffect, useMemo, useState } from "react";
 import { Nav } from "../nav";
-import { LocalOnly } from "../local-only";
-import { PUBLIC } from "@/lib/engine";
 import { api, get, post } from "@/lib/types";
 
 type Row = { listed: string; ats: string; company: string; title: string; url: string; location: string; posted?: string;
@@ -23,7 +21,6 @@ const file = (p: string) => p.split("/").pop() || p;
 const money = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 
 export default function ReachPage() {
-  if (PUBLIC) return <LocalOnly title="Reach list" what="Workday and iCIMS jobs with a tailored resume and a fill kit, for you to submit." />;
   return <ReachView />;
 }
 

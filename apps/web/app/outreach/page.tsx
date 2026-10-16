@@ -4,8 +4,6 @@
 // draft; you add the recipient (never guessed), edit and send.
 import { useEffect, useState } from "react";
 import { Nav } from "../nav";
-import { LocalOnly } from "../local-only";
-import { PUBLIC } from "@/lib/engine";
 import { get, post } from "@/lib/types";
 
 type Draft = { company: string; role: string; url: string; ts: string; why: string; lane?: string; subject: string;
@@ -13,7 +11,6 @@ type Draft = { company: string; role: string; url: string; ts: string; why: stri
 const WHY: Record<string, string> = { "tier 1": "var(--gold)", "tier 2": "var(--calm)", startup: "#7ef0c1" };
 
 export default function Outreach() {
-  if (PUBLIC) return <LocalOnly title="Outreach" what="Truthful notes to recruiters and founders after each application." />;
   return <OutreachView />;
 }
 

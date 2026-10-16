@@ -5,8 +5,6 @@
 // picks them up on its next pass). Legal / attestation items can't be answered here: open the posting to finish.
 import { useEffect, useMemo, useState } from "react";
 import { Nav } from "../nav";
-import { LocalOnly } from "../local-only";
-import { PUBLIC } from "@/lib/engine";
 import { get, post, type HumanItem } from "@/lib/types";
 
 const LEGAL = /arbitrat|attest|certif|export|citizen|clearance|eeo|gender|race|veteran|disab|transcript|assessment|captcha|bot-check|human check/i;
@@ -14,7 +12,6 @@ const LEGAL = /arbitrat|attest|certif|export|citizen|clearance|eeo|gender|race|v
 type Group = { q: string; jobs: HumanItem[]; legal: boolean };
 
 export default function Needs() {
-  if (PUBLIC) return <LocalOnly title="Needs you" what="The questions only you can answer, grouped so one answer clears many jobs." />;
   return <NeedsView />;
 }
 
