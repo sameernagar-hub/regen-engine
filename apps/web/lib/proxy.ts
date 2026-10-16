@@ -155,6 +155,6 @@ export function proxyFile(path: string): string {
   const u = new URL(path, "http://x");
   const name = decodeURIComponent(u.pathname.split("/").pop() || "");
   if (u.pathname.startsWith("/api/proof/")) return BASE + "files/" + name.replace(/\.png$/i, ".svg");
-  if (u.pathname.startsWith("/api/resume/")) return BASE + "files/" + name;
+  if (u.pathname.startsWith("/api/resume/")) return BASE + "files/" + name.replace(/\.pdf$/i, ".html");  // no PDFs in the repo
   return path;
 }

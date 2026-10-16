@@ -305,6 +305,36 @@ def proof_svg(j):
             f'</svg>')
 
 
+def lane_of(file, jobs):
+    """Resume_<Co>_<1000+i>.pdf belongs to jobs[i]; Resume_<Co>_R<k>.pdf to reach row k (ROLES[k])."""
+    tail = file[:-4].rsplit("_", 1)[-1]
+    return ROLES[int(tail[1:]) % len(ROLES)][1] if tail.startswith("R") else jobs[int(tail) - 1000]["lane"]
+
+
+def resume_html(lane):
+    """The resume a lane would produce for the fictional candidate, laid out like the engine's one-page PDF."""
+    roles = {"northbeam": ("Northbeam Software (fictional)", "Software Engineer", "Jul 2024 - Present"),
+             "copperline": ("Copperline AI (fictional)", "AI Engineering Intern", "May 2023 - Dec 2023")}
+    by_role = {}
+    for f in LANE_FACTS[lane]:
+        by_role.setdefault(FACT_ROLE[f[:2]], []).append(FACTS[f])
+    sec = "".join(f"<div class=r><b>{roles[r][1]}</b> · {roles[r][0]}<span>{roles[r][2]}</span></div><ul>"
+                  + "".join(f"<li>{x}</li>" for x in xs) + "</ul>" for r, xs in by_role.items() if r in roles)
+    proj = "".join(f"<li>{x}</li>" for r, xs in by_role.items() if r not in roles for x in xs)
+    return ("<!doctype html><meta charset=utf-8><title>Jane Doe resume (demo)</title><style>"
+            "body{margin:0;background:#fff;color:#111;font:13px/1.45 Georgia,serif}main{max-width:720px;margin:0 auto;padding:36px 40px}"
+            "h1{margin:0;font:600 24px/1.1 Helvetica,Arial,sans-serif;letter-spacing:.04em}.c{color:#555;margin:4px 0 14px}"
+            "h2{font:600 11px Helvetica,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid #ccc;margin:16px 0 6px;padding-bottom:3px}"
+            ".r{display:flex;gap:6px}.r span{margin-left:auto;color:#555}ul{margin:4px 0 10px 18px;padding:0}li{margin:2px 0}"
+            ".demo{margin-top:22px;color:#888;font-size:11px}</style><main>"
+            f"<h1>JANE DOE</h1><div class=c>Example City, CA · jane@example.com · github.com/janedoe-demo · {lane} lane</div>"
+            f"<h2>Experience</h2>{sec}" + (f"<h2>Projects</h2><ul>{proj}</ul>" if proj else "")
+            + "<h2>Skills</h2><div>Python, TypeScript, Go, SQL · React, Next.js, FastAPI · PostgreSQL, Kafka · Docker, AWS</div>"
+            "<h2>Education</h2><div class=r>M.S. Computer Science · Example State University<span>2022 - 2024</span></div>"
+            "<p class=demo>Synthetic resume for the public REGEN demo: a fictional candidate. Every line comes from the demo Fact Bank, "
+            "the way a real resume comes only from yours.</p></main>")
+
+
 def pdf(lines):
     """A one-page PDF with plain text lines (no dependencies): enough for the resume viewer to show something real."""
     y, body = 740, []
@@ -337,7 +367,7 @@ def main():
     profile(prof)
     jobs, proofs, resumes = workspace(ws, now)
     for f in resumes:
-        lane = next((j["lane"] for j in jobs if j["co"].replace(" ", "") in f), "backend")
+        lane = lane_of(f, jobs)
         open(os.path.join(ws, "out", f), "wb").write(pdf(["JANE DOE", "Example City, CA | jane@example.com | github.com/janedoe-demo",
                                                           "Synthetic resume for the public REGEN demo (fictional candidate).", "",
                                                           f"{lane.upper()} LANE"] + [f"- {FACTS[x]}" for x in LANE_FACTS[lane]]))
@@ -370,8 +400,9 @@ def main():
             manifest["jobs"][j["url"]] = name
     for p, j in proofs:
         open(os.path.join(OUT, "files", os.path.basename(p)[:-4] + ".svg"), "w", encoding="utf-8").write(proof_svg(j))
-    for f in resumes:
-        shutil.copy(os.path.join(ws, "out", f), os.path.join(OUT, "files", f))
+    for f in resumes:  # the repo never holds PDFs (privacy gate + .gitignore), so the public copy is a one-page HTML resume
+        lane = lane_of(f, jobs)
+        open(os.path.join(OUT, "files", f[:-4] + ".html"), "w", encoding="utf-8").write(resume_html(lane))
     json.dump(manifest, open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8"), indent=1)
     shutil.rmtree(tmp, ignore_errors=True)
     n = sum(len(fs) for _, _, fs in os.walk(OUT))

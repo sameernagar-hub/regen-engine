@@ -1,5 +1,5 @@
 {
- "generated": 1792175542.02585,
+ "generated": 1792176817.9709382,
  "note": "Synthetic data: fictional candidate and companies. Built by scripts/proxy_dataset.py.",
  "routes": {
   "/api/snapshot": "snapshot.json",
