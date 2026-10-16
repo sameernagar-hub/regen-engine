@@ -4,6 +4,13 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [0.16.3] - 2026-10-16 · demo resumes + README screenshots
+- **Resumes render on the public site**: demo resumes are one-page HTML pages (PDFs never enter the repo), `/proxy/*`
+  allows same-origin framing (the site-wide `frame-ancestors 'none'` blocked it). Verify: Applications, pick a row.
+- **Front page pitch** (0.16.2): headline, measured proof strip, demo note; two columns on desktop.
+- **README screenshots** retaken from the live site: engine front page (hero), Control with a demo run, Needs you,
+  Applications with the resume open, Live, Fact Bank.
+
 ## [0.16.0] - 2026-10-16 · "Front door": engine navigation + public proxy dataset
 - **Engine front page** (`apps/web/app/page.tsx`, `engine.css`): a radial engine replaces the top tab bar; each
   part (cylinders, crankcase, fuel tank, ignition harness) opens a view, lights up with its live number on hover and

@@ -15,9 +15,9 @@
 [![cost](https://img.shields.io/badge/API%20keys-none-success)](docs/wiki/Zero-Cost-and-MCP.md)
 [![privacy](https://img.shields.io/badge/privacy-gated%20in%20CI-success)](SECURITY.md)
 
-<img src="docs/assets/live-dark.png" alt="REGEN live view: work moves through listening, judging, writing, applying and hearing back; each gold bead is an application sent with proof, grouped by resume lane" width="100%">
+<a href="https://regen-engine.onrender.com"><img src="docs/assets/engine-home.png" alt="REGEN front page: the pitch on the left and an animated radial engine on the right; each cylinder, the crankcase, the fuel tank and the ignition harness opens a part of the app, and the hovered Needs you cylinder glows with 43 jobs waiting" width="100%"></a>
 
-<sub>The live view, company names hidden. Each gold bead is an application with a saved confirmation page, grouped by the resume lane that wrote it; the field behind it pulses with every real engine event.</sub>
+<sub>The front door of the <a href="https://regen-engine.onrender.com">live demo</a>: every part of the engine is a page. Hover a cylinder to wake it, click to step inside.</sub>
 
 **[Live demo](https://regen-engine.onrender.com)** · **[Why REGEN](#why-regen)** · **[What's new](#whats-new-v016-front-door-the-engine-is-the-menu-and-the-public-site-works-end-to-end)** · **[Features](#features)** · **[Quick start](#quick-start)** · **[Architecture](#architecture)** · **[Platform](#the-platform-v07)** · **[Roadmap](#roadmap)**
 
@@ -71,6 +71,12 @@ All numbers come from this repo's own logs and benchmarks. Run `python -m engine
 ## What's new (v0.16 "Front door"): the engine is the menu, and the public site works end to end
 
 **[Open the live engine →](https://regen-engine.onrender.com)** Hover any part to light it up, click to go inside.
+
+| Control room: start a run, watch it play out | Needs you: answer once, clear many jobs |
+| :-: | :-: |
+| <img src="docs/assets/control-room.png" alt="Control room with a run in progress: discover done, new-grad leads processing, queue of 486 jobs by ATS" width="100%"> | <img src="docs/assets/needs-you.png" alt="Needs you: waiting jobs grouped by the question that stopped them, with an answer box per question" width="100%"> |
+| **Applications: the exact resume, answers and proof** | **Live: real activity, names hidden** |
+| <img src="docs/assets/applications.png" alt="Applications table with one submission open: status, links to the posting, timeline and proof, and the resume that was sent" width="100%"> | <img src="docs/assets/live-dark.png" alt="Live view: five stations from listening to hearing back, and a tree of proof-backed applications by resume lane" width="100%"> |
 
 - **The engine is the navigation.** The front page is an animated radial engine: seven cylinders are the working
   views (Live, Control, Applications, Needs you, Reach, Outreach, Evals), the crankcase is the Engine room, the fuel
@@ -136,7 +142,7 @@ REGEN_MAX_PER_DAY=150 REGEN_PARTS=5 docker compose -f deploy/bank.compose.yml up
 
 ## What's new (v0.10 / v0.11)
 
-<img src="docs/assets/control-room.png" alt="REGEN control room: a pipeline strip (discover, new-grad leads, GitHub feeds, gate-compose-apply), run settings, and the job queue by ATS" width="100%">
+<img src="docs/assets/fact-bank.png" alt="REGEN Fact Bank: counts of facts, roles, projects and resumes built, and a radial knowledge map of roles and facts sized by how often resumes used them" width="100%">
 
 | | |
 |---|---|
