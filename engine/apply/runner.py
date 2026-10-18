@@ -81,6 +81,8 @@ RULES = [
     (r"(receive|opt.?in|consent).{0,60}(whatsapp|text message|sms)|(whatsapp|sms|text message)s? .{0,40}(communication|update|notification)", P.get("sms_opt_in")),  # 10-08: SMS opt-in labels mention email
     (r"^have you (ever )?(previously )?worked (at|for)\b|(currently|presently) an? .{0,40}employee\?|(an? )?current(ly)? (an? )?employee (with|of|at)\b", P.get("previous_employer_of_company")),
     (r"legally eligible to (begin|start) (employment|work)|legally eligible for employment", P.get("work_authorized_us")),
+    (r"(legal right|right) to work in (the country|the united states|the u\.?s)", P.get("work_authorized_us")),  # 10-17
+    (r"(ever )?been employed (full.time |part.time )?(at|by|with) (?!(a|an|any|the following)\b)", P.get("previous_employer_of_company", "No")),  # 10-17
     (r"(provide|furnish) (proof|verification|documentation) of .{0,60}(legal right to work|authori[sz]ation to work|eligibility to work)", P.get("work_authorized_us")),  # presets: I-9 documents
     (r"(perform(ing)?|provid(e|ing)) (work|services) (on behalf of|for) .{0,60}(as an? )?(contractor|consultant|vendor)", P.get("former_contractor_of_company")),  # B2
     (r"considered for (future|other) (opportunities|roles|positions)", P.get("future_opportunities")),

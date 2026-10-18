@@ -74,3 +74,8 @@ def test_state_list_degree_years_and_understanding():
     q = "Do you hold a Bachelor's Degree in Computer Science, plus 40 years of professional experience?"
     assert answer_for(q, {}) == "No"
     assert experience_answer("Do you have an understanding of REST APIs?") in ("Yes", None)
+
+
+def test_legal_right_and_employed_full_time_at():
+    assert answer_for("Do you have the legal right to work in the country where you are applying to work?", {}) == P["work_authorized_us"]
+    assert answer_for("Have you ever been employed full-time at Globex or its subsidiaries?", {}) == P.get("previous_employer_of_company", "No")
