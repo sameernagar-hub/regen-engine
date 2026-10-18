@@ -14,7 +14,7 @@ from playwright.sync_api import sync_playwright
 
 from engine.config import WORKSPACE, in_workspace, profile_file
 from engine.feedback.events import record
-from engine import safety
+from engine import override, safety
 from engine.apply import drafts
 from engine.apply.scheduler import Quantum, RoundRobin, poll
 
@@ -219,8 +219,9 @@ def text_ok(label, ans):
 
 
 EXPERIENCE_Q = re.compile(r"^(do|have) you (have |possess )?(?:\d+\+? (?:or more )?years? of )?"
-                          r"(any |professional |hands.on |industry |internship or industry |prior )*experience "
-                          r"(with|in|using|developing|building|working (with|on)|on|performing)\b(.{3,120}?)\??$", re.I)
+                          r"(any |professional |hands.on |industry |internship or industry |prior |an? |working |strong |solid |good )*"
+                          r"(?:experience|understanding|knowledge|familiarity|proficiency) "  # 10-17: "an understanding of IaC"
+                          r"(with|in|of|using|developing|building|working (with|on)|on|performing)\b(.{3,120}?)\??$", re.I)
 CONCEPTS = {  # phrase in a question -> skill terms that count as having it (still must be in your Fact Bank)
     r"no.?sql": ["mongodb", "dynamodb", "redis", "cassandra"],  # before the sql rule: "nosql" is not PostgreSQL
     r"single.page|\bspa\b|front.?end|web app": ["react", "typescript", "javascript"],
@@ -268,8 +269,30 @@ def years_yesno(label):
     return experience_answer(f"Do you have experience with {rest}?")
 
 
+# "Do you live in one of the following states ...? Arizona, California, ..." -> your state is in the list or not
+STATE_LIST_Q = re.compile(r"^(do|are) you (currently )?(live|reside|located|based) (in|within) (one of |any of )?(the following|these)?", re.I)
+# "Do you hold a Bachelor's degree in CS ... plus 4 years of professional experience?" is yes/no, not "Master's"
+DEGREE_YN = re.compile(r"^(do|does|have) you (hold|have|possess|earned|completed) an? (bachelor|master|undergraduate|graduate)", re.I)
+
+
+def list_or_degree(label):
+    """Yes/no from presets for two shapes the generic rules answered wrongly (10-17). None when it is neither."""
+    l = " ".join(label.split())
+    if STATE_LIST_Q.search(l) and l.count(",") >= 3 and P.get("state"):
+        return "Yes" if re.search(r"\b" + re.escape(P["state"]) + r"\b", l, re.I) else "No"
+    if DEGREE_YN.search(l):
+        m = re.search(r"(\d+)\+? (or more )?years?", l)
+        if m and str(P.get("years_experience", "")).isdigit() and int(m.group(1)) > int(P["years_experience"]):
+            return "No"
+        return P.get("has_degree")
+    return None
+
+
 def answer_for(label, extra):
     l = " ".join(label.split()).lower()
+    ld = list_or_degree(label)
+    if ld and not any(re.search(p, l, re.I) for p, _ in list(extra.items()) + BANK):
+        return ld
     age = re.search(r"\byears?( of)? (age|old)\b", l)  # the age question goes to the over_18 rule below
     if not age and YEARS_YN.search(" ".join(label.split())) and not any(re.search(p, l, re.I) for p, _ in list(extra.items()) + BANK):
         return years_yesno(label)  # yes/no, never the "years of experience" number; None -> you (a saved answer wins)
@@ -439,6 +462,19 @@ def answer(label, job, field=None):
     ans = derived(label) or ans  # computed from Fact Bank dates/years: beats the generic years rule
     if ans is None and re.fullmatch(r"\s*(attach|upload|dropbox|google drive|enter manually|browse)\s*", label, re.I):
         return None  # a file-upload control, not a question
+    if ans is None and override.on():  # the user's "draft" switch (engine/override.py): presets + consent, logged
+        ans = override.answer(label, P)
+        if ans is not None:
+            job.setdefault("_drafted", []).append([" ".join(label.split())[:200], ans, ["user override"]])
+            return ans
+        # never a paragraph into a yes/no question (10-17): those fall through to the Fact Bank yes/no autofill below
+        if not override.blocked(label) and DRAFT and not STATUS_Q.search(label) and not YESNO_Q.search(label):
+            d = drafts.draft(label, job, fact_bank(), WORKSPACE, P, force=True)
+            if d:
+                ans, fids = d
+                job.setdefault("_drafted", []).append([" ".join(label.split())[:200], ans, list(fids) + ["user override"]])
+                drafts.log_review(WORKSPACE, job, label, ans, fids)
+                return ans
     if ans is None and DRAFT:
         d = drafts.draft(label, job, fact_bank(), WORKSPACE, P)
         if d is None and AUTOFILL and not STATUS_Q.search(label):

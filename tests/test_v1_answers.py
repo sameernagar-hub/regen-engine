@@ -65,3 +65,12 @@ def test_gone_posting_leaves_the_queue_but_a_fetch_error_stays(tmp_path, monkeyp
     monkeypatch.setattr(B, "record", lambda kind, **kw: seen.append(kw))
     B.build("t", ["1", "2"])
     assert [(r["url"], r["status"], r["detail"]) for r in seen] == [("https://x/1", "SKIPPED", "JD: posting is gone")]
+
+
+def test_state_list_degree_years_and_understanding():
+    from engine.apply.runner import experience_answer
+    assert answer_for(f"Do you live in one of the following states? Arizona, {P['state']}, Colorado, Florida?", {}) == "Yes"
+    assert answer_for("Do you live in DC, Delaware, Hawaii, Iowa, Maine?", {}) == ("No" if P["state"] not in "DC Delaware Hawaii Iowa Maine" else "Yes")
+    q = "Do you hold a Bachelor's Degree in Computer Science, plus 40 years of professional experience?"
+    assert answer_for(q, {}) == "No"
+    assert experience_answer("Do you have an understanding of REST APIs?") in ("Yes", None)

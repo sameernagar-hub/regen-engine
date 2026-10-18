@@ -44,6 +44,10 @@ def latest_status():
         bank_t = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(PROFILE, "answers.json"))).isoformat()
     except OSError:
         bank_t = ""
+    from engine import override
+    ov = override.state()
+    if ov.get("draft"):  # turning the draft override on is like saving new answers: parked jobs get another try
+        bank_t = max(bank_t, ov.get("since") or "")
     for e in read("application"):
         if not e.get("dry") and e.get("url"):
             st = (e.get("status") or "").split(":")[0]
@@ -75,6 +79,9 @@ def answerable_now(detail):
         return True  # the selector still skips Ashby while the cooldown runs, and takes 1 Ashby job per pass
     from engine.feedback.answers import LEGAL_OR_SENSITIVE, missing_questions
     qs = missing_questions(detail)
+    from engine import override
+    if qs and override.on():  # the user's "draft" switch: retry unless a question is a fact / human check only they have
+        return not any(override.blocked(q) for q in qs)
     if not qs or any(USER_ONLY_Q.search(q) for q in qs):
         return False
     from engine.apply.runner import answer_for
@@ -86,6 +93,7 @@ def answerable_now(detail):
 USER_ONLY_Q = re.compile(r"arbitrat|any disputes|export|deemed export|convict|felony|misdemeanor|indict", re.I)
 SKIP_ATS = {a.strip() for a in os.environ.get("REGEN_SKIP_ATS", "").split(",") if a.strip()}
 WALL = ("CAPTCHA", "BOT-CHECK")  # failure details that mean "a human must finish this", not "retry"
+HUMAN_ONLY_OVERRIDE = ("assessment", "transcript")  # still the user's even under the draft override
 HUMAN_ONLY = ("arbitration", "assessment", "transcript", "export c", "any disputes")  # blockers only the user can clear ("any disputes": an arbitration clause cut at 100 chars)
 
 
@@ -107,6 +115,8 @@ def history(days=3, min_tries=4, wall_rate=0.5):
     One pass over the application events: O(E) time, O(companies) space."""
     since = (datetime.datetime.now() - datetime.timedelta(days=days)).isoformat()
     tries, walls, blocked = collections.Counter(), collections.Counter(), set()
+    from engine import override
+    ovr = override.on()
     for e in read("application"):
         if e.get("dry") or (e.get("ts") or "") < since:
             continue
@@ -118,7 +128,8 @@ def history(days=3, min_tries=4, wall_rate=0.5):
         if any(w in detail for w in WALL):
             walls[a] += 1
         co = company_slug((e.get("job") or "").split(" - ")[0])
-        if co and (any(w in detail for w in WALL) or any(h in detail.lower() for h in HUMAN_ONLY)):
+        human = HUMAN_ONLY_OVERRIDE if ovr else HUMAN_ONLY  # under the draft override, agreements / export are answered
+        if co and (any(w in detail for w in WALL) or any(h in detail.lower() for h in human)):
             blocked.add(co)
     walled = {a for a in tries if tries[a] >= min_tries and walls[a] / tries[a] >= wall_rate}
     return walled, blocked

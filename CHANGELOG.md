@@ -5,6 +5,18 @@ so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
 ## [1.0.0] - 2026-10-17 · first public release
+- **Human draft override** (`engine/override.py`, `python -m engine draft on|off|status`; user, 10-17: "when I say
+  draft, then draft"). While on, the engine answers instead of parking: agreements and arbitration accepted (the
+  user's consent, logged), export-control / U.S.-person / sanctioned-country questions from the citizenship presets,
+  pronouns declined, addresses from presets, open text force-drafted from the Fact Bank; every such answer is
+  recorded on the job as `user override`, and parked jobs get one more try. Never, even when on: facts not on file
+  (criminal record, vaccination, products used, immigration case...), human checks, EEO beyond a decline;
+  `engine draft status` lists those. Verify: `tests/test_override.py`.
+  First override pass: 62 selected (was 0-4), 8 of 48 submitted. Fixed from what it showed: the override never
+  force-drafts a yes/no question (they go to the Fact Bank yes/no logic); "an understanding / knowledge /
+  familiarity of X" counts like "experience with X"; "Do you live in one of the following states: ..." answers from
+  your state preset; "Bachelor's ... plus N years" says No when N exceeds your years (it got "Master's").
+
 Release review of every file. Fixes for what it found:
 - **DNS rebinding on the API** (`apps/api/main.py`): CORS does not stop a page that re-points its own name at
   127.0.0.1; it could read every endpoint (Fact Bank, applications) and, in the bank, write answers.
@@ -59,7 +71,7 @@ Release review of every file. Fixes for what it found:
   who may write to it, and the root-run supervisor's limits.
 - **Versions**: engine 1.0.0 (was 0.3.0 in pyproject), API 1.0.0 (was 0.8.0), web 1.0.0 (was 0.7.0); old
   `[Unreleased]` changelog entries numbered. README / wiki numbers refreshed from the ledger (191 submitted,
-  5,471 boards on nine ATSs, 207 tests).
+  5,471 boards on nine ATSs, 211 tests).
 
 ## [0.16.3] - 2026-10-16 · demo resumes + README screenshots
 - **Resumes render on the public site**: demo resumes are one-page HTML pages (PDFs never enter the repo), `/proxy/*`
