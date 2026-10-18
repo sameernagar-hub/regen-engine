@@ -1,3 +1,38 @@
+# Handoff: 10-18 ~01:00. Stack is DOWN (stopped cleanly, 0 claimed, volumes kept). Goal next: RELEASE v1.0.0, then use it.
+
+## START
+`cd regen-engine && REGEN_DAYS=30 REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_ASHBY_PER_PASS=1 REGEN_LOOP_MIN=3 REGEN_SOURCES_EVERY=3 REGEN_MAX=150 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
+Health: `docker exec deploy-supervisor-1 python -m engine fleet`. The draft override is ON (`engine draft status`).
+Ashby cooldown ends ~10-18 22:39; keep 1/pass after. Gate every commit: `git add -A` FIRST, then `python scripts/privacy_scan.py`.
+
+## Release checklist (do first, in order)
+1. Start the stack so reposync pushes the 2 local commits (dbe457e, 87e400c) + this handoff to PR #18 (bot/sync).
+2. Wait for PR #18 CI (privacy gate + tests) on the new head. Locally: `py -3.14 -m pytest -q` (215 expected) and
+   `py -3.14 scripts/privacy_scan.py --history`.
+3. Re-check for release: README numbers (tests, boards, submitted), CHANGELOG [1.0.0] covers everything since 0.16.3
+   (incl. override, background presets, mechanical blocker, harvest feeds, gone postings, IMAP NOOP), SECURITY.md port
+   table, profile.example/presets.json has every preset key the runner reads, `engine --help` lists `draft`.
+4. Merge by FAST-FORWARD only (never GitHub's merge button: it stamps the personal email): `git push origin main`
+   once the branch CI is green; user approves this step.
+5. Publish the draft release v1.0.0 (already created, target main): update its notes with the override + 10-18 items,
+   then `gh release edit v1.0.0 --draft=false` (user approves).
+6. Render auto-deploys main; check https://regen-engine.onrender.com loads. Then stop feature work: use the engine.
+
+## Done 10-17 / 10-18
+- v1.0.0 review fixes (see CHANGELOG [1.0.0]): Host checks, desk VNC password, relay origin, live view, memory-stack
+  ports, supervisor never retires the last applier, captchas never retried blind, Ashby never resubmitted.
+- Human draft override (`engine draft on|off|status`): user's standing approval; agreements accepted, export /
+  US-person from presets, open text drafted. Never: unknown facts, human checks, EEO beyond decline.
+- Background presets (user 10-18, "never ask these"): criminal_record No, active_immigration_case No,
+  covid_vaccinated Yes, adverse_credit No, government No.
+- Supply: 30-day window, +~250 boards (HN 12 months + 7 lists), build/release + ML lead titles, closed postings pruned,
+  mechanical / manufacturing roles blocked in the fit gate.
+- 22 submitted this session (201 total).
+
+## Needs the user
+- Workday sign-ins in the desk (/reach, ~320 jobs). Human checks + Lever captcha forms (filled, finish by hand).
+- Deemed-export questions: override answers "affects me: Yes" from citizenship; self-certification lists still parked.
+
 # Handoff: 10-17 night (v1.0.0 release review). Stack is UP.
 
 ## START
