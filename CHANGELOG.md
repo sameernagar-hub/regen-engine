@@ -17,6 +17,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   familiarity of X" counts like "experience with X"; "Do you live in one of the following states: ..." answers from
   your state preset; "Bachelor's ... plus N years" says No when N exceeds your years (it got "Master's").
 
+- **Background facts from presets** (user, 10-18: "do not ask such questions"): criminal record, active immigration
+  case, COVID vaccination and adverse credit are preset keys (`criminal_record`, `active_immigration_case`,
+  `covid_vaccinated`, `adverse_credit`) with rules in the runner; parked jobs on them retry. An unset preset still asks.
+
 Release review of every file. Fixes for what it found:
 - **DNS rebinding on the API** (`apps/api/main.py`): CORS does not stop a page that re-points its own name at
   127.0.0.1; it could read every endpoint (Fact Bank, applications) and, in the bank, write answers.

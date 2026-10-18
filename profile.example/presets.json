@@ -50,5 +50,9 @@
  "unrestricted_work_authorization": "<Yes only if your US work authorization has no time limit>",
  "on_opt": "<Yes/No>",
  "stem_degree": "<Yes/No>",
- "us_military_reserve": "<Yes/No>"
+ "us_military_reserve": "<Yes/No>",
+ "criminal_record": "<Yes/No>",
+ "active_immigration_case": "<Yes/No>",
+ "covid_vaccinated": "<Yes/No>",
+ "adverse_credit": "<Yes/No>"
 }

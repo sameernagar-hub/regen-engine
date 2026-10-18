@@ -87,3 +87,13 @@ def test_mechanical_product_engineer_is_blocked():
     assert "mechanical / manufacturing role" in fit(mech, max_years=99)
     sw = "Product Engineer: build React and Python features; some prototype work with SolidWorks files for 3D CAD exports."
     assert "mechanical / manufacturing role" not in fit(sw, max_years=99)
+
+
+def test_background_facts_come_from_presets():
+    for q, key in (("Have you ever been convicted of a misdemeanor or felony?", "criminal_record"),
+                   ("Do you currently have an active immigration case (ex H-1B extension, green card)?", "active_immigration_case"),
+                   ("We require all US-based employees to be fully vaccinated against COVID-19", "covid_vaccinated"),
+                   ("Have you had any adverse credit reports in the past 10 years (bankruptcy, foreclosure, etc.)?", "adverse_credit")):
+        assert answer_for(q, {}) == P.get(key), q  # unset in the fictional fixture -> None -> still asks
+    assert answer_for("we ask all candidates to undergo a criminal background check. Are you willing to consent to a background check?", {}) \
+        == P.get("willing_background_check")

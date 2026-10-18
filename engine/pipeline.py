@@ -90,7 +90,8 @@ def answerable_now(detail):
 
 
 # questions only the user answers, even when a rule exists: agreements, export control, criminal history (10-11)
-USER_ONLY_Q = re.compile(r"arbitrat|any disputes|export|deemed export|convict|felony|misdemeanor|indict", re.I)
+# (criminal-history questions left this list 10-18: they come from presets now; an unset preset still asks)
+USER_ONLY_Q = re.compile(r"arbitrat|any disputes|export|deemed export", re.I)
 SKIP_ATS = {a.strip() for a in os.environ.get("REGEN_SKIP_ATS", "").split(",") if a.strip()}
 WALL = ("CAPTCHA", "BOT-CHECK")  # failure details that mean "a human must finish this", not "retry"
 HUMAN_ONLY_OVERRIDE = ("assessment", "transcript")  # still the user's even under the draft override

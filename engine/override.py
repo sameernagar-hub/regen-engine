@@ -65,12 +65,21 @@ def set_state(draft, note=""):
 
 
 def blocked(label):
-    """'fact' / 'human' when even the override must leave this question to the user, else None."""
+    """'fact' / 'human' when even the override must leave this question to the user, else None. A fact the user
+    has put in presets (criminal record, vaccination, credit, immigration case: 10-18) is answered, not blocked."""
     if HUMAN_CHECK.search(label or ""):
         return "human"
     if FACT_ONLY.search(label or ""):
-        return "fact"
+        from engine.apply.runner import P  # lazy: runner imports this module
+        key = next((k for rx, k in PRESET_FACTS if re.search(rx, label or "", re.I)), None)
+        return None if key and P.get(key) not in (None, "") else "fact"
     return None
+
+
+# the FACT_ONLY questions a preset can settle (the runner's RULES use the same keys)
+PRESET_FACTS = [(r"convict|felony|misdemeanor|indict|criminal (record|history)", "criminal_record"),
+                (r"active immigration case", "active_immigration_case"), (r"vaccin", "covid_vaccinated"),
+                (r"credit report|bankruptcy|foreclosure", "adverse_credit")]
 
 
 def answer(label, P):
