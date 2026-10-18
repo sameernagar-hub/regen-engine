@@ -58,7 +58,8 @@ def latest_status():
                     st = "FAILED"
             if st == "FAILED":
                 fails[e["url"]] += 1
-                if fails[e["url"]] == 1 and any(r in (e.get("detail") or "") for r in RETRYABLE):
+                # never Ashby: it reads a second submit of the same form as spam (10-17: one retry -> 24 h cooldown)
+                if fails[e["url"]] == 1 and "ashbyhq" not in e["url"] and any(r in (e.get("detail") or "") for r in RETRYABLE):
                     st = "RETRY"
             elif st == "NEEDS YOU" and answerable_now(e.get("detail") or ""):
                 st = "RETRY"

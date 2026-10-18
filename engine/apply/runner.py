@@ -410,9 +410,15 @@ def area_answer(label):
     return P.get("based_in_bay_area") if HOME_METRO.search(m.group(5)) else P.get("based_in_other_city")
 
 
+# 10-17: "Why Nox Metals? Please do not use AI." got a Fact Bank draft. Machine-assembled text is not what was asked for.
+NO_AI_Q = re.compile(r"(do not|don.t|please don.t|without( using)?|no) (use )?(ai|a\.i\.|chat ?gpt|llms?|generative ai|ai tools)\b", re.I)
+
+
 def answer(label, job, field=None):
     """Presets / approved answers / rules, the job's note for "why us", derived facts, a Fact Bank draft for open
     questions, then (autofill) yes/no defaults and drafts for any remaining non-sensitive text box."""
+    if NO_AI_Q.search(label):
+        return None  # the employer asked for the candidate's own words: you write it, the engine never drafts it
     ans = answer_for(label, job.get("extra", {}))
     if NOTE_Q.search(label) and job.get("note"):
         return job["note"]
@@ -703,10 +709,26 @@ def set_field(page, f, label, ans):
         txt.fill(ans); return True
     return False
 
+# a human check that is on screen (reCAPTCHA image grid, hCaptcha, Turnstile): never worked around, never retried blind
+CHALLENGE = ("iframe[src*='recaptcha/api2/bframe']:visible, iframe[title*='recaptcha challenge' i]:visible, "
+             "iframe[src*=hcaptcha]:visible, iframe[src*='challenges.cloudflare']:visible")
+
+
+def challenge_on(page):
+    """True when a captcha challenge is visible. 10-17: Ashby showed a reCAPTCHA image grid on submit, the engine read
+    it as "no confirmation seen" (retryable), resubmitted 7 min later and Ashby flagged the application as spam."""
+    try:
+        return any(f.bounding_box() and f.bounding_box()["height"] > 100 for f in page.query_selector_all(CHALLENGE))
+    except Exception:
+        return False
+
+
 def submit_ashby(page):
     page.click("button:has-text('Submit Application')")
     for _ in range(25):
         yield 1
+        if challenge_on(page):
+            return False, "CAPTCHA: Ashby asked for a human check; finish this one by hand (form filled, resume ready)"
         body = page.inner_text("body")
         if re.search(r"successfully submitted|thank you for applying|application was submitted", body, re.I): return True, "success"
         m = re.findall(r"Missing entry for required field: [^\n]+", body)
@@ -1279,6 +1301,8 @@ def submit_gh(page, job=None):
     page.click("button[type=submit]:has-text('Submit'), button:has-text('Submit application')")
     for _ in range(30):
         yield 1
+        if challenge_on(page):
+            return False, "CAPTCHA: Greenhouse asked for a human check; finish this one by hand (form filled, resume ready)"
         body = page.inner_text("body"); u = page.url
         # code step first: its page also contains words like "confirm", which once produced a false SUBMITTED
         code_step = page.query_selector("input[id^=security-input]") or re.search(r"(security|verification) code (was|has been) sent|enter the 8-character code", body, re.I)
@@ -1414,8 +1438,8 @@ def job_task(page, job, dry, results, log_base=print):
                     else:
                         msg = "NEEDS YOU: " + " | ".join(again)
                 page.screenshot(path=shot, full_page=True)
-                if not ok and msg.startswith("BOT-CHECK"):
-                    open("ashby_cooldown", "w").write(datetime.datetime.now().isoformat())
+                if not ok and (msg.startswith("BOT-CHECK") or (ash and msg.startswith("CAPTCHA"))):
+                    open("ashby_cooldown", "w").write(datetime.datetime.now().isoformat())  # a challenge = Ashby is suspicious
                 status = "SUBMITTED" if ok else (msg if msg.startswith("NEEDS YOU") else "FAILED: " + msg)
         except Exception as e:
             status, shot = f"ERROR: {e}"[:200], ""

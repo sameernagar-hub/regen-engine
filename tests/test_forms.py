@@ -104,6 +104,18 @@ def test_ashby_location_that_asks_for_the_country(browser):
     assert state["w"] == {"loc": R.P["country"]}, state["w"]
 
 
+def test_ashby_captcha_goes_to_you_and_starts_the_cooldown(browser):
+    job = {"name": "Globex - Data Engineer", "url": "https://jobs.ashbyhq.com/globex/5", "resume": "out/Resume_Initech_1.pdf"}
+    cool = os.path.join(WORKSPACE, "ashby_cooldown")
+    try:
+        status, _, _ = apply_one(browser, "ashby_captcha.html", job)
+        assert status.startswith("FAILED: CAPTCHA"), status
+        assert os.path.exists(cool)  # Ashby is suspicious: no more Ashby submits until the cooldown ends
+    finally:
+        if os.path.exists(cool):
+            os.remove(cool)
+
+
 def test_lever_end_to_end_declines_eeo(browser):
     job = {"name": "Umbrella - Software Engineer", "url": "https://jobs.lever.co/umbrella/abc", "resume": "out/Resume_Initech_1.pdf"}
     status, _, state = apply_one(browser, "lever.html", job)

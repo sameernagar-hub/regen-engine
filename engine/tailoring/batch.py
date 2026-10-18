@@ -40,12 +40,15 @@ def load_queue():
     return q
 
 
+FETCH_ERROR = "fetch error"
+
+
 def _safe_fetch(j):
     try:
         return job_description(j)
     except Exception as e:  # one dead posting must not sink the batch
         print(f"  ! {j.get('company')} | {j.get('title')}: {e}")
-        return {}, "", []
+        return FETCH_ERROR, "", []  # a network error: worth another pass (a 404 / missing job means removed)
 
 
 def _match(cov):
@@ -72,7 +75,13 @@ def build(name, ids, force=False):
             j = q[i]
             raw, jd, questions = fetched[i]
             if not jd:
-                print(f"  ! {j['company']} | {j['title']}: posting is gone"); continue
+                # the ATS answered without the posting (404, not on the board): closed, so it leaves the queue
+                # (10-17: three such jobs took a selection slot and a fetch every pass). A fetch error stays.
+                if raw != FETCH_ERROR:
+                    print(f"  ! {j['company']} | {j['title']}: posting is gone")
+                    record("application", job=f"{j['company']} - {j['title']}", url=j["url"], status="SKIPPED",
+                           detail="JD: posting is gone", dry=False)
+                continue
             co = re.sub(r"[^A-Za-z0-9]", "", j["company"])[:20]
             short = str(i)[:12]
             json.dump(raw, open(f"jd/{j['ats']}_{co}_{short}.json", "w"), indent=1)

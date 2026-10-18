@@ -1,3 +1,20 @@
+# Handoff: 10-17 night (v1.0.0 release review). Stack is UP.
+
+## START
+`cd regen-engine && REGEN_DAYS=30 REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_ASHBY_PER_PASS=1 REGEN_LOOP_MIN=3 REGEN_SOURCES_EVERY=3 REGEN_MAX=150 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
+Don't recreate appliers by hand while the supervisor runs unless they are idle (claimed 0): it races the drain handshake.
+
+## Done 10-17
+- v1.0.0 review: API/relay/live-view Host checks, desk VNC password per start, memory-stack ports on 127.0.0.1,
+  supervisor never retires the last applier, captchas never retried blind, answer-rule fixes (see CHANGELOG 1.0.0).
+- PR #18 (reposync) carries the commits; draft GitHub release v1.0.0 exists (publish after main has the commits).
+- 5 submitted today, all 5 confirmed by email (company names stay out of the repo).
+- Ashby cooldown started 10-17 22:39 (a captcha was resubmitted; fixed). Ends ~10-18 22:39. Keep 1/pass.
+
+## Supply (why throughput is low)
+Of ~730 queued: 317 Workday (need your sign-ins in the desk, /reach), ~270 Ashby (1/pass, cooling now), 77 parked
+on your answers (/needs), 50 JazzHR/SmartRecruiters (desk). Discovery window widened to 30 days, sources every 3 passes.
+
 # Handoff: 10-15 late night (~23:15). Stack is DOWN (stopped cleanly; volumes kept). main = this commit.
 
 ## START
