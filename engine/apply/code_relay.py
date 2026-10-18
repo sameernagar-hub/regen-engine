@@ -27,6 +27,8 @@ class Relay(http.server.BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         ok = host in HOSTS and (not post or origin is None or origin in ORIGINS)
         if not ok:
+            if post:  # read what was sent first: a refusal with unread bytes can reset the connection instead
+                self.rfile.read(min(int(self.headers.get("Content-Length") or 0), 20000))
             self.send_response(403); self.end_headers()
         return ok
 
