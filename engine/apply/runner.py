@@ -96,13 +96,16 @@ RULES = [
     (r"degree in a (science, technology, engineering|stem)|stem (field|degree)", P.get("stem_degree")),  # presets (M.S. Computer Science)
     (r"able to begin a new opportunity|when (would|could) you (be able to )?(begin|start)", P.get("start_date")),
     (r"hear about|how did you find|learned about|(first )?learn about .{0,40}(employer|us|company|role|position|job|opportunity)|^source\b|(job|application|referral|candidate) source", "Company careers page"),  # before the link rules: these labels often list "LinkedIn"
-    (r"linkedin", P["linkedin"]),
-    (r"github|website|portfolio|other (web)?site|personal site|other url|additional (url|link)|^url$", P["github"]),
+    # link boxes, not questions that merely name a product ("experience using ... GitHub Copilot" got the URL, 10-17)
+    (r"^(?!.*\b(experience|describe|explain|which|how)\b).*linkedin", P["linkedin"]),
+    (r"^(?!.*\b(experience|describe|explain|which|how)\b).*(github|website|portfolio|other (web)?site|personal site|other url|additional (url|link)|^url$)", P["github"]),
     (r"(preferred|favou?rite|strongest|primary) (programming |coding )?language", PREFERRED_LANGUAGE),
     # Legal / status answers come ONLY from your presets (never hardcoded). An unset preset -> human queue.
     # "authorized ... WITHOUT sponsorship" is a different question from "will you need sponsorship", so it has its own key.
     (r"are you a (u\.?s\.?|united states) citizen|(u\.?s\.?|united states) citizenship\?", "No" if P.get("citizenship_country") and P.get("citizenship_country") != "United States" else None),
     (r"countr(y|ies)( or countries)? of citizenship|which countr(y|ies)\W.{0,30}citizen|citizenship (country|countries)|what is your citizenship|^citizenship\W*$", P.get("citizenship_country")),
+    # "the country you are legally registered / authorized to work in" asks for a country, not Yes (10-17: got an essay)
+    (r"countr(y|ies)\b.{0,40}\b(registered|authori[sz]ed|eligible|permitted|allowed|entitled) to work", P["country"]),
     (LONG_TERM, P.get("authorized_without_sponsorship_long_term")),  # before the plain "without sponsorship" rule
     (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
     (r"(will|do) you (now or in the future )?(require|need) (any )?(work |employment )?(authori[sz]ation|permit)", P.get("needs_sponsorship_now_or_future")),
@@ -153,7 +156,8 @@ RULES = [
     (r"gpa", P["gpa"]),
     (r"graduat.{0,20}(year|date)|year.{0,20}graduat|expected graduation", P["grad_year"]),
     (r"whatsapp|text message|sms", P.get("sms_opt_in")),
-    (r"years of (professional |relevant )?experience|how many years", P["years_experience"]),
+    # a bare number only for a numeric box; "Describe your experience with X. Include ... years of experience" is prose
+    (r"^(?!.*\b(describe|explain|tell us|walk us|share|include)\b).*(years of (professional |relevant )?experience|how many years)", P["years_experience"]),
     # education block dates (Greenhouse): must come before the availability "start date" rule below
     (r"^start date month\W*$", EDU.get("start_month")), (r"^start date year\W*$", EDU.get("start_year")),
     (r"^end date month\W*$", EDU.get("end_month")), (r"^end date year\W*$", EDU.get("end_year")),
@@ -1067,8 +1071,24 @@ def fill_gh(page, job, log):
     except Exception: pass
     yield 1.5
     missing = []
+    # 10-17: Greenhouse's uploader sometimes isn't ready ("Cannot read properties of undefined (reading 'uploadFile')")
+    # and stays broken for that page. Attempt 1 sets the input, 2 goes through the Attach button's file chooser,
+    # 3 reloads the page first (nothing else is filled yet).
     for attempt in range(3):
-        page.set_input_files("input#resume" if page.query_selector("input#resume") else "input[type=file]", job["resume"]); yield 2.5
+        if attempt == 2:
+            page.reload(); page.wait_for_selector("#application-form, form", timeout=30000); yield 4
+        sel = "input#resume" if page.query_selector("input#resume") else "input[type=file]"
+        attach = page.query_selector("button:has-text('Attach')")  # the first Attach is Resume/CV (cover letter follows)
+        try:
+            if attempt == 1 and attach:
+                with page.expect_file_chooser(timeout=5000) as fc:
+                    attach.click()
+                fc.value.set_files(job["resume"])
+            else:
+                page.set_input_files(sel, job["resume"])
+        except Exception as e:
+            log(f". resume upload attempt {attempt + 1}: {str(e)[:80]}")
+        yield 2.5
         if os.path.basename(job["resume"]) in page.inner_text("body"): break
         yield 2
     else:

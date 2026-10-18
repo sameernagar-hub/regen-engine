@@ -17,8 +17,22 @@ SEEN = set()
 LAST = {"last_post": None, "codes": 0}
 
 
+HOSTS = ("127.0.0.1", "localhost", "relay")  # Host header check: blocks DNS-rebinding pages
+ORIGINS = ("https://mail.google.com",)        # a browser always sends Origin cross-site; curl / IMAP send none
+
+
 class Relay(http.server.BaseHTTPRequestHandler):
+    def _allowed(self, post=False):
+        host = (self.headers.get("Host") or "").rsplit(":", 1)[0]
+        origin = self.headers.get("Origin")
+        ok = host in HOSTS and (not post or origin is None or origin in ORIGINS)
+        if not ok:
+            self.send_response(403); self.end_headers()
+        return ok
+
     def do_POST(self):
+        if not self._allowed(post=True):
+            return
         n = int(self.headers.get("Content-Length") or 0)
         if n > 20000:
             self.send_response(413); self.end_headers(); return
@@ -51,6 +65,8 @@ class Relay(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         """http://127.0.0.1:8799/ : what the relay is doing (jobs waiting on a code, codes delivered, last post),
         refreshed every 5 s; /status is the same as JSON. Never shows a code value, only which jobs wait."""
+        if not self._allowed():
+            return
         waiting = C.waiting()
         st = {"waiting": [{"job": s, "company": co} for s, co in waiting], "delivered": LAST["codes"],
               "last_post_s_ago": round(time.time() - LAST["last_post"]) if LAST["last_post"] else None}

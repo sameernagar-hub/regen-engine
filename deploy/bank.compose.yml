@@ -163,7 +163,10 @@ services:
 
   desk:  # a visible browser you sign in to: http://127.0.0.1:6080 (noVNC, this machine only); fills Workday forms there
     <<: *engine
-    entrypoint: ["sh", "-c", "rm -f /tmp/.X99-lock; Xvfb :99 -screen 0 1366x900x24 -nolisten tcp >/dev/null 2>&1 & sleep 1; x11vnc -display :99 -forever -shared -nopw -localhost -rfbport 5900 -quiet >/dev/null 2>&1 & websockify --web /usr/share/novnc 6080 localhost:5900 >/dev/null 2>&1 & exec python -m engine desk"]
+    # VNC password: new on every start, kept in the bank (workspace/.desk_pass, owner-only) so only the local control
+    # room can hand it to you. Without it any web page could open ws://127.0.0.1:6080 (WebSockets skip CORS) and drive
+    # the desk browser where you are signed in. Singleton*: a recreated desk would find the old container's profile lock.
+    entrypoint: ["sh", "-c", "rm -f /tmp/.X99-lock /home/regen/desk-profile/Singleton*; P=$$(python -c 'import secrets,string as s;a=s.ascii_letters+s.digits;print(str().join(secrets.choice(a) for _ in range(8)))'); (umask 077; printf %s \"$$P\" > /data/workspace/.desk_pass); x11vnc -storepasswd \"$$P\" /tmp/.vncpass >/dev/null 2>&1; Xvfb :99 -screen 0 1366x900x24 -nolisten tcp >/dev/null 2>&1 & sleep 1; x11vnc -display :99 -forever -shared -rfbauth /tmp/.vncpass -localhost -rfbport 5900 -quiet >/dev/null 2>&1 & websockify --web /usr/share/novnc 6080 localhost:5900 >/dev/null 2>&1 & exec python -m engine desk"]
     environment:
       REGEN_WORKDAY_SUBMIT: "${REGEN_WORKDAY_SUBMIT:-0}"  # 1 = submit when every required answer came from presets / Fact Bank
     ports: ["127.0.0.1:6080:6080"]

@@ -4,6 +4,34 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [1.0.0] - 2026-10-17 · first public release
+Release review of every file. Fixes for what it found:
+- **DNS rebinding on the API** (`apps/api/main.py`): CORS does not stop a page that re-points its own name at
+  127.0.0.1; it could read every endpoint (Fact Bank, applications) and, in the bank, write answers.
+  `TrustedHostMiddleware` now allows only `127.0.0.1`, `localhost` and the bank's `api` name (`REGEN_API_HOSTS`).
+  Verify: `curl -H "Host: evil.example" 127.0.0.1:8787/api/health` -> 400; `tests/test_v1_security.py`.
+- **Desk without a password** (`deploy/bank.compose.yml`): noVNC ran `-nopw`, and WebSockets skip CORS, so any web page
+  could drive the desk browser where the user is signed in to employer portals. Each start now makes an 8-character
+  random VNC password, stores it owner-only in the bank (`workspace/.desk_pass`), and `/api/reach/*` hands the control
+  room a link that carries it. Verify: the RFB handshake offers security type 2 (VNC auth) only.
+- **Code relay origin** (`engine/apply/code_relay.py`): any page could POST codes. Browser posts must come from
+  `https://mail.google.com`; curl / IMAP (no Origin) still work; Host header checked. Verify: `tests/test_v1_security.py`.
+- **Desk crash loop after a recreate**: the old container's Chromium `Singleton*` lock on the profile volume made the
+  new desk exit 21 forever. The entrypoint clears it (one desk per volume). Verify: recreate the desk, it stays up.
+- **Greenhouse resume upload** (`engine/apply/runner.py fill_gh`): two of the first ten forms of 10-17 stopped at
+  RESUME UPLOAD FAILED; the proof shows Greenhouse's own `Cannot read properties of undefined (reading 'uploadFile')`.
+  Retries now go 1) set the input, 2) the Attach button's file chooser, 3) reload then set the input.
+- **Wrong answers on three real forms** (parked on other questions, so not submitted; `engine/apply/runner.py` RULES):
+  "the country you are legally registered to work in" had no rule and got a drafted paragraph -> your country;
+  "Describe your experience with X. Include ... years of experience" got the bare years number -> the years rule skips
+  describe / explain / include prompts; "experience using AI coding agents (... GitHub Copilot)" got the GitHub URL ->
+  link rules skip labels that ask about experience. Verify: `tests/test_v1_answers.py`.
+- **SECURITY.md** described a stack with one published port and one API write; it now lists every 127.0.0.1 port,
+  who may write to it, and the root-run supervisor's limits.
+- **Versions**: engine 1.0.0 (was 0.3.0 in pyproject), API 1.0.0 (was 0.8.0), web 1.0.0 (was 0.7.0); old
+  `[Unreleased]` changelog entries numbered. README / wiki numbers refreshed from the ledger (191 submitted,
+  5,471 boards on nine ATSs, 195 tests).
+
 ## [0.16.3] - 2026-10-16 · demo resumes + README screenshots
 - **Resumes render on the public site**: demo resumes are one-page HTML pages (PDFs never enter the repo), `/proxy/*`
   allows same-origin framing (the site-wide `frame-ancestors 'none'` blocked it). Verify: Applications, pick a row.
@@ -22,7 +50,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   Why: the hosted site could not reach the Docker engine. Verify: `NEXT_PUBLIC_REGEN_MODE=public npm run dev`,
   answer a question on `/needs`; `python scripts/privacy_scan.py` stays clean.
 
-## [Unreleased] - 2026-10-15 · v0.15 supply + answers
+## [0.15.0] - 2026-10-15 · supply + answers
 - **Rippling auto-apply**: `ats.FILLED` + `APPLY_SUPPORTED`; pipeline scans rippling + jazzhr. Why: 161 boards, no
   account, no captcha seen; dry runs on two real postings filled every field. Verify: `tests/test_v015.py`.
 - **Submit check**: Rippling submit ignores `[class*=error]` wrappers and the disabled/submitting state (two good
@@ -33,7 +61,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   whose batch file was cleaned are rebuilt from the ledger. Salary midpoint no longer skipped for jobs with extras.
   Verify: `tests/test_api.py::test_typed_legal_answer_stays_on_its_job`.
 
-## [Unreleased] - 2026-10-14 · v0.14 supervisor guardrails
+## [0.14.0] - 2026-10-14 · supervisor guardrails
 The supervisor is the only container with the Docker socket, so whatever it creates runs with root-equivalent
 reach on the host. Until now a cloned applier copied whatever limits its source had (none, if a container was ever
 started without them), and nothing noticed a container in the project that compose never declared.
@@ -93,7 +121,7 @@ started without them), and nothing noticed a container in the project that compo
 - Live 10-14: after the rebuild the supervisor logged `bound deploy-applier-N {'pidslimit': 1024}` for all 6
   appliers; `docker inspect` shows 1.5 CPU / 2 GiB / 1024 pids; an applying applier uses ~225 pids.
 
-## [Released in v0.13] - 2026-10-13 · v0.13 "Reach"
+## [0.13.0] - 2026-10-13 · "Reach"
 Most new-grad leads that never resolved pointed at Workday, iCIMS or SmartRecruiters boards, and the engine could not
 see those ATSs at all. The fleet's containers were only visible through heartbeats, and the B5-B7 benchmarks only
 ran when someone typed the command.
@@ -143,7 +171,7 @@ ran when someone typed the command.
   save, the three API routes). Live: `docker exec deploy-supervisor-1 python -m engine reach 12`, then open
   http://127.0.0.1:3000/control.
 
-## [Unreleased] - 2026-10-12 · "Ledger"
+## [0.12.2] - 2026-10-12 · "Ledger"
 The ledger lived only in events.jsonl: every question about it (submissions per day, answers by source, supervisor
 actions) meant a script. Now the bank stack keeps a labeled Postgres copy next to it.
 

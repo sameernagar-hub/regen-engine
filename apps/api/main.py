@@ -10,6 +10,7 @@ import asyncio, collections, json, os, re, time
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
 from apps.api import store
@@ -26,8 +27,12 @@ ANSWERS = WRITE or os.environ.get("REGEN_API_ANSWERS") == "1"
 QUEUE = os.environ.get("REGEN_ANSWER_QUEUE") == "1"
 # the api container publishes its port on 127.0.0.1 only, so the Docker bridge gateway it sees IS this machine
 TRUST_PORT = os.environ.get("REGEN_API_TRUST_PORT") == "1"
-app = FastAPI(title="REGEN API", version="0.8.0",
+app = FastAPI(title="REGEN API", version="1.0.0",
               description="API over the REGEN job engine's append-only event log (read-only, plus POST /api/answers when enabled).")
+# DNS rebinding: a page on evil.example can re-point its name at 127.0.0.1 and then read this API as same-origin.
+# CORS does not stop that; only checking the Host header does. Local names + the bank's service name are allowed.
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=os.environ.get(
+    "REGEN_API_HOSTS", "127.0.0.1,localhost,api,testserver").split(","))
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("REGEN_WEB_ORIGINS", "http://127.0.0.1:3000,http://localhost:3000").split(","),
                    allow_methods=["GET", "POST"] if ANSWERS else ["GET"], allow_headers=["*"])
 app.include_router(control.router)  # v0.10 control room: runs, filters, Fact Bank, resumes

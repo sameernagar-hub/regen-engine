@@ -20,7 +20,7 @@ resolved back to the employer's own posting before anything is applied to.
 
 ## Board registry
 
-`workspace/boards.json` holds ~2,370 boards across the four ATSs. `engine boards harvest` grows it from public GitHub
+`workspace/boards.json` holds ~5,500 boards across the four ATSs. `engine boards harvest` grows it from public GitHub
 job lists; boards that 404 are marked dead and skipped (`engine boards recheck` retries them). A full scan runs the
 boards in parallel threads, so wall time is roughly the slowest board rather than the sum. A full scan returns ~3,400
 fresh postings before filtering.

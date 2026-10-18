@@ -2,7 +2,7 @@
 open any resume that was sent. Reads are local evidence; writes (run, stop, filters) need REGEN_API_WRITE=1 and
 a request from this computer, like POST /api/answers.
 """
-import collections, json, os, re, shutil, time
+import collections, json, os, re, shutil, time, urllib.parse
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
@@ -204,7 +204,19 @@ def reach_fill(body: dict, request: Request):
     from engine.supervisor import fleet
     desk = next((m for m in fleet()["members"] if m.get("role") == "desk"), None)
     return {"ok": True, "queued": url, "desk": "up" if desk and desk.get("up") else "down",
-            "open": "http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale"}
+            "open": _desk_url()}
+
+
+def _desk_url():
+    """noVNC link with this start's desk password (workspace/.desk_pass, written by the desk container). Only the local
+    control room can read it: CORS + the Host check keep other pages out of this API."""
+    url = "http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale"
+    try:
+        with open(os.path.join(WORKSPACE, ".desk_pass")) as f:
+            pw = f.read().strip()
+    except OSError:
+        return url
+    return url + "&password=" + urllib.parse.quote(pw) if pw else url
 
 
 @router.get("/reach/signins")
@@ -244,7 +256,7 @@ def reach_desk():
     for e in read("application"):
         if e.get("by") == "desk" and e.get("url"):
             last[e["url"]] = {"status": e.get("status"), "detail": e.get("detail"), "ts": e.get("ts"), "proof": e.get("proof")}
-    return {"desk": desk, "open": "http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale", "results": last}
+    return {"desk": desk, "open": _desk_url(), "results": last}
 
 
 @router.post("/reach/mark")

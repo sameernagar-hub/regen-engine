@@ -1,6 +1,6 @@
 [project]
 name = "regen-engine"
-version = "0.3.0"
+version = "1.0.0"
 description = "Open-source job-hunting engine: source-first discovery, truthful resume tailoring, fast ATS apply, agentic memory and feedback loop."
 readme = "README.md"
 license = { text = "MIT" }

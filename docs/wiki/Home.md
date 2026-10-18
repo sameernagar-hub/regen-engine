@@ -4,7 +4,7 @@
 
 REGEN is an open-source, local-first engine that runs a job search end to end:
 
-- **Finds** roles at the source: it polls ~2,370 company boards on four ATS APIs and resolves alerts, lists and
+- **Finds** roles at the source: it polls ~5,500 company boards on nine ATSs and resolves alerts, lists and
   careers APIs back to the employer's own posting.
 - **Rejects** roles you'd be screened out of before spending any effort on them.
 - **Writes** one resume per job from a Fact Bank of claims you can prove.
@@ -16,14 +16,14 @@ server, a privacy gate in CI and 95 tests.
 
 | Verified applications | Boards polled | Biggest day | ATS read-back | Tests |
 |---|---|---|---|---|
-| **69** (proof on disk) | **~2,370** | **28** (2026-10-09) | **77–100%** | **95** |
+| **191** (ledger, 10-17) | **~5,500** | **28** (2026-10-09) | **77–100%** | **95** |
 
 ## The system in one picture
 
 ```mermaid
 flowchart LR
     subgraph Discover
-      ATS[4 ATS APIs<br/>~2,370 boards] --> Q
+      ATS[9 ATSs<br/>~5,500 boards] --> Q
       AL[Alert emails · lists<br/>big-tech APIs] -->|resolve to source| Q[(queue)]
     end
     Q --> FG{Fit gate<br/>JD rules}

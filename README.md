@@ -19,7 +19,7 @@
 
 <sub>The front door of the <a href="https://regen-engine.onrender.com">live demo</a>: every part of the engine is a page. Hover a cylinder to wake it, click to step inside.</sub>
 
-**[Live demo](https://regen-engine.onrender.com)** · **[Why REGEN](#why-regen)** · **[What's new](#whats-new-v016-front-door-the-engine-is-the-menu-and-the-public-site-works-end-to-end)** · **[Features](#features)** · **[Quick start](#quick-start)** · **[Architecture](#architecture)** · **[Platform](#the-platform-v07)** · **[Roadmap](#roadmap)**
+**[Live demo](https://regen-engine.onrender.com)** · **[Why REGEN](#why-regen)** · **[What's new](#whats-new-v10-release)** · **[Features](#features)** · **[Quick start](#quick-start)** · **[Architecture](#architecture)** · **[Platform](#the-platform-api-web-mcp)** · **[Roadmap](#roadmap)**
 
 </div>
 
@@ -33,7 +33,7 @@ resume to every posting and make up answers to fill the gaps.
 
 **The wedge.** REGEN works at the source and refuses to bluff:
 
-- **Source-first discovery.** It polls ~2,370 company boards across four ATS APIs directly, resolves job-alert emails
+- **Source-first discovery.** It polls ~5,500 company boards across nine ATSs directly, resolves job-alert emails
   and new-grad lists back to the employer's own posting, and queues roles within minutes of going live.
 - **A fit gate before any effort.** Citizenship, clearance, no-sponsorship, graduation windows, years required and core
   stack are checked against the JD first. Roles you'd be screened out of never cost a resume or a form.
@@ -53,20 +53,32 @@ resume to every posting and make up answers to fill the gaps.
 
 | | |
 |---|---|
-| Applications submitted | **165** to date (latest status SUBMITTED in the ledger); **96** still have their confirmation screenshot on disk (older proofs were pruned by the retention policy) · best day **49** (2026-10-10) · `python -m engine report` |
-| Company boards polled directly | **5,094** on Greenhouse, Ashby, Lever, Workable, Workday, SmartRecruiters, iCIMS (`workspace/boards.json`) |
+| Applications submitted | **191** to date (2026-10-17) (latest status SUBMITTED in the ledger); **96** still have their confirmation screenshot on disk (older proofs were pruned by the retention policy) · best day **49** (2026-10-10) · `python -m engine report` |
+| Company boards polled directly | **5,471** on Greenhouse, Ashby, Lever, Workable, Rippling, JazzHR, Workday, SmartRecruiters, iCIMS (`workspace/boards.json`) |
 | Sources resolved back to the employer | LinkedIn alert mail over IMAP, job-alert emails (7 platforms), newgrad-jobs.com, 25 GitHub job lists, HN "Who is hiring", big-tech careers APIs |
-| Outcomes read from your mail | **38** rejections, **1** assessment, 160 confirmations (decoded bodies from All Mail; each rejection reviewed against its JD) |
+| Outcomes read from your mail (10-13 review) | **38** rejections, **1** assessment, 160 confirmations (decoded bodies from All Mail; each rejection reviewed against its JD) |
 | Fit gate vs past rejections (B7) | catches **18.2%** of rejections that had a stored JD, at a cost of **2.2%** of the rest (was 9.1% / 1.1% before the 10-13 review) |
 | Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF; coverage fill puts most at **100%** of the JD terms you have (build log: `resume covers 24/24 JD terms, ATS text 100%`) |
 | Email security codes | **hands-free** via the code relay: a Gmail tab posts codes from the Atom feed every 20 s (`engine relay`, `workspace/logs/relay_*.log` shows each delivery) |
 | Scheduler | ×2.05 throughput vs sequential (seeded benchmark, `scripts/bench_scheduler.py`) |
-| Tests | **158** passing; system benchmarks B1–B7 in `engine/bench.py` (`python -m engine bench`, rerun by the supervisor every 6 h) (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
+| Tests | **195** passing; system benchmarks B1–B10 in `engine/bench.py` (`python -m engine bench`, rerun by the supervisor every 6 h) (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
 | Resume claims outside your Fact Bank | **Rejected** by the validator before any PDF is written |
 | Model API keys required | **0** |
 | Applier capacity | **N containers** (`--scale applier=N`), each a headed Chromium with its own profile; 5 workers + 1 pipeline container on an 8 GB Docker VM |
 
 All numbers come from this repo's own logs and benchmarks. Run `python -m engine report` to check the verified count.
+
+## What's new (v1.0 release)
+
+The first public release. Every file was reviewed for this release; what changed:
+
+- **Local services refuse other websites.** The API, MCP and code relay check the `Host` header (a site that points
+  its own name at 127.0.0.1 can no longer read your Fact Bank), the relay accepts browser posts only from Gmail, and
+  the desk's VNC gets a fresh password on every start that only the control room hands out. See [SECURITY.md](SECURITY.md).
+- **Greenhouse resume upload** retries through the real Attach button and a page reload when Greenhouse's uploader
+  isn't ready (it showed `reading 'uploadFile'` and the application stopped at RESUME UPLOAD FAILED).
+- **The desk survives a recreate** (a stale Chromium profile lock made it crash-loop).
+- One version everywhere (1.0.0: engine, API, web), changelog entries numbered, README and wiki numbers current.
 
 ## What's new (v0.16 "Front door"): the engine is the menu, and the public site works end to end
 
@@ -489,7 +501,7 @@ IMAP: one SEARCH per poll, only while a job waits.
 ## Privacy and security
 Your data never belongs in this repository, and CI enforces it. Every pull request and every push to `main` runs a **privacy gate**: PII patterns, forbidden paths, noreply-only commit emails, and keyed fingerprints of the maintainer's private terms. The public demo is built from anonymized events and refuses to publish if a company name would appear. See [SECURITY.md](SECURITY.md).
 
-**Live demo: [regen-engine.onrender.com](https://regen-engine.onrender.com)**, the Next.js app in public mode: it replays the last week of real activity with every company name and personal detail removed, from an anonymized feed (`python -m engine site 7 --push` publishes `replay.json` to the `gh-pages` branch, which now only hosts that feed and redirects to Render). Pages that read private data (control room, applications, needs you, Fact Bank) show how to run them locally.
+**Live demo: [regen-engine.onrender.com](https://regen-engine.onrender.com)**, the Next.js app in public mode: it replays the last week of real activity with every company name and personal detail removed, from an anonymized feed (`python -m engine site 7 --push` publishes `replay.json` to the `gh-pages` branch, which now only hosts that feed and redirects to Render). Since v0.16 every page works there on a synthetic proxy dataset (`scripts/proxy_dataset.py`, a fictional candidate): writes are simulated in your tab and nothing reaches an engine.
 
 ---
 
@@ -500,16 +512,19 @@ Claims and their proof: [Evidence](docs/wiki/Evidence.md) · [Efficiency](docs/w
 
 | Capability | State |
 |---|---|
-| Discovery on 4 ATSs (2,469 boards), new-grad and alert sources, 30-day scans, queue prune | ✅ |
+| Discovery on 9 ATSs (5,471 boards), new-grad and alert sources, configurable window (`REGEN_DAYS`), queue prune | ✅ |
 | Fit gate, trust gate (ATS allowlist and scam signals) | ✅ |
 | JD-first resume composer, coverage fill, ATS read-back (median 100% coverage of your JD terms) | ✅ |
-| Apply: Greenhouse ✅ · Ashby ✅ (1 per pass, bot-check aware) · Lever (captcha: assist list) · Workable (skipped while bot-walling) | ✅ |
+| Apply: Greenhouse ✅ · Ashby ✅ (per-pass cap, bot-check aware) · Rippling ✅ · Workday + SmartRecruiters in the desk (you sign in) · Lever (captcha: assist list) · Workable (skipped while bot-walling) | ✅ |
 | Freshness bands and priority (onsite first, tiers, learned reply rates) | ✅ v0.12 |
 | **Docker execution room and data bank**: pipeline + N appliers + relay, named volumes | ✅ v0.12 |
 | Hands-free email codes (Atom-feed relay; or IMAP with an app password) | ✅ v0.12 |
 | MCP in every container; control room, applications, needs, Fact Bank pages | ✅ |
 | Disk hygiene (`engine clean` every pass) | ✅ v0.12 |
 | Workday / iCIMS / SmartRecruiters discovery + reach list (you submit on their portal) | ✅ v0.13 |
+| Supervisor guardrails, eval containers, desk (noVNC browser you sign in to) | ✅ v0.14 |
+| Public site on a synthetic proxy dataset (every page works, zero personal data) | ✅ v0.16 |
+| Local services hardened against other websites (Host checks, relay origin, desk password) | ✅ v1.0 |
 | Gmail cleanup (old codes and alerts to Trash, on request) | 🔜 |
 
 ## Roadmap
@@ -520,14 +535,16 @@ Claims and their proof: [Evidence](docs/wiki/Evidence.md) · [Efficiency](docs/w
 | v0.10–0.11 ✅ | Control | Control room, applications/needs/facts pages, trust gate, first-applicant loop, priority, design layer |
 | **v0.12** ✅ | Scale-out | Docker execution room and bank, atomic-claim workers, freshness bands, code relay, prune, clean, benchmarks |
 | v0.13 ✅ | Reach | Workday/iCIMS, SmartRecruiters, supervisor view of containers in /control, benchmarks B5–B7 |
-| v1.0 | Public release | REGEN as an MCP connector/plugin, one-command setup, docs site |
+| v0.14–0.16 ✅ | Guardrails and front door | Supervisor guardrails, evals, desk, Rippling, answer queue, engine front page, proxy dataset |
+| **v1.0** ✅ | Public release | Security review of every local service, consistent versions, docs current |
+| v1.x | Reach further | Glassdoor / Indeed / Monster / ZipRecruiter discovery, Workday filler verified on real tenants, one-command setup |
 
 ## Repository layout
 ```
 regen-engine/
 ├── engine/            the engine (Python): discovery · tailoring · apply · feedback · memory · connectors · live
 ├── apps/api/          FastAPI + Pydantic API (reads, plus answers you type), Postgres migration
-├── apps/web/          Next.js + TypeScript: live view (/) and memory graph (/graph)
+├── apps/web/          Next.js + TypeScript: engine front page (/), control room, applications, needs you, reach, Fact Bank, live view
 ├── deploy/            bank (pipeline + appliers + relay, data volumes), appliers, watcher, platform, memory compose files
 ├── profile.example/   templates for your private profile/
 ├── tests/             pytest suite (fictional persona, never real data)
