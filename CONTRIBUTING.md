@@ -16,7 +16,7 @@ tests-as-evidence, and the release rules toward v1.0.
 git clone https://github.com/sameernagar-hub/regen-engine && cd regen-engine
 pip install -r requirements.txt pytest && playwright install chromium
 python -m pytest -q
-python scripts/bench_system.py        # system benchmarks B1-B4 (see docs/wiki/Benchmarks.md)
+python -m engine bench               # system benchmarks B1-B10 (see docs/wiki/Benchmarks.md)
 ```
 To run the whole engine in Docker, see the Quick start in the README (`deploy/bank.compose.yml`).
 
@@ -32,11 +32,11 @@ To run the whole engine in Docker, see the Quick start in the README (`deploy/ba
 CI runs the same privacy gate and tests; `main` only accepts merges that pass both.
 
 ## Good first contributions
-- **ATS adapters:** Workday and iCIMS apply (account-based portals; must stop for the human at any login or captcha)
-- **Discovery sources:** SmartRecruiters public postings API, or another machine-readable job list
-- **Missing answers:** run `scripts/bench_system.py`; B2 prints questions no rule answers yet. Add a rule plus a test
+- **Workday filler on real tenants:** the desk fills Workday up to sign-in on real sites; the wizard steps after it
+  are only verified on a local look-alike (`engine/apply/workday.py`). Must stop for the human at any login or check.
+- **Discovery sources:** Glassdoor / Indeed / Monster / ZipRecruiter postings resolved back to the employer's own ATS
+  (discovery only; their own apply flows stay assist-mode), or Recruitee / Breezy / Pinpoint / BambooHR boards
+- **Missing answers:** `python -m engine bench` B2 prints questions no rule answers yet. Add a rule plus a test
   (never for legal, EEO or sponsorship questions)
-- **Benchmarks:** B5 submissions per hour by worker count, B6 email-code latency, B7 fit-gate precision
-  ([docs/wiki/Benchmarks.md](docs/wiki/Benchmarks.md))
-- **Control room:** a supervisor view of the containers (health, inbox, claimed and done counts) in `apps/web`
 - **Lean engine:** conditional requests (ETag / Last-Modified) to skip unchanged boards
+- **Accessibility:** keyboard and screen-reader pass over the engine front page and the control room (`apps/web`)

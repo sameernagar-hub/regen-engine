@@ -147,7 +147,7 @@ RULES = [
     (r"at least 18|18 years of age|over 18", P.get("over_18")),
     (r"(ideal|earliest|preferred|desired|expected|possible|available|target) start date|start date (in|at) (the )?office", P.get("start_date")),  # before "office" yes/no
     (r"(office|location)s? .{0,40}(would|do) you (prefer|like)|prefer.{0,40}(office|location)", P.get("preferred_location")),  # before the onsite yes/no rule
-    (r"(office|in-person|onsite|on-site|hybrid|relocat|commut|remote-eligible states)", P.get("open_to_onsite_or_relocation")),
+    (r"(office|in-person|in person|onsite|on-site|hybrid|relocat|commut|remote-eligible states)", P.get("open_to_onsite_or_relocation")),
     (r"do you have an? (college|university|bachelor.?s?|undergraduate)? ?degree|completed an? (bachelor|college|university)|have you completed .{0,40}(bachelor|degree)", P.get("has_degree")),
     (r"currently enrolled|enrolled in (full.time )?(education|school|a degree)", P.get("currently_enrolled")),
     (r"university|school|college|institution", P["school"]),

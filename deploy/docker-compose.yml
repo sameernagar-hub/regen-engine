@@ -4,7 +4,7 @@ services:
   graph:
     image: neo4j:5
     container_name: engine-graph
-    ports: ["7474:7474", "7687:7687"]
+    ports: ["127.0.0.1:7474:7474", "127.0.0.1:7687:7687"]  # this machine only, like every REGEN port
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?set NEO4J_PASSWORD in .env}
       NEO4J_PLUGINS: '["apoc"]'
@@ -12,7 +12,7 @@ services:
   vectors:
     image: pgvector/pgvector:pg16
     container_name: engine-vectors
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]
     environment:
       POSTGRES_USER: engine
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}

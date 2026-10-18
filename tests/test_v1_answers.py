@@ -21,3 +21,7 @@ def test_product_names_are_not_link_boxes():
     assert answer_for("GitHub URL", {}) == P["github"]
     assert answer_for("Website", {}) == P["github"]
     assert answer_for("LinkedIn Profile", {}) == P["linkedin"]
+
+
+def test_in_person_without_hyphen():
+    assert answer_for("Are you wanting to work in person?", {}) == P.get("open_to_onsite_or_relocation")

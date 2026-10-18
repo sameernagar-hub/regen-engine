@@ -48,3 +48,22 @@ def test_relay_accepts_gmail_and_curl_only(monkeypatch):
         assert _post(port, {"Host": "evil.example"}) == 403                     # rebinding
     finally:
         srv.shutdown()
+
+
+def test_live_view_rejects_rebound_host():
+    from engine.live import server
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    port = srv.server_address[1]
+
+    def get(host):
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/", headers={"Host": host})
+        try:
+            return urllib.request.urlopen(req, timeout=5).status
+        except urllib.error.HTTPError as e:
+            return e.code
+    try:
+        assert get(f"127.0.0.1:{port}") == 200
+        assert get("evil.example") == 403
+    finally:
+        srv.shutdown()

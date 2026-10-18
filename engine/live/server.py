@@ -115,6 +115,8 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
+        if (self.headers.get("Host") or "").rsplit(":", 1)[0] not in ("127.0.0.1", "localhost"):
+            self.send_response(403); self.end_headers(); return  # DNS rebinding: a foreign name pointed at 127.0.0.1
         if self.path in ("/", "/index.html"):
             body = open(os.path.join(HERE, "index.html"), "rb").read()
             self.send_response(200)

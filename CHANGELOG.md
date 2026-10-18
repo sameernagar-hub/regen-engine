@@ -16,6 +16,9 @@ Release review of every file. Fixes for what it found:
   room a link that carries it. Verify: the RFB handshake offers security type 2 (VNC auth) only.
 - **Code relay origin** (`engine/apply/code_relay.py`): any page could POST codes. Browser posts must come from
   `https://mail.google.com`; curl / IMAP (no Origin) still work; Host header checked. Verify: `tests/test_v1_security.py`.
+- **Live view (7777) Host check** (`engine/live/server.py`), same rebinding hole as the API on the event feed.
+- **Memory stack ports** (`deploy/docker-compose.yml`): Neo4j 7474/7687 and pgvector 5432 were published on every
+  interface (your network); now 127.0.0.1 only like the rest.
 - **Desk crash loop after a recreate**: the old container's Chromium `Singleton*` lock on the profile volume made the
   new desk exit 21 forever. The entrypoint clears it (one desk per volume). Verify: recreate the desk, it stays up.
 - **Greenhouse resume upload** (`engine/apply/runner.py fill_gh`): two of the first ten forms of 10-17 stopped at
@@ -26,6 +29,7 @@ Release review of every file. Fixes for what it found:
   "Describe your experience with X. Include ... years of experience" got the bare years number -> the years rule skips
   describe / explain / include prompts; "experience using AI coding agents (... GitHub Copilot)" got the GitHub URL ->
   link rules skip labels that ask about experience. Verify: `tests/test_v1_answers.py`.
+- **"Are you wanting to work in person?"** parked: the onsite rule knew only "in-person"; now both spellings (your onsite preset).
 - **SECURITY.md** described a stack with one published port and one API write; it now lists every 127.0.0.1 port,
   who may write to it, and the root-run supervisor's limits.
 - **Versions**: engine 1.0.0 (was 0.3.0 in pyproject), API 1.0.0 (was 0.8.0), web 1.0.0 (was 0.7.0); old
