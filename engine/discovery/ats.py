@@ -482,6 +482,14 @@ HARVEST_FEEDS = [  # machine-readable lists (JSON with "url") and READMEs (any A
     "https://raw.githubusercontent.com/zapplyjobs/New-Grad-Jobs/main/README.md",
     "https://raw.githubusercontent.com/codicate/underclassmen-internships/main/README.md",
     "https://raw.githubusercontent.com/northwesternfintech/2027QuantInternships/main/README.md",
+    # 10-17: probed 200 OK. Older and non-SWE lists still name company boards that list every open role
+    "https://raw.githubusercontent.com/SimplifyJobs/Summer2024-Internships/dev/.github/scripts/listings.json",
+    "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md",
+    "https://raw.githubusercontent.com/speedyapply/2026-SWE-College-Jobs/main/INTERN_INTL.md",
+    "https://raw.githubusercontent.com/jobright-ai/2026-Software-Engineer-Internship/master/README.md",
+    "https://raw.githubusercontent.com/jobright-ai/2026-Data-Analysis-New-Grad/master/README.md",
+    "https://raw.githubusercontent.com/jobright-ai/2026-Product-Management-New-Grad/master/README.md",
+    "https://raw.githubusercontent.com/pittcsc/Summer2024-Internships/dev/README.md",
 ]
 
 

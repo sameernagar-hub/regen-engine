@@ -43,6 +43,8 @@ Release review of every file. Fixes for what it found:
 - **Closed postings were re-selected every pass** (`engine/tailoring/batch.py`): a 404 / job no longer on the board
   printed "posting is gone" but recorded nothing, so the same jobs took selection slots and fetches forever. They
   are now `SKIPPED` ("JD: posting is gone") and pruned; a network error still gets another pass.
+- **More boards**: 7 more public job lists in `HARVEST_FEEDS` (probed 200 OK) and HN "Who is hiring" over 12 months
+  (`engine hn 12`): Greenhouse 1,187 -> 1,233, Ashby 822 -> 928, Lever 381 -> 412, Rippling 164 -> 173.
 - **Discovery window 30 days** in the handoff start command (was 7): one pass went from 5 to 28 selected jobs.
 - **"Please do not use AI"** questions got a Fact Bank draft. The employer asked for the candidate's own words, so
   these now go to you (`NO_AI_Q`).
