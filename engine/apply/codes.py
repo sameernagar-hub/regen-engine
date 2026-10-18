@@ -122,6 +122,8 @@ def watch(every=8, idle_exit=0):
                 idle += every
                 if idle_exit and idle >= idle_exit:
                     return
+                if idle % 240 < every:  # Gmail drops an idle connection; 10-17 the first select after a quiet spell
+                    M.noop()            # failed (EOF) while a job waited on its code. A NOOP every ~4 min keeps it.
             time.sleep(every)
     finally:
         M.logout()
