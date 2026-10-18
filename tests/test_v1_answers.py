@@ -79,3 +79,11 @@ def test_state_list_degree_years_and_understanding():
 def test_legal_right_and_employed_full_time_at():
     assert answer_for("Do you have the legal right to work in the country where you are applying to work?", {}) == P["work_authorized_us"]
     assert answer_for("Have you ever been employed full-time at Globex or its subsidiaries?", {}) == P.get("previous_employer_of_company", "No")
+
+
+def test_mechanical_product_engineer_is_blocked():
+    from engine.tailoring.tailor import fit
+    mech = "New Product Engineer. Use 3D CAD (SolidWorks) to design mechanical components, run DFM and tolerance stacks."
+    assert "mechanical / manufacturing role" in fit(mech, max_years=99)
+    sw = "Product Engineer: build React and Python features; some prototype work with SolidWorks files for 3D CAD exports."
+    assert "mechanical / manufacturing role" not in fit(sw, max_years=99)

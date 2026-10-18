@@ -217,4 +217,16 @@ def fit(jd, max_years=None):
     yrs = [y for y in yrs if y < 20]
     if yrs and min(yrs) > max_years:
         out.append(f"{min(yrs)}+ yrs")
+    # 10-17: "Product Engineer" titles at manufacturers passed the software title filter (two mechanical / CAD roles
+    # submitted). Several mechanical-design markers and no software stack -> not a software role.
+    mech = len({m.group(0) for m in MECH.finditer(low)})
+    if mech >= 2 and not SOFTWARE_STACK.search(low):
+        out.append("mechanical / manufacturing role")
     return out
+
+
+MECH = re.compile(r"\b(3d cad|solidworks|creo|catia|autocad|inventor|gd&t|tolerance stack|injection mold\w*|sheet metal|"
+                  r"mechanical (design|components|engineering)|dfm\b|design for manufactur\w*|prototyp\w+ (parts|hardware)|"
+                  r"fea\b|finite element|bom|extrusion|fabricat\w+)", re.I)
+SOFTWARE_STACK = re.compile(r"\b(python|java(script)?|typescript|c\+\+|golang|rust|react|node\.?js|sql|kubernetes|docker|"
+                            r"aws|gcp|azure|rest api|microservices?|backend|frontend|full.?stack|software development)\b", re.I)
