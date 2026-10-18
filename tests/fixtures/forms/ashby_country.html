@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Globex - Platform Engineer</title>
+<style>._required_q::after { content: "*"; color: red; }</style></head>
+<body>
+<!-- 10-17: an Ashby "Location" box whose description asks for the country (a city typed here matched nothing). -->
+<div class="ashby-application-form-field-entry"><label>Name*</label><input type="text" id="name"></div>
+<div class="ashby-application-form-field-entry"><label>Email*</label><input type="email" id="email"></div>
+<div class="ashby-application-form-field-entry"><label>Resume*</label><input type="file" name="_systemfield_resume" id="resume"></div>
+<div class="ashby-application-form-field-entry"><label class="_required_q">Location</label>
+  <div class="ashby-application-form-question-description"><p>Country you're currently residing in</p></div>
+  <input type="text" role="combobox" id="loc"><div id="locmenu"></div></div>
+<button id="submit">Submit Application</button>
+<script>
+  document.getElementById('resume').addEventListener('change', () => document.body.insertAdjacentHTML('beforeend', '<span>Replace</span>'));
+  const loc = document.getElementById('loc');
+  loc.addEventListener('input', () => {  // a country list: no cities, no states
+    const q = loc.value.toLowerCase();
+    document.getElementById('locmenu').innerHTML = ['United States', 'US Virgin Islands', 'Costa Rica']
+      .filter(n => n.toLowerCase().includes(q.split(',')[0])).map(n => `<div role="option">${n}</div>`).join('');
+    document.querySelectorAll('#locmenu [role=option]').forEach(o => o.addEventListener('click', () => { loc.value = o.textContent; document.getElementById('locmenu').innerHTML = ''; }));
+  });
+  document.getElementById('submit').addEventListener('click', () => {
+    window.__w = { loc: loc.value };
+    if (!loc.value) { document.body.insertAdjacentHTML('beforeend', '<p>Missing entry for required field: Location</p>'); return; }
+    document.body.innerHTML = '<p>Your application was successfully submitted.</p>';
+  });
+</script>
+</body></html>

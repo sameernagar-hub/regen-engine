@@ -97,6 +97,13 @@ def test_ashby_submits_when_follow_up_is_answerable(browser):
     assert state["w"] == {"loc": "United States", "hear": "Other", "other": "Company careers page"}, state["w"]
 
 
+def test_ashby_location_that_asks_for_the_country(browser):
+    job = {"name": "Globex - Platform Engineer", "url": "https://jobs.ashbyhq.com/globex/4", "resume": "out/Resume_Initech_1.pdf"}
+    status, _, state = apply_one(browser, "ashby_country.html", job)
+    assert status == "SUBMITTED", status
+    assert state["w"] == {"loc": R.P["country"]}, state["w"]
+
+
 def test_lever_end_to_end_declines_eeo(browser):
     job = {"name": "Umbrella - Software Engineer", "url": "https://jobs.lever.co/umbrella/abc", "resume": "out/Resume_Initech_1.pdf"}
     status, _, state = apply_one(browser, "lever.html", job)

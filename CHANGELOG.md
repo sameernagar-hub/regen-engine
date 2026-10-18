@@ -29,12 +29,16 @@ Release review of every file. Fixes for what it found:
   "Describe your experience with X. Include ... years of experience" got the bare years number -> the years rule skips
   describe / explain / include prompts; "experience using AI coding agents (... GitHub Copilot)" got the GitHub URL ->
   link rules skip labels that ask about experience. Verify: `tests/test_v1_answers.py`.
+- **Ashby "Location" that asks for a country** (8 forms parked on "Missing entry for required field: Location"): the
+  field's description says "Country you're currently residing in" and its list holds countries only, but the city
+  rule typed "San Jose, California". The description is now read; a country prompt gets your country. Verified on a
+  live posting's DOM (read-only) and in `tests/fixtures/forms/ashby_country.html`.
 - **"Are you wanting to work in person?"** parked: the onsite rule knew only "in-person"; now both spellings (your onsite preset).
 - **SECURITY.md** described a stack with one published port and one API write; it now lists every 127.0.0.1 port,
   who may write to it, and the root-run supervisor's limits.
 - **Versions**: engine 1.0.0 (was 0.3.0 in pyproject), API 1.0.0 (was 0.8.0), web 1.0.0 (was 0.7.0); old
   `[Unreleased]` changelog entries numbered. README / wiki numbers refreshed from the ledger (191 submitted,
-  5,471 boards on nine ATSs, 195 tests).
+  5,471 boards on nine ATSs, 201 tests).
 
 ## [0.16.3] - 2026-10-16 · demo resumes + README screenshots
 - **Resumes render on the public site**: demo resumes are one-page HTML pages (PDFs never enter the repo), `/proxy/*`

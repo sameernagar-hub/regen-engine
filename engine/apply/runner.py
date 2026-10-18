@@ -608,6 +608,9 @@ def ashby_fields(page, job, log, first=True):
         if re.search(r"^resume", label, re.I): continue
         if first or label[:200] not in seen:
             ans = answer(label, job)
+            desc = f.query_selector(".ashby-application-form-question-description")
+            if re.fullmatch(r"location", label, re.I) and desc and re.search(r"\bcountry\b", desc.inner_text(), re.I):
+                ans = P["country"]  # 10-17: "Location" + "Country you're currently residing in" got "San Jose, California" (8 forms)
             if re.match(r"if other,? please specify", label, re.I):
                 ans = job.get("_other_hear")  # only the follow-up of a "How did you hear" -> Other; never a draft
         else:
