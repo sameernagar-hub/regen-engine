@@ -67,3 +67,42 @@ def test_live_view_rejects_rebound_host():
         assert get("evil.example") == 403
     finally:
         srv.shutdown()
+
+
+def test_scale_never_retires_the_last_applier(tmp_path, monkeypatch):
+    """10-17: the only applier carried a drain, confirmed it, and was deleted; with none left to clone from, the
+    supervisor could never create another. Below the minimum the drain is cancelled instead."""
+    import os
+    from engine import supervisor as S
+    for k, v in (("FLEET", tmp_path / "fleet"), ("BOX", tmp_path / "batches"), ("WORKSPACE", tmp_path)):
+        monkeypatch.setattr(S, k, str(v))
+    for d in ("inbox", "claimed"):
+        os.makedirs(tmp_path / "batches" / d)
+    os.makedirs(tmp_path / "fleet")
+    # the drained one + a container compose is replacing (running, no heartbeat): active == want, so no cancel branch
+    rows = [("c" * 64, "deploy-applier-3", True), ("d" * 64, "deploy-applier-4", True)]
+    calls, acts = [], []
+    monkeypatch.setattr(S, "appliers", lambda: rows)
+    monkeypatch.setattr(S, "_docker", lambda *a, **k: calls.append(a))
+    monkeypatch.setattr(S, "audit", lambda action, target, **kw: acts.append((action, target)))
+    open(S.drain_path("c" * 12), "w").write("1")
+    (tmp_path / "fleet" / f"applier_{'c' * 12}.json").write_text(
+        json.dumps({"role": "applier", "host": "c" * 12, "state": "draining", "ts": __import__("time").time()}))
+    monkeypatch.setattr(S, "clone", lambda *a: calls.append("clone"))
+    S.scale(1, 7, _idle={})
+    assert not any(c[0] in ("POST", "DELETE") for c in calls if isinstance(c, tuple))
+    assert not os.path.exists(S.drain_path("c" * 12)) and ("keep", "deploy-applier-3") in acts
+
+
+def test_clean_drops_dead_heartbeats_only(tmp_path, monkeypatch):
+    import os, time
+    from engine import clean as C
+    monkeypatch.setattr(C, "WORKSPACE", str(tmp_path))
+    (tmp_path / "fleet").mkdir()
+    dead, live, marker = (tmp_path / "fleet" / n for n in ("applier_aaaa.json", "applier_bbbb.json", "daily_last"))
+    for f in (dead, live, marker):
+        f.write_text("{}")
+    for f in (dead, marker):
+        os.utime(f, (time.time() - 2 * 86400,) * 2)
+    files, _ = C.plan()
+    assert [os.path.basename(f) for f in files] == ["applier_aaaa.json"]

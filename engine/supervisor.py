@@ -204,6 +204,19 @@ def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container
     for cid, name, up in drains:  # retire only what the worker confirmed: it can no longer claim anything
         m = beats.get(cid[:12])
         if m and m.get("state") == "draining":
+            others = [r for r in running if r[0] != cid and r not in drains and (beats.get(r[0][:12]) or {}).get("up")]
+            if len(others) < lo:
+                # 10-17: a compose recreate racing scale() left a drain on the last applier, it was removed, and with
+                # no running applier left to clone from nothing could ever be created again (batches sat in the inbox).
+                # Retire only while `lo` other appliers are up (live heartbeat, not draining); else un-drain it (an
+                # expired one waits until its replacement runs).
+                if not _expired(cid):
+                    try:
+                        os.remove(drain_path(cid[:12]))
+                    except OSError:
+                        pass
+                    audit("keep", name, reason=f"minimum {lo}", jobs=jobs, want=want)
+                continue
             _docker("POST", f"/containers/{cid}/stop?t=20")
             _docker("DELETE", f"/containers/{cid}")  # idle capacity is removed, not parked
             try:

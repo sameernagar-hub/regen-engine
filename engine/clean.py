@@ -9,6 +9,7 @@ Retention policy (user, 10-11). The event log keeps the record: job, status, res
   logs/*.log             older than LOG_DAYS (14)
   codes/*                older than CODE_DAYS (1)     email codes and waits: useless (and sensitive) after a day
   batches/done/*, batches/*.json older than 2 days
+  fleet/*.json           older than 1 day                heartbeats of containers that no longer exist (one per recreate)
   pw-profile*/**/{Cache, Code Cache, GPUCache, CacheStorage}   browser caches (cookies and logins stay)
 What stays: events.jsonl, queue.json, seen.json, profile/ (never touched), quarantine/ (the user reviews it),
 anything newer than its window. Each window can be overridden with REGEN_KEEP_<NAME>_DAYS (e.g. REGEN_KEEP_PROOF_DAYS).
@@ -54,6 +55,7 @@ def plan():
     files += _old_files("codes", CODE_DAYS)
     files += _old_files(os.path.join("batches", "done"), BATCH_DAYS, (".json",))
     files += _old_files("batches", BATCH_DAYS, (".json",))
+    files += _old_files("fleet", 1, (".json",))  # a live container rewrites its heartbeat every 30-60 s
     dirs = []
     for name in os.listdir(WORKSPACE):
         if name.startswith("pw-profile") and os.path.isdir(os.path.join(WORKSPACE, name)):

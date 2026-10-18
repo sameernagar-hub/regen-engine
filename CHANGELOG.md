@@ -34,11 +34,18 @@ Release review of every file. Fixes for what it found:
   rule typed "San Jose, California". The description is now read; a country prompt gets your country. Verified on a
   live posting's DOM (read-only) and in `tests/fixtures/forms/ashby_country.html`.
 - **"Are you wanting to work in person?"** parked: the onsite rule knew only "in-person"; now both spellings (your onsite preset).
+- **Supervisor could scale to zero appliers and never recover** (`engine/supervisor.py scale()`): a compose recreate
+  racing the drain handshake left a drain on the last applier; it was retired, and new appliers are cloned from a
+  running one, so none could be created again while a batch sat in the inbox (seen live 10-17 22:24). An applier is
+  now retired only while `lo` other appliers are up (live heartbeat, not draining); otherwise its drain is cancelled
+  and audited as `keep`. Verify: `tests/test_v1_security.py::test_scale_never_retires_the_last_applier`.
+- **Dead heartbeats pile up** (~300 files in `workspace/fleet/`, one per recreated container): `engine clean`
+  drops heartbeat files older than a day.
 - **SECURITY.md** described a stack with one published port and one API write; it now lists every 127.0.0.1 port,
   who may write to it, and the root-run supervisor's limits.
 - **Versions**: engine 1.0.0 (was 0.3.0 in pyproject), API 1.0.0 (was 0.8.0), web 1.0.0 (was 0.7.0); old
   `[Unreleased]` changelog entries numbered. README / wiki numbers refreshed from the ledger (191 submitted,
-  5,471 boards on nine ATSs, 201 tests).
+  5,471 boards on nine ATSs, 203 tests).
 
 ## [0.16.3] - 2026-10-16 · demo resumes + README screenshots
 - **Resumes render on the public site**: demo resumes are one-page HTML pages (PDFs never enter the repo), `/proxy/*`
