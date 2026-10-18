@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-17 22:29",
+"generated": "2026-10-17 22:46",
 "days": 7,
 "verified": 110,
 "verified_roles": [
@@ -447,180 +447,6 @@
 "boards": 5102,
 "last_poll": 1791700372.0784452,
 "events": [
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-15T22:41"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-15T22:41"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:41"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-15T22:41"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-15T22:41"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-15T22:41"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements and seniority.",
-"ts": "2026-10-15T22:41"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 7 facts in the Fact Bank, embedded lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-15T22:50"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
-"ts": "2026-10-15T22:50"
-},
 {
 "stage": "write",
 "tone": "calm",
@@ -1409,6 +1235,182 @@
 "tone": "calm",
 "text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
 "ts": "2026-10-17T22:26"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: no confirmation seen (captcha?).",
+"ts": "2026-10-17T22:32"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: not a fit.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements and seniority.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-17T22:38"
+},
+{
+"stage": "hear",
+"tone": "calm",
+"text": "A company confirmed they have the application.",
+"ts": "2026-10-17T22:42"
+},
+{
+"stage": "hear",
+"tone": "calm",
+"text": "9 companies passed this time.",
+"ts": "2026-10-17T22:42",
+"n": 9
+},
+{
+"stage": "hear",
+"tone": "calm",
+"text": "5 companies confirmed they have the application.",
+"ts": "2026-10-17T22:42",
+"n": 5
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements and seniority.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: not a fit.",
+"ts": "2026-10-17T22:44"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-17T22:44"
 }
 ],
 "graph": {
@@ -5175,6 +5177,144 @@
 },
 {
 "id": "n565",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n566",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n567",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n568",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n569",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n570",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n571",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n572",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n573",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n574",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n575",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n576",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n577",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n578",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n579",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n580",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n581",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n582",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n583",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n584",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n585",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n586",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n587",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n588",
 "type": "Outcome",
 "label": "confirmation",
 "data": {}
@@ -10704,6 +10844,136 @@
 {
 "source": "n190",
 "target": "n565",
+"type": "RESULTED_IN"
+},
+{
+"source": "n98",
+"target": "n566",
+"type": "RESULTED_IN"
+},
+{
+"source": "n138",
+"target": "n567",
+"type": "RESULTED_IN"
+},
+{
+"source": "n38",
+"target": "n568",
+"type": "RESULTED_IN"
+},
+{
+"source": "n61",
+"target": "n569",
+"type": "RESULTED_IN"
+},
+{
+"source": "n109",
+"target": "n570",
+"type": "RESULTED_IN"
+},
+{
+"source": "n158",
+"target": "n571",
+"type": "RESULTED_IN"
+},
+{
+"source": "n61",
+"target": "n572",
+"type": "RESULTED_IN"
+},
+{
+"source": "n109",
+"target": "n573",
+"type": "RESULTED_IN"
+},
+{
+"source": "n158",
+"target": "n574",
+"type": "RESULTED_IN"
+},
+{
+"source": "n13",
+"target": "n575",
+"type": "RESULTED_IN"
+},
+{
+"source": "n170",
+"target": "n576",
+"type": "RESULTED_IN"
+},
+{
+"source": "n102",
+"target": "n577",
+"type": "RESULTED_IN"
+},
+{
+"source": "n110",
+"target": "n578",
+"type": "RESULTED_IN"
+},
+{
+"source": "n85",
+"target": "n579",
+"type": "RESULTED_IN"
+},
+{
+"source": "n55",
+"target": "n580",
+"type": "RESULTED_IN"
+},
+{
+"source": "n63",
+"target": "n581",
+"type": "RESULTED_IN"
+},
+{
+"source": "n63",
+"target": "n581",
+"type": "RESULTED_IN"
+},
+{
+"source": "n120",
+"target": "n582",
+"type": "RESULTED_IN"
+},
+{
+"source": "n120",
+"target": "n582",
+"type": "RESULTED_IN"
+},
+{
+"source": "n120",
+"target": "n582",
+"type": "RESULTED_IN"
+},
+{
+"source": "n95",
+"target": "n583",
+"type": "RESULTED_IN"
+},
+{
+"source": "n191",
+"target": "n584",
+"type": "RESULTED_IN"
+},
+{
+"source": "n192",
+"target": "n585",
+"type": "RESULTED_IN"
+},
+{
+"source": "n193",
+"target": "n586",
+"type": "RESULTED_IN"
+},
+{
+"source": "n194",
+"target": "n587",
+"type": "RESULTED_IN"
+},
+{
+"source": "n195",
+"target": "n588",
 "type": "RESULTED_IN"
 }
 ]
