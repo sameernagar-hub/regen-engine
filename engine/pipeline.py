@@ -40,10 +40,12 @@ def latest_status():
     RETRY so the selector gives it one more pass while someone is watching the inbox. O(E)."""
     out, fails, asked = {}, collections.Counter(), collections.Counter()
     from engine.config import PROFILE
-    try:  # answers saved after a stop give the job another try even if it stopped twice
-        bank_t = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(PROFILE, "answers.json"))).isoformat()
-    except OSError:
-        bank_t = ""
+    bank_t = ""
+    for f in ("answers.json", "presets.json"):  # answers / presets saved after a stop: another try even after two stops
+        try:
+            bank_t = max(bank_t, datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(PROFILE, f))).isoformat())
+        except OSError:
+            pass
     from engine import override
     ov = override.state()
     if ov.get("draft"):  # turning the draft override on is like saving new answers: parked jobs get another try
