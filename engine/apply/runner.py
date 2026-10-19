@@ -136,7 +136,7 @@ RULES = [
     (r"city.{0,40}(reside|live|located)", P["city"]),
     # location boxes autocomplete worldwide: "San Jose" alone can resolve to San José, Costa Rica
     (r"current location|where are you located|^location", f"{P['city']}, {P['state']}"),
-    (r"current (or previous )?(employer|company)|current \(or most recent\) company|most recent (employer|company)|^company", P["current_employer"]),
+    (r"current,? \(?(or (most recent|previous|last|past))?\)?,? ?(employer|company)|most recent (employer|company)|^company", P["current_employer"]),
     (r"address (from which|where) you (plan|will|intend)|where (will|do) you (plan to )?work from|work(ing)? location address", f"{P['city']}, {P['state']}"),
     (r"located in the united states|reside in the (united states|us)|currently live in the us|based in the (u\.?s\.?|united states|us)\b|(live|reside|located) in the (u\.?s\.?|us)\b", P.get("lives_in_us")),
     (r"(ever )?worked for .{0,40}(company|previously|before)|interviewed (at|with) .{0,30} before", P.get("previous_employer_of_company")),
@@ -144,7 +144,7 @@ RULES = [
     (r"(willing|consent|agree)[^?.]{0,30}background (check|screen|investigation)", P.get("willing_background_check")),
     (r"(based|live|located|reside) (in|near) (or around )?the (san francisco )?bay area|in or around the (san francisco )?bay area",
      "Yes" if re.search(BAY_AREA, P.get("city", ""), re.I) else None),
-    (r"current (or previous )?(job )?title", P["current_title"]),
+    (r"current,? \(?(or (most recent|previous|last|past))?\)?,? ?(job )?title|most recent (job )?title", P["current_title"]),
     (r"zip|postal code", P["zip"]),
     (r"^city$", P["city"]), (r"^state$", P["state"]),
     (r"previously worked (at|for)|worked at .{0,30} (before|previously)", P.get("previous_employer_of_company")),
@@ -599,11 +599,17 @@ def option_fallback(options, a):
     if m and options and all("%" in t for t, _ in options):
         fits = [(b[1], h) for t, h in options if (b := _bounds(t)) and b[1] <= int(m.group(1))]
         if fits: return max(fits, key=lambda x: x[0])[1]
-    if any("sponsor" in t for t, _ in options) and re.search(r"opt|f-?1|visa|sponsor|authori", a):
+    # sentence options ("I am authorized ... without sponsorship" / "I require ... sponsorship"): a plain yes/no can't
+    # pick one (10-18: "Work Authorization: Yes" parked 3 jobs), so the sponsorship preset decides
+    if any("sponsor" in t for t, _ in options) and re.search(r"opt|f-?1|visa|sponsor|authori|^(yes|no)$", a):
         need = P.get("needs_sponsorship_now_or_future")  # sentence options: "I require sponsorship ..." / "... without sponsorship"
         for t, h in options:
-            if need == "Yes" and re.search(r"require|need", t) and "without" not in t: return h
-            if need == "No" and "without" in t: return h
+            no_sp = "without" in t or re.search(r"\b(do not|don't|does not|not) (currently )?(require|need)", t)
+            if need == "Yes" and re.search(r"require|need", t) and not no_sp: return h  # "do not require" is the No
+            if need == "No" and no_sp: return h
+    if re.fullmatch(r"(i )?(accept|agree|acknowledge|confirm)(d)?", a):  # "Accept" vs a lone "Acknowledge/Confirm" box
+        for t, h in options:
+            if ACK.search(t) and not NACK.search(t): return h
     if a == "yes":  # a single acknowledgment option: "I understand that this role requires ... in office"
         for t, h in options:
             if ACK.search(t) and not NACK.search(t): return h

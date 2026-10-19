@@ -87,3 +87,23 @@ def test_board_page_title_is_the_same_company():
     assert role_key("ZETA Careers page - Back-End Engineer") == role_key("Zeta - Back-End Engineer")
     assert company_slug("Acme Jobs") == company_slug("Acme, Inc.") == "acme"
     assert company_slug("Jobs") == "jobs"  # a name that is only the word stays
+
+
+def test_current_or_most_recent_employer_and_title():
+    """10-18: '(or most recent)' dodged the rules and both boxes got drafted paragraphs."""
+    from engine.apply import runner as R
+    job = {"title": "SWE", "company": "x"}
+    for q in ("Who is your current (or most recent) employer?", "Current or previous employer", "Current company"):
+        assert R.answer(q, job) == R.P["current_employer"], q
+    for q in ("What is your current (or most recent) title?", "Current or previous job title", "Most recent title"):
+        assert R.answer(q, job) == R.P["current_title"], q
+
+
+def test_sentence_options_and_accept(monkeypatch):
+    from engine.apply import runner as R
+    monkeypatch.setitem(R.P, "needs_sponsorship_now_or_future", "Yes")
+    o = lambda *ts: [(t, i) for i, t in enumerate(ts)]
+    auth = o("I am authorized to work in the US and do not require sponsorship",
+             "I require, or in the future will require, sponsorship to obtain work authorization")
+    assert R.pick_option(auth, "Yes") == 1
+    assert R.pick_option(o("Acknowledge/Confirm"), "Accept") == 0
