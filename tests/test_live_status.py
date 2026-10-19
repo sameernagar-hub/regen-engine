@@ -107,3 +107,10 @@ def test_sentence_options_and_accept(monkeypatch):
              "I require, or in the future will require, sponsorship to obtain work authorization")
     assert R.pick_option(auth, "Yes") == 1
     assert R.pick_option(o("Acknowledge/Confirm"), "Accept") == 0
+
+
+def test_no_sponsorship_wordings():
+    from engine.tailoring.tailor import fit
+    assert "no sponsorship" in fit("Acme does not offer support or sponsorship of job applicants for employment-based visas.")
+    assert "no sponsorship" in fit("You should not apply for this role if you will require Acme to assist with sponsorship.")
+    assert "no sponsorship" not in fit("We offer visa sponsorship for qualified candidates.")

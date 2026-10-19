@@ -41,6 +41,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   submitted). Sentence options for work authorization now follow the sponsorship preset for a plain Yes/No, and
   "I do not require sponsorship" is no longer read as "require" (it could pick the wrong sentence for a Yes).
   "Accept" ticks a lone "Acknowledge/Confirm" box.
+- **"No sponsorship" wordings** (`engine/tailoring/tailor.py`, 10-18): "does not offer support or sponsorship" and
+  "you should not apply if you will require ... sponsorship" passed the fit gate; 7 cached Workday postings carried
+  them (reach list only, none submitted; listed ones recorded as skipped).
 - **Option wording** (`engine/apply/runner.py pick_option`, 10-18 first release pass): right answers that missed
   the options were left blank. A master's picks "Graduate Degree"; a salary picks open-ended buckets ("Over $75,000",
   "Under $65,000"); relocation "yes" picks "I am willing to relocate to <city>" (presets: you relocate).
