@@ -61,7 +61,7 @@ resume to every posting and make up answers to fill the gaps.
 | Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF; coverage fill puts most at **100%** of the JD terms you have (build log: `resume covers 24/24 JD terms, ATS text 100%`) |
 | Email security codes | **hands-free** via the code relay: a Gmail tab posts codes from the Atom feed every 20 s (`engine relay`, `workspace/logs/relay_*.log` shows each delivery) |
 | Scheduler | ×2.05 throughput vs sequential (seeded benchmark, `scripts/bench_scheduler.py`) |
-| Tests | **218** passing; system benchmarks B1–B10 in `engine/bench.py` (`python -m engine bench`, rerun by the supervisor every 6 h) (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
+| Tests | **220** passing; system benchmarks B1–B10 in `engine/bench.py` (`python -m engine bench`, rerun by the supervisor every 6 h) (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
 | Resume claims outside your Fact Bank | **Rejected** by the validator before any PDF is written |
 | Model API keys required | **0** |
 | Applier capacity | **N containers** (`--scale applier=N`), each a headed Chromium with its own profile; 5 workers + 1 pipeline container on an 8 GB Docker VM |
