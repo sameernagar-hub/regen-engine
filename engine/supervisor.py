@@ -66,6 +66,13 @@ def fleet(now=None):
         m["age"] = round(age)
         m["up"] = age <= STALE.get(m.get("role"), 120)
         members.append(m)
+    # one container per singleton service: a recreated one leaves its old heartbeat behind for up to 15 min, which
+    # read as two pipelines (10-18). Keep the newest per role; appliers are many, so each keeps its own row.
+    top = {}
+    for m in members:
+        if m.get("role") != "applier" and m.get("ts", 0) > top.get(m.get("role"), {}).get("ts", -1):
+            top[m.get("role")] = m
+    members = [m for m in members if m.get("role") == "applier" or top.get(m.get("role")) is m]
     members.sort(key=lambda m: (m.get("role", ""), m.get("host", "")))
     claimed = _count(os.path.join(BOX, "claimed"))
     busy = {m.get("batch") for m in members if m.get("role") == "applier" and m["up"]}
