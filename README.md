@@ -33,7 +33,7 @@ resume to every posting and make up answers to fill the gaps.
 
 **The wedge.** REGEN works at the source and refuses to bluff:
 
-- **Source-first discovery.** It polls ~5,500 company boards across nine ATSs directly, resolves job-alert emails
+- **Source-first discovery.** It polls ~6,200 company boards across nine ATSs directly, resolves job-alert emails
   and new-grad lists back to the employer's own posting, and queues roles within minutes of going live.
 - **A fit gate before any effort.** Citizenship, clearance, no-sponsorship, graduation windows, years required and core
   stack are checked against the JD first. Roles you'd be screened out of never cost a resume or a form.
@@ -53,15 +53,15 @@ resume to every posting and make up answers to fill the gaps.
 
 | | |
 |---|---|
-| Applications submitted | **191** to date (2026-10-17) (latest status SUBMITTED in the ledger); **96** still have their confirmation screenshot on disk (older proofs were pruned by the retention policy) · best day **49** (2026-10-10) · `python -m engine report` |
-| Company boards polled directly | **5,471** on Greenhouse, Ashby, Lever, Workable, Rippling, JazzHR, Workday, SmartRecruiters, iCIMS (`workspace/boards.json`) |
+| Applications submitted | **207** to date (2026-10-18) (latest status SUBMITTED in the ledger); **138** still have their confirmation screenshot on disk (older proofs were pruned by the retention policy) · best day **49** (2026-10-10) · `python -m engine report` |
+| Company boards polled directly | **6,214** on Greenhouse, Ashby, Lever, Workable, Rippling, JazzHR, Workday, SmartRecruiters, iCIMS (`workspace/boards.json`) |
 | Sources resolved back to the employer | LinkedIn alert mail over IMAP, job-alert emails (7 platforms), newgrad-jobs.com, 25 GitHub job lists, HN "Who is hiring", big-tech careers APIs |
 | Outcomes read from your mail (10-13 review) | **38** rejections, **1** assessment, 160 confirmations (decoded bodies from All Mail; each rejection reviewed against its JD) |
 | Fit gate vs past rejections (B7) | catches **18.2%** of rejections that had a stored JD, at a cost of **2.2%** of the rest (was 9.1% / 1.1% before the 10-13 review) |
 | Resume ATS read-back | **77–100%** of matched JD terms extractable from the PDF; coverage fill puts most at **100%** of the JD terms you have (build log: `resume covers 24/24 JD terms, ATS text 100%`) |
 | Email security codes | **hands-free** via the code relay: a Gmail tab posts codes from the Atom feed every 20 s (`engine relay`, `workspace/logs/relay_*.log` shows each delivery) |
 | Scheduler | ×2.05 throughput vs sequential (seeded benchmark, `scripts/bench_scheduler.py`) |
-| Tests | **211** passing; system benchmarks B1–B10 in `engine/bench.py` (`python -m engine bench`, rerun by the supervisor every 6 h) (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
+| Tests | **218** passing; system benchmarks B1–B10 in `engine/bench.py` (`python -m engine bench`, rerun by the supervisor every 6 h) (unit, API, trust gate, priority, headless form tests against local ATS look-alikes) |
 | Resume claims outside your Fact Bank | **Rejected** by the validator before any PDF is written |
 | Model API keys required | **0** |
 | Applier capacity | **N containers** (`--scale applier=N`), each a headed Chromium with its own profile; 5 workers + 1 pipeline container on an 8 GB Docker VM |
