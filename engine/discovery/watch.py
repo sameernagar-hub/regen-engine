@@ -65,7 +65,7 @@ def main(argv=None):
         json.dump(sorted(seen), open(seen_p, "w"))
         now = datetime.now(timezone.utc)
         if matches:
-            merge_queue(matches)
+            merge_queue(matches, log=False)
             with open(os.path.join(WORKSPACE, "new.jsonl"), "a", encoding="utf-8") as fh:
                 for j in matches:
                     lag = (now - datetime.fromisoformat(j["posted"])).total_seconds() / 60

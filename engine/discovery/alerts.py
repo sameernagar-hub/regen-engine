@@ -156,7 +156,7 @@ def main(argv=None):
     fresh, d2 = filter_jobs([{**j, "posted": j.get("posted") or now} for j in resolved], 3650)
     for k, v in d2.items():
         dropped[k] = dropped.get(k, 0) + v
-    q = merge_queue(fresh)
+    q = merge_queue(fresh, log=False)
     total = save_unresolved(unresolved)
     for j in fresh:
         record("discovered", job=f"{j['company']} - {j['title']}", url=j.get("url"), ats=j["ats"], source="email-alert")

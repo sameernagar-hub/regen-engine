@@ -26,6 +26,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   pipeline heartbeat (scanning -> discovery stages processing; waiting for appliers -> apply processing); a stale
   heartbeat shows nothing. Applier cards now include the retries of /needs answers (`answers_*.log`), which were
   hidden. Verify: `tests/test_live_status.py`; `/api/control/state` -> `run.steps` while the stack runs.
+- **Live everywhere, supervisor on top** (user, 10-18: "every container and process shows running and updates
+  constantly"). The pipeline beats each step with its stage (boards, new-grad, feeds, gate + tailoring, appliers), the
+  control room shows which step works and what it is doing, and apply stays live between passes while appliers fill
+  forms. New supervisor watchdog `liveness()` (every minute): a container that is up but whose process stopped beating
+  (pipeline 30 min, applier 5 min, relay 5 min, answers 10 min, reposync 40 min) is restarted, at most once per 10 min,
+  audited. Scans now record `discovered` for each newly queued job (the Discover station read 0 today: since the
+  Docker loop, only the old watch / alert paths logged discoveries). Verify: `tests/test_live_status.py`.
 - **Option wording** (`engine/apply/runner.py pick_option`, 10-18 first release pass): right answers that missed
   the options were left blank. A master's picks "Graduate Degree"; a salary picks open-ended buckets ("Over $75,000",
   "Under $65,000"); relocation "yes" picks "I am willing to relocate to <city>" (presets: you relocate).

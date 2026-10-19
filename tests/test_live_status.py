@@ -5,22 +5,25 @@ from apps.api import control
 from engine import supervisor
 
 
-def _beat(d, state, ts):
-    json.dump({"role": "pipeline", "state": state, "ts": ts}, open(os.path.join(d, "pipeline_x.json"), "w"))
+def _beat(d, state, ts, role="pipeline", **kw):
+    json.dump(dict({"role": role, "state": state, "ts": ts}, **kw), open(os.path.join(d, f"{role}_x.json"), "w"))
 
 
 def test_loop_stages_follow_the_pipeline_heartbeat(tmp_path, monkeypatch):
     monkeypatch.setattr(supervisor, "FLEET", str(tmp_path))
     now = time.time()
+    st = lambda: {x["name"]: x["status"] for x in control._loop_steps(now)}
     assert control._loop_steps(now) == []  # no heartbeat: nothing to show
-    _beat(tmp_path, "scanning and tailoring", now)
-    s = {x["name"]: x["status"] for x in control._loop_steps(now)}
-    assert s == {"discover": "running", "newgrad": "running", "feed": "running", "apply": "waiting"}
+    _beat(tmp_path, "scanning boards", now, stage="discover")
+    assert st() == {"discover": "running", "newgrad": "waiting", "feed": "waiting", "apply": "waiting"}
+    _beat(tmp_path, "scanning feed", now, stage="feed")
+    assert st() == {"discover": "done", "newgrad": "done", "feed": "running", "apply": "waiting"}
     _beat(tmp_path, "waiting for appliers", now)
-    s = {x["name"]: x["status"] for x in control._loop_steps(now)}
-    assert s["apply"] == "running" and s["discover"] == "done"
+    assert st() == {"discover": "done", "newgrad": "done", "feed": "done", "apply": "running"}
     _beat(tmp_path, "sleeping until next scan", now)
-    assert {x["name"]: x["status"] for x in control._loop_steps(now)}["apply"] == "done"
+    assert st()["apply"] == "done"
+    _beat(tmp_path, "applying", now, role="applier")  # between passes an applier still works: apply stays live
+    assert st()["apply"] == "running" and st()["discover"] == "done"
     _beat(tmp_path, "waiting for appliers", now - 2 * supervisor.STALE["pipeline"])
     assert control._loop_steps(now) == []  # stale heartbeat (container down) is not shown as live
 
@@ -43,3 +46,36 @@ def test_if_yes_follow_up_stays_blank():
     from engine.apply import runner as R
     assert R.answer("If yes, please provide your LDAP.", {"title": "SWE", "company": "x"}) is None
     assert R.answer("If so, please provide their name and team.", {"title": "SWE", "company": "x"}) is None
+
+
+def test_scan_merge_records_discovered_once(tmp_path):
+    """10-18: the loop's scans queued jobs without a `discovered` event, so Discover read 0 today."""
+    from engine.discovery.scan import merge_queue
+    from engine.feedback.events import read
+    q = str(tmp_path / "queue.json")
+    job = {"id": "x1", "ats": "greenhouse", "company": "Acme", "title": "SWE", "url": "https://x/1",
+           "posted": "2099-01-01T00:00:00+00:00"}
+    before = len([e for e in read("discovered") if e.get("url") == "https://x/1"])
+    merge_queue([job], path=q)
+    merge_queue([job], path=q)  # already queued: not discovered again
+    merge_queue([dict(job, id="x2", url="https://x/2")], path=q, log=False)
+    got = [e for e in read("discovered") if e.get("url") in ("https://x/1", "https://x/2")]
+    assert len(got) - before == 1 and got[-1]["url"] == "https://x/1"
+
+
+def test_watchdog_restarts_only_silent_running_containers(tmp_path, monkeypatch):
+    monkeypatch.setattr(supervisor, "FLEET", str(tmp_path))
+    now = time.time()
+    calls = []
+    rows = {"pipeline": [{"Id": "p1", "State": "running"}], "relay": [{"Id": "r1", "State": "running"}]}
+    def fake(method, path, body=None):
+        calls.append((method, path))
+        if method == "GET":
+            return next((v for k, v in rows.items() if f"service%3D{k}" in path or f"service={k}" in path), [])
+    monkeypatch.setattr(supervisor, "_docker", fake)
+    monkeypatch.setattr(supervisor, "audit", lambda *a, **k: None)
+    _beat(tmp_path, "sleeping until next scan", now - 60)                       # fresh: left alone
+    _beat(tmp_path, "listening", now - 3600, role="relay")                      # silent an hour: restarted
+    out = supervisor.liveness(now, _restarted={})
+    assert out["pipeline"] == "ok" and out["relay"].startswith("restarted")
+    assert ("POST", "/containers/r1/restart?t=10") in calls and not any("p1/restart" in c[1] for c in calls)

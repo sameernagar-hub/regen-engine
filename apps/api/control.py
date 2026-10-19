@@ -61,24 +61,40 @@ LOOP_STAGES = ("discover", "newgrad", "feed")
 
 
 def _loop_steps(now):
-    """Stage status for the pipeline container's loop (`engine run --loop`), read from its heartbeat, so the control
-    room shows the loop working even when no run was started from the UI. [] when no fresh heartbeat. O(files)."""
+    """Stage status for the pipeline container's loop (`engine run --loop`), read from heartbeats, so the control room
+    shows the loop working even when no run was started from the UI. The pipeline beats each step with its `stage`
+    (discover, newgrad, feed, apply); between passes, apply stays live while any applier is still filling forms.
+    [] when no fresh pipeline heartbeat (the container is down). O(files)."""
     from engine.supervisor import FLEET, STALE
     beats = []
     for f in (os.listdir(FLEET) if os.path.isdir(FLEET) else []):
-        if f.startswith("pipeline_") and f.endswith(".json"):
+        if f.endswith(".json") and f.split("_")[0] in ("pipeline", "applier"):
             try:
                 beats.append(json.load(open(os.path.join(FLEET, f), encoding="utf-8")))
             except (OSError, ValueError):
                 pass
-    b = max(beats, key=lambda x: x.get("ts", 0), default=None)
+    pipe = [x for x in beats if x.get("role") == "pipeline"]
+    b = max(pipe, key=lambda x: x.get("ts", 0), default=None)
     if not b or now - b.get("ts", 0) > STALE["pipeline"]:
         return []
     st, ts = str(b.get("state", "")), b.get("ts")
-    if st.startswith("scanning"):
-        return [{"name": k, "status": "running", "started": ts} for k in LOOP_STAGES] + [{"name": "apply", "status": "waiting"}]
-    apply = "running" if st.startswith("waiting for appliers") else "done"
-    return [{"name": k, "status": "done"} for k in LOOP_STAGES] + [{"name": "apply", "status": apply, "started": ts}]
+    stage = b.get("stage") or ("discover" if st.startswith("scanning") else "apply" if st.startswith("waiting") else None)
+    applying = any(x.get("state") == "applying" and now - x.get("ts", 0) < STALE["applier"] for x in beats
+                   if x.get("role") == "applier")
+    order = [*LOOP_STAGES, "apply"]
+    out = []
+    for k in order:
+        if stage in order and order.index(k) < order.index(stage):
+            out.append({"name": k, "status": "done"})
+        elif k == stage:
+            out.append({"name": k, "status": "running", "started": ts, "detail": st})
+        elif k == "apply" and applying:  # forms still being filled from the last pass / your /needs answers
+            out.append({"name": k, "status": "running", "started": ts, "detail": "appliers filling forms"})
+        elif stage is None:  # sleeping between passes: everything finished, next scan soon
+            out.append({"name": k, "status": "done"})
+        else:
+            out.append({"name": k, "status": "waiting"})
+    return out
 
 
 @router.get("/control/state")

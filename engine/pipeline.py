@@ -246,7 +246,8 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
     with in_workspace():
         from engine.apply.runner import ashby_cooling
         ashby_ok = not ashby_cooling()
-    if scan:
+    if scan:  # each step beats with its stage, so the control room shows which one is working (10-18)
+        beat("pipeline", state="scanning boards", stage="discover")
         ats = "greenhouse,ashby,lever,workable" if ashby_ok else "greenhouse,lever,workable"
         ats += ",rippling"  # 10-15: filled by the runner (ats.FILLED); it was never scanned, so the queue had none
         ats += ",smartrecruiters,workday,icims,jazzhr"  # reach: discovered + tailored, the user submits (engine/discovery/reach.py)
@@ -254,6 +255,7 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
                        cwd=ROOT, check=False)
     if sources:  # boards miss companies we have no board for: new-grad sites (~25 s) + curated GitHub lists (~4 s)
         for step in (["newgrad", "1"], ["feed", "1", "--queue"]):
+            beat("pipeline", state=f"scanning {step[0]}", stage=step[0])
             subprocess.run([sys.executable, "-m", "engine", *step], cwd=ROOT, check=False, timeout=900)
     q = prune(json.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8")))
     if not halted("reach"):
@@ -270,6 +272,7 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
     if not chosen or halted("build"):
         return []
     from engine.tailoring.batch import build
+    beat("pipeline", state=f"gate + tailoring {len(chosen)} jobs", stage="apply")
     batch = build(f"run_{stamp}", [str(j["id"]) for j in chosen])
     record("pipeline", stage="build", jobs=len(batch))
     # hybrid scale-out: REGEN_DOCKER_PARTS=K extra parts go to container workers (engine/apply/worker.py) while

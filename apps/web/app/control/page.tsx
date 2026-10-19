@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Nav } from "../nav";
 import { api, get, post } from "@/lib/types";
 
-type Step = { name: string; status: string; started?: number; finished?: number };
+type Step = { name: string; status: string; started?: number; finished?: number; detail?: string };
 type Applier = { name: string; updated: number; jobs: { job: string; state: string }[]; results: Record<string, number>;
                  answers: { job: string; q: string; a: string }[]; done: boolean; summary?: string };
 type State = { run: { running: boolean; params?: Record<string, any>; steps?: Step[]; started?: number; finished?: number };
@@ -118,7 +118,7 @@ function ControlView() {
           return (
             <div key={s.key} className={`pstep ${cls}`} style={{ ["--i" as any]: i }}>
               <b>{s.label}</b><small>{s.about}</small>
-              <em>{x ? (x.status === "running" ? `processing · ${ago(x.started)}` : x.status) : "idle"}</em>
+              <em>{x ? (x.status === "running" ? `${x.detail || "processing"} · ${ago(x.started)}` : x.status) : "engine stopped"}</em>
               {i < STAGES.length - 1 && <span className={`pflow ${cls === "on" ? "live" : ""}`} aria-hidden />}
             </div>
           );

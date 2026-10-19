@@ -39,13 +39,21 @@ def filter_jobs(jobs, days, dom=None, source="ats"):
     return out, dropped
 
 
-def merge_queue(new, path=None):
-    """Merge into queue.json without losing jobs found earlier by another source."""
+def merge_queue(new, path=None, log=True):
+    """Merge into queue.json without losing jobs found earlier by another source. Each job not queued before is
+    recorded as `discovered` (the Discover station; 10-18: the loop's scans logged none, so it read 0 today)
+    unless the caller records its own (`log=False`: watch, alerts)."""
     path = path or os.path.join(WORKSPACE, "queue.json")
     old = json.load(open(path)) if os.path.exists(path) else []
     by = {str(j["id"]): j for j in old if j.get("ats")}  # legacy greenhouse-only records lack "ats"
+    fresh = [j for j in new if str(j["id"]) not in by]
     for j in new:
         by[str(j["id"])] = j
+    if log and fresh:
+        from engine.feedback.events import record
+        for j in fresh:
+            record("discovered", job=f"{j['company']} - {j['title']}", url=j.get("url"), ats=j.get("ats"),
+                   source=j.get("source", "ats"))
     keep_after = (datetime.now(timezone.utc) - timedelta(days=21)).isoformat()  # bound the queue: 3 weeks of postings
     q = sorted((j for j in by.values() if (j.get("posted") or keep_after) >= keep_after),
                key=lambda r: r.get("posted") or "", reverse=True)

@@ -690,6 +690,53 @@ def services(_fails={}):  # _fails: consecutive failed probes per service (kept 
     return out
 
 
+WATCHED = ("pipeline", "answers", "relay", "reposync")  # services that beat; appliers are matched by container id
+# silence that means hung, per role: appliers beat every few seconds while they work; reposync blocks up to 30 min in
+# its test gate; the answers container builds a retry batch between beats. The pipeline uses STALE (30 min).
+HUNG = {"applier": 300, "relay": 300, "answers": 600, "reposync": 2400}
+
+
+def liveness(now=None, _restarted={}):  # _restarted: container id -> when this watchdog last restarted it
+    """Watchdog (user, 10-18: "every container and process shows running and updates constantly"): a container that
+    is up but whose process stopped beating (hung scan, frozen browser, dead thread) is restarted once its newest
+    heartbeat is older than STALE (HUNG for appliers); at most once per 10 min per container, audited.
+    Returns {role: "ok" | "restarted: why"}. O(heartbeats + containers)."""
+    import urllib.parse
+    now = now or time.time()
+    newest = {}
+    for n in _count(FLEET):
+        try:
+            m = json.load(open(os.path.join(FLEET, n), encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        key = m.get("role") if m.get("role") in WATCHED else (m.get("role"), m.get("host"))
+        if m.get("role") in WATCHED or m.get("role") == "applier":
+            if key not in newest or m.get("ts", 0) > newest[key].get("ts", 0):
+                newest[key] = m
+    out = {}
+    for key, m in newest.items():
+        role = key if isinstance(key, str) else key[0]
+        age = now - m.get("ts", 0)
+        if age <= HUNG.get(role, STALE.get(role, 120)):
+            out[role] = out.get(role) or "ok"
+            continue
+        if role == "applier":  # the container's hostname is its short id; gone containers are the scaler's business
+            rows = [r for r in (_docker("GET", "/containers/json") or []) if r.get("Id", "").startswith(m.get("host", "?"))]
+        else:
+            flt = urllib.parse.quote(json.dumps({"label": [f"com.docker.compose.service={role}"]}))
+            rows = _docker("GET", f"/containers/json?filters={flt}") or []
+        for r in rows[:1]:
+            if r.get("State") != "running" or now - _restarted.get(r["Id"], 0) < 600:
+                continue
+            if role == "applier" and os.path.exists(drain_path(m.get("host", ""))):
+                continue  # being drained by the scaler: not hung, on its way out
+            _docker("POST", f"/containers/{r['Id']}/restart?t=10")
+            _restarted[r["Id"]] = now
+            audit("restart", role, reason=f"no heartbeat for {round(age)} s (last: {str(m.get('state'))[:60]})")
+            out[role] = f"restarted: silent {round(age)} s"
+    return out
+
+
 DAILY_HOUR = int(os.environ.get("REGEN_DAILY_HOUR", "7"))  # local time; the container runs TZ=America/Los_Angeles
 OUTREACH_PER_DAY = int(os.environ.get("REGEN_OUTREACH_PER_DAY", "20"))
 
@@ -933,6 +980,8 @@ def supervise(argv=None):
             if n % 4 == 0:  # every minute
                 enforce()
                 svc = services()
+                live = liveness()  # running but silent -> restarted (audited)
+                svc.update({k: v for k, v in live.items() if v != "ok"})
                 threading.Thread(target=inventory, daemon=True).start()  # stats take ~1 s each: off the 15 s loop
             beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap, services=svc)
         except Exception as ex:  # never die: a supervisor that crashes leaves the fleet at its last size
