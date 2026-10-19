@@ -33,6 +33,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   (pipeline 30 min, applier 5 min, relay 5 min, answers 10 min, reposync 40 min) is restarted, at most once per 10 min,
   audited. Scans now record `discovered` for each newly queued job (the Discover station read 0 today: since the
   Docker loop, only the old watch / alert paths logged discoveries). Verify: `tests/test_live_status.py`.
+- **Same employer under a page title** (`engine/names.py`): "ZETA Careers page" and "Zeta" are two boards of one
+  employer; both listed the same two roles and each was submitted twice on 10-18. `company_slug` now drops a trailing
+  "Careers page / Jobs / Hiring ..." so selection, caps and in-flight dedupe see one company.
 - **Option wording** (`engine/apply/runner.py pick_option`, 10-18 first release pass): right answers that missed
   the options were left blank. A master's picks "Graduate Degree"; a salary picks open-ended buckets ("Over $75,000",
   "Under $65,000"); relocation "yes" picks "I am willing to relocate to <city>" (presets: you relocate).

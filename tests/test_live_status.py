@@ -79,3 +79,11 @@ def test_watchdog_restarts_only_silent_running_containers(tmp_path, monkeypatch)
     out = supervisor.liveness(now, _restarted={})
     assert out["pipeline"] == "ok" and out["relay"].startswith("restarted")
     assert ("POST", "/containers/r1/restart?t=10") in calls and not any("p1/restart" in c[1] for c in calls)
+
+
+def test_board_page_title_is_the_same_company():
+    """10-18: 'ZETA Careers page' and 'Zeta' listed the same roles; each was submitted twice."""
+    from engine.names import company_slug, role_key
+    assert role_key("ZETA Careers page - Back-End Engineer") == role_key("Zeta - Back-End Engineer")
+    assert company_slug("Acme Jobs") == company_slug("Acme, Inc.") == "acme"
+    assert company_slug("Jobs") == "jobs"  # a name that is only the word stays

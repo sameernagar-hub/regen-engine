@@ -10,10 +10,13 @@ The display name in events and resumes is never changed; only comparisons go thr
 import re
 
 _SUFFIX = re.compile(r"[,.]?\s+(inc|llc|ltd|corp|corporation|co|gmbh|plc)\.?$", re.I)
+# a board's display name can carry its page title: "ZETA Careers page" is "Zeta" (10-18: both boards listed the same
+# two roles and each went in twice)
+_BOARD = re.compile(r"[-,|]?\s+(careers?|jobs?|job openings|open (roles|positions)|hiring)( (page|site|board|portal))?$", re.I)
 
 
 def company_slug(name):
-    s = _SUFFIX.sub("", (name or "").strip()).lower().replace("&", "and")
+    s = _SUFFIX.sub("", _BOARD.sub("", (name or "").strip())).lower().replace("&", "and")
     return re.sub(r"[^a-z0-9]", "", s)
 
 
