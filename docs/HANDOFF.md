@@ -1,3 +1,40 @@
+# Handoff: 10-18 ~22:00. v1.0.0 RELEASED. Stack is DOWN (stopped cleanly, volumes kept).
+
+## START
+`cd regen-engine && REGEN_DAYS=30 REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_ASHBY_PER_PASS=1 REGEN_LOOP_MIN=3 REGEN_SOURCES_EVERY=3 REGEN_MAX=150 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
+Health: `docker exec deploy-supervisor-1 python -m engine fleet`; control room http://127.0.0.1:3000/control now shows
+each stage live (from heartbeats). Draft override ON (re-armed 21:29 so parked jobs retried on the fixed filler).
+Ashby cooldown ended ~22:39 10-18: 1/pass. Gate every commit: `git add -A`, then `python scripts/privacy_scan.py`
+and CHECK ITS EXIT CODE (piping it into `tail` hid a leak once; caught before push). Company names never in the repo.
+Push main by fast-forward with a POSIX-path python shim on PATH (a `C:/...` PATH entry breaks on the colon).
+
+## Done 10-18 evening
+- **v1.0.0 published** (tag at ba1b229, main fast-forwarded, PR #18 merged by the push, Render 200).
+- Local commits after the release (reposync pushes them to a new PR on start): dedupe of "<X> Careers page" vs "<X>"
+  (two roles were each submitted twice today), employer/title "(or most recent)" rules, sponsorship sentence
+  options + a negation bug ("do not require" read as "require"), Accept ticks acknowledge boxes, fit gate
+  "does not offer support or sponsorship" / "should not apply if you require sponsorship".
+- Live everywhere: per-stage pipeline beats, control room stage details, applier cards include /needs retries,
+  supervisor `liveness()` watchdog restarts silent containers, fleet shows one row per singleton service, scans
+  record `discovered` (Discover station read 0 since the Docker loop).
+- Filler: graduate-degree buckets, open-ended salary buckets, "willing to relocate" sentences, "If yes" follow-ups
+  blank, title-only citizenship/clearance gate.
+- Applications today: see `engine report`; 6 by 20:45, more after the 21:29 retry (monitor logged more submits).
+
+## Next (in order)
+1. Start the stack; let reposync open the PR for the post-release commits; fast-forward main after CI (user OK).
+2. Supply is the limit: "select 0 of 748" at 21:00 = Workday (~330, sign-ins) + Ashby (cooldown) + parked.
+   After the cooldown, Ashby gives ~1 per 3-min pass.
+3. Workday desk: after sign-in the filler stopped on the job page ("no Next or Submit button on step 1"): it must
+   click Apply / "Apply Manually" first. Fix in engine/apply/workday.py, test on a tenant that sponsors.
+4. Public feed airbag blocked one push (a word that is both a company and a database name). Decide mask vs allow-list.
+5. A Greenhouse "state/region" dropdown didn't take "California" (option text unknown; read the proof).
+
+## Needs the user
+- Workday: create tenant accounts yourself (Claude cannot create accounts or type passwords), sign in in the desk,
+  then "Fill it in the desk". Seven Workday postings (one automaker tenant + one more) say no sponsorship: skipped, don't sign in for them.
+- Lever CAPTCHA forms (filled, finish by hand): e.g. the Charlotte associate programmer role.
+
 # Handoff: 10-18 ~01:00. Stack is DOWN (stopped cleanly, 0 claimed, volumes kept). Goal next: RELEASE v1.0.0, then use it.
 
 ## START
