@@ -88,9 +88,11 @@ def build(name, ids, force=False):
             blockers = fit(jd)  # reads the whole description: sponsorship, clearance, years, grad window, stack, defense
             # some employers state the citizenship requirement only in a required form question (10-11: "this role
             # requires US citizenship" on a Greenhouse form, JD silent): read those labels with the same rule
-            req = " ".join(qq["label"] for qq in questions if qq.get("required"))
-            if "citizenship" not in blockers and "citizenship" in fit(req, max_years=99):
-                blockers.append("citizenship")
+            # 10-18: the title can say it too ("Full Stack Developer [U.S. Citizenship Required, Public Trust ...]")
+            req = " ".join(qq["label"] for qq in questions if qq.get("required")) + " " + j["title"]
+            for b in ("citizenship", "clearance"):
+                if b not in blockers and b in fit(req, max_years=99):
+                    blockers.append(b)
             # every stage re-checks: the title/company filter again (sources can change titles) and the trust gate
             from engine.discovery.filters import keep, load_domain
             from engine.discovery.trust import verdict

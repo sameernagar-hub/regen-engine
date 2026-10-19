@@ -57,17 +57,46 @@ def _applier(path):
             "results": dict(results), "answers": qa[-8:], "done": bool(summary), "summary": summary}
 
 
+LOOP_STAGES = ("discover", "newgrad", "feed")
+
+
+def _loop_steps(now):
+    """Stage status for the pipeline container's loop (`engine run --loop`), read from its heartbeat, so the control
+    room shows the loop working even when no run was started from the UI. [] when no fresh heartbeat. O(files)."""
+    from engine.supervisor import FLEET, STALE
+    beats = []
+    for f in (os.listdir(FLEET) if os.path.isdir(FLEET) else []):
+        if f.startswith("pipeline_") and f.endswith(".json"):
+            try:
+                beats.append(json.load(open(os.path.join(FLEET, f), encoding="utf-8")))
+            except (OSError, ValueError):
+                pass
+    b = max(beats, key=lambda x: x.get("ts", 0), default=None)
+    if not b or now - b.get("ts", 0) > STALE["pipeline"]:
+        return []
+    st, ts = str(b.get("state", "")), b.get("ts")
+    if st.startswith("scanning"):
+        return [{"name": k, "status": "running", "started": ts} for k in LOOP_STAGES] + [{"name": "apply", "status": "waiting"}]
+    apply = "running" if st.startswith("waiting for appliers") else "done"
+    return [{"name": k, "status": "done"} for k in LOOP_STAGES] + [{"name": "apply", "status": apply, "started": ts}]
+
+
 @router.get("/control/state")
 def state():
     """The run (if one was started from the UI), every applier active in the last 15 minutes, queue, limits."""
     s = C.read_state()
+    if not s.get("running"):  # the pipeline container's loop is the run; show its stages
+        loop = _loop_steps(time.time())
+        if loop:
+            s = dict(s, steps=loop)
     logs = os.path.join(WORKSPACE, "logs")
     now = time.time()
     appliers = []
     if os.path.isdir(logs):
         for f in sorted(os.listdir(logs)):
             p = os.path.join(logs, f)
-            if re.fullmatch(r"run_\d{8}_\d{4}(_w?\d+)?[a-z]?_?\d*b?\.log", f) and now - os.path.getmtime(p) < 900:
+            if (re.fullmatch(r"run_\d{8}_\d{4}(_w?\d+)?[a-z]?_?\d*b?\.log", f)
+                    or re.fullmatch(r"answers_\d{8}_\d{6}\.log", f)) and now - os.path.getmtime(p) < 900:  # + /needs retries
                 appliers.append(_applier(p))
     q = []
     try:

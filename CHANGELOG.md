@@ -21,6 +21,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   case, COVID vaccination and adverse credit are preset keys (`criminal_record`, `active_immigration_case`,
   `covid_vaccinated`, `adverse_credit`) with rules in the runner; parked jobs on them retry. An unset preset still asks.
 
+- **Control room shows the loop live** (`apps/api/control.py`, 10-18): the four stage boxes only tracked a run started
+  from the page, so the pipeline container's own loop always read "idle" while it applied. Stages now follow the
+  pipeline heartbeat (scanning -> discovery stages processing; waiting for appliers -> apply processing); a stale
+  heartbeat shows nothing. Applier cards now include the retries of /needs answers (`answers_*.log`), which were
+  hidden. Verify: `tests/test_live_status.py`; `/api/control/state` -> `run.steps` while the stack runs.
+- **Option wording** (`engine/apply/runner.py pick_option`, 10-18 first release pass): right answers that missed
+  the options were left blank. A master's picks "Graduate Degree"; a salary picks open-ended buckets ("Over $75,000",
+  "Under $65,000"); relocation "yes" picks "I am willing to relocate to <city>" (presets: you relocate).
+  "If yes / If so" follow-ups stay blank (an optional "If yes, provide your LDAP" got a drafted paragraph after a No).
+- **Fit gate reads the title too** for citizenship / clearance ("Full Stack Developer [U.S. Citizenship Required,
+  Public Trust ...]" reached a batch because the JD body did not repeat it).
+
 Release review of every file. Fixes for what it found:
 - **DNS rebinding on the API** (`apps/api/main.py`): CORS does not stop a page that re-points its own name at
   127.0.0.1; it could read every endpoint (Fact Bank, applications) and, in the bank, write answers.

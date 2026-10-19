@@ -442,6 +442,7 @@ def area_answer(label):
 
 # 10-17: "Why Nox Metals? Please do not use AI." got a Fact Bank draft. Machine-assembled text is not what was asked for.
 NO_AI_Q = re.compile(r"(do not|don.t|please don.t|without( using)?|no) (use )?(ai|a\.i\.|chat ?gpt|llms?|generative ai|ai tools)\b", re.I)
+IF_YES_Q = re.compile(r"\W*if (yes|so|applicable)\b", re.I)  # a follow-up to a question answered just before it
 
 
 def answer(label, job, field=None):
@@ -449,6 +450,8 @@ def answer(label, job, field=None):
     questions, then (autofill) yes/no defaults and drafts for any remaining non-sensitive text box."""
     if NO_AI_Q.search(label):
         return None  # the employer asked for the candidate's own words: you write it, the engine never drafts it
+    if IF_YES_Q.match(label) and not answer_for(label, job.get("extra", {})):
+        return None  # 10-18: "If yes, please provide your LDAP." (after a No) got a drafted paragraph: a follow-up stays blank
     ans = answer_for(label, job.get("extra", {}))
     if NOTE_Q.search(label) and job.get("note"):
         return job["note"]
@@ -540,6 +543,9 @@ def pick_option(options, ans):
             nums = [int(x.replace(",", "")) * (1000 if k else 1) for x, k in re.findall(r"(\d[\d,]*)\s*(k\b)?", t, re.I)]
             if len(nums) >= 2 and nums[0] <= n < nums[1] or len(nums) == 1 and "+" in t and n >= nums[0]:
                 return h
+            if len(nums) == 1 and (re.search(r"\b(over|above|more than|at least|greater than)\b", t, re.I) and n > nums[0]
+                                   or re.search(r"\b(under|below|less than|up to)\b", t, re.I) and n < nums[0]):
+                return h  # open-ended buckets: "Over $75,000", "Under $65,000"
     a = _norm_opt(ans)
     options = [(_norm_opt(t), h) for t, h in options]
     for t, h in options:
@@ -585,6 +591,9 @@ def option_fallback(options, a):
         if re.search(lvl, a):
             for t, h in options:
                 if re.search(lvl, t): return h
+            if lvl in ("master", r"doctor|ph\.?d"):  # "Graduate Degree" buckets: a master's / doctorate is graduate level
+                for t, h in options:
+                    if re.search(r"\b(post-?)?graduate\b", t) and not re.search(r"undergraduate", t): return h
             break
     m = re.search(r"(\d+)\s*%", a)  # "Up to 25%" against travel buckets: the widest bucket that stays within it
     if m and options and all("%" in t for t, _ in options):
@@ -598,7 +607,10 @@ def option_fallback(options, a):
     if a == "yes":  # a single acknowledgment option: "I understand that this role requires ... in office"
         for t, h in options:
             if ACK.search(t) and not NACK.search(t): return h
-    city = (P.get("city") or "").lower()
+        if P.get("open_to_onsite_or_relocation") == "Yes":  # "I am willing to relocate to <city>" (presets: you relocate)
+            for t, h in options:
+                if re.search(r"\bwilling to (relocate|move)\b", t) and not re.search(r"\bnot\b|n't", t): return h
+    city =(P.get("city") or "").lower()
     if city and a.startswith(city):  # "commutable to office A / office B / neither": you live elsewhere
         for t, h in options:
             if re.search(r"\bnot\b.{0,40}(located|commut|within|near)", t): return h
