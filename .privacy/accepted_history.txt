@@ -13,3 +13,38 @@ fb69712ac2c765b1bfdb6e5c6063253e5641f8cd
 c21ca8a124002968e90370d420189ce737ae8280
 4a323f72bcaedf10f3eab9760d476270fb18a548
 4ad347ac6c3a17f69d86eb36565dbae25a63df47
+# 2026-10-19 (owner kept history): blob of tests/test_core.py from v0.4 (2026-10-05, before the gate) with a public
+# company board URL in a test fixture; removed from the tree long ago. Object SHA, skipped only by the --history blob scan.
+3ff65c78519a3a55942760ad732c513915d486c5
+# 2026-10-19 (owner kept history as is): 29 more blobs found by `privacy_scan.py --history`, all removed from the
+# tree long ago: 21 name companies applied to (old docs, tests, rule code), 8 hold words that are also preset values
+# (the owner's last name in one old handoff, visa-status / timezone words in rule code). No secrets. Object SHAs.
+044e581b8eaffa017c63945e18e3741bb04bbdf8
+13a9110942d1fda50f41394e82a82912073f2f8b
+1a5e1e2c31337a02f8d5c33502a883e27df5570d
+1e58cb382f2ae13cc21b2a10c9b36c6b08e30d49
+221875dde1e8414978ac3272a52d11346897f7f9
+29cdafb829daed6b5e3f4e26e8405168cdedf1f5
+3a3c0edabf0f3a43a0470c24f36b31fd95c18e73
+44eeb5151eb91ba2d599564bd6ac320f440c6314
+64a47cfadb273a8cfa9487aed343fbb07bb00722
+6706e78ebb8909f392e6fd67369b953d4e15120c
+67705b94d7b0592f60a9bc27c40c0f5b1d4cbaeb
+689a5a3a1644332a12becce59cb3b5a40ff3e905
+69f91af4fe2b1c51c6132d71f0e82fe13fbb856d
+6ba51a547f62c36ffe2c3894389aa2acd7d6f36d
+80ece64ae071c343c3508e6889e63808bdb37718
+85db9b7a8749e576035db2d1c680736d6f64d153
+95921354e145c50c102193593eac254da051d39d
+98ad3150cfec1b363b9bc9b2509155008de6e63f
+9fe5081b7705fbcadeca50dcc512d7fb7d4f4795
+b05e4fa800eb7f29a2ecfa4156b0e770f743ed76
+b67b73e07c4a63519cca31b97c2bc05dabf076d3
+bc155aecf73fb12ee9395be10e25b8b268a9b400
+c929312cbc03861dd26d0a8ebf6e29294c577f50
+c9df5559b56c7b01978a7459eaa6a411d9741d29
+d359848f48e63b88c1f033c74ef20f7486d184c5
+d4ec38c69dc4b8fc9ecc7528b6393c5a856b12a7
+dc820207e95b7f394efb71108ece5d3d8b066778
+e874483454c2c2783ae86b2733dfb095219f7c6e
+f500e9c871f12701bc5d56fffe911dd3145146df

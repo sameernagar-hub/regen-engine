@@ -223,10 +223,10 @@ def main(argv):
         problems += [(f, f"private term: {mask(g)}") for f, g in check_terms(texts, lambda g: g in terms)]
         problems += commit_emails(None)
         if "--history" in argv and terms:
-            seen = set()
+            seen, legacy = set(), accepted_history()  # legacy: pre-gate objects the owner chose to keep public
             for line in git("rev-list", "--all", "--objects").splitlines():
                 sha, _, path = line.partition(" ")
-                if not path or sha in seen or path in ALLOW_FILES:
+                if not path or sha in seen or sha in legacy or path in ALLOW_FILES:
                     continue
                 seen.add(sha)
                 if git("cat-file", "-t", sha).strip() != "blob":
