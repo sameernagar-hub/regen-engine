@@ -7,7 +7,7 @@ import { API_ORIGIN } from "../lib/types";
 
 const HERE: [string, string][] = [
   ["/live", "Live"], ["/control", "Control"], ["/applications", "Applications"], ["/needs", "Needs you"], ["/reach", "Reach"],
-  ["/outreach", "Outreach"], ["/room", "Engine room"], ["/job", "Job"], ["/evals", "Evals"], ["/facts", "Fact Bank"], ["/graph", "Memory graph"],
+  ["/outreach", "Outreach"], ["/room", "Engine room"], ["/gearbox", "Gearbox"], ["/job", "Job"], ["/evals", "Evals"], ["/facts", "Fact Bank"], ["/graph", "Memory graph"],
 ];
 
 export function Nav() {

@@ -20,6 +20,8 @@ Complexity (v0.8). T = vocabulary terms (~200), F = Fact Bank entries, n = JD le
                  per vocabulary instead of once per JD
 """
 import html
+import json
+import os
 import re
 
 from engine.tailoring import compose, resume
@@ -225,7 +227,31 @@ def fit(jd, max_years=None):
     mech = len({m.group(0) for m in MECH.finditer(low)})
     if mech >= 2 and not SOFTWARE_STACK.search(low):
         out.append("mechanical / manufacturing role")
+    out += [f"learned: {p}" for p in learned_phrases() if p in low]
     return out
+
+
+_LEARNED = {"mtime": None, "phrases": ()}
+
+
+def learned_phrases():
+    """Active phrases from workspace/learned_gate.json (engine/feedback/rejections.py), re-read when the file changes."""
+    from engine.config import WORKSPACE
+    from engine.gearbox import clutch_engaged
+    if not clutch_engaged():  # clutch out: the feedback loop is decoupled, only the base gate decides
+        return ()
+    path = os.path.join(WORKSPACE, "learned_gate.json")
+    try:
+        m = os.path.getmtime(path)
+    except OSError:
+        return ()
+    if m != _LEARNED["mtime"]:
+        try:
+            rules = json.load(open(path, encoding="utf-8")).get("rules", [])
+        except (OSError, ValueError):
+            rules = []
+        _LEARNED.update(mtime=m, phrases=tuple(r["phrase"] for r in rules if r.get("status") == "active" and r.get("phrase")))
+    return _LEARNED["phrases"]
 
 
 MECH = re.compile(r"\b(3d cad|solidworks|creo|catia|autocad|inventor|gd&t|tolerance stack|injection mold\w*|sheet metal|"

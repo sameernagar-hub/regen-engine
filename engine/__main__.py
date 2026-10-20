@@ -20,6 +20,9 @@ alerts  <file>                   job-alert emails (gmail_alerts.js output) resol
   status                           application outcomes from the event log
   inbox   <msgs.json> | --imap [d] classify recruiting email -> outcome events (OA / interview / rejection / offer / scam)
   learn                            response rates by lane and ATS -> workspace/learnings.md
+  gear    [N|1|2|3|4] [--clutch on|off]  the gearbox: applier range + scan interval; clutch couples learned rules
+  feedback [--watch m] [--no-imap] read rejections, compare their JDs, teach the fit gate (workspace/learned_gate.json)
+           --off "<phrase>"        stop a learned phrase from blocking
   sos-test                         send a test SOS alert (engine/notify.py; .env SMTP app password)
   mcp                              the engine as an MCP server (stdio; read-only memory tools)
   graph   [term]                   the knowledge graph (counts, or one node and its neighbors)
@@ -166,6 +169,10 @@ def main():
         from engine.live.export import main as m
     elif cmd == "inbox":
         from engine.feedback.inbox import main as m
+    elif cmd == "gear":
+        from engine.gearbox import main as m
+    elif cmd == "feedback":
+        from engine.feedback.rejections import main as m
     elif cmd == "learn":
         from engine.feedback.inbox import learn
         m = lambda _argv: learn()

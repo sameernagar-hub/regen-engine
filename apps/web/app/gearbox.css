@@ -1,0 +1,83 @@
+/* v1.1 gearbox: the engine's speed control and the rejection feedback chain (app/gearbox/page.tsx) */
+.gearbox .gb-stage { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+@media (max-width: 980px) { .gearbox .gb-stage { grid-template-columns: 1fr; } }
+svg.gb { width: 100%; height: auto; display: block; }
+
+.gb .gear path { fill: url(#gbsteel); stroke: #4a5668; stroke-width: 1.2; transition: stroke .4s, fill .4s; }
+.gb .gear .spoke { fill: #0d1218; opacity: .75; }
+.gb .gear .bore { fill: #0b0f15; stroke: #5b687b; stroke-width: 2; }
+.gb .engine-gear path { stroke: var(--gold); stroke-width: 1.6; }
+.gb .engine-gear .bore { stroke: var(--gold); }
+.gb .drive path { stroke: var(--gold); }
+.gb .pair .main path, .gb .pair .lay path { opacity: .55; transition: opacity .4s, stroke .4s; }
+.gb .pair.on .main path, .gb .pair.on .lay path { opacity: 1; stroke: var(--calm); stroke-width: 2; }
+.gb .pair.on .main { filter: url(#gbglow); }
+.gb .fb path { stroke: #5ee6b5; stroke-width: 1.6; }
+
+.gb .housing { fill: #0d121a; fill-opacity: .55; stroke: var(--line); stroke-width: 2; stroke-dasharray: 6 6; }
+.gb .shaft { stroke: #6a778a; stroke-width: 7; stroke-linecap: round; }
+.gb .shaft.out { stroke: var(--calm); transition: stroke .4s; }
+.gb .shaft.out.idle { stroke: #3a4554; }
+.gb .collar { fill: var(--gold); transition: transform .55s cubic-bezier(.5, -0.35, .35, 1.4); filter: url(#gbglow); }
+
+.gb .chain { fill: none; stroke: #5ee6b5; stroke-width: 3; stroke-dasharray: 10 7; opacity: .55; animation: chain 1.2s linear infinite; }
+.gearbox.clutch-out .gb .chain { animation-play-state: paused; opacity: .2; }
+@keyframes chain { to { stroke-dashoffset: -34; } }
+.gb .pulse { fill: #5ee6b5; filter: url(#gbglow); }
+.gb .clutch .plate { fill: #5ee6b5; transition: transform .45s ease; }
+.gearbox.clutch-out .gb .clutch .plate.a { transform: translateX(-14px); fill: #3a4554; }
+.gearbox.clutch-out .gb .clutch .plate.b { transform: translateX(14px); fill: #3a4554; }
+
+.gb .gb-label { fill: var(--dim); font-size: 14px; letter-spacing: .06em; text-anchor: middle; }
+.gb .gb-num { fill: #5ee6b5; font-size: 13px; text-anchor: middle; font-family: var(--mono); }
+.gb .end { text-anchor: end; }
+.gb .gb-gear { fill: var(--dim); font-size: 18px; font-weight: 600; text-anchor: middle; transition: fill .3s; }
+.gb .pair.on .gb-gear { fill: var(--calm); }
+
+/* H-pattern shifter: 1 2 / N / 3 4 */
+.shifter { position: relative; width: 160px; height: 160px; margin: 0 auto 16px; border-radius: 22px;
+  background: radial-gradient(circle at 40% 35%, #222b37, #0e131a); border: 1px solid var(--line); }
+.shifter .gate { position: absolute; inset: 0; width: 100%; height: 100%; }
+.shifter .gate path { fill: none; stroke: #2e3846; stroke-width: 14; stroke-linecap: round; }
+.shifter .slot { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  color: var(--dim); font-weight: 600; z-index: 2; }
+.shifter .slot.on { color: #07090d; }
+.shifter .slot:focus-visible { outline: 2px solid var(--calm); }
+.shifter .s1 { left: 25%; top: 18.75%; } .shifter .s2 { left: 25%; top: 81.25%; }
+.shifter .sN { left: 50%; top: 50%; }
+.shifter .s3 { left: 75%; top: 18.75%; } .shifter .s4 { left: 75%; top: 81.25%; }
+.shifter .knob { position: absolute; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; z-index: 1;
+  background: radial-gradient(circle at 35% 30%, #ffe08a, var(--gold) 55%, #9c7a24); box-shadow: 0 0 22px #f2c14e88;
+  transition: left .5s cubic-bezier(.6, 0, .3, 1), top .5s cubic-bezier(.6, 0, .3, 1); }
+.shifter .k1 { left: 25%; top: 18.75%; } .shifter .k2 { left: 25%; top: 81.25%; }
+.shifter .kN { left: 50%; top: 50%; background: radial-gradient(circle at 35% 30%, #c8d1dc, #7d8796 60%, #3a4554); box-shadow: none; }
+.shifter .k3 { left: 75%; top: 18.75%; } .shifter .k4 { left: 75%; top: 81.25%; }
+
+.clutch-btn { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #3a4554; text-align: left; font-size: 13px; color: var(--dim); }
+.clutch-btn.on { border-color: #5ee6b5; color: #5ee6b5; box-shadow: inset 0 0 18px #5ee6b522; }
+.gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 0; }
+.gauges div { border: 1px solid var(--faint); border-radius: 10px; padding: 10px; }
+.gauges dt { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.gauges dd { margin: 4px 0 2px; font-size: 26px; color: var(--gold); font-weight: 600; }
+.gauges small { color: var(--dim); font-size: 11px; }
+
+.gb-feedback { margin-top: 28px; }
+.gb-feedback table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.gb-feedback th, .gb-feedback td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--faint); }
+.gb-feedback tr.proposed td { color: var(--dim); }
+.gb-feedback .tag { padding: 2px 8px; border-radius: 999px; font-size: 11px; border: 1px solid var(--line); }
+.gb-feedback .tag.active { border-color: #5ee6b5; color: #5ee6b5; }
+.gb-feedback .tag.off { color: var(--alarm); border-color: var(--alarm); }
+
+/* home page: the gearbox bolted under the crankcase */
+.engine .gbx-gear { fill: url(#barrel); stroke: #4a5668; stroke-width: 1.5; }
+.engine .gbx-a { animation: turn 1.4s linear infinite; }
+.engine .gbx-b { animation: turn 1.05s linear infinite reverse; }
+.engine .gbx-shaft { stroke: #6a778a; stroke-width: 6; stroke-linecap: round; }
+.engine .gbx-return { fill: none; stroke: #5ee6b5; stroke-width: 2.5; stroke-dasharray: 8 6; opacity: .6; animation: chain 1.2s linear infinite; }
+.engine .part.hot .gbx-gear { stroke: var(--tone); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gb .chain, .engine .gbx-a, .engine .gbx-b, .engine .gbx-return { animation: none; }
+  .gb .collar, .shifter .knob { transition: none; }
+}

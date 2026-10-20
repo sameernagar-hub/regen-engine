@@ -502,3 +502,51 @@ def outreach_build(body: dict, request: Request):
     _guard(request)
     from engine import outreach as O
     return O.build(max(1, min(int(body.get("days", 7)), 30)))
+
+
+# ---------------- gearbox: the engine's speed control + the rejection feedback it is coupled to ----------------
+GEAR_WRITE = WRITE or os.environ.get("REGEN_API_GEAR") == "1"  # bank: shifting gears is the only control write
+
+
+@router.get("/control/gearbox")
+def gearbox():
+    """Gear, clutch, what they set, the feedback loop's learned rules, and the engine's live speed (submissions/hour)."""
+    from engine import gearbox as G
+    from engine.feedback.events import read
+    from engine.feedback.rejections import load_gate
+    gate = load_gate()
+    now = time.time()
+    subs = [e for e in read("application") if (e.get("status") or "").startswith("SUBMITTED") and not e.get("dry")]
+
+    def per(hours):
+        cut = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now - hours * 3600))
+        return sum(1 for e in subs if str(e.get("ts", "")) >= cut)
+    outs = collections.Counter(o.get("outcome") for o in read("outcome"))
+    fleet = {}
+    try:
+        from engine.supervisor import fleet as F
+        f = F()
+        fleet = {"appliers_up": sum(1 for m in f.get("members", []) if m.get("role") == "applier" and m.get("up")),
+                 "inbox": f.get("inbox"), "claimed": f.get("claimed"), "verdict": f.get("verdict")}
+    except Exception:
+        pass
+    s = G.spec()
+    s["appliers"] = list(s["appliers"])
+    return {"gear": s, "fleet": fleet, "speed": {"last_hour": per(1), "last_24h": per(24)},
+            "outcomes": dict(outs), "feedback": {"updated": gate.get("updated"), "stats": gate.get("stats", {}),
+                                                 "rules": gate.get("rules", [])[:20]}}
+
+
+@router.post("/control/gearbox")
+def shift(body: dict, request: Request):
+    """Shift gear (N, 1-4) and/or set the clutch (on/off). Needs REGEN_API_GEAR=1 (bank) or REGEN_API_WRITE=1."""
+    if not GEAR_WRITE:
+        raise HTTPException(403, "gear writes are disabled (REGEN_API_GEAR=1 in the bank, REGEN_API_WRITE=1 locally)")
+    if not TRUST_PORT and (request.client.host if request.client else "") not in LOCAL:
+        raise HTTPException(403, "only from this computer")
+    from engine import gearbox as G
+    try:
+        G.shift(body.get("gear"), body.get("clutch"), by="control room")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    return gearbox()

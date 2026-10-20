@@ -22,7 +22,7 @@ NON_US = re.compile(r"\bUK\b|united kingdom|england|london|canada|toronto|vancou
 # Non-software engineering disciplines. Broad title words ("engineering lead", "programmer", "developer") only count
 # as software when the title has no discipline word like these, unless it also says software/web/data/cloud etc.
 # (2026-10-09: a civil "Transportation Engineering Leader" passed as software and was submitted.)
-NON_SOFTWARE = re.compile(r"transportation|civil|structural|geotechnical|traffic|highway|bridge|roadway|water|wastewater|stormwater|hydraulic|environmental|hvac|plumbing|construction|chemical|manufacturing|process engineer|mechanical|electrical|power systems?|substation|utility|petroleum|mining|nuclear|biomedical|clinical|aerospace|propulsion|avionics|real estate|land development|surveying|architectural|interior|landscape|cnc|plc|controls engineer", re.I)
+NON_SOFTWARE = re.compile(r"transportation|civil|structural|geotechnical|traffic|highway|bridge|roadway|water|wastewater|stormwater|hydraulic|environmental|hvac|plumbing|construction|chemical|manufacturing|process engineer|mechanical|electrical|power systems?|substation|utility|petroleum|mining|nuclear|biomedical|clinical|aerospace|propulsion|avionics|real estate|land development|surveying|architectural|interior|landscape|cnc|plc|controls engineer|design release|underhood|\btrim\b|body in white|powertrain|chassis|wire harness", re.I)  # 10-19: an automotive "Trim Design Release Engineer" passed via "release engineer"
 SOFTWARE_WORDS = re.compile(r"software|full.?stack|backend|back-end|front.?end|web|cloud|data|devops|\bsre\b|site reliability|platform|ai\b|ml\b|machine learning|llm|genai|api|application|product engineer|\bsde\b|\bswe\b|developer tools|infrastructure", re.I)
 
 

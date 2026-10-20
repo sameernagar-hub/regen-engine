@@ -24,12 +24,13 @@ const CYL: Part[] = [  // clockwise from the top, which is also the firing order
 const CORE: Part = { key: "room", href: "/room", label: "Engine room", about: "The five stations (discover, fit gate, compose, apply, inbox) and every job end to end.", tone: "#6fb7ff" };
 const FUEL: Part = { key: "facts", href: "/facts", label: "Fact Bank", about: "The fuel: every claim a resume may make, and which resumes burned it.", tone: "#f2c14e" };
 const WIRES: Part = { key: "graph", href: "/graph", label: "Memory graph", about: "The wiring: you, lanes, applications, companies, facts and outcomes, connected.", tone: "#5ee6b5" };
-const ALL = [...CYL, CORE, FUEL, WIRES];
+const GEARBOX: Part = { key: "gearbox", href: "/gearbox", label: "Gearbox", about: "Shift the engine's speed (appliers, scan rate) and see what rejections taught it, fed back through the clutch.", tone: "#5ee6b5" };
+const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES];
 const FIRING = [0, 2, 4, 6, 1, 3, 5];  // radial engines fire every other cylinder
 
 const ang = (i: number) => -90 + (i * 360) / CYL.length;
 const at = (deg: number, r: number) => [CX + Math.cos((deg * Math.PI) / 180) * r, CY + Math.sin((deg * Math.PI) / 180) * r];
-const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 };
+const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 };
 
 export default function EngineHome() {
   const router = useRouter();
@@ -46,6 +47,7 @@ export default function EngineHome() {
     get<any>("/api/control/reach?limit=1").then((x) => put("reach", `${x.listed} resumes ready`)).catch(() => {});
     get<any[]>("/api/outreach").then((x) => put("outreach", `${x.length} drafts`)).catch(() => {});
     get<any>("/api/control/evals?n=60").then((x) => put("evals", `${x.runs.length} benchmark runs`)).catch(() => {});
+    get<any>("/api/control/gearbox").then((x) => put("gearbox", `gear ${x.gear.gear}, ${x.feedback.stats.rejected ?? 0} rejections read`)).catch(() => {});
     get<any>("/api/factbank").then((x) => { put("facts", `${x.facts.length} facts, ${x.resumes_built} resumes`); put("graph", `${x.roles.length + x.facts.length + x.projects.length}+ nodes`); }).catch(() => {});
   }, []);
 
@@ -61,7 +63,7 @@ export default function EngineHome() {
     if (!launch) return null;
     const i = CYL.findIndex((c) => c.key === launch);
     if (i >= 0) { const [x, y] = at(ang(i), 190); return { x, y }; }
-    return launch === "facts" ? TANK : launch === "graph" ? HARNESS : { x: CX, y: CY };
+    return launch === "facts" ? TANK : launch === "graph" ? HARNESS : launch === "gearbox" ? GBX : { x: CX, y: CY };
   }, [launch]);
   const part = (p: Part) => ({
     role: "link" as const, tabIndex: 0, "aria-label": `${p.label}: ${p.about}`,
@@ -121,6 +123,20 @@ export default function EngineHome() {
             <text className="part-label" x={TANK.x} y={TANK.y + 112}>Fact Bank</text>
           </g>
 
+          {/* gearbox under the crankcase: the crank drives it down the shaft, feedback climbs back up the dashed line */}
+          <g {...part(GEARBOX)}>
+            <line className="gbx-shaft" x1={CX - 3} y1={CY + 96} x2={CX - 3} y2={GBX.y - 34} />
+            <path className="gbx-return" d={`M ${CX + 30} ${GBX.y - 10} C ${CX + 14} ${GBX.y - 60} ${CX + 5} ${CY + 160} ${CX + 5} ${CY + 98}`} />
+            <g transform={`translate(${GBX.x - 24} ${GBX.y})`}><g className="gbx-a">
+              {Array.from({ length: 14 }, (_, t) => <rect key={t} className="gbx-gear" x={-4} y={-40} width={8} height={12} rx={2} transform={`rotate(${t * (360 / 14)})`} />)}
+              <circle className="gbx-gear" r={30} /><circle cx={0} cy={0} r={7} fill="#0b0f15" /></g></g>
+            <g transform={`translate(${GBX.x + 34} ${GBX.y + 4})`}><g className="gbx-b">
+              {Array.from({ length: 10 }, (_, t) => <rect key={t} className="gbx-gear" x={-4} y={-29} width={8} height={11} rx={2} transform={`rotate(${t * 36 + 18})`} />)}
+              <circle className="gbx-gear" r={20} /><circle cx={0} cy={0} r={5} fill="#0b0f15" /></g></g>
+            <rect className="hit" x={GBX.x - 80} y={GBX.y - 50} width={160} height={96} />
+            <text className="part-label" x={GBX.x} y={GBX.y + 60}>Gearbox</text>
+          </g>
+
           {/* seven cylinders: barrel with cooling fins, head, spark plug, a piston on the firing order */}
           {CYL.map((c, i) => {
             const a = ang(i), [lx, ly] = at(a, 328);
@@ -159,7 +175,7 @@ export default function EngineHome() {
 
       <aside className={`engine-card${info ? " on" : ""}`} aria-live="polite" style={info ? { ["--tone" as any]: info.tone } : undefined}>
         {info ? (<><b>{info.label}</b><span className="stat">{stat[info.key] || "·"}</span><p>{info.about}</p><small>click to open</small></>)
-              : (<><b>Ten parts, one engine</b><p>Discover, judge, write, apply, hear back. Pick a part.</p></>)}
+              : (<><b>Eleven parts, one engine</b><p>Discover, judge, write, apply, hear back. Pick a part.</p></>)}
       </aside>
 
       <nav className="engine-list" aria-label="Engine parts">

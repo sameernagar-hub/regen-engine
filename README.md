@@ -247,6 +247,8 @@ Code: `engine/apply/runner.py`, `engine/apply/scheduler.py`, `engine/apply/draft
 ### 5. Feedback: learn from what comes back
 - **Inbox classifier.** Confirmation, rejection, online assessment, interview, offer, or scam, including previews that stop mid-sentence. Each outcome is linked to the applications it refers to. (`engine/feedback/inbox.py`)
 - **`learn`.** Response rates by lane and ATS. (`workspace/learnings.md`)
+- **Rejection feedback.** A `feedback` container reads the inbox every 30 minutes and compares rejected job descriptions with the rest. Phrases that keep showing up in rejections (and never where an OA or interview came back, and not already in your Fact Bank) become fit-gate blockers only when they are statistically significant after correcting for every phrase tested; the rest are watched. (`engine/feedback/rejections.py`, `workspace/feedback.md`)
+- **Gearbox.** `engine gear N|1|2|3|4` (or the `/gearbox` page) sets the applier range and scan interval in one shift; the clutch couples the learned phrases to the fit gate. (`engine/gearbox.py`)
 - **`report`.** Counts only applications whose latest status is submitted *and* whose proof screenshot exists on disk.
 - **Human queue.** Only what the engine can't answer from your presets or Fact Bank, with drafts that cite fact ids. (`workspace/human_queue.md`)
 

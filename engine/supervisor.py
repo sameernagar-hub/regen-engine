@@ -26,7 +26,7 @@ from engine.config import WORKSPACE
 
 FLEET = os.path.join(WORKSPACE, "fleet")
 BOX = os.path.join(WORKSPACE, "batches")
-STALE = {"applier": 120, "relay": 120, "pipeline": 30 * 60, "reposync": 5 * 60, "answers": 120}  # pipeline sleeps between passes; it beats on wake-up
+STALE = {"applier": 120, "relay": 120, "pipeline": 30 * 60, "reposync": 5 * 60, "answers": 120, "feedback": 30 * 60}  # pipeline sleeps between passes; it beats on wake-up
 CLAIM_STALE = 45 * 60  # a claimed batch older than this with no live applier on it was lost with its container
 
 
@@ -300,7 +300,7 @@ def clone(cid, rows):
 # is bounded, labeled, counted and audited, and a container of this project that compose did not declare is stopped.
 SCALABLE = {"applier", "eval"}  # the only services the supervisor may create containers for
 DECLARED = {"seed", "applier", "pipeline", "relay", "supervisor", "postgres", "ledger", "mcp", "answers", "api", "web",
-            "reposync", "eval", "desk"}  # deploy/bank.compose.yml services (tests/test_v014.py keeps the two in step)
+            "reposync", "eval", "desk", "feedback"}  # deploy/bank.compose.yml services (tests/test_v014.py keeps the two in step)
 CAPS = {"applier": {"NanoCpus": int(float(os.environ.get("REGEN_APPLIER_CPUS", "1.5")) * 1e9),
                     "Memory": int(os.environ.get("REGEN_APPLIER_MEM_MB", "2048")) * 2 ** 20,
                     "PidsLimit": int(os.environ.get("REGEN_APPLIER_PIDS", "1024"))},
@@ -469,7 +469,12 @@ HARD_MAX = 12  # never more appliers than this, whatever the override says (one 
 
 
 def limits(lo, hi):
-    """(min, max) appliers: the env defaults, unless `supervise --scale` wrote an override (kept across restarts)."""
+    """(min, max) appliers: the gearbox (engine/gearbox.py) when a gear is set, else `supervise --scale`'s override,
+    else the env defaults."""
+    from engine.gearbox import appliers
+    g = appliers()
+    if g is not None:
+        return _clamp(*g)
     try:
         o = json.load(open(LIMITS, encoding="utf-8"))
         lo, hi = int(o["min"]), int(o["max"])
@@ -697,10 +702,10 @@ def services(_fails={}):  # _fails: consecutive failed probes per service (kept 
     return out
 
 
-WATCHED = ("pipeline", "answers", "relay", "reposync")  # services that beat; appliers are matched by container id
+WATCHED = ("pipeline", "answers", "relay", "reposync", "feedback")  # services that beat; appliers are matched by container id
 # silence that means hung, per role: appliers beat every few seconds while they work; reposync blocks up to 30 min in
 # its test gate; the answers container builds a retry batch between beats. The pipeline uses STALE (30 min).
-HUNG = {"applier": 300, "relay": 300, "answers": 600, "reposync": 2400}
+HUNG = {"applier": 300, "relay": 300, "answers": 600, "reposync": 2400, "feedback": 1800}
 
 
 def liveness(now=None, _restarted={}):  # _restarted: container id -> when this watchdog last restarted it

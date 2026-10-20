@@ -4,6 +4,23 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-19 · feedback loop + gearbox
+- **Rejection feedback container** (`engine/feedback/rejections.py`, compose service `feedback`,
+  `python -m engine feedback [--watch m] [--no-imap] [--off "<phrase>"]`): every 30 min it reads the inbox over IMAP
+  (read-only), records outcomes, then compares the job descriptions of rejected applications with the rest. Requirement
+  sentences become 2-3 word phrases; a phrase is a candidate with 4+ rejected JDs, 1.5x the baseline rejection rate, no
+  OA / interview / offer where it appears, and no overlap with the Fact Bank (the gate learns what you lack, not what
+  the market dislikes). It **blocks** (fit gate: `learned: <phrase>`) only when the binomial tail times the number of
+  phrases tested is below 0.05; the rest are `proposed`, reported and watched. Why: the first pass over 42 rejections
+  promoted 15 boilerplate phrases ("problem solving", "apply even if"); with the correction all 15 stay proposed.
+  Report: `workspace/feedback.md`; rules: `workspace/learned_gate.json`. Verify: `tests/test_feedback.py`.
+- **Gearbox** (`engine/gearbox.py`, `python -m engine gear N|1|2|3|4 [--clutch on|off]`, `/api/control/gearbox`,
+  web `/gearbox`): one control for how hard the engine runs. A gear sets the applier range (the supervisor's
+  `limits()`) and the scan interval (the pipeline loop, applied within a minute); N idles the engine. The clutch
+  couples the learned rejection phrases to the fit gate. Safety limits are not gears (daily cap, Ashby 1 per pass,
+  HARD_MAX). The page is an animated constant-mesh gearbox driven by the crankshaft, with a sliding selector collar,
+  an H-pattern shifter and the feedback chain returning through the clutch; the home engine gained the gearbox part.
+
 ## [1.0.0] - 2026-10-17 · first public release
 - **Human draft override** (`engine/override.py`, `python -m engine draft on|off|status`; user, 10-17: "when I say
   draft, then draft"). While on, the engine answers instead of parking: agreements and arbitration accepted (the

@@ -351,12 +351,21 @@ def main(argv=None):
             beat("pipeline", state="KILLED: " + killed()[:80], **{"pass": n})
             time.sleep(30)
             continue
+        from engine.gearbox import loop_minutes
+        wait = loop_minutes(loop)
+        if wait is None:  # neutral: hold here, no scans, no batches (the supervisor scales appliers down)
+            beat("pipeline", state="neutral (gearbox)", **{"pass": n})
+            time.sleep(30)
+            continue
         beat("pipeline", state="scanning and tailoring", **{"pass": n + 1})
         run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125), hot=n > 0,  # later passes: hot boards
                    sources=n % SOURCES_EVERY == 0))
         n += 1  # disk hygiene (engine/clean.py) is the supervisor's job: hourly, one owner
-        print(f"loop: pass {n} done; next scan in {loop:g} min", flush=True)
-        for _ in range(int(loop)):  # one heartbeat a minute while idle
+        print(f"loop: pass {n} done; next scan in {wait:g} min", flush=True)
+        for _ in range(int(wait)):  # one heartbeat a minute while idle; a shift takes effect within the minute
             beat("pipeline", state="sleeping until next scan", **{"pass": n})
             time.sleep(60)
-        time.sleep(loop * 60 - int(loop) * 60)
+            if loop_minutes(loop) != wait:
+                break
+        else:
+            time.sleep(wait * 60 - int(wait) * 60)
