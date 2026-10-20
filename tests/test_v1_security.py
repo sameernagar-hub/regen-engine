@@ -92,6 +92,11 @@ def test_scale_never_retires_the_last_applier(tmp_path, monkeypatch):
     S.scale(1, 7, _idle={})
     assert not any(c[0] in ("POST", "DELETE") for c in calls if isinstance(c, tuple))
     assert not os.path.exists(S.drain_path("c" * 12)) and ("keep", "deploy-applier-3") in acts
+    # 10-19: gear N asks for 0-0 appliers; the last one still stays (else shifting back up could create nothing)
+    calls.clear(); acts.clear()
+    open(S.drain_path("c" * 12), "w").write("1")
+    S.scale(0, 0, _idle={})
+    assert not any(c[0] in ("POST", "DELETE") for c in calls if isinstance(c, tuple)) and ("keep", "deploy-applier-3") in acts
 
 
 def test_clean_drops_dead_heartbeats_only(tmp_path, monkeypatch):

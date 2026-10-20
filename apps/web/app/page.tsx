@@ -38,10 +38,14 @@ export default function EngineHome() {
   const [hot, setHot] = useState<string | null>(null);
   const [launch, setLaunch] = useState<string | null>(null);
   const [stat, setStat] = useState<Record<string, string>>({});
+  // public site: the real engine's ledger as of the last release (the demo data behind the pages is synthetic);
+  // your machine: live from the ledger
+  const [strip, setStrip] = useState({ boards: "~5,500", sent: "220", sentLabel: "applications submitted (as of 10-19)" });
 
   useEffect(() => {  // one live number per part, from the API on your machine or the proxy dataset on the public site
     const s: Record<string, string> = {};
     const put = (k: string, v: string) => { s[k] = v; setStat({ ...s }); };
+    if (!PUBLIC) get<any>("/api/snapshot").then((x) => setStrip({ boards: x.boards.toLocaleString(), sent: String(x.verified), sentLabel: "applications sent with proof" })).catch(() => {});
     get<any>("/api/snapshot").then((x) => { put("live", `${x.verified} sent with proof`); put("applications", `${x.verified} with proof`); put("room", `${x.boards.toLocaleString()} boards watched`); }).catch(() => {});
     get<any[]>("/api/human").then((x) => put("needs", `${x.length} waiting on you`)).catch(() => {});
     get<any>("/api/control/fleet").then((x) => put("control", `${x.members.filter((m: any) => m.role === "applier" && m.up).length} appliers running`)).catch(() => {});
@@ -85,7 +89,7 @@ export default function EngineHome() {
         <p>REGEN catches roles the hour they go live, writes a resume that only claims what you can prove, applies, and
           keeps a receipt for every submit. Zero model spend. Your machine, your data.</p>
         <ul className="proof-strip" aria-label="Measured in production">
-          <li><b>5,094</b> company boards watched</li><li><b>165</b> applications sent with proof</li><li><b>$0</b> in model costs</li>
+          <li><b>{strip.boards}</b> company boards watched</li><li><b>{strip.sent}</b> {strip.sentLabel}</li><li><b>$0</b> in model costs</li>
         </ul>
         {PUBLIC && <p className="demo-pill" title="Built by scripts/proxy_dataset.py: the real API over a synthetic engine">Interactive demo on synthetic data. Every part of the engine is a door: hover to wake it, click to step inside.</p>}
       </header>

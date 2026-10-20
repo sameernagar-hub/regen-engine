@@ -94,7 +94,7 @@ export async function proxyGet<T>(path: string): Promise<T> {
 // A run started here plays out on a clock: each step takes STEP seconds and writes the lines the real runner would.
 const STEP = 6;
 const LINES: Record<string, string[]> = {
-  discover: ["discover: polling 5,094 boards (greenhouse, lever, ashby)", "discover: 38 new postings in the window"],
+  discover: ["discover: polling ~5,500 boards on 9 ATSs", "discover: 38 new postings in the window"],
   newgrad: ["newgrad: 11 leads resolved to the employer's own ATS"],
   feed: ["feed: 6 roles from curated GitHub lists, 2 already seen"],
   apply: ["fit gate: 21 of 55 pass (14 years, 9 sponsorship, 6 grad window, 5 stack)", "compose: 21 one-page resumes, median JD coverage 88%",

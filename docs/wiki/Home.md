@@ -4,7 +4,7 @@
 
 REGEN is an open-source, local-first engine that runs a job search end to end:
 
-- **Finds** roles at the source: it polls ~5,900 company boards on nine ATSs and resolves alerts, lists and
+- **Finds** roles at the source: it polls ~5,500 company boards on nine ATSs and resolves alerts, lists and
   careers APIs back to the employer's own posting. Your AI client can add new sources over MCP.
 - **Rejects** roles you'd be screened out of before spending any effort on them.
 - **Writes** one resume per job from a Fact Bank of claims you can prove.
@@ -18,7 +18,7 @@ server with 43 tools, a privacy gate in CI and 235 tests.
 
 | Applications submitted | Boards polled | Biggest day | MCP tools | Tests |
 |---|---|---|---|---|
-| **220** (ledger, 10-19) | **~5,900** | **49** (2026-10-10) | **43** | **235** |
+| **220** (ledger, 10-19) | **~5,500** | **49** (2026-10-10) | **43** | **235** |
 
 ## The system in one picture
 

@@ -14,7 +14,7 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 
 **[Live demo](https://regen-engine.onrender.com)** · [How it works](https://github.com/sameernagar-hub/regen-engine/wiki/How-it-works) · [Quick start](#quick-start) · [Wiki](https://github.com/sameernagar-hub/regen-engine/wiki) · [Technical reference](https://github.com/sameernagar-hub/regen-engine/wiki/Technical-Reference)
 
-<a href="https://regen-engine.onrender.com"><img src="docs/assets/engine-home.png" alt="The REGEN front page: an animated radial engine whose parts open the app" width="100%"></a>
+<a href="https://regen-engine.onrender.com"><img src="docs/assets/engine-home.png" alt="The REGEN front page: an animated radial engine whose parts open the app, with the gearbox under the crankcase and the MCP cord plugged in; live strip: 5,493 boards watched, 151 applications sent with proof" width="100%"></a>
 
 </div>
 
@@ -25,7 +25,7 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 
 ## What REGEN does
 
-- **Gets there first.** Polls ~5,900 employer boards on 9 ATSs directly and applies within minutes of a posting. [Discovery →](https://github.com/sameernagar-hub/regen-engine/wiki/Discovery)
+- **Gets there first.** Polls ~5,500 employer boards on 9 ATSs directly, rescanning every few minutes, so roles are caught the hour they go live. [Discovery →](https://github.com/sameernagar-hub/regen-engine/wiki/Discovery)
 - **Never bluffs.** Every resume line comes from your Fact Bank; a validator rejects anything else. [Tailoring →](https://github.com/sameernagar-hub/regen-engine/wiki/Tailoring)
 - **Skips what you'd lose.** A fit gate reads the whole job description first: sponsorship, years, clearance, stack. [Fit gate →](https://github.com/sameernagar-hub/regen-engine/wiki/Fit-Gate)
 - **Learns from no.** Every rejection is read back and compared with the job descriptions that weren't rejected. [Feedback →](https://github.com/sameernagar-hub/regen-engine/wiki/Rejection-Feedback)
@@ -34,11 +34,11 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 
 ## By the numbers
 
-| 220 | 49 | ~5,900 | 43 | 0 |
+| 220 | 49 | ~5,500 | 43 | 0 |
 |:-:|:-:|:-:|:-:|:-:|
 | applications submitted | best day | employer boards watched | MCP tools | model API keys |
 
-From the engine's own ledger (`python -m engine report`); 235 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
+From the engine's own ledger as of 2026-10-19 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 235 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
 
 ## How it works
 
@@ -74,8 +74,8 @@ Step by step: [Running the engine](https://github.com/sameernagar-hub/regen-engi
 ## Guardrails
 
 Legal, sponsorship and EEO answers come only from your presets. CAPTCHAs and human checks always go to you.
-Personal data is only typed into employer-owned ATS forms that pass a scam check. Nothing leaves your machine;
-a privacy gate blocks company names and secrets from the repo. [Truthfulness and safety →](https://github.com/sameernagar-hub/regen-engine/wiki/Truthfulness-and-Safety)
+Personal data is only typed into employer-owned ATS forms that pass a scam check. Your data stays on your machine;
+the only things published are an anonymized activity feed and the code, and a privacy gate blocks names and secrets from both. [Truthfulness and safety →](https://github.com/sameernagar-hub/regen-engine/wiki/Truthfulness-and-Safety)
 
 ## Learn more
 

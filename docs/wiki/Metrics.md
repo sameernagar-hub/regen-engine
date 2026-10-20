@@ -7,7 +7,7 @@ published.
 |---|---|---|
 | Applications submitted | 220 to date (2026-10-19) | ledger: latest status `SUBMITTED` per posting; `python -m engine report` lists those whose proof is still on disk (proofs are pruned after 90 days) |
 | Best day | 49 (2026-10-10) | `python -m engine report 2026-10-10` |
-| Boards polled | ~5,900 live (6,300 incl. dead) | `workspace/boards.json`; a full scan prints the count |
+| Boards polled | ~5,500 live (5,900 listed, 405 of them dead) | `workspace/boards.json`; a full scan prints the count |
 | Fresh postings per full scan | ~3,400 before filtering | `python -m engine scan 1` output |
 | ATS read-back | 77–100% of matched JD terms | `resume` events → `coverage.ats.score` |
 | Scheduler throughput | ×2.05 (3 tabs), ×2.5 (4 tabs) vs sequential | `python scripts/bench_scheduler.py 20 3` (seeded) |

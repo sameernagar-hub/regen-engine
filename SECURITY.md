@@ -21,8 +21,8 @@ a pruned volume can't be recovered.
   | port | service | who may write |
   |---|---|---|
   | 3000 | web (control room UI) | nothing: it calls the API from your browser |
-  | 8787 | api | answers you type on /needs and reach marks, from this machine only |
-  | 8790 | mcp (HTTP) | read-only unless `REGEN_MCP_WRITE=1`; the kill switch always works |
+  | 8787 | api | answers you type on /needs, reach marks and gearbox shifts, from this machine only |
+  | 8790 | mcp (HTTP) | read-only unless `REGEN_MCP_WRITE=1` (the documented start command sets it so your AI client can drive every level, incl. adding discovery sources); the kill switch always works |
   | 8799 | code relay | a short JSON list of `{company, code, iso}` from the Gmail tab or curl |
   | 6080 | desk (noVNC) | you, with this start's password (see below) |
   | 5433 | postgres | password from the git-ignored `.pg_password` secret |
