@@ -362,10 +362,22 @@ def main():
     now = time.time()
     tmp = tempfile.mkdtemp(prefix="regen-proxy-")
     prof, ws = os.path.join(tmp, "profile"), os.path.join(tmp, "workspace")
-    os.environ.update(REGEN_PROFILE=prof, REGEN_WORKSPACE=ws, REGEN_API_WRITE="0", REGEN_DATABASE_URL="", REGEN_DB_HOST="")
+    os.environ.update(REGEN_PROFILE=prof, REGEN_WORKSPACE=ws, REGEN_API_WRITE="0", REGEN_DATABASE_URL="", REGEN_DB_HOST="",
+                      REGEN_MCP_URL="http://127.0.0.1:9/mcp", REGEN_MCP_WRITE="1")  # never probe a real bank from the build
     sys.path.insert(0, ROOT)
     profile(prof)
     jobs, proofs, resumes = workspace(ws, now)
+    # v1.1 gearbox + rejection feedback: gear 3, and what a feedback pass over the synthetic rejections looks like
+    json.dump({"gear": "3", "clutch": "on"}, open(os.path.join(ws, "gear.json"), "w"))
+    json.dump({"updated": time.strftime("%Y-%m-%d %H:%M:%S"), "stats": {"with_jd": 120, "rejected": 34, "positive": 3,
+               "baseline_rejection_rate": 0.28, "phrases_tested": 640},
+               "rules": [{"phrase": "active security clearance", "rejected": 11, "seen": 11, "rate": 1.0, "lift": 3.53,
+                          "p_adj": 0.0058, "evidence": "significant", "status": "active"},
+                         {"phrase": "problem solving", "rejected": 6, "seen": 10, "rate": 0.6, "lift": 2.12, "p_adj": 1.0,
+                          "evidence": "weak", "status": "proposed"},
+                         {"phrase": "embedded systems", "rejected": 4, "seen": 7, "rate": 0.57, "lift": 2.02, "p_adj": 1.0,
+                          "evidence": "weak", "status": "proposed"}]},
+              open(os.path.join(ws, "learned_gate.json"), "w"), indent=1)
     for f in resumes:
         lane = lane_of(f, jobs)
         open(os.path.join(ws, "out", f), "wb").write(pdf(["JANE DOE", "Example City, CA | jane@example.com | github.com/janedoe-demo",
@@ -382,7 +394,8 @@ def main():
     routes = ["/api/snapshot", "/api/applications?limit=2000", "/api/human", "/api/narration?limit=200", "/api/stations?recent=12",
               "/api/graph?questions=false", "/api/control/state", "/api/control/fleet", "/api/control/bench", "/api/control/evals?n=60",
               "/api/control/reach?limit=500", "/api/control/filters", "/api/reach/desk", "/api/reach/signins", "/api/reach/kit",
-              "/api/factbank", "/api/outreach", "/api/control/containers"]
+              "/api/factbank", "/api/outreach", "/api/control/containers",
+              "/api/control/gearbox", "/api/control/mcp"]
     manifest = {"generated": now, "note": "Synthetic data: fictional candidate and companies. Built by scripts/proxy_dataset.py.",
                 "routes": {}, "jobs": {}}
     for r in routes:
@@ -390,7 +403,11 @@ def main():
         if res.status_code != 200:
             raise SystemExit(f"{r}: HTTP {res.status_code} {res.text[:300]}")
         name = r.split("?")[0].removeprefix("/api/").replace("/", "_") + ".json"
-        json.dump(res.json(), open(os.path.join(OUT, name), "w", encoding="utf-8"), separators=(",", ":"))
+        body = res.json()
+        if r == "/api/control/mcp":  # the build probes nothing: show the demo's bank socket as plugged in
+            body["servers"][0].update(up=True, ms=12, url="http://127.0.0.1:8790/mcp")
+            body["servers"][0].pop("error", None)
+        json.dump(body, open(os.path.join(OUT, name), "w", encoding="utf-8"), separators=(",", ":"))
         manifest["routes"][r.split("?")[0]] = name
     for j in jobs:
         res = c.get("/api/job", params={"url": j["url"]})

@@ -21,6 +21,9 @@
 - [Efficiency](Efficiency)
 - [Benchmarks](Benchmarks)
 - [Outcomes and learning](Outcomes-and-Learning)
+- [Rejection feedback](Rejection-Feedback)
+- [Gearbox](Gearbox)
+- [MCP tools](MCP-Tools)
 - [Platform](Platform)
 - [Control room](Control-Room)
 
@@ -34,3 +37,4 @@
 - [Decisions](Decisions)
 - [Roadmap](Roadmap)
 - [FAQ](FAQ)
+- [Technical reference](Technical-Reference)

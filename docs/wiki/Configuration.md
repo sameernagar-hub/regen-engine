@@ -31,6 +31,15 @@ Everything personal lives in `profile/` (git-ignored; start from `profile.exampl
 | `REGEN_DATABASE_URL` | – | Postgres mirror |
 | `REGEN_WORKSPACE`, `REGEN_PROFILE`, `REGEN_FACT_BANK`, `REGEN_PRESETS` | repo paths | relocate data (tests use `profile.example/`) |
 
+### v1.1 additions
+| Variable / file | Default | What it does |
+|---|---|---|
+| `REGEN_MCP_WRITE` | `0` | `1` lets MCP clients use write tools (the Docker start command sets it for the bank MCP) |
+| `REGEN_API_GEAR` | `1` in the bank | lets the control room shift gears |
+| `workspace/gear.json` | gear 3, clutch on | the gearbox: `python -m engine gear N/1/2/3/4 [--clutch on/off]` |
+| `workspace/learned_gate.json` | none | rules from the feedback loop: `python -m engine feedback --off "<phrase>"` |
+| `workspace/sources.json` | none | job-list feeds added over MCP (harvested with the built-in ones) |
+
 ## CLI reference
 
 `scan · newgrad · alerts · feed · bigtech · boards · watch · batch · tailor · inspect · apply · codes · status ·

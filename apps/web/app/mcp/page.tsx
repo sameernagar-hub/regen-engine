@@ -5,7 +5,6 @@
 // the engine it drives; writes need REGEN_MCP_WRITE=1 on the server (the kill switch always works).
 import { useEffect, useMemo, useState } from "react";
 import { Nav } from "../nav";
-import { PUBLIC } from "@/lib/engine";
 import { get } from "@/lib/types";
 
 type Tool = { name: string; about: string; group: string; writes: boolean };
@@ -23,14 +22,6 @@ const PARTS: Record<string, { label: string; tone: string; about: string }> = {
   ledger: { label: "Ledger", tone: "#ff7eb6", about: "the Postgres copy of every event" },
   repo: { label: "Repo", tone: "#7d8796", about: "repo sync: feed and pull requests" },
 };
-const DEMO: Data = {
-  servers: [{ name: "regen-bank", transport: "HTTP (bank container)", url: "http://127.0.0.1:8790/mcp", up: true, ms: 40 },
-            { name: "regen-engine", transport: "stdio (your AI client starts it)", up: null }],
-  write_enabled: false, groups: { memory: 9, pipeline: 8, answers: 6, fleet: 6, gearbox: 3, ledger: 2, repo: 1 },
-  tools: [{ name: "engine_status", about: "Proof-backed counts.", group: "memory", writes: false },
-          { name: "gear_shift", about: "Shift the engine. Needs REGEN_MCP_WRITE=1.", group: "gearbox", writes: true },
-          { name: "fleet_status", about: "Every container's heartbeat.", group: "fleet", writes: false }],
-};
 const CONFIG = `{
   "mcpServers": {
     "regen-engine": { "command": "python", "args": ["-m", "engine", "mcp"] },
@@ -43,7 +34,7 @@ export default function Mcp() {
   const [err, setErr] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   useEffect(() => {
-    const pull = () => (PUBLIC ? Promise.resolve(DEMO) : get<Data>("/api/control/mcp")).then(setD).catch((e) => setErr(e.message));
+    const pull = () => get<Data>("/api/control/mcp").then(setD).catch((e) => setErr(e.message));
     pull();
     const t = setInterval(pull, 20000);
     return () => clearInterval(t);

@@ -29,6 +29,11 @@ exists. Counts in the README and wiki come from this command. Nothing else is co
 Response rates by lane and by ATS (applied, any reply, OA, interview, rejection) → `workspace/learnings.md`. This
 is the reward signal for future strategy choices (lane, timing, source).
 
+## Rejection feedback (v1.1)
+
+The `feedback` container reads the inbox every 30 minutes and compares rejected job descriptions with the rest; a
+phrase blocks only when it is significant after a multiple-test correction. Details: [Rejection feedback](Rejection-Feedback).
+
 ## The rejection log
 
 Each rejection: read the body, re-read the stored JD (`workspace/jd/`), find the cause, add a fit-gate or form rule

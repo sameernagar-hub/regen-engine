@@ -12,6 +12,12 @@ machine **and** a request from localhost.
 | `/room`, `/room/[stage]`, `/job` | each stage as a room with its live log; one job's full timeline | `/api/stations`, `/api/job` |
 | `/graph` | the knowledge graph, layer by layer | `/api/graph` |
 
+## Gearbox and MCP pages (v1.1)
+
+- `/gearbox`: the animated constant-mesh gearbox (H-pattern shifter, clutch, live speed, learned-rule table). See [Gearbox](Gearbox).
+- `/mcp`: the cord from your AI client to the engine, both MCP sockets live, every tool on its engine part. See [MCP tools](MCP-Tools).
+- The home engine gained both parts: the gearbox under the crankcase and the MCP plug wired into it.
+
 ## Design system (v0.11)
 - **Living backdrop**: a canvas field whose points belong to the five stages; every real engine event (SSE) pulses
   it in that stage's color. Paused when the tab is hidden; a still frame under reduced motion.

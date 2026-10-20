@@ -13,11 +13,15 @@ Ordered by expected impact on verified applications per hour, then by reach.
 | Retrieval memory (pgvector) | pick facts by meaning, not only by term overlap | facts and JDs as vectors; MCP tools |
 | Bandit over strategy | learn which lane, source and timing earn replies | reward = reply or passing the screen |
 | Engine room GPU view | readable at a glance, still uncluttered | instanced board field, glowing pipeline, 3D lane tree |
-| v1.0 | anyone can run it | one-command setup, docs site, stable APIs |
+| Learned rules that block | the feedback loop needs more rejections before a phrase is significant | keep the significance test; never lower it to get rules |
+| One-command setup | anyone can run it | docs site, stable APIs |
 
 Related: [Decisions](Decisions.md) · [Architecture](Architecture.md) · [Metrics](Metrics.md)
 
 ## Done recently
+- v1.1: rejection feedback container (Bonferroni-gated rules), gearbox (gears + clutch), MCP at every level (43
+  tools, discovery sources an AI can add), `/gearbox` and `/mcp` pages, short README.
+- v1.0: public release after a security review of every local service.
 - v0.12: Docker execution room and data bank, atomic-claim workers, freshness bands, onsite priority, code relay
   (hands-free codes without an app password), queue prune, disk hygiene, system benchmarks.
 - v0.10 / v0.11: title gate for non-software disciplines, control room, trust gate, first-applicant loop, priority.

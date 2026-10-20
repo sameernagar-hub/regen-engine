@@ -18,6 +18,13 @@ resolved back to the employer's own posting before anything is applied to.
 | Reach ATSs (v0.13) | SmartRecruiters Posting API (100/page), Workday `cxs` search (20/POST, stops at week-old postings), iCIMS search HTML (first-seen dates) | 1-8 per board | `ats.py`, `reach.py` |
 | Big-tech careers APIs | Amazon `search.json` (full JD inline), NVIDIA Workday `cxs` (search + 1 GET per kept job) | ~8 + kept | `bigtech.py` |
 
+## Sources an AI adds (v1.1)
+
+`engine/discovery/sources.py`, reached over MCP ([MCP tools](MCP-Tools)): `boards_add` (any ATS job or board URL),
+`feed_add` (a job-list README / JSON: harvested now and on every `engine harvest`, kept in `workspace/sources.json`),
+`companies_probe` (names -> guessed board tokens on the sluggable ATSs), `leads_add` (company + title, matched on the
+employer's own board and queued), `harvest_now`, `discovery_sources`. Max 50 per call; each add is a `source` event.
+
 ## Board registry
 
 `workspace/boards.json` holds ~5,500 boards across the four ATSs. `engine boards harvest` grows it from public GitHub

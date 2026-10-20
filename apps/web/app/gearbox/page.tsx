@@ -26,15 +26,6 @@ const GEARS: Record<string, { appliers: number[]; loop_min: number | null; label
   "3": { appliers: [1, 7], loop_min: 3, label: "drive: up to 7 appliers, scan every 3 min" },
   "4": { appliers: [2, 9], loop_min: 2, label: "overdrive: 2-9 appliers, scan every 2 min" },
 };
-const DEMO: Box = {  // public site: a working box on synthetic numbers (shifts are simulated in the page)
-  gear: { gear: "3", clutch: "on", ...GEARS["3"], gears: Object.fromEntries(Object.entries(GEARS).map(([k, v]) => [k, v.label])) },
-  fleet: { appliers_up: 3, inbox: 2, claimed: 1, verdict: "ok" }, speed: { last_hour: 4, last_24h: 31 },
-  outcomes: { confirmation: 120, rejection: 42, oa: 3 },
-  feedback: { updated: "demo", stats: { rejected: 42, with_jd: 149, baseline_rejection_rate: 0.28, phrases_tested: 1800, positive: 0 },
-              rules: [{ phrase: "active security clearance", rejected: 9, seen: 9, rate: 1, lift: 3.6, p_adj: 0.02, status: "active" },
-                      { phrase: "problem solving", rejected: 6, seen: 10, rate: 0.6, lift: 2.1, p_adj: 1, status: "proposed" }] },
-};
-
 // geometry: module 5 (pitch radius = 5 x teeth), so any two gears here mesh
 const M = 5;
 const ENGINE = { x: 170, y: 360, n: 22 };
@@ -81,7 +72,7 @@ export default function Gearbox() {
   const clutch = box?.gear.clutch !== "off";
 
   useEffect(() => {
-    const pull = () => (PUBLIC ? Promise.resolve(DEMO) : get<Box>("/api/control/gearbox")).then((b) => setBox((o) => (PUBLIC && o ? o : b))).catch((e) => setMsg(`gearbox unreachable: ${e.message}`));
+    const pull = () => get<Box>("/api/control/gearbox").then(setBox).catch((e) => setMsg(`gearbox unreachable: ${e.message}`));
     pull();
     const t = setInterval(pull, 15000);
     return () => clearInterval(t);
@@ -122,13 +113,8 @@ export default function Gearbox() {
     setBusy(true);
     setMsg("");
     try {
-      if (PUBLIC) {
-        const next = { ...box.gear, ...(g ? { gear: g, ...GEARS[g] } : {}), ...(c ? { clutch: c } : {}) };
-        setBox({ ...box, gear: next });
-        setMsg("Demo: shifting is simulated on the public site.");
-      } else {
-        setBox(await post<Box>("/api/control/gearbox", { ...(g ? { gear: g } : {}), ...(c ? { clutch: c } : {}) }));
-      }
+      setBox(await post<Box>("/api/control/gearbox", { ...(g ? { gear: g } : {}), ...(c ? { clutch: c } : {}) }));
+      if (PUBLIC) setMsg("Demo: shifting is simulated in this tab on the public site.");
     } catch (e: any) {
       setMsg(e.message);
     } finally {

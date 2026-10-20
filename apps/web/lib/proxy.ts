@@ -13,6 +13,7 @@ const overlay = {
   marks: new Map<string, { mark: string; ts: string }>(),
   run: null as any,
   filters: null as any,
+  gear: null as any,                                  // gearbox shifts in this tab
 };
 
 const load = (name: string) => {
@@ -75,6 +76,12 @@ export async function proxyGet<T>(path: string): Promise<T> {
     case "/api/control/filters":
       if (overlay.filters) d = overlay.filters;
       break;
+    case "/api/control/gearbox":
+      if (overlay.gear) {
+        const g = overlay.gear.gear ?? d.gear.gear;
+        d = { ...d, gear: { ...d.gear, ...overlay.gear, gear: g, label: d.gear.gears[g], appliers: GEAR_APPLIERS[g], loop_min: GEAR_LOOP[g] } };
+      }
+      break;
     case "/api/control/reach":
       d = { ...d, write: true, rows: d.rows.map((r: any) => overlay.marks.has(r.url) ? { ...r, mark: overlay.marks.get(r.url)!.mark, marked: overlay.marks.get(r.url)!.ts } : r) };
       d.marks = d.rows.reduce((c: any, r: any) => ({ ...c, [r.mark]: (c[r.mark] || 0) + 1 }), {});
@@ -110,9 +117,14 @@ function playRun(run: any) {
 }
 
 // Writes are acted out in this tab: the page behaves the way it does on your machine, and a reload resets it.
+const GEAR_APPLIERS: Record<string, number[]> = { N: [0, 0], "1": [1, 1], "2": [1, 3], "3": [1, 7], "4": [2, 9] };
+const GEAR_LOOP: Record<string, number | null> = { N: null, "1": 10, "2": 5, "3": 3, "4": 2 };
 export async function proxyPost<T>(path: string, body: any): Promise<T> {
   const p = path.split("?")[0];
   switch (p) {
+    case "/api/control/gearbox":
+      overlay.gear = { ...(overlay.gear || {}), ...(body.gear ? { gear: String(body.gear).toUpperCase() } : {}), ...(body.clutch ? { clutch: body.clutch } : {}) };
+      return proxyGet<T>("/api/control/gearbox");
     case "/api/answers":
       overlay.answered.add(body.question);
       return { pattern: String(body.question).toLowerCase(), answer: body.answer, source: "web app (demo)" } as T;
