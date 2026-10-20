@@ -1,7 +1,7 @@
 # Handoff: 10-19 ~21:30. Stack is UP (gear 3, clutch on). Feedback loop + gearbox shipped (local commit).
 
 ## START (if down)
-`cd regen-engine && REGEN_DAYS=30 REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_ASHBY_PER_PASS=1 REGEN_LOOP_MIN=3 REGEN_SOURCES_EVERY=3 REGEN_MAX=150 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
+`cd regen-engine && REGEN_MCP_WRITE=1 REGEN_DAYS=30 REGEN_MAX_PER_DAY=150 REGEN_TABS=4 REGEN_ASHBY_PER_PASS=1 REGEN_LOOP_MIN=3 REGEN_SOURCES_EVERY=3 REGEN_MAX=150 docker compose -f deploy/bank.compose.yml up -d --scale applier=1`
 Speed is now the gearbox: http://127.0.0.1:3000/gearbox or `docker exec -u 10001 deploy-pipeline-1 python -m engine gear 3`.
 After a new compose service, recreate the supervisor FIRST: an old supervisor stops undeclared services (it killed
 `feedback` once with exit 137).
@@ -16,7 +16,12 @@ After a new compose service, recreate the supervisor FIRST: an old supervisor st
 - Mis-submit found in today's report: an automotive "trim design release" role passed via "release engineer"
   titles -> automotive design words are non-software titles now (test added).
 
+- MCP at every level: 43 tools; discovery tools add boards / feeds / leads straight to the discover stage. Bank MCP
+  writes ON (`REGEN_MCP_WRITE=1` in the start command). Claude Code: both servers registered at local scope on the
+  workspace root (regen-engine folder itself is not trusted yet; its .mcp.json stays pending until you trust it).
+
 ## Next
+0. Use the discovery MCP each session: `discovery_sources`, then `feed_add` / `companies_probe` / `leads_add`.
 1. Let reposync open the PR for this commit; fast-forward main after CI (user OK).
 2. The public proxy dataset has no /api/control/gearbox: the page falls back to built-in demo numbers; add it to
    scripts/proxy_dataset.py when the site is next rebuilt.

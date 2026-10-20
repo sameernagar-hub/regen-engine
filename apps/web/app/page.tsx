@@ -25,12 +25,13 @@ const CORE: Part = { key: "room", href: "/room", label: "Engine room", about: "T
 const FUEL: Part = { key: "facts", href: "/facts", label: "Fact Bank", about: "The fuel: every claim a resume may make, and which resumes burned it.", tone: "#f2c14e" };
 const WIRES: Part = { key: "graph", href: "/graph", label: "Memory graph", about: "The wiring: you, lanes, applications, companies, facts and outcomes, connected.", tone: "#5ee6b5" };
 const GEARBOX: Part = { key: "gearbox", href: "/gearbox", label: "Gearbox", about: "Shift the engine's speed (appliers, scan rate) and see what rejections taught it, fed back through the clutch.", tone: "#5ee6b5" };
-const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES];
+const CORD: Part = { key: "mcp", href: "/mcp", label: "MCP cord", about: "Your AI client plugs in here and operates the engine at zero cost: 35 tools, from memory to the gearbox.", tone: "#5ee6b5" };
+const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD];
 const FIRING = [0, 2, 4, 6, 1, 3, 5];  // radial engines fire every other cylinder
 
 const ang = (i: number) => -90 + (i * 360) / CYL.length;
 const at = (deg: number, r: number) => [CX + Math.cos((deg * Math.PI) / 180) * r, CY + Math.sin((deg * Math.PI) / 180) * r];
-const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 };
+const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 }, PLUG = { x: 150, y: 150 };
 
 export default function EngineHome() {
   const router = useRouter();
@@ -48,6 +49,7 @@ export default function EngineHome() {
     get<any[]>("/api/outreach").then((x) => put("outreach", `${x.length} drafts`)).catch(() => {});
     get<any>("/api/control/evals?n=60").then((x) => put("evals", `${x.runs.length} benchmark runs`)).catch(() => {});
     get<any>("/api/control/gearbox").then((x) => put("gearbox", `gear ${x.gear.gear}, ${x.feedback.stats.rejected ?? 0} rejections read`)).catch(() => {});
+    get<any>("/api/control/mcp").then((x) => put("mcp", `${x.tools.length} tools, bank ${x.servers[0].up ? "up" : "down"}`)).catch(() => {});
     get<any>("/api/factbank").then((x) => { put("facts", `${x.facts.length} facts, ${x.resumes_built} resumes`); put("graph", `${x.roles.length + x.facts.length + x.projects.length}+ nodes`); }).catch(() => {});
   }, []);
 
@@ -63,7 +65,7 @@ export default function EngineHome() {
     if (!launch) return null;
     const i = CYL.findIndex((c) => c.key === launch);
     if (i >= 0) { const [x, y] = at(ang(i), 190); return { x, y }; }
-    return launch === "facts" ? TANK : launch === "graph" ? HARNESS : launch === "gearbox" ? GBX : { x: CX, y: CY };
+    return launch === "facts" ? TANK : launch === "graph" ? HARNESS : launch === "gearbox" ? GBX : launch === "mcp" ? PLUG : { x: CX, y: CY };
   }, [launch]);
   const part = (p: Part) => ({
     role: "link" as const, tabIndex: 0, "aria-label": `${p.label}: ${p.about}`,
@@ -123,6 +125,18 @@ export default function EngineHome() {
             <text className="part-label" x={TANK.x} y={TANK.y + 112}>Fact Bank</text>
           </g>
 
+          {/* the MCP cord: your AI client's plug, wired into the crankcase (drawn behind the cylinders) */}
+          <g {...part(CORD)}>
+            <path id="mcpcord" className="mcp-cord" d={`M ${PLUG.x + 22} ${PLUG.y + 10} C ${PLUG.x + 160} ${PLUG.y + 20} ${CX - 200} ${CY - 60} ${CX - 60} ${CY - 20}`} />
+            <circle className="mcp-spark" r={5}><animateMotion dur="2.6s" repeatCount="indefinite" path={`M ${PLUG.x + 22} ${PLUG.y + 10} C ${PLUG.x + 160} ${PLUG.y + 20} ${CX - 200} ${CY - 60} ${CX - 60} ${CY - 20}`} /></circle>
+            <g transform={`translate(${PLUG.x} ${PLUG.y})`}>
+              <rect className="mcp-plug" x={-22} y={-14} width={44} height={48} rx={8} />
+              <rect className="mcp-pin" x={-14} y={-24} width={6} height={12} rx={2} /><rect className="mcp-pin" x={8} y={-24} width={6} height={12} rx={2} />
+              <rect className="hit" x={-50} y={-40} width={100} height={100} />
+            </g>
+            <text className="part-label" x={PLUG.x} y={PLUG.y + 62}>MCP cord</text>
+          </g>
+
           {/* gearbox under the crankcase: the crank drives it down the shaft, feedback climbs back up the dashed line */}
           <g {...part(GEARBOX)}>
             <line className="gbx-shaft" x1={CX - 3} y1={CY + 96} x2={CX - 3} y2={GBX.y - 34} />
@@ -175,7 +189,7 @@ export default function EngineHome() {
 
       <aside className={`engine-card${info ? " on" : ""}`} aria-live="polite" style={info ? { ["--tone" as any]: info.tone } : undefined}>
         {info ? (<><b>{info.label}</b><span className="stat">{stat[info.key] || "·"}</span><p>{info.about}</p><small>click to open</small></>)
-              : (<><b>Eleven parts, one engine</b><p>Discover, judge, write, apply, hear back. Pick a part.</p></>)}
+              : (<><b>Twelve parts, one engine</b><p>Discover, judge, write, apply, hear back. Pick a part.</p></>)}
       </aside>
 
       <nav className="engine-list" aria-label="Engine parts">

@@ -20,6 +20,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   couples the learned rejection phrases to the fit gate. Safety limits are not gears (daily cap, Ashby 1 per pass,
   HARD_MAX). The page is an animated constant-mesh gearbox driven by the crankshaft, with a sliding selector collar,
   an H-pattern shifter and the feedback chain returning through the clutch; the home engine gained the gearbox part.
+- **MCP at every level** (user, 10-19: "everything could be controlled by AI"): 43 tools. New: discovery
+  (`discovery_sources`, `boards_add`, `feed_add`, `companies_probe`, `leads_add`, `harvest_now`; module
+  `engine/discovery/sources.py`, added feeds in `workspace/sources.json`, every add an audited `source` event), fit gate
+  (`fit_check`, `feedback_rule_off`), gearbox (`gearbox_status`, `gear_shift`, `feedback_rules`). An AI client finds new
+  places jobs are posted and feeds them to the discover stage; the fit gate, trust gate and caps still decide. The bank
+  MCP runs with `REGEN_MCP_WRITE=1` (127.0.0.1 only). Web `/mcp` ("the cord": both sockets live, tools per engine level,
+  write badges) via `/api/control/mcp`; the home engine gained the MCP plug. First use: one new job-list feed, +71 boards.
+- **Rules**: "phonetic spelling / pronunciation of your name" answers the name as written (the pronoun decline matched
+  "pronounce" and parked a job).
 
 ## [1.0.0] - 2026-10-17 · first public release
 - **Human draft override** (`engine/override.py`, `python -m engine draft on|off|status`; user, 10-17: "when I say

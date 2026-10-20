@@ -509,8 +509,11 @@ def harvest_urls(urls):
     return found
 
 
-def harvest(feeds=HARVEST_FEEDS):
-    """Grow boards.json with every ATS board referenced by the public GitHub job lists."""
+def harvest(feeds=None):
+    """Grow boards.json with every ATS board referenced by the public GitHub job lists (+ feeds added over MCP)."""
+    if feeds is None:
+        from engine.discovery.sources import feeds as all_feeds
+        feeds = all_feeds()
     b = load_boards()
     before = {a: len(set(b[a])) for a in ATS}
     urls = []

@@ -111,3 +111,36 @@ def test_phonetic_name_answers_the_name_not_a_decline():
     a = runner.answer_for(q, {})
     assert a and a != "__DECLINE__" and runner.P["first_name"] in str(a)
     assert runner.answer_for("Pronouns", {}) == "__DECLINE__"
+
+
+def test_mcp_catalog_includes_gearbox_and_marks_writes(monkeypatch):
+    from apps.api import control
+    monkeypatch.setenv("REGEN_MCP_URL", "http://127.0.0.1:9/mcp")  # nothing listens: probe reports down, never raises
+    d = control.mcp_servers()
+    names = {t["name"]: t for t in d["tools"]}
+    assert {"gearbox_status", "gear_shift", "feedback_rules"} <= set(names)
+    assert names["gear_shift"]["writes"] and not names["gearbox_status"]["writes"]
+    assert names["gear_shift"]["group"] == "gearbox" and d["servers"][0]["up"] is False
+
+
+def test_mcp_discovery_adds_boards_and_feeds(tmp_path, monkeypatch):
+    """An AI client's new sources land where the discover stage reads: boards.json and sources.json."""
+    from engine.discovery import ats as A, sources as SRC
+    monkeypatch.setattr(A, "WORKSPACE", str(tmp_path))
+    monkeypatch.setattr(SRC, "SOURCES", str(tmp_path / "sources.json"))
+    monkeypatch.setattr(SRC, "record", lambda *a, **k: {})
+    r = SRC.add_boards(["https://boards.greenhouse.io/acmerobotics/jobs/123", "https://jobs.ashbyhq.com/Zeta/abc",
+                        "https://example.com/careers"])
+    b = A.load_boards()
+    assert "acmerobotics" in b["greenhouse"] and "Zeta" in b["ashby"]
+    assert r["not_an_ats_url"] == ["https://example.com/careers"]
+    assert SRC.add_boards(["https://boards.greenhouse.io/acmerobotics/jobs/9"])["added"] == {}  # already watched
+
+    class Resp:
+        def __init__(self, t): self.t = t
+        def read(self): return self.t.encode()
+    monkeypatch.setattr(SRC.urllib.request, "urlopen", lambda *a, **k: Resp("| Acme | [apply](https://jobs.lever.co/acmeco/1) |"))
+    f = SRC.add_feed("https://raw.githubusercontent.com/x/y/main/README.md")
+    assert f["boards_added"] == 1 and "acmeco" in A.load_boards()["lever"]
+    assert "https://raw.githubusercontent.com/x/y/main/README.md" in SRC.feeds()
+    assert SRC.add_feed("http://insecure.example/list")["error"]

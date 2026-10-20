@@ -355,6 +355,101 @@ def reposync_status(n: int = 10) -> dict:
     return {"heartbeat": beat_, "recent": read("reposync")[-max(1, min(n, 100)):]}
 
 
+# ---- gearbox + feedback loop (v1.1) ----
+@mcp.tool(description="The gearbox: current gear (N, 1-4), the clutch, what they set (applier range, scan interval), "
+                      "live speed (submissions in the last hour / 24 h) and the rejection feedback's learned rules.")
+def gearbox_status() -> dict:
+    from apps.api.control import gearbox
+    return gearbox()
+
+
+@mcp.tool(description="Shift the engine: gear N (idle), 1 (crawl) .. 4 (overdrive), and/or clutch on|off (learned "
+                      "rejection phrases block postings or not). Safety caps are not gears. Needs REGEN_MCP_WRITE=1.")
+def gear_shift(gear: str = "", clutch: str = "") -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    from engine import gearbox as GB
+    try:
+        return GB.shift(gear or None, clutch or None, by="mcp")
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@mcp.tool(description="Rejection feedback: what rejected job descriptions asked for that the others did not, each phrase's "
+                      "evidence (rejected / seen / lift / adjusted p) and status (active blocks, proposed is watched).")
+def feedback_rules() -> dict:
+    from engine.feedback.rejections import load_gate
+    return load_gate()
+
+
+# ---- discovery level: an AI client finds new places jobs are posted and feeds them to the discover stage ----
+def _no_write():
+    return None if WRITE else {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+
+
+@mcp.tool(description="Discovery sources: boards watched per ATS, queue size, built-in and added job-list feeds, and the "
+                      "last sources added (by whom). Start here before looking for new places to find jobs.")
+def discovery_sources() -> dict:
+    from engine.discovery.sources import stats
+    return stats()
+
+
+@mcp.tool(description="Watch new employer boards: pass job or board URLs on any ATS the engine knows (Greenhouse, Ashby, "
+                      "Lever, Workable, SmartRecruiters, Workday, iCIMS, Rippling, JazzHR). Max 50 per call; the next "
+                      "pipeline pass scans them. Needs REGEN_MCP_WRITE=1.")
+def boards_add(urls: list[str]) -> dict:
+    from engine.discovery.sources import add_boards
+    return _no_write() or add_boards(urls)
+
+
+@mcp.tool(description="Add a job list (a README or JSON on https, e.g. a GitHub new-grad list) whose links point at ATS "
+                      "boards: harvested now and on every `engine harvest`. Needs REGEN_MCP_WRITE=1.")
+def feed_add(url: str) -> dict:
+    from engine.discovery.sources import add_feed
+    return _no_write() or add_feed(url)
+
+
+@mcp.tool(description="Company names (max 50) -> probe the ATSs whose board tokens can be guessed; boards with open jobs "
+                      "are watched from the next pass. Use it on companies you found hiring elsewhere. Needs REGEN_MCP_WRITE=1.")
+def companies_probe(names: list[str]) -> dict:
+    from engine.discovery.sources import probe_companies
+    return _no_write() or probe_companies(names)
+
+
+@mcp.tool(description="Job leads seen anywhere (job sites, posts, newsletters): [{company, title, url?}] (max 50). Each is "
+                      "matched on the employer's own ATS and queued; the fit gate still decides. Needs REGEN_MCP_WRITE=1.")
+def leads_add(leads: list[dict]) -> dict:
+    from engine.discovery.sources import add_leads
+    return _no_write() or add_leads(leads)
+
+
+@mcp.tool(description="Harvest every job-list feed (built-in + added) for new ATS boards now. Needs REGEN_MCP_WRITE=1.")
+def harvest_now() -> dict:
+    if not WRITE:
+        return _no_write()
+    from engine.discovery import ats
+    return {a: {"before": b, "after": n} for a, (b, n) in ats.harvest().items()}
+
+
+# ---- fit gate level ----
+@mcp.tool(description="Run the fit gate on a job description (and title): hard blockers found (sponsorship, years, "
+                      "clearance, stack, learned rejection phrases...) and whether the title passes your filters.")
+def fit_check(description: str, title: str = "", location: str = "United States") -> dict:
+    from engine.discovery.filters import keep, load_domain
+    from engine.tailoring.tailor import fit
+    return {"blockers": fit(description), "title_gate": keep(load_domain(), title, location) if title else None}
+
+
+@mcp.tool(description="Stop a learned rejection phrase from blocking postings (the feedback loop keeps it off). "
+                      "Needs REGEN_MCP_WRITE=1.")
+def feedback_rule_off(phrase: str) -> dict:
+    if not WRITE:
+        return _no_write()
+    from engine.feedback.rejections import load_gate, turn_off
+    turn_off(phrase.strip().lower())
+    return load_gate()
+
+
 def main(argv=None):
     """stdio by default (Claude Code / Desktop on this machine); `--http [PORT]` serves streamable HTTP at /mcp (the
     bank's `mcp` container, published on 127.0.0.1 only). DNS-rebinding protection allows only localhost hosts."""

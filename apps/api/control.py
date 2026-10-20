@@ -550,3 +550,41 @@ def shift(body: dict, request: Request):
     except ValueError as e:
         raise HTTPException(422, str(e))
     return gearbox()
+
+
+# ---------------- MCP: the cord any AI client drives the engine with (engine/connectors/mcp_server.py) ----------------
+MCP_GROUPS = [("discovery", r"discovery|boards_add|feed_add|companies_probe|leads_add|harvest|job_queue|priority"),
+              ("fitgate", r"fit_check|feedback_rule|trust_check|filters"), ("gearbox", r"gear|feedback"), ("fleet", r"fleet|kill|scale|audit|quarantine"),
+              ("pipeline", r"pipeline|run_|codes|control_state|job_queue|priority"),
+              ("answers", r"answer|needs|human|inbox"), ("ledger", r"ledger"), ("repo", r"reposync"),
+              ("memory", r".")]
+
+
+@router.get("/control/mcp")
+def mcp_servers():
+    """Both MCP servers (stdio on your machine, HTTP in the bank), each tool with its level and whether it writes,
+    and a live initialize probe of the bank's HTTP endpoint. O(tools)."""
+    import asyncio, urllib.request
+    from engine.connectors.mcp_server import mcp, WRITE as MCP_WRITE
+    tools = []
+    for t in asyncio.run(mcp.list_tools()):
+        d = t.description or ""
+        group = next(g for g, rx in MCP_GROUPS if re.search(rx, t.name))
+        tools.append({"name": t.name, "about": d, "group": group,
+                      "writes": "REGEN_MCP_WRITE=1" in d or t.name in ("kill", "answer_queue_add")})
+    url = os.environ.get("REGEN_MCP_URL") or ("http://mcp:8790/mcp" if os.environ.get("REGEN_ANSWER_QUEUE") == "1"
+                                               else "http://127.0.0.1:8790/mcp")
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+        "protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "regen-api", "version": "1"}}}).encode()
+    probe = {"url": url.replace("mcp:8790", "127.0.0.1:8790"), "up": False}
+    t0 = time.time()
+    try:
+        req = urllib.request.Request(url, body, {"content-type": "application/json", "accept": "application/json, text/event-stream"})
+        with urllib.request.urlopen(req, timeout=4) as r:
+            probe.update(up=r.status == 200, ms=round((time.time() - t0) * 1000))
+    except Exception as e:
+        probe["error"] = type(e).__name__
+    return {"servers": [{"name": "regen-bank", "transport": "HTTP (bank container)", **probe},
+                        {"name": "regen-engine", "transport": "stdio (your AI client starts it)", "up": None}],
+            "write_enabled": MCP_WRITE, "tools": tools,
+            "groups": dict(collections.Counter(t["group"] for t in tools))}

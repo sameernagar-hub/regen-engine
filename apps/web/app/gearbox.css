@@ -81,3 +81,46 @@ svg.gb { width: 100%; height: auto; display: block; }
   .gb .chain, .engine .gbx-a, .engine .gbx-b, .engine .gbx-return { animation: none; }
   .gb .collar, .shifter .knob { transition: none; }
 }
+
+/* v1.1 MCP: the cord (app/mcp/page.tsx) */
+svg.cord { width: 100%; height: auto; display: block; margin: 8px 0 18px; }
+.cord .client { fill: #111822; stroke: var(--calm); stroke-width: 1.5; }
+.cord .cl-label { fill: var(--ink); font-size: 15px; text-anchor: middle; }
+.cord .cl-sub { fill: var(--dim); font-size: 11px; text-anchor: middle; }
+.cord .wire { fill: none; stroke: #3a4554; stroke-width: 6; stroke-linecap: round; }
+.mcp.live .cord .wire { stroke: #5ee6b5; stroke-opacity: .55; }
+.cord .plug { fill: #1d2530; stroke: #6a778a; stroke-width: 1.5; }
+.mcp.live .cord .plug { stroke: #5ee6b5; }
+.cord .pin { fill: #c8d1dc; }
+.cord .spark { fill: #5ee6b5; filter: url(#cglow); }
+.cord .bus, .cord .branch { fill: none; stroke: var(--tone, #6a778a); stroke-width: 2; opacity: .55; }
+.cord .bus { stroke: #6a778a; }
+.cord .dest circle { fill: var(--tone); }
+.cord .dest text { fill: var(--dim); font-size: 12px; transition: fill .2s; }
+.cord .dest.on text { fill: var(--tone); }
+.cord .dest.on .branch { opacity: 1; stroke-width: 3; }
+.sockets { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.socket { border: 1px solid var(--faint); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.socket span, .socket small { color: var(--dim); font-size: 12px; }
+.socket.up { border-color: #5ee6b5; } .socket.up b { color: #5ee6b5; }
+.socket.down { border-color: var(--alarm); } .socket.down b { color: var(--alarm); }
+.socket.cfg summary { cursor: pointer; color: var(--calm); }
+.socket pre { font-family: var(--mono); font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; }
+.tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.tool-group { border: 1px solid var(--faint); border-top: 3px solid var(--tone); border-radius: 12px; padding: 12px 14px; transition: border-color .2s; }
+.tool-group:hover { border-color: var(--tone); }
+.tool-group h2 { font-size: 15px; margin: 0; color: var(--tone); }
+.tool-group ul { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.tool-group li { display: grid; grid-template-columns: auto auto 1fr; gap: 2px 8px; align-items: baseline; font-size: 12px; }
+.tool-group li code { color: var(--ink); }
+.tool-group li .w { font-size: 10px; color: var(--amber); border: 1px solid var(--amber); border-radius: 999px; padding: 0 6px; }
+.tool-group li .about { grid-column: 1 / -1; color: var(--dim); }
+
+/* home page: the MCP cord plugs into the crankcase */
+.engine .mcp-cord { fill: none; stroke: #5ee6b5; stroke-width: 4; stroke-linecap: round; opacity: .55; }
+.engine .mcp-plug { fill: #1d2530; stroke: #6a778a; stroke-width: 1.5; }
+.engine .mcp-pin { fill: #c8d1dc; }
+.engine .mcp-spark { fill: #5ee6b5; filter: url(#lit); }
+.engine .part.hot .mcp-cord { opacity: 1; stroke: var(--tone); }
+.engine .part.hot .mcp-plug { stroke: var(--tone); }
+@media (prefers-reduced-motion: reduce) { .cord .spark, .engine .mcp-spark { display: none; } }

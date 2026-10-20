@@ -130,6 +130,7 @@ services:
       REGEN_API_ANSWERS: "1"     # write 1: /needs answers, queued for the answers container
       REGEN_API_REACH: "1"       # write 2: the reach page marks a Workday/iCIMS job submitted / skipped (your own click)
       REGEN_API_GEAR: "1"        # write 3: the gearbox (engine speed + feedback clutch)
+      REGEN_MCP_WRITE: "${REGEN_MCP_WRITE:-0}"  # display only: whether the bank MCP accepts writes (same var as the mcp service)
       REGEN_ANSWER_QUEUE: "1"
       REGEN_API_TRUST_PORT: "1"  # published on 127.0.0.1 only: the bridge gateway is this machine
     secrets: [pg_password]
