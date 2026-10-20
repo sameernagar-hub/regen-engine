@@ -102,3 +102,12 @@ def test_automotive_design_release_is_not_software():
     assert keep(dom, "Underhood Trim Design Release Engineer", "Detroit, MI") == "non-software discipline"
     assert keep(dom, "Powertrain Design Release Engineer", "Detroit, MI") == "non-software discipline"
     assert keep(dom, "Software Release Engineer", "Seattle, WA") is None
+
+
+def test_phonetic_name_answers_the_name_not_a_decline():
+    """10-19: "phonetic spelling of your name ... pronounce it correctly" hit the pronoun decline and parked a job."""
+    from engine.apply import runner
+    q = "So we can pronounce it correctly, what is the phonetic spelling of your name?"
+    a = runner.answer_for(q, {})
+    assert a and a != "__DECLINE__" and runner.P["first_name"] in str(a)
+    assert runner.answer_for("Pronouns", {}) == "__DECLINE__"

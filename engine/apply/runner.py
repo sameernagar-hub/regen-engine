@@ -69,7 +69,7 @@ RULES = [
     (r"transitioning (service ?member|military)", P.get("transitioning_service_member", P.get("us_military_reserve"))),  # B2: before the EEO decline  # acknowledgements, not salary/degree answers
     (r"(unlimited|unrestricted) (and (unlimited|unrestricted) )?(authori[sz]ation|right) to work", P.get("unrestricted_work_authorization")),  # OPT is time-limited
     # demographic / EEO questions are always declined, and checked before anything else can match their long labels
-    (r"gender|\bsex\b|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun|chronic condition|armed forces|military status", "__DECLINE__"),
+    (r"gender|\bsex\b|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun(?!c)|chronic condition|armed forces|military status", "__DECLINE__"),
     # "If you were referred, the referring individual's first and last name": the engine applies cold, so this is never
     # the candidate's own name (v0.8 bug: matched "last name" below)
     (r"(?<![a-z])referr(ed|ing|er|al)\b.{0,80}(name|individual)|name of .{0,30}referr", "N/A"),  # (?<![a-z]): not "preferred"
@@ -77,6 +77,8 @@ RULES = [
     (r"(did|has) (someone|anyone|an employee) refer(red)? you|were you referred", P.get("referred", "No")),  # the engine applies cold
     (r"(what is|provide|enter|share) (us )?(with )?your (current |home |full |mailing )?(street )?address\b",", ".join(x for x in (P.get("address_line1"), P.get("city"), P.get("state_abbr")) if x) if P.get("address_line1") else None),
     (r"preferred (first )?name", P["first_name"]),
+    # 10-19: "what is the phonetic spelling of your name?" parked a job; the name as written is the truthful answer
+    (r"phonetic|pronounc\w* (of )?your name|how (do|to) (you )?(pronounce|say) your name", P["first_name"] + " " + P["last_name"]),
     (r"^(full )?name|legal (full )?name|full (legal )?name", P["first_name"] + " " + P["last_name"]),
     (r"^\W*(home|residential|current|permanent) (home )?address\W*$", ", ".join(x for x in (P.get("address_line1"), P.get("city"), P.get("state_abbr")) if x) if P.get("address_line1") else None),  # one box for the whole address (10-09)
     (r"(are you )?(currently )?an? (current )?(employee|contractor)( or (employee|contractor))? (at|of|for|with)\b", P.get("previous_employer_of_company", "No")),  # "currently an employee or contractor at <co>?"
