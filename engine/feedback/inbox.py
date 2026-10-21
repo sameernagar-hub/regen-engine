@@ -70,7 +70,21 @@ def match_company(msg, companies):
     """Sender + subject first; the body only when they name no company we applied to (a full body mentions plenty of
     other names: 10-13 a rejection from one company matched a different company's name in its footer)."""
     head = {"from": msg.get("from", ""), "subject": msg.get("subject", "")}
-    return _match(head, companies) or _match(dict(head, snippet=(msg.get("snippet") or "")[:400]), companies)
+    hit = _match(head, companies)
+    if hit or _employer_sender(head["from"]):
+        # 10-20: a rejection sent from an employer's own domain we never applied to matched another company in its body
+        return hit
+    return _match(dict(head, snippet=(msg.get("snippet") or "")[:400]), companies)
+
+
+RELAY = re.compile(r"greenhouse|ashby|lever|workday|icims|smartrecruiters|workable|jazz|rippling|bamboohr|jobvite|"
+                   r"successfactors|taleo|gmail|outlook|hotmail|yahoo|linkedin|indeed|amazonses|sendgrid|mailgun|hire", re.I)
+
+
+def _employer_sender(sender):
+    """True when the mail comes from a company's own domain, not an ATS / mail relay that sends for many employers."""
+    m = re.search(r"@([\w.-]+)", sender or "")
+    return bool(m) and not RELAY.search(m.group(1))
 
 
 def _match(msg, companies):

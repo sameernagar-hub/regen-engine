@@ -144,3 +144,16 @@ def test_mcp_discovery_adds_boards_and_feeds(tmp_path, monkeypatch):
     assert f["boards_added"] == 1 and "acmeco" in A.load_boards()["lever"]
     assert "https://raw.githubusercontent.com/x/y/main/README.md" in SRC.feeds()
     assert SRC.add_feed("http://insecure.example/list")["error"]
+
+
+def test_employer_sender_skips_body_match():
+    """A rejection from an employer's own domain we never applied to must not match a company named in its body."""
+    from engine.feedback.inbox import match_company
+    cos = {"Initech": [], "Globex": []}
+    own = {"from": "Megacorp <careers@example.com>", "subject": "Thank you for your interest",
+           "snippet": "... worked with Initech ..."}
+    assert match_company(own, cos) is None
+    relay = {"from": "Initech <no-reply@greenhouse.example>", "subject": "Update", "snippet": ""}
+    assert match_company(relay, cos) == "Initech"
+    via_ats = {"from": "Careers <no-reply@ashbyhq.example>", "subject": "Your application", "snippet": "Thanks from Globex"}
+    assert match_company(via_ats, cos) == "Globex"
