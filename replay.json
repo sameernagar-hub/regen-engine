@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-20 21:38",
+"generated": "2026-10-20 21:53",
 "days": 7,
 "verified": 155,
 "verified_roles": [
@@ -630,963 +630,962 @@
 {
 "stage": "listen",
 "tone": "calm",
+"text": "Spotted a company: Product Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Site Reliability Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer, AI Infrastructure.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Developer & Data Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Lead Agentic Software Engineer, Connected Devices.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Lead Agentic Software Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Test Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer - Embedded Linux Operating Systems.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Tyler Union - Product Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer- (8303 Fallbrook).",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Research / Software Engineer - Humanoid Whole Body Learning.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer.",
+"ts": "2026-10-20T21:48"
+},
+{
+"stage": "listen",
+"tone": "calm",
 "text": "Spotted a company: Software Developer (Medical Imaging / PACS).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Application Engineer Analytical Instrumentation.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Full Stack Developer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Embedded Software Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Python Developer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Forward Deployed Engineer - AI Solutions (Gracenote Divisio….",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: AI/ML Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Full Stack Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Applied AI Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Full Stack Java Developer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Lead ML Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: US- Software Training Specialist (Clinical).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Cloud Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Lead Data Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer, GenAI Platform.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: AI-ML Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: GIS Data Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Data Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Product Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: AI/ML Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Data Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: 20018 - Software Engineer (C#/.NET, SQL, MES).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Conversational AI Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Sales Solutions Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Team Lead, Software Development.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Agentic Software Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: ETL Software Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Forward Deployed Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: .NET Software Engineer - Hybrid.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Lead Engineer, Enterprise Systems Software.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Developer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Junior Software Engineer, Edge Platform.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Full Stack Software Engineer (Hybrid).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Product Engineer, Full Stack.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Python Software Engineer (Partial Telework).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Python Software Engineer (Partial Telework).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Genesys Cloud Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: ML Infrastructure Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Tester (Entry Level).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Cloud Platform Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: GCP Cloud Engineer with Teradata.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Field Application Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Build Engineering Specialist.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Hardware Lead Engineer, Hyperscale Line of Business.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Solutions Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Lead Software Engineer (Calypso).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: DevOps Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Product Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer 2.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Forward Deployed Design Lead — Product Lifecycle Management.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Forward Deployed Design Lead — Asset Performance Management.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Lead Software Engineer (Calypso).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Tech Lead - Software Engineering.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Forward Deployed Machine Learning Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Founding Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Full-Stack Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer II, Manufacturing Test.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Robotics Software Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer II (Factory Platform).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Associate AI Engineer, Physical AI.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineers.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: DevOps Engineers.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: CNO Analyst/Programmers.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Production Programmer - Entry Level SQL Developer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Lead Firmware Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer II.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Forward Deployed Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Mid Level Cloud Software Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Mid-Level Application Developer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Onboard Software Engineer - Hyperdrive.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Onboard Software Engineer - Hyperdrive.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Onboard Software Engineer - Core Services.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Onboard Software Engineer - Core Services.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Robot Programmer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: DevOps and Infrastructure Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer, EOS Layer 2 and Network Services.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Lead Software Engineer - Internal Developer Platform & Deve….",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Process Integration Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Microsoft Azure & M365 Infrastructure Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Network and Site Infrastructure Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Engineering Technical Leader - Systems.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Engineering Technical Leader - Systems.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer - Applicant Tracking Systems.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Lead AI Engineer – Enterprise, Data & AI.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer - Internal Applications.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer, Computational Policy Lab.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Cloud Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Engineering Lead, Creator and Seller Operations (Fanatics L….",
-"ts": "2026-10-20T21:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Full Stack Software Engineer, New Grad - a company (Remote).",
-"ts": "2026-10-20T21:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: DevOps Production Engineer.",
-"ts": "2026-10-20T21:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer (Entry to Mid-Level).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:48"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer - Customer Solutions.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Machine Learning Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer - IAM (Java).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer, New Grad (Dec 2026).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer, Early Career (AI).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: AI/ML Software Engineer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Web Developer.",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "listen",
 "tone": "calm",
 "text": "Spotted a company: Software Engineer - Desktop Frontend Developer (C#/Winforms).",
-"ts": "2026-10-20T21:27"
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, sre lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "judge",
 "tone": "quiet",
 "text": "Let a company go: not a fit.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements and seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, sre lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, sre lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, sre lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements and seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements and seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "write",
 "tone": "calm",
 "text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
-"ts": "2026-10-20T21:28"
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "judge",
 "tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
+"text": "Let a company go: seniority.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, sre lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "write",
 "tone": "calm",
 "text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-20T21:28"
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
+"ts": "2026-10-20T21:49"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "judge",
 "tone": "quiet",
 "text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
+"ts": "2026-10-20T21:49"
 },
 {
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-20T21:49"
 },
 {
 "stage": "judge",
 "tone": "quiet",
 "text": "Let a company go: seniority.",
-"ts": "2026-10-20T21:28"
-},
-{
-"stage": "apply",
-"tone": "quiet",
-"text": "2 companies didn't go through yet: CAPTCHA: Lever asked for a human check; finish this one by….",
-"ts": "2026-10-20T21:31",
-"n": 2
-},
-{
-"stage": "apply",
-"tone": "win",
-"text": "Applied to a company, Product Engineer II. Proof saved.",
-"ts": "2026-10-20T21:32"
-},
-{
-"stage": "apply",
-"tone": "win",
-"text": "Applied to a company, Software Development Engineer in Test I (SDET) – ArcGIS Ent…. Proof saved.",
-"ts": "2026-10-20T21:32"
-},
-{
-"stage": "apply",
-"tone": "win",
-"text": "Applied to a company, Data Engineer. Proof saved.",
-"ts": "2026-10-20T21:33"
-},
-{
-"stage": "apply",
-"tone": "win",
-"text": "Applied to a company, Software Quality Engineering II. Proof saved.",
-"ts": "2026-10-20T21:34"
-},
-{
-"stage": "apply",
-"tone": "win",
-"text": "Applied to a company, Data Engineer. Proof saved.",
-"ts": "2026-10-20T21:35"
-},
-{
-"stage": "apply",
-"tone": "win",
-"text": "Applied to a company, Backend / API Engineer, Radar. Proof saved.",
-"ts": "2026-10-20T21:35"
-},
-{
-"stage": "apply",
-"tone": "win",
-"text": "Applied to a company, Software Engineer, Backend. Proof saved.",
-"ts": "2026-10-20T21:35"
-},
-{
-"stage": "apply",
-"tone": "win",
-"text": "Applied to a company, Site Reliability Engineering. Proof saved.",
-"ts": "2026-10-20T21:36"
-},
-{
-"stage": "apply",
-"tone": "win",
-"text": "Applied to a company, Software Engineer - Crypto Data Foundations. Proof saved.",
-"ts": "2026-10-20T21:36"
+"ts": "2026-10-20T21:49"
 }
 ],
 "graph": {
@@ -6555,6 +6554,54 @@
 "id": "n750",
 "type": "Outcome",
 "label": "rejection",
+"data": {}
+},
+{
+"id": "n751",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n752",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n753",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n754",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n755",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n756",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n757",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n758",
+"type": "Outcome",
+"label": "confirmation",
 "data": {}
 }
 ],
@@ -13252,6 +13299,46 @@
 {
 "source": "n211",
 "target": "n750",
+"type": "RESULTED_IN"
+},
+{
+"source": "n55",
+"target": "n751",
+"type": "RESULTED_IN"
+},
+{
+"source": "n233",
+"target": "n752",
+"type": "RESULTED_IN"
+},
+{
+"source": "n123",
+"target": "n753",
+"type": "RESULTED_IN"
+},
+{
+"source": "n235",
+"target": "n754",
+"type": "RESULTED_IN"
+},
+{
+"source": "n237",
+"target": "n755",
+"type": "RESULTED_IN"
+},
+{
+"source": "n238",
+"target": "n756",
+"type": "RESULTED_IN"
+},
+{
+"source": "n240",
+"target": "n757",
+"type": "RESULTED_IN"
+},
+{
+"source": "n239",
+"target": "n758",
 "type": "RESULTED_IN"
 }
 ]
