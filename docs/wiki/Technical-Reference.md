@@ -164,7 +164,7 @@ REGEN_MAX_PER_DAY=150 REGEN_PARTS=5 docker compose -f deploy/bank.compose.yml up
 | **Applications** (`/applications`) | Every application with the exact resume PDF that was sent, each question with the answer given, the Fact Bank ids used, and the proof screenshot. |
 | **Needs you** (`/needs`) | Blocking questions grouped across jobs: answer once, every job that asked it goes back in line. Legal items stay yours. |
 | **Reach** (`/reach`) | Workday / iCIMS / SmartRecruiters jobs: posting link, tailored resume (preview + download), copy-ready fill kit, mark submitted / skipped. |
-| **Fact Bank** (`/facts`) | A radial map of your roles and facts, sized by use and colored by lane. |
+| **Fact Bank** (`/facts`) | A radial map of your roles and facts, sized by use and colored by lane, plus the **rules** that drive the engine: 6 groups read from the code that runs them (`engine/rules.py`, `GET /api/rules`), each with its firing count; answer rules name their source (`preset <key>`, `decline`, `you decide`), never the value. |
 | **First-applicant mode** | `engine run --loop 20` rescans the last hours every 20 minutes and applies to what just opened. |
 | **Job priority** | Queue ordered by level/lane fit, freshness, employer tier and learned reply rates; each batch ordered by JD match. |
 | **Learns what not to open** | Skips ATSs that captcha-wall us and companies waiting on you; one retry for transient failures. |

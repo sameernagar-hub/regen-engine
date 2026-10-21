@@ -98,5 +98,6 @@ flowchart LR
 | v0.14–0.16 | Guardrails, front door | Evals, desk, Rippling, answer queue, the radial-engine front page, proxy dataset for the public site |
 | v1.0 | Public release | Security review of every local service, one version everywhere |
 | **v1.1** | Feedback, gearbox, MCP everywhere | Rejection feedback container, gearbox, 43 MCP tools incl. discovery sources, `/gearbox` and `/mcp` pages |
+| **v1.2** | Rules, speed | Rules view in the Fact Bank (`/api/rules`), incremental API reads + ETag 304s, one shared stream per tab |
 
 Every page here lives in `docs/wiki/` and is reviewed in pull requests like code.

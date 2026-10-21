@@ -8,7 +8,7 @@ machine **and** a request from localhost.
 |---|---|---|
 | `/control` | pipeline strip (the running stage glows), run settings (days, max, appliers, tabs, cap, rescan interval, sources, ATSs, dry run), Start / Stop, queue by ATS, live applier cards (each tab's job and state, latest answers), run log, editable title/company filters | `GET /api/control/state` every 2 s, `POST /api/control/run`, `/stop`, `GET/POST /api/control/filters` |
 | `/applications` | every application with status filters and search; select one to see the **resume PDF that was sent**, every question with the answer given, Fact Bank ids used, proof screenshot | `GET /api/applications`, `GET /api/resume/{file}`, `GET /api/proof/{file}` |
-| `/facts` | the Fact Bank as a radial map (you → roles → facts, sized by use, colored by lane), every fact with usage bars, skills, sources | `GET /api/factbank` |
+| `/facts` | the Fact Bank as a radial map (you → roles → facts, sized by use, colored by lane), every fact with usage bars, skills, sources; **Rules**: every rule that drives the engine (title filter, fit gate, learned phrases, form answers, airbags and limits, draft override) as tanks feeding a four-cylinder engine, pulses = firings from the event log, a filterable list per group | `GET /api/factbank`, `GET /api/rules` |
 | `/room`, `/room/[stage]`, `/job` | each stage as a room with its live log; one job's full timeline | `/api/stations`, `/api/job` |
 | `/graph` | the knowledge graph, layer by layer | `/api/graph` |
 
