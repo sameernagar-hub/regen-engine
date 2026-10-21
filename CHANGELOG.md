@@ -4,7 +4,17 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
-## [Unreleased] - 2026-10-19 · feedback loop + gearbox
+## [Unreleased] - 2026-10-20 · inbox attribution + three filler rules
+- **Inbox attribution** (`engine/feedback/inbox.py` `match_company`): mail sent from an employer's own domain (not an
+  ATS or mail relay) is matched on sender + subject only. Why: a rejection from an employer the engine never applied to
+  was credited to another company named in its body, adding a false rejected JD to the feedback set. Verify:
+  `pytest tests/test_feedback.py -k employer_sender`.
+- **Filler rules** (`engine/apply/runner.py` RULES): "explain your current visa type and status" -> `work_auth_status`
+  (ahead of the broad sponsor rule), securities / FINRA licenses -> `securities_license` preset or No, recruitment
+  marketing opt-ins -> No. Why: each parked a job on 10-20 although the answer is on file. Verify:
+  `pytest tests/test_forms.py -k marketing`.
+
+## 2026-10-19 · feedback loop + gearbox
 - **Rejection feedback container** (`engine/feedback/rejections.py`, compose service `feedback`,
   `python -m engine feedback [--watch m] [--no-imap] [--off "<phrase>"]`): every 30 min it reads the inbox over IMAP
   (read-only), records outcomes, then compares the job descriptions of rejected applications with the rest. Requirement
