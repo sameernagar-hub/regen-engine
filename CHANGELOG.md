@@ -4,7 +4,28 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
-## [Unreleased] - 2026-10-20 · rules in the Fact Bank, inbox attribution, three filler rules
+## [Unreleased] - 2026-10-20 · rules in the Fact Bank, a faster frontend, inbox attribution, filler rules
+- **Bug: page titles spun in circles** after the rules view shipped. CSS keyframe names are global and the rules
+  view defined `spin`, `stroke` and `spark`, which replaced the title gradient's `spin` (the heading rotated) and the
+  home engine's piston / spark keyframes; `engine.css` styles for `.fuel-line`, `.piston`, `.spark`, `.bore` also
+  bled into the rules SVG. Fix: keyframes are `rules-*`, SVG classes are `rl-*`. Also: the two `flow` keyframes
+  (different offsets) are `wire-flow` / `fuel-flow` with offsets that are whole dash periods, so dashes no longer jump
+  at each loop; a duplicate `rise` keyframe is gone.
+- **API: incremental reads + memo** (`apps/api/store.py`, `main.py`): the log is append-only, so rows stay in memory
+  and each call fetches only rows past the last id (one long-lived Postgres connection) or byte offset (jsonl);
+  `fold()`, `/api/human` and narration are memoized per log version `(generation, last id)`. Measured on the bank
+  (warm): `/api/human` 1,060 -> 8 ms, `/api/reach/signins` 720 -> 12 ms, `/api/narration` 360 -> 9 ms,
+  `/api/snapshot` 270 -> 10 ms.
+- **Conditional GETs**: an ETag middleware (body hash) answers unchanged polls with a bodiless 304; the 1.4 MB
+  applications list costs 0 bytes when nothing changed. CORS headers still wrap the 304 (middleware order).
+- **Web client** (`lib/types.ts`, `lib/stream.ts`): `get()` returns the same object for an unchanged body (React skips
+  the re-render) and shares one request per path; `poll()` skips hidden tabs and refreshes when shown (11 pollers
+  moved to it); one shared EventSource per tab (the backdrop, home engine and room each held one of the browser's ~6
+  connections per host). Backdrop at 30 fps with squared distances; graph panning moves the viewBox without a React
+  render per mouse move; the applications table renders 200 rows at a time; O(n^2) grouping on /needs removed; the
+  home narrator idles in hidden tabs.
+- **Discovery MCP fix**: `probe_companies`, `add_boards`, `add_feed`, `add_leads` crashed after doing their work
+  (`record("source", kind=...)` passed `kind` twice); the field is `what` now.
 - **Rules: the other half of the fuel** (`engine/rules.py`, `GET /api/rules`, `apps/web/app/facts/rules.tsx`,
   `rules.css`): the Fact Bank page now lists every rule that drives the engine (title filter, fit gate, learned
   phrases, form answers, airbags and limits, draft override) and animates them. Each group is a tank whose fuel line

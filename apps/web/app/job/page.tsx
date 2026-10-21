@@ -1,5 +1,5 @@
 "use client";
-import { api } from "../../lib/types";
+import { api, poll } from "../../lib/types";
 // One job, end to end: which room touched it, when, with what (Fact Bank entries, JD coverage, ATS read-back,
 // every question and the answer sent, proof). Each step links back to its room.
 import Link from "next/link";
@@ -19,8 +19,7 @@ function JobView() {
     if (!url) return;
     const pull = () => get<Job>(`/api/job?url=${encodeURIComponent(url)}`).then(setJob).catch((e) => setErr(String(e.message || e)));
     pull();
-    const t = setInterval(pull, 10000);  // a job being applied to right now keeps updating
-    return () => clearInterval(t);
+    return poll(pull, 10000);  // a job being applied to right now keeps updating
   }, [url]);
   if (!url) return <p>No job selected. <Link href="/room">Pick one in the engine room</Link>.</p>;
   if (err) return <p className="err">Couldn’t load this job ({err}).</p>;

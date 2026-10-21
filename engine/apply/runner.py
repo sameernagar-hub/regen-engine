@@ -84,7 +84,7 @@ RULES = [
     (r"(year|when) .{0,30}(receive|complete|earn|finish|graduat)\w* .{0,20}(undergraduate|bachelor)", undergrad_year()),
     (r"(security )?clearance level", "None" if P.get("security_clearance") == "No" else None),
     # optional marketing opt-ins: the privacy-preserving choice
-    (r"(recruit(ment|ing)|talent) marketing|marketing (communications|emails|updates)|receive .{0,40}(newsletters?|marketing)", "No"),
+    (r"(recruit(ment|ing)|talent) marketing|marketing (communications|emails|updates)|receive .{0,40}(newsletters?|marketing)", P.get("marketing_opt_in", "No")),
     (r"adverse credit|credit report|bankruptcy|foreclosure", P.get("adverse_credit")),
     (r"^(i acknowledge|by checking this box|i confirm|i have (read|reviewed))\b", "__ACK__"),
     (r"^\W*(affirmation|personal information policy|applicant (privacy|data) (notice|policy))\W*$", "__ACK__"),  # 10-10: 12 forms stopped on these one-word ack labels

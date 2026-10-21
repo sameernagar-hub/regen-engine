@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Nav } from "../nav";
 import { PUBLIC } from "@/lib/engine";
-import { get, post } from "@/lib/types";
+import { get, post, poll } from "@/lib/types";
 
 type Rule = { phrase: string; rejected?: number; seen?: number; rate?: number; lift?: number; p_adj?: number; status: string };
 type Box = {
@@ -74,8 +74,7 @@ export default function Gearbox() {
   useEffect(() => {
     const pull = () => get<Box>("/api/control/gearbox").then(setBox).catch((e) => setMsg(`gearbox unreachable: ${e.message}`));
     pull();
-    const t = setInterval(pull, 15000);
-    return () => clearInterval(t);
+    return poll(pull, 15000);
   }, []);
 
   // one animation clock: the crankshaft angle eases toward the gear's speed (spool up / down), every other gear follows

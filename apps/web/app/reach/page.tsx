@@ -5,7 +5,7 @@
 // it submitted so it is counted and never listed or applied to again.
 import { useEffect, useMemo, useState } from "react";
 import { Nav } from "../nav";
-import { api, get, post } from "@/lib/types";
+import { api, get, post, poll } from "@/lib/types";
 
 type Row = { listed: string; ats: string; company: string; title: string; url: string; location: string; posted?: string;
              lane?: string; jd_match?: number; resume: string; salary_range?: [number, number] | null;
@@ -39,8 +39,7 @@ function ReachView() {
   const pullDesk = () => get<Desk>("/api/reach/desk").then(setDesk).catch(() => setDesk(null));
   useEffect(() => {
     pullDesk();
-    const t = setInterval(pullDesk, 5000);  // the desk beats every 3 s; its result lands within a minute of a fill
-    return () => clearInterval(t);
+    return poll(pullDesk, 5000);  // the desk beats every 3 s; its result lands within a minute of a fill
   }, []);
   const [signins, setSignins] = useState<Signins | null>(null);
   useEffect(() => { get<Signins>("/api/reach/signins").then(setSignins).catch(() => setSignins(null)); }, []);
@@ -62,8 +61,7 @@ function ReachView() {
   useEffect(() => {
     pull();
     get<Kit>("/api/reach/kit").then(setKit).catch((e) => setMsg(`Fill kit: ${e.message}`));
-    const t = setInterval(pull, 30000);  // new rows land once per pipeline pass
-    return () => clearInterval(t);
+    return poll(pull, 30000);  // new rows land once per pipeline pass
   }, []);
 
   const rows = useMemo(() => (data?.rows || []).filter((r) => r.mark === tab

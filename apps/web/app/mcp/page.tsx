@@ -5,7 +5,7 @@
 // the engine it drives; writes need REGEN_MCP_WRITE=1 on the server (the kill switch always works).
 import { useEffect, useMemo, useState } from "react";
 import { Nav } from "../nav";
-import { get } from "@/lib/types";
+import { get, poll } from "@/lib/types";
 
 type Tool = { name: string; about: string; group: string; writes: boolean };
 type Server = { name: string; transport: string; url?: string; up: boolean | null; ms?: number; error?: string };
@@ -36,8 +36,7 @@ export default function Mcp() {
   useEffect(() => {
     const pull = () => get<Data>("/api/control/mcp").then(setD).catch((e) => setErr(e.message));
     pull();
-    const t = setInterval(pull, 20000);
-    return () => clearInterval(t);
+    return poll(pull, 20000);
   }, []);
   const byGroup = useMemo(() => {
     const m: Record<string, Tool[]> = {};

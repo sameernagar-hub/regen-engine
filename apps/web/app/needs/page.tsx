@@ -5,7 +5,7 @@
 // picks them up on its next pass). Legal / attestation items can't be answered here: open the posting to finish.
 import { useEffect, useMemo, useState } from "react";
 import { Nav } from "../nav";
-import { get, post, type HumanItem } from "@/lib/types";
+import { get, post, type HumanItem, poll } from "@/lib/types";
 
 const LEGAL = /arbitrat|attest|certif|export|citizen|clearance|eeo|gender|race|veteran|disab|transcript|assessment|captcha|bot-check|human check/i;
 
@@ -23,14 +23,14 @@ function NeedsView() {
   const [view, setView] = useState<"question" | "job">("question");
 
   const pull = () => get<HumanItem[]>("/api/human").then(setItems).catch((e) => setMsg(e.message));
-  useEffect(() => { pull(); const t = setInterval(pull, 20000); return () => clearInterval(t); }, []);
+  useEffect(() => { pull(); return poll(pull, 20000); }, []);
 
   // group by question: O(items x questions)
   const groups = useMemo<Group[]>(() => {
     const m = new Map<string, HumanItem[]>();
     for (const it of items || []) {
       const qs = it.missing?.length ? it.missing : [it.text];
-      for (const q of qs) m.set(q, [...(m.get(q) || []), it]);
+      for (const q of qs) { const l = m.get(q); if (l) l.push(it); else m.set(q, [it]); }
     }
     return [...m.entries()].map(([q, jobs]) => ({ q, jobs, legal: LEGAL.test(q) }))
       .sort((a, b) => Number(a.legal) - Number(b.legal) || b.jobs.length - a.jobs.length);

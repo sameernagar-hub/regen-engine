@@ -31,7 +31,10 @@ export default function Graph() {
   const [hover, setHover] = useState<string | null>(null);
   const [focus, setFocus] = useState<GNode | null>(null);
   const [view, setView] = useState({ x: -560, y: -400, w: 1120, h: 800 });
-  const drag = useRef<{ x: number; y: number } | null>(null);
+  const drag = useRef<{ x: number; y: number; v: typeof view } | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  // panning moves the viewBox attribute directly (no React render per mouse move); state catches up on release
+  const endDrag = () => { if (drag.current) setView(drag.current.v); drag.current = null; };
 
   useEffect(() => {
     loadGraph().then((x) => {
@@ -107,12 +110,14 @@ export default function Graph() {
         <div className="count"><b style={{ fontSize: 28 }}>{pos.size}</b><span>of {g.nodes.length} nodes open · click to expand a layer{hidden ? ` · ${hidden} more behind busy nodes (first ${MAX_BLOOM} each)` : ""}</span></div>
       </header>
       <svg className="machine graph" role="group" aria-label="Memory graph: press Tab to move between nodes and Enter to expand one" viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} onWheel={onWheel}
-           onMouseDown={(e) => (drag.current = { x: e.clientX, y: e.clientY })} onMouseUp={() => (drag.current = null)} onMouseLeave={() => (drag.current = null)}
+           ref={svgRef} onMouseDown={(e) => (drag.current = { x: e.clientX, y: e.clientY, v: view })} onMouseUp={endDrag} onMouseLeave={endDrag}
            onMouseMove={(e) => {
-             if (!drag.current) return;
-             const s = view.w / (e.currentTarget as SVGSVGElement).clientWidth;
-             setView((v) => ({ ...v, x: v.x - (e.clientX - drag.current!.x) * s, y: v.y - (e.clientY - drag.current!.y) * s }));
-             drag.current = { x: e.clientX, y: e.clientY };
+             const d = drag.current;
+             if (!d) return;
+             const k = d.v.w / (e.currentTarget as SVGSVGElement).clientWidth;
+             d.v = { ...d.v, x: d.v.x - (e.clientX - d.x) * k, y: d.v.y - (e.clientY - d.y) * k };
+             d.x = e.clientX; d.y = e.clientY;
+             svgRef.current?.setAttribute("viewBox", `${d.v.x} ${d.v.y} ${d.v.w} ${d.v.h}`);
            }}>
         <defs><filter id="g2"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
         {Array.from({ length: Math.max(4, ...[...pos.values()].map((p) => p.depth)) }, (_, i) => ring(i + 1)).map((r) =>

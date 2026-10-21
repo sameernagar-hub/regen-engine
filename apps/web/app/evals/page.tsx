@@ -3,7 +3,7 @@
 // The supervisor starts one-shot `eval` containers when a commit lands, every 6 h, or on `supervise --eval`.
 import { useEffect, useState } from "react";
 import { Nav } from "../nav";
-import { get } from "@/lib/types";
+import { get, poll } from "@/lib/types";
 
 type Sum = Record<string, any>;
 type Run = { ts: number; reason: string | null; sha: string | null; summary: Sum };
@@ -36,8 +36,7 @@ export default function EvalsPage() {
   useEffect(() => {
     const pull = () => get<Evals>("/api/control/evals?n=60").then(setD).catch((e) => setMsg(e.message));
     pull();
-    const t = setInterval(pull, 20000);
-    return () => clearInterval(t);
+    return poll(pull, 20000);
   }, []);
   const runs = d?.runs || [];
   const last = runs[runs.length - 1];

@@ -5,7 +5,7 @@
 // its rules. The catalog is read from the modules that run the rules (engine/rules.py), so it cannot drift.
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { get } from "@/lib/types";
+import { get, poll } from "@/lib/types";
 
 type Rule = { id: string; name?: string | null; pattern?: string; source?: string; note?: string; fires?: number;
               status?: string; rejected?: number; seen?: number; since?: string; line?: number };
@@ -32,8 +32,7 @@ export function RulesEngine() {
   useEffect(() => {
     const pull = () => get<Catalog>("/api/rules").then(setC).catch((e) => setErr(e.message));
     pull();
-    const t = setInterval(pull, 60000);
-    return () => clearInterval(t);
+    return poll(pull, 60000);
   }, []);
 
   const lines = useMemo(() => (c?.groups || []).map((g, i) => {
@@ -68,12 +67,12 @@ export function RulesEngine() {
 
         {/* fuel lines, then the fuel in flight */}
         {lines.map(({ g: x, d }) => (
-          <path key={"l" + x.id} d={d} className={`fuel-line${x.id === pick ? " on" : ""}`} style={{ stroke: COLOR[x.id] }} />
+          <path key={"l" + x.id} d={d} className={`rl-fuel-line${x.id === pick ? " rl-on" : ""}`} style={{ stroke: COLOR[x.id] }} />
         ))}
         {lines.map(({ g: x, d }) => Array.from({ length: pulses(x.fires) }, (_, k) => {
           const dur = 3.2 + (x.id.length % 3) * 0.6;
           return (
-            <circle key={x.id + k} r={x.id === pick ? 5 : 3.6} className="fuel" fill={COLOR[x.id]} filter="url(#rglow)">
+            <circle key={x.id + k} r={x.id === pick ? 5 : 3.6} className="rl-fuel" fill={COLOR[x.id]} filter="url(#rglow)">
               <animateMotion dur={`${dur}s`} begin={`${(k * dur) / pulses(x.fires)}s`} repeatCount="indefinite" path={d} />
             </circle>
           );
@@ -84,34 +83,34 @@ export function RulesEngine() {
           const max = Math.max(1, ...c.groups.map((y) => y.fires));
           const lvl = x.fires ? 0.15 + 0.85 * (Math.log10(1 + x.fires) / Math.log10(1 + max)) : 0.06;
           return (
-            <g key={x.id} className={`tank${x.id === pick ? " on" : ""}`} transform={`translate(20 ${TANK_Y(i)})`} tabIndex={0} role="button"
+            <g key={x.id} className={`rl-tank${x.id === pick ? " rl-on" : ""}`} transform={`translate(20 ${TANK_Y(i)})`} tabIndex={0} role="button"
                aria-pressed={x.id === pick} aria-label={`${x.name}: ${x.count} rules`} onClick={() => setPick(x.id)}
                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setPick(x.id))}>
-              <rect width={216} height={44} rx={10} className="tank-shell" />
-              <rect x={3} y={3} width={210 * lvl} height={38} rx={8} fill={COLOR[x.id]} className="tank-fuel" />
-              <text x={12} y={19} className="tank-name">{x.name}</text>
-              <text x={12} y={35} className="tank-num">{x.count} rules · {x.fires.toLocaleString()} firings</text>
+              <rect width={216} height={44} rx={10} className="rl-tank-shell" />
+              <rect x={3} y={3} width={210 * lvl} height={38} rx={8} fill={COLOR[x.id]} className="rl-tank-fuel" />
+              <text x={12} y={19} className="rl-tank-name">{x.name}</text>
+              <text x={12} y={35} className="rl-tank-num">{x.count} rules · {x.fires.toLocaleString()} firings</text>
             </g>
           );
         })}
 
         {/* the engine: four cylinders fire in order; a cylinder glows when a picked group feeds it */}
-        <rect x={500} y={180} width={460} height={150} rx={22} className="block" />
+        <rect x={500} y={180} width={460} height={150} rx={22} className="rl-block" />
         {STAGES.map((s, i) => {
           const x = CYL_X(i), hot = fed(s).some((y) => y.id === pick);
           return (
-            <g key={s} className={`cyl${hot ? " hot" : ""}`} style={{ ["--d" as any]: `${i * 0.35}s` }}>
-              <rect x={x - 34} y={196} width={68} height={118} rx={10} className="bore" />
-              <g className="piston"><rect x={x - 28} y={232} width={56} height={30} rx={6} /><line x1={x} y1={262} x2={x} y2={352} /></g>
-              <circle cx={x} cy={196} r={7} className="spark" />
-              <text x={x} y={154} className="cyl-label">{s}</text>
-              <text x={x} y={170} className="cyl-sub">{fed(s).map((y) => y.name.split(" ")[0]).join(" + ")}</text>
+            <g key={s} className={`rl-cyl${hot ? " rl-hot" : ""}`} style={{ ["--d" as any]: `${i * 0.35}s` }}>
+              <rect x={x - 34} y={196} width={68} height={118} rx={10} className="rl-bore" />
+              <g className="rl-piston"><rect x={x - 28} y={232} width={56} height={30} rx={6} /><line x1={x} y1={262} x2={x} y2={352} /></g>
+              <circle cx={x} cy={196} r={7} className="rl-spark" />
+              <text x={x} y={154} className="rl-cyl-label">{s}</text>
+              <text x={x} y={170} className="rl-cyl-sub">{fed(s).map((y) => y.name.split(" ")[0]).join(" + ")}</text>
             </g>
           );
         })}
-        <g transform="translate(725 400)"><g className="crank"><circle r={30} className="crank-disc" /><rect x={-4} y={-30} width={8} height={60} rx={4} className="crank-arm" /></g></g>
-        <line x1={500} y1={400} x2={950} y2={400} className="crank-shaft" />
-        <text x={950} y={432} className="cyl-sub end">applications out</text>
+        <g transform="translate(725 400)"><g className="rl-crank"><circle r={30} className="rl-crank-disc" /><rect x={-4} y={-30} width={8} height={60} rx={4} className="rl-crank-arm" /></g></g>
+        <line x1={500} y1={400} x2={950} y2={400} className="rl-crank-shaft" />
+        <text x={950} y={432} className="rl-cyl-sub end">applications out</text>
       </svg>
 
       <div className="rules-pick">

@@ -1,5 +1,5 @@
 "use client";
-import { api } from "../../lib/types";
+import { api, poll } from "../../lib/types";
 // Every application the engine touched, newest first. Pick one to see exactly what was sent: the resume PDF,
 // every question with the answer given, the Fact Bank entries the resume used, and the proof screenshot.
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { get, type Application } from "@/lib/types";
 const STATUSES = ["ALL", "SUBMITTED", "NEEDS YOU", "FAILED", "SKIPPED", "FLAGGED"];
 const TONE: Record<string, string> = { SUBMITTED: "var(--gold)", "NEEDS YOU": "var(--amber)", FAILED: "var(--alarm)",
                                        SKIPPED: "var(--dim)", FLAGGED: "var(--alarm)" };
+const PAGE = 200;  // rows rendered at once: "ALL" is ~2,000 and a full table re-render stalls typing in the search box
 const file = (p?: string | null) => (p ? p.split(/[\\/]/).pop()! : "");
 
 export default function Applications() {
@@ -22,15 +23,20 @@ function ApplicationsView() {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<Application | null>(null);
   const [err, setErr] = useState("");
+  const [cap, setCap] = useState(PAGE);
 
   useEffect(() => {
     const pull = () => get<Application[]>("/api/applications?limit=2000").then(setApps).catch((e) => setErr(e.message));
     pull();
-    const t = setInterval(pull, 15000);
-    return () => clearInterval(t);
+    return poll(pull, 15000);
   }, []);
 
-  const counts = useMemo(() => apps.reduce<Record<string, number>>((a, x) => ({ ...a, [x.status]: (a[x.status] || 0) + 1 }), {}), [apps]);
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const x of apps) c[x.status] = (c[x.status] || 0) + 1;
+    return c;
+  }, [apps]);
+  useEffect(() => setCap(PAGE), [status, q]);
   const rows = useMemo(() => {
     const needle = q.toLowerCase();
     return apps.filter((a) => (status === "ALL" || a.status === status) && (!needle || a.job.toLowerCase().includes(needle)));
@@ -59,7 +65,7 @@ function ApplicationsView() {
         <table className="apps">
           <thead><tr><th>When</th><th>Company</th><th>Role</th><th>Lane</th><th>Status</th></tr></thead>
           <tbody>
-            {rows.map((a) => (
+            {rows.slice(0, cap).map((a) => (
               <tr key={a.url || a.job} onClick={() => setSel(a)} aria-selected={sel?.job === a.job} tabIndex={0}
                   onKeyDown={(e) => e.key === "Enter" && setSel(a)}>
                 <td className="mono small">{a.ts.slice(5, 16).replace("T", " ")}</td>
@@ -68,6 +74,9 @@ function ApplicationsView() {
               </tr>
             ))}
           </tbody>
+          {rows.length > cap && (
+            <tfoot><tr><td colSpan={5}><button className="more" onClick={() => setCap((c) => c + PAGE)}>
+              Show {Math.min(PAGE, rows.length - cap)} more of {rows.length - cap}</button></td></tr></tfoot>)}
         </table>
 
         {sel && (

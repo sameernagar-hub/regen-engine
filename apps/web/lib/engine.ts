@@ -1,5 +1,6 @@
 "use client";
 import { api } from "./types";
+import { subscribe } from "./stream";
 // One data layer, two sources:
 //   local  -> the private REGEN API (/api/*, SSE stream): your real data, on 127.0.0.1 only
 //   public -> the anonymized feed (/api/public, polled): no company names, no answers, no proofs
@@ -30,6 +31,7 @@ export function useEngine() {
   // one event every 1.6 s: the sentence appears and a light travels to its station
   useEffect(() => {
     const t = setInterval(() => {
+      if (document.hidden) return;  // nobody is watching: keep the queue for when the tab comes back
       let n = queue.current.shift();
       let replay = false;
       if (!n && recent.current.length) {
@@ -73,15 +75,13 @@ export function useEngine() {
     refresh();
     get<Narration[]>("/api/narration?limit=40").then((r) => { recent.current = r; }).catch(() => {});
     get<Snapshot>("/api/snapshot").then(setSnap).catch(() => {});
-    const es = new EventSource(api("/api/stream?after=999999999"));
-    es.addEventListener("snapshot", (m) => setSnap(JSON.parse((m as MessageEvent).data)));
-    es.addEventListener("narration", (m) => {
-      const n: Narration = JSON.parse((m as MessageEvent).data);
+    return subscribe((type, data) => {
+      if (type === "snapshot") return setSnap(data);
+      const n: Narration = data;
       queue.current.push(n);
       recent.current = [...recent.current.slice(-39), n];
       if (n.stage === "apply" && n.tone === "win") refresh();
     });
-    return () => es.close();
   }, []);
 
   return { snap, apps, lines, pulse, replaying };

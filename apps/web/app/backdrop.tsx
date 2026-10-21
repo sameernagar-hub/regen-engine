@@ -1,9 +1,10 @@
 "use client";
-import { api } from "../lib/types";
+import { subscribe } from "../lib/stream";
 // The neural field behind every page: points drift along the five engine stages and pull toward each other when
 // close, drawing the links between them. Each real engine event (SSE narration) sends a pulse through the field,
 // so the background is a heartbeat of the engine, not decoration. Canvas 2D, ~120 points, O(n^2) link pass at
-// n=120 is ~7k distance checks per frame; pauses when the tab is hidden; static frame under reduced motion.
+// n=120 is ~7k squared-distance checks per frame at 30 fps (it is a backdrop: half the frames cost nothing visible);
+// pauses when the tab is hidden; static frame under reduced motion; pulses arrive on the tab's shared stream.
 import { useEffect, useRef } from "react";
 
 const STAGE_HUE = [210, 45, 160, 35, 280]; // discover, judge, write, apply, hear
@@ -24,7 +25,10 @@ export function Backdrop() {
       w = c.clientWidth; h = c.clientHeight;
       c.width = w * dpr; c.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
-    const frame = () => {
+    let lastT = 0;
+    const frame = (t = 0) => {
+      if (!still && t - lastT < 32) { raf = requestAnimationFrame(frame); return; }  // ~30 fps
+      lastT = t;
       ctx.clearRect(0, 0, w, h);
       pulse *= 0.96;
       for (const p of pts) {
@@ -32,12 +36,13 @@ export function Backdrop() {
         if (p.x < 0 || p.x > 1) p.vx *= -1;
         if (p.y < 0 || p.y > 1) p.vy *= -1;
       }
-      const R = Math.min(w, h) * 0.16;
+      const R = Math.min(w, h) * 0.16, R2 = R * R;
       for (let i = 0; i < pts.length; i++) {
         const a = pts[i], ax = a.x * w, ay = a.y * h;
         for (let j = i + 1; j < pts.length; j++) {
-          const b = pts[j], dx = ax - b.x * w, dy = ay - b.y * h, d = Math.hypot(dx, dy);
-          if (d < R) {
+          const b = pts[j], dx = ax - b.x * w, dy = ay - b.y * h, d2 = dx * dx + dy * dy;
+          if (d2 < R2) {
+            const d = Math.sqrt(d2);
             const hue = a.s === b.s ? STAGE_HUE[a.s] : pulseHue;
             ctx.strokeStyle = `hsla(${hue}, 80%, 65%, ${(1 - d / R) * (0.10 + pulse * 0.35)})`;
             ctx.lineWidth = 1;
@@ -55,18 +60,14 @@ export function Backdrop() {
     window.addEventListener("resize", onResize);
     document.addEventListener("visibilitychange", onVis);
     // every real engine event pulses the field in that stage's color
-    let es: EventSource | null = null;
-    if (process.env.NEXT_PUBLIC_REGEN_MODE !== "public") {
-      es = new EventSource(api("/api/stream?after=999999999"));
-      es.addEventListener("narration", (m) => {
-        const n = JSON.parse((m as MessageEvent).data);
-        const k = ["listen", "judge", "write", "apply", "hear"].indexOf(n.stage);
-        pulseHue = STAGE_HUE[Math.max(0, k)];
-        pulse = n.tone === "win" ? 1 : 0.6;
-        if (still) frame();
-      });
-    }
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); document.removeEventListener("visibilitychange", onVis); es?.close(); };
+    const unsub = subscribe((type, n) => {
+      if (type !== "narration") return;
+      const k = ["listen", "judge", "write", "apply", "hear"].indexOf(n.stage);
+      pulseHue = STAGE_HUE[Math.max(0, k)];
+      pulse = n.tone === "win" ? 1 : 0.6;
+      if (still) frame();
+    });
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); document.removeEventListener("visibilitychange", onVis); unsub(); };
   }, []);
   return <canvas ref={ref} className="backdrop" aria-hidden />;
 }

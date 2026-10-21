@@ -231,7 +231,7 @@ def test_visa_explain_license_and_marketing_optin():
     q = "Do you currently hold or have previously held any securities industry licenses (ie - SEC, FINRA)?"
     assert R.answer_for(q, {}) == R.P.get("securities_license", "No")
     q = "You can choose to receive recruitment marketing communications from us, including updates on new roles."
-    assert R.answer_for(q, {}) == "No"
+    assert R.answer_for(q, {}) == R.P.get("marketing_opt_in", "No")
 
 
 def test_degree_year_clearance_level_region():

@@ -251,3 +251,25 @@ def test_typed_legal_answer_stays_on_its_job(monkeypatch, tmp_path, seeded):
     extra = json.load(open(seeded / "batches" / "inbox" / batch))[0]["extra"]
     from engine.apply.runner import answer_for
     assert answer_for(q, extra) == "I acknowledge" and answer_for(q, {}) != "I acknowledge"
+
+
+def test_store_reads_incrementally_and_resets(seeded):
+    """Only new rows are parsed; a half-written line waits; a truncated log resets the cache and its generation."""
+    n = len(store.read())
+    gen, last = store.version()
+    with open(store.EVENTS, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"kind": "pipeline", "stage": "scan"}) + "\n" + '{"kind": "half')
+    assert len(store.read()) == n + 1 and store.version() == (gen, last + 1)
+    assert [e["kind"] for _, e in store.read(last)] == ["pipeline"]
+    open(store.EVENTS, "w", encoding="utf-8").write(json.dumps({"kind": "outcome"}) + "\n")
+    assert [e["kind"] for _, e in store.read()] == ["outcome"] and store.version()[0] != gen
+
+
+def test_conditional_get_returns_304(seeded):
+    """Unchanged polls are bodiless 304s; new events change the tag."""
+    r = client.get("/api/applications")
+    tag = r.headers["etag"]
+    assert r.status_code == 200 and client.get("/api/applications", headers={"If-None-Match": tag}).status_code == 304
+    events.record("application", job="Hooli - SRE", url="https://jobs.lever.co/hooli/3", status="SUBMITTED", dry=False)
+    r2 = client.get("/api/applications", headers={"If-None-Match": tag})
+    assert r2.status_code == 200 and r2.headers["etag"] != tag and any(a["job"] == "Hooli - SRE" for a in r2.json())

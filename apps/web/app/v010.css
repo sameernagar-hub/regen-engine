@@ -90,3 +90,5 @@ label.check { display: flex !important; align-items: center; gap: 6px; color: va
 .usebar i { display: block; height: 100%; background: var(--gold); }
 .skill { margin: 10px 0; }
 @media (prefers-reduced-motion: reduce) { .pstep, .pstep.on::before, .pflow.live::after, .tabs li, .detail, .factmap .gnode { animation: none; } }
+.apps tfoot td { text-align: center; padding: 10px; }
+.apps .more { background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 6px 14px; cursor: pointer; }

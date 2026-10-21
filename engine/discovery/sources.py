@@ -51,7 +51,7 @@ def add_boards(items, by="mcp"):
         b[a] = list(set(b.get(a, [])) | set(toks))
     A.save_boards(b)
     added = {a: t for a, t in new.items() if t}
-    record("source", kind="boards", added=sum(len(t) for t in added.values()), by=by)
+    record("source", what="boards", added=sum(len(t) for t in added.values()), by=by)
     unknown = [u for u in urls if not any(re.search(p, u) for p in A.HARVEST.values())]
     return {"added": added, "not_an_ats_url": unknown[:20]}
 
@@ -78,7 +78,7 @@ def add_feed(url, by="mcp"):
         tmp = SOURCES + ".tmp"
         json.dump(s, open(tmp, "w", encoding="utf-8"), indent=1)
         os.replace(tmp, SOURCES)
-    record("source", kind="feed", url=url, links=len(links), added=n, by=by)
+    record("source", what="feed", url=url, links=len(links), added=n, by=by)
     return {"links": len(links), "boards_added": n, "added": {a: t[:20] for a, t in r["added"].items()}}
 
 
@@ -96,7 +96,7 @@ def probe_companies(names, by="mcp"):
                 found.append([a, s])
                 b.setdefault(a, []).append(s)
     A.save_boards(b)
-    record("source", kind="probe", tried=len(tasks), added=len(found), by=by)
+    record("source", what="probe", tried=len(tasks), added=len(found), by=by)
     return {"tried": len(tasks), "found": found}
 
 
@@ -120,6 +120,6 @@ def add_leads(leads, by="mcp"):
     except (OSError, ValueError):
         old = []
     json.dump(old + unresolved, open(p, "w", encoding="utf-8"), indent=1)
-    record("source", kind="leads", given=len(clean), queued=len(fresh), unresolved=len(unresolved), by=by)
+    record("source", what="leads", given=len(clean), queued=len(fresh), unresolved=len(unresolved), by=by)
     return {"queued": [f"{j['company']} - {j['title']}" for j in fresh], "unresolved": len(unresolved),
             "dropped": dropped, "queue": len(q)}

@@ -53,10 +53,11 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
 .part.hot .tooth, .part:focus-visible .tooth { stroke: var(--tone); }
 .part.hot .crank { animation-duration: .6s; }
 
-.wire { fill: none; stroke: #3a4554; stroke-width: 2; stroke-dasharray: 4 10; animation: flow 1.2s linear infinite; transition: stroke .25s; }
+.wire { fill: none; stroke: #3a4554; stroke-width: 2; stroke-dasharray: 4 10; animation: wire-flow 1.2s linear infinite; transition: stroke .25s; }
 .wire.live, .part.hot .wire, .part:focus-visible .wire { stroke: var(--tone, #5ee6b5); stroke-width: 2.5; }
 .wire.live { stroke: #5ee6b5; }
-@keyframes flow { to { stroke-dashoffset: -28; } }
+@keyframes wire-flow { to { stroke-dashoffset: -28; } }  /* one 4+10 dash period x2: loops seamlessly */
+@keyframes fuel-flow { to { stroke-dashoffset: -36; } }  /* one 10+8 dash period x2 */
 .graph-edge { stroke: #3a4554; stroke-width: 1.5; }
 .graph-node { fill: #5ee6b5; opacity: .55; animation: blink 2.4s ease-in-out infinite; }
 @keyframes blink { 50% { opacity: 1; } }
@@ -66,7 +67,7 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
 .tank-fuel { fill: url(#fuel); animation: slosh 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; }
 @keyframes slosh { 50% { transform: scaleY(.92); } }
 .tank-gauge { stroke: #0b0f15; stroke-width: 2; stroke-dasharray: 2 8; }
-.fuel-line { fill: none; stroke: #f2c14e; stroke-opacity: .4; stroke-width: 3; stroke-dasharray: 10 8; animation: flow 1s linear infinite; }
+.fuel-line { fill: none; stroke: #f2c14e; stroke-opacity: .4; stroke-width: 3; stroke-dasharray: 10 8; animation: fuel-flow 1s linear infinite; }
 .part.hot .tank { stroke: var(--tone); }
 .part.hot .fuel-line { stroke-opacity: 1; }
 

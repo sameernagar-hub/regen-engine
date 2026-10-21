@@ -6,12 +6,12 @@ Everything is derived from the append-only event log (Postgres or events.jsonl, 
 already wrote (proof screenshots). The only write is POST /api/answers (v0.8, "answer from the page"): enabled only
 when REGEN_API_WRITE=1, only from localhost, never for legal / EEO / sensitive questions (engine/feedback/answers.py).
 """
-import asyncio, collections, json, os, re, time
+import asyncio, collections, hashlib, json, os, re, time
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 
 from apps.api import store
 from apps.api import control
@@ -29,6 +29,26 @@ QUEUE = os.environ.get("REGEN_ANSWER_QUEUE") == "1"
 TRUST_PORT = os.environ.get("REGEN_API_TRUST_PORT") == "1"
 app = FastAPI(title="REGEN API", version="1.0.0",
               description="API over the REGEN job engine's append-only event log (read-only, plus POST /api/answers when enabled).")
+NO_ETAG = ("/api/stream", "/api/proof/", "/api/resume/")
+
+
+@app.middleware("http")  # registered first = innermost, so CORS headers still wrap the 304
+async def etag(request: Request, call_next):
+    """Conditional GETs: pages poll every few seconds and most polls find nothing new. A body hash as ETag turns
+    those into a bodiless 304 (the 1.4 MB applications list included); the browser serves its cached copy."""
+    resp = await call_next(request)
+    if request.method != "GET" or resp.status_code != 200 or request.url.path.startswith(NO_ETAG) \
+            or not request.url.path.startswith("/api/"):
+        return resp
+    body = b"".join([c async for c in resp.body_iterator])
+    tag = '"' + hashlib.blake2b(body, digest_size=12).hexdigest() + '"'
+    headers = {k: v for k, v in resp.headers.items() if k.lower() not in ("content-length", "etag")}
+    headers.update(ETag=tag, **{"Cache-Control": "no-cache"})
+    if request.headers.get("if-none-match") == tag:
+        return Response(status_code=304, headers={"ETag": tag, "Cache-Control": "no-cache"})
+    return Response(content=body, status_code=200, headers=headers, media_type=resp.media_type)
+
+
 # DNS rebinding: a page on evil.example can re-point its name at 127.0.0.1 and then read this API as same-origin.
 # CORS does not stop that; only checking the Host header does. Local names + the bank's service name are allowed.
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=os.environ.get(
@@ -47,8 +67,26 @@ def _proof(path):
     return path if path and os.path.exists(os.path.join(WORKSPACE, path)) else None
 
 
+_MEMO = {}  # name -> (log version, value): recomputed only when a new event lands
+
+
+def memo(name, fn):
+    """fn() once per log version; polls between events are a dict read."""
+    v = store.version()
+    hit = _MEMO.get(name)
+    if hit and hit[0] == v:
+        return hit[1]
+    val = fn()
+    _MEMO[name] = (v, val)
+    return val
+
+
 def fold():
-    """One pass over the log -> latest application per job, plus resume metadata and outcomes."""
+    """Latest application per job, plus resume metadata and outcomes (memoized per log version)."""
+    return memo("fold", _fold)
+
+
+def _fold():
     latest, resumes, outcomes = {}, {}, []
     for _, e in store.read():
         k = e.get("kind")
@@ -105,6 +143,10 @@ def applications(status: str | None = Query(None, description="SUBMITTED, NEEDS 
 
 @app.get("/api/human", response_model=list[HumanItem])
 def human():
+    return memo("human", _human)
+
+
+def _human():
     apps, _ = fold()
     out = []
     for a in apps:
@@ -153,12 +195,23 @@ def events(after: int = 0, kind: str | None = None, limit: int = Query(200, le=5
 
 @app.get("/api/narration", response_model=list[Narration])
 def narration(after: int = 0, limit: int = Query(40, le=500)):
+    gen = store.version()[0]
+    if _NARR.get("_gen") != gen:
+        _NARR.clear()  # another log or a rebuilt one: ids no longer name the same events
+        _NARR["_gen"] = gen
     out = []
-    for i, e in store.read(after):
-        n = narrate(e)
-        if n:
-            out.append(Narration(id=i, ts=e.get("ts"), **n))
-    return out[-limit:]
+    for i, e in reversed(store.read(after)):  # newest first: stop once `limit` narrate, not after the whole log
+        if i not in _NARR:
+            n = narrate(e)
+            _NARR[i] = Narration(id=i, ts=e.get("ts"), **n) if n else None
+        if _NARR[i]:
+            out.append(_NARR[i])
+            if len(out) >= limit:
+                break
+    return out[::-1]
+
+
+_NARR = {}  # event id -> Narration or None (events never change, so this never goes stale)
 
 
 @app.get("/api/proof/{name}")

@@ -1,9 +1,9 @@
 "use client";
-import { api } from "./types";
+import { subscribe } from "./stream";
 // v0.9 engine room data: stations (one per pipeline stage) and per-job timelines. Live by SSE: any new event in the
 // log re-pulls the stations (one O(E) pass on the API), so every room updates the moment the engine does something.
 import { useEffect, useState } from "react";
-import { get } from "./types";
+import { get, poll } from "./types";
 
 export type Line = { id: number; ts: string; tone: string; text: string; url?: string | null; job?: string | null };
 export type Station = { key: string; name: string; about: string; feeds: string[]; total: number; today: number;
@@ -29,22 +29,18 @@ export function useStations(recent = 8) {
         .finally(() => { pending = false; });
     };
     pull();
-    let es: EventSource | null = null;
     if (process.env.NEXT_PUBLIC_REGEN_MODE === "public") {  // no stream on the hosted site: replay the dataset's rhythm
       const order = ["listen", "judge", "write", "apply", "hear"];
       const sim = setInterval(() => setBeat((b) => ({ stage: order[(b?.n || 0) % order.length], n: (b?.n || 0) + 1 })), 2400);
       return () => { alive = false; clearInterval(sim); };
     }
-    try {
-      es = new EventSource(api("/api/stream?after=999999999"));
-      es.addEventListener("narration", (m) => {
-        const n = JSON.parse((m as MessageEvent).data);
-        setBeat((b) => ({ stage: n.stage, n: (b?.n || 0) + 1 }));
-        pull();
-      });
-    } catch { /* no stream: the poll below keeps it fresh */ }
-    const t = setInterval(pull, 15000);
-    return () => { alive = false; clearInterval(t); es?.close(); };
+    const unsub = subscribe((type, n) => {
+      if (type !== "narration") return;
+      setBeat((b) => ({ stage: n.stage, n: (b?.n || 0) + 1 }));
+      pull();
+    });
+    const stop = poll(pull, 15000);
+    return () => { alive = false; stop(); unsub(); };
   }, [recent]);
   return { stations, beat, error };
 }

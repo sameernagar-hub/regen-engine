@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Nav } from "../nav";
-import { api, get, post } from "@/lib/types";
+import { api, get, post, poll } from "@/lib/types";
 
 type Step = { name: string; status: string; started?: number; finished?: number; detail?: string };
 type Applier = { name: string; updated: number; jobs: { job: string; state: string }[]; results: Record<string, number>;
@@ -80,13 +80,13 @@ function ControlView() {
     const pull = () => get<State>("/api/control/state").then((s) => { setSt(s); setP((cur) => cur || s.defaults); }).catch((e) => setMsg(String(e.message)));
     const pullFleet = () => get<Fleet>("/api/control/fleet").then(setFl).catch(() => {});
     pull(); pullFleet();
-    const tf = setInterval(pullFleet, 5000);  // heartbeats land every 30-60 s
+    const tf = poll(pullFleet, 5000);  // heartbeats land every 30-60 s
     const pullSlow = () => { get<Reach>("/api/control/reach").then(setRc).catch(() => {}); get<Bench>("/api/control/bench").then(setBn).catch(() => {}); };
     pullSlow();
-    const ts = setInterval(pullSlow, 60000);  // reach rows land once per pipeline pass; benchmarks every few hours
+    const ts = poll(pullSlow, 60000);  // reach rows land once per pipeline pass; benchmarks every few hours
     get<Filters>("/api/control/filters").then((x) => { setF(x); setEdit(x.filters); }).catch(() => {});
-    const t = setInterval(pull, 2000);  // processing view: every 2 s while you watch
-    return () => { clearInterval(t); clearInterval(tf); clearInterval(ts); };
+    const t = poll(pull, 2000);  // processing view: every 2 s while you watch
+    return () => { t(); tf(); ts(); };
   }, []);
 
   const start = () => post("/api/control/run", p).then(() => setMsg("Run started.")).catch((e) => setMsg(e.message));

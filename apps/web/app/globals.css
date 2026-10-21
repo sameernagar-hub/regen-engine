@@ -99,7 +99,6 @@ line.flow { stroke-dasharray: 6 10; animation: flow 1.8s linear infinite; transi
 @keyframes breathe { 50% { filter: drop-shadow(0 0 7px #f2c14e); } }
 .count .mode { color: var(--calm); font-size: 11px; letter-spacing: .08em; }
 .narrator p:last-child { animation: rise .6s ease-out; }
-@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) {
   .star, .grow, .bead, .narrator p:last-child { animation: none; opacity: 1; stroke-dashoffset: 0; }
   .star { opacity: .35; }
