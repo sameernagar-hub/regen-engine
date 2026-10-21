@@ -1,0 +1,54 @@
+/* v1.2 rules in the Fact Bank (app/facts/rules.tsx): tanks -> fuel lines -> a four-cylinder engine (layout.tsx imports it) */
+.rules-svg { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
+.rules .fuel-line { fill: none; stroke-width: 2; stroke-opacity: .22; stroke-dasharray: 2 6; transition: stroke-opacity .3s; }
+.rules .fuel-line.on { stroke-opacity: .7; stroke-width: 3; stroke-dasharray: none; }
+.rules .tank { cursor: pointer; outline: none; }
+.rules .tank-shell { fill: url(#rsteel); stroke: var(--line); }
+.rules .tank-fuel { opacity: .28; transition: opacity .3s, width .8s cubic-bezier(.2, .8, .2, 1); }
+.rules .tank.on .tank-shell, .rules .tank:focus-visible .tank-shell { stroke: var(--ink); stroke-width: 1.5; }
+.rules .tank.on .tank-fuel { opacity: .55; }
+.rules .tank-name { fill: var(--ink); font: 600 13px var(--sans); }
+.rules .tank-num { fill: var(--dim); font: 11px var(--mono); }
+.rules .block { fill: url(#rsteel); stroke: var(--line); }
+.rules .bore { fill: #0b0f14; stroke: var(--faint); }
+.rules .piston rect { fill: #3a4556; }
+.rules .piston line { stroke: #3a4556; stroke-width: 6; stroke-linecap: round; }
+.rules .piston { animation: stroke 1.4s ease-in-out infinite; animation-delay: var(--d); }
+.rules .spark { fill: var(--faint); }
+.rules .cyl.hot .spark { fill: var(--gold); animation: spark 1.4s steps(1) infinite; animation-delay: var(--d); }
+.rules .cyl.hot .bore { stroke: var(--gold); }
+.rules .cyl-label { fill: var(--ink); font: 600 12px var(--mono); text-anchor: middle; text-transform: uppercase; letter-spacing: .08em; }
+.rules .cyl-sub { fill: var(--dim); font: 10px var(--mono); text-anchor: middle; }
+.rules .cyl-sub.end { text-anchor: end; }
+.rules .crank { animation: spin 1.4s linear infinite; transform-box: fill-box; transform-origin: center; }
+.rules .crank-disc { fill: #1d2530; stroke: var(--line); }
+.rules .crank-arm { fill: var(--gold); }
+.rules .crank-shaft { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+@keyframes stroke { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(38px); } }
+@keyframes spark { 0% { opacity: 1; } 20% { opacity: .15; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .rules .fuel { display: none; }
+  .rules .piston, .rules .crank, .rules .cyl.hot .spark { animation: none; }
+}
+
+.rules-pick { display: flex; gap: 16px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
+.rules-pick > div { flex: 1 1 360px; min-width: 0; }
+.rules-pick h3 { margin: 0 0 4px; font-size: 18px; }
+.rules-pick input { background: #0b0f14; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 13px var(--sans); width: min(260px, 100%); }
+.rule-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 6px; max-height: 520px; overflow: auto; }
+.rule-list li { border: 1px solid var(--faint); border-radius: 10px; padding: 8px 10px; display: grid; gap: 4px; min-width: 0; }
+.rule-list .rhead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rule-list .rhead b { flex: 1 1 200px; font-size: 13px; min-width: 0; }
+.rule-list .rhead .usebar { width: 90px; flex: none; }
+.rule-list .rhead small { font-family: var(--mono); min-width: 44px; text-align: right; }
+.rule-list .rpat { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.rule-list li:hover .rpat { white-space: normal; word-break: break-all; }
+.chip.src-preset { color: #7ef0c1; }
+.chip.src-you-decide { color: var(--amber); }
+.chip.src-decline { color: #b39dff; }
+.chip.src-acknowledge { color: var(--gold); }
+.chip.src-fixed, .chip.src-computed { color: var(--dim); }
+.ticker { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 4px; font-size: 13px; }
+.ticker .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.rules-svg text { stroke: none; }

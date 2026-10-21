@@ -5,6 +5,7 @@ import "./v010.css";
 import "./v011.css";
 import "./engine.css";
 import "./gearbox.css";
+import "./rules.css";
 import { Backdrop } from "./backdrop";
 
 export const metadata = {

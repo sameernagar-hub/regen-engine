@@ -395,7 +395,7 @@ def main():
               "/api/graph?questions=false", "/api/control/state", "/api/control/fleet", "/api/control/bench", "/api/control/evals?n=60",
               "/api/control/reach?limit=500", "/api/control/filters", "/api/reach/desk", "/api/reach/signins", "/api/reach/kit",
               "/api/factbank", "/api/outreach", "/api/control/containers",
-              "/api/control/gearbox", "/api/control/mcp"]
+              "/api/control/gearbox", "/api/control/mcp", "/api/rules"]
     manifest = {"generated": now, "note": "Synthetic data: fictional candidate and companies. Built by scripts/proxy_dataset.py.",
                 "routes": {}, "jobs": {}}
     for r in routes:

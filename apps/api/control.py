@@ -433,6 +433,13 @@ def set_filters(body: dict, request: Request):
     return filters()
 
 
+@router.get("/rules")
+def rules():
+    """Every rule that drives the engine, grouped by the stage it runs in, with firing counts (engine/rules.py)."""
+    from engine.rules import catalog
+    return catalog()
+
+
 @router.get("/factbank")
 def factbank():
     """The Fact Bank as the UI draws it: every entry, which resumes used it, in which lanes."""

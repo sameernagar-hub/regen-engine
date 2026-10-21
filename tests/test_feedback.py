@@ -157,3 +157,21 @@ def test_employer_sender_skips_body_match():
     assert match_company(relay, cos) == "Initech"
     via_ats = {"from": "Careers <no-reply@ashbyhq.example>", "subject": "Your application", "snippet": "Thanks from Globex"}
     assert match_company(via_ats, cos) == "Globex"
+
+
+def test_rules_catalog_reads_live_rule_tables():
+    """/api/rules lists every runner rule in order, names answer sources without values, and counts gate firings."""
+    from engine import rules
+    from engine.apply import runner
+    from engine.feedback.events import record
+    rules._CACHE.update(key=None, data=None, at=0.0)
+    record("application", job="Initech - SWE", url="u", status="SKIPPED", detail="JD: 5+ yrs, no sponsorship")
+    c = rules.catalog()
+    g = {x["id"]: x for x in c["groups"]}
+    assert set(g) == {"title", "gate", "learned", "answers", "safety", "override"}
+    assert g["answers"]["count"] == len(runner.RULES)
+    assert any(r["source"] == "preset work_auth_status" for r in g["answers"]["rules"])
+    assert any(r["source"] == "you decide" for r in g["answers"]["rules"])  # arbitration
+    gate = {r["name"]: r["fires"] for r in g["gate"]["rules"]}
+    assert gate["years"] >= 1 and gate["no sponsorship"] >= 1
+    assert c["total"] == sum(x["count"] for x in c["groups"])

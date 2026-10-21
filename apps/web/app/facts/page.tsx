@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Nav } from "../nav";
 import { get } from "@/lib/types";
+import { RulesEngine } from "./rules";
 
 type Fact = { id: string; text: string; role: string | null; uses: number; lanes: Record<string, number>;
               recent: { job: string; url: string; ts: string }[] };
@@ -61,7 +62,7 @@ function FactsView() {
       <Nav />
       <header className="hero">
         <h1>Fact Bank</h1>
-        <p>Every claim a resume can make, from your own resumes, LinkedIn and repos. {b.resumes_built} resumes were built from these {b.facts.length} facts; {used} have been used at least once.</p>
+        <p>The engine's fuel: every claim a resume can make, from your own resumes, LinkedIn and repos, and every <a href="#rules">rule</a> that decides what the engine may do with them. {b.resumes_built} resumes were built from these {b.facts.length} facts; {used} have been used at least once.</p>
       </header>
       <dl className="stats">
         <div><dt>Facts</dt><dd>{b.facts.length}</dd></div>
@@ -70,6 +71,8 @@ function FactsView() {
         <div><dt>Skill lines</dt><dd>{b.skills.length}</dd></div>
         <div><dt>Resumes built</dt><dd>{b.resumes_built}</dd></div>
       </dl>
+
+      <RulesEngine />
 
       <section className="card mapcard" aria-label="Knowledge map">
         <h2 className="sub">Knowledge map</h2>

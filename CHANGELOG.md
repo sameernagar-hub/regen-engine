@@ -4,7 +4,19 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
-## [Unreleased] - 2026-10-20 · inbox attribution + three filler rules
+## [Unreleased] - 2026-10-20 · rules in the Fact Bank, inbox attribution, three filler rules
+- **Rules: the other half of the fuel** (`engine/rules.py`, `GET /api/rules`, `apps/web/app/facts/rules.tsx`,
+  `rules.css`): the Fact Bank page now lists every rule that drives the engine (title filter, fit gate, learned
+  phrases, form answers, airbags and limits, draft override) and animates them. Each group is a tank whose fuel line
+  feeds the cylinder of the stage it runs in (discover, select, fill, submit); pulses on a line scale with that group's
+  firings in the event log (log scale, 1-5 in flight), a picked tank lights its cylinder and lists its rules with a
+  filter, a source chip and a firing bar. Why: facts say what a resume may claim, rules say what the engine may do;
+  both were invisible in the UI. The catalog is read from the modules that run the rules (runner RULES via its AST,
+  tailor BLOCKERS, filters, safety, learned_gate.json, override), so it cannot drift; answer sources are named
+  (`preset work_auth_status`, `decline`, `you decide`) and values never leave the bank. Cost: replays the last 400
+  applications' answer labels through RULES, O(L x R), cached for 60 s. Reduced motion: no pulses, pistons still.
+  Public site: `/api/rules` added to `scripts/proxy_dataset.py`. Verify: `pytest tests/test_feedback.py -k catalog`,
+  open `/facts#rules`.
 - **Inbox attribution** (`engine/feedback/inbox.py` `match_company`): mail sent from an employer's own domain (not an
   ATS or mail relay) is matched on sender + subject only. Why: a rejection from an employer the engine never applied to
   was credited to another company named in its body, adding a false rejected JD to the feedback set. Verify:
