@@ -53,6 +53,20 @@ def edu_dates(path=None):
 
 
 EDU = edu_dates()
+
+
+def undergrad_year(path=None):
+    """Year the bachelor's degree was completed, from the Fact Bank education entry ("B.Tech. ...", "Aug 2018 - May 2022")."""
+    path = path or os.environ.get("REGEN_FACT_BANK") or profile_file("fact_bank.json")
+    try:
+        edu = json.load(open(path, encoding="utf-8"))["education"]
+    except (OSError, KeyError, ValueError):
+        return None
+    for e in edu:
+        if isinstance(e, list) and len(e) > 1 and re.match(r"b\.?(tech|s|a|e|sc)\b|bachelor", e[0], re.I):
+            years = re.findall(r"(?:19|20)\d\d", e[1])
+            return years[-1] if years else None
+    return None
 BAY_AREA = r"san francisco|san jose|oakland|berkeley|palo alto|mountain view|sunnyvale|santa clara|cupertino|fremont|menlo park|redwood city|san mateo|hayward|milpitas"
 # (label regex, answer). First match wins. Answers for yes/no/select are matched against option text.
 RULES = [
@@ -66,6 +80,9 @@ RULES = [
     (r"explain .{0,40}visa|visa (type|status) and (status|type)", P.get("work_auth_status")),
     # no securities / brokerage license is on file; a preset can override
     (r"(securities|finra|brokerage)\b.{0,40}licen[cs]e|series (6|7|24|63|65|66)\b", P.get("securities_license", "No")),
+    # 10-20 parked: wordings the general rules below missed; every answer is on file
+    (r"(year|when) .{0,30}(receive|complete|earn|finish|graduat)\w* .{0,20}(undergraduate|bachelor)", undergrad_year()),
+    (r"(security )?clearance level", "None" if P.get("security_clearance") == "No" else None),
     # optional marketing opt-ins: the privacy-preserving choice
     (r"(recruit(ment|ing)|talent) marketing|marketing (communications|emails|updates)|receive .{0,40}(newsletters?|marketing)", "No"),
     (r"adverse credit|credit report|bankruptcy|foreclosure", P.get("adverse_credit")),
@@ -140,7 +157,7 @@ RULES = [
     (r"(country|where).{0,40}(reside|based|located|live)|^country", P["country"]),
     (r"countr(y|ies) .{0,30}(anticipate|plan|expect|intend|would like) (to )?work", P["country"]),
     (r"(plan|intend|want|prefer) to work remotely|do you plan to work (from a )?remote", P.get("plans_to_work_remotely")),
-    (r"(state|province).{0,30}(reside|live|located|working from|work from)", P["state"]),
+    (r"(state|province|region).{0,40}(reside|live|located|working from|work from)", P["state"]),
     (r"city.{0,40}(reside|live|located)", P["city"]),
     # location boxes autocomplete worldwide: "San Jose" alone can resolve to San José, Costa Rica
     (r"current location|where are you located|^location", f"{P['city']}, {P['state']}"),

@@ -232,3 +232,12 @@ def test_visa_explain_license_and_marketing_optin():
     assert R.answer_for(q, {}) == R.P.get("securities_license", "No")
     q = "You can choose to receive recruitment marketing communications from us, including updates on new roles."
     assert R.answer_for(q, {}) == "No"
+
+
+def test_degree_year_clearance_level_region():
+    """10-20 parked wordings: undergraduate year from the Fact Bank, clearance level, state/region of residence."""
+    from engine.apply import runner as R
+    assert R.answer_for("What year did you receive your undergraduate degree?", {}) == R.undergrad_year()
+    if R.P.get("security_clearance") == "No":
+        assert R.answer_for("What is your clearance level?", {}) == "None"
+    assert R.answer_for("Please provide the state/region in which you currently reside.", {}) == R.P["state"]

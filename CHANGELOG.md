@@ -21,7 +21,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   ATS or mail relay) is matched on sender + subject only. Why: a rejection from an employer the engine never applied to
   was credited to another company named in its body, adding a false rejected JD to the feedback set. Verify:
   `pytest tests/test_feedback.py -k employer_sender`.
-- **Filler rules** (`engine/apply/runner.py` RULES): "explain your current visa type and status" -> `work_auth_status`
+- **Filler rules** (`engine/apply/runner.py` RULES): undergraduate degree year (`undergrad_year()` from the Fact Bank), "clearance level" -> None when the preset says no clearance, "state/region in which you reside"; "explain your current visa type and status" -> `work_auth_status`
   (ahead of the broad sponsor rule), securities / FINRA licenses -> `securities_license` preset or No, recruitment
   marketing opt-ins -> No. Why: each parked a job on 10-20 although the answer is on file. Verify:
   `pytest tests/test_forms.py -k marketing`.
