@@ -221,3 +221,14 @@ def test_current_role_picks_present_then_latest():
     del roles["b"]
     assert R.current_role({"roles": roles})["company"] == "Mid Co"
     assert R.current_role({"roles": {}}) is None
+
+
+def test_visa_explain_license_and_marketing_optin():
+    """10-20 parked questions: visa explanation, securities licenses, marketing opt-in."""
+    from engine.apply import runner as R
+    q = "If sponsorship is needed, please explain your current visa type and status."
+    assert R.answer_for(q, {}) == R.P.get("work_auth_status")
+    q = "Do you currently hold or have previously held any securities industry licenses (ie - SEC, FINRA)?"
+    assert R.answer_for(q, {}) == R.P.get("securities_license", "No")
+    q = "You can choose to receive recruitment marketing communications from us, including updates on new roles."
+    assert R.answer_for(q, {}) == "No"

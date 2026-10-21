@@ -62,6 +62,12 @@ RULES = [
     (r"convict|felony|misdemeanor|indict|criminal (record|history|offen[cs]e|conviction)", P.get("criminal_record")),
     (r"active immigration case|pending (immigration|visa|green card|h-?1b) (case|petition|application)", P.get("active_immigration_case")),
     (r"vaccinat", P.get("covid_vaccinated")),
+    # 10-20 parked: "If sponsorship is needed, please explain your current visa type and status" (before the sponsor rule)
+    (r"explain .{0,40}visa|visa (type|status) and (status|type)", P.get("work_auth_status")),
+    # no securities / brokerage license is on file; a preset can override
+    (r"(securities|finra|brokerage)\b.{0,40}licen[cs]e|series (6|7|24|63|65|66)\b", P.get("securities_license", "No")),
+    # optional marketing opt-ins: the privacy-preserving choice
+    (r"(recruit(ment|ing)|talent) marketing|marketing (communications|emails|updates)|receive .{0,40}(newsletters?|marketing)", "No"),
     (r"adverse credit|credit report|bankruptcy|foreclosure", P.get("adverse_credit")),
     (r"^(i acknowledge|by checking this box|i confirm|i have (read|reviewed))\b", "__ACK__"),
     (r"^\W*(affirmation|personal information policy|applicant (privacy|data) (notice|policy))\W*$", "__ACK__"),  # 10-10: 12 forms stopped on these one-word ack labels
