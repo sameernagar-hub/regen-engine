@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { Nav } from "../nav";
 import { TONE, jobHref, useStations, when } from "@/lib/room";
+import { DiscoverEyes } from "./discover-eyes";
 
 export default function Room() {
   const { stations, beat, error } = useStations(4);
@@ -55,6 +56,11 @@ export default function Room() {
           fit-gate rules, so the same miss never repeats. <Link href="/room/hear">See the inbox →</Link>
         </p>
       )}
+      <section aria-label="Discover, live">
+        <h2 className="sub">Discover, live</h2>
+        <DiscoverEyes />
+        <p className="dim small"><Link href="/room/listen#bigtech">Big-tech roles with a resume ready →</Link></p>
+      </section>
     </main>
   );
 }
