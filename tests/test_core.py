@@ -613,6 +613,40 @@ def test_scale_cancels_drain_when_work_arrives(tmp_path, monkeypatch):
     assert not os.path.exists(S.drain_path("b" * 12)) and calls == []  # un-drained instead of creating a third
 
 
+def test_scale_drains_above_cap_while_busy(tmp_path, monkeypatch):
+    """10-21: a downshift 9 -> 3 with batches waiting never idled anyone, so 9 appliers kept the CPU at 900%."""
+    import json, os
+    from engine import supervisor as S
+    for k, v in (("FLEET", tmp_path / "fleet"), ("BOX", tmp_path / "batches"), ("WORKSPACE", tmp_path)):
+        monkeypatch.setattr(S, k, str(v))
+    for d in ("inbox", "claimed"):
+        os.makedirs(tmp_path / "batches" / d)
+    rows = [(c * 64, f"deploy-applier-{i}", True) for i, c in enumerate("abcde", 1)]
+    monkeypatch.setattr(S, "appliers", lambda: rows)
+    calls = []
+    monkeypatch.setattr(S, "_docker", lambda *a, **k: calls.append(a))
+    monkeypatch.setattr(S, "clone", lambda *a: calls.append("clone"))
+    os.makedirs(tmp_path / "fleet")
+    for c in "abcde":
+        (tmp_path / "fleet" / f"applier_{c * 12}.json").write_text(
+            json.dumps({"role": "applier", "host": c * 12, "state": "applying", "ts": __import__("time").time()}))
+    (tmp_path / "batches" / "inbox" / "x.json").write_text(json.dumps([{}] * 30))  # plenty of work waiting
+    S.scale(1, 3, _idle={})
+    assert sorted(c for c in "abcde" if os.path.exists(S.drain_path(c * 12))) == ["d", "e"]  # extras asked, not stopped
+    assert calls == []
+
+
+def test_headroom_refuses_a_busy_machine(tmp_path, monkeypatch):
+    from engine import supervisor as S
+    monkeypatch.setattr(S.os, "cpu_count", lambda: 12)
+    proc = lambda free_kb, load: ((tmp_path / "meminfo").write_text(f"MemTotal: 7969424 kB\nMemAvailable: {free_kb} kB\n"),
+                                  (tmp_path / "loadavg").write_text(f"{load} 1.0 1.0 1/100 1\n"), str(tmp_path))[-1]
+    assert S.headroom(proc(5_000_000, 4.0)) is None  # ~4.9 GB free, 33% load: one more fits
+    assert "memory" in S.headroom(proc(2_000_000, 4.0))  # ~1.9 GB free
+    assert "CPU" in S.headroom(proc(5_000_000, 13.9))  # 10-21: load 13.9 on 12 CPUs
+    assert S.headroom(str(tmp_path / "missing")) is None  # no /proc: no opinion
+
+
 def test_worker_never_claims_while_drained(tmp_path, monkeypatch):
     import os
     from engine.apply import worker as W

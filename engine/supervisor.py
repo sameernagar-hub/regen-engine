@@ -199,7 +199,14 @@ def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container
             if len(active) <= want:
                 break
             m = beats.get(cid[:12])
-            if m and m["up"] and m.get("state") == "watching":
+            if len(active) > hi:
+                # 10-21: above the gear's cap (a downshift with batches waiting) no applier ever idles, so the extras
+                # ran on at full CPU. Drain now: the worker finishes its batch, then stops claiming (handshake above).
+                os.makedirs(FLEET, exist_ok=True)
+                open(drain_path(cid[:12]), "w").write(str(now))
+                active.remove((cid, name, up))
+                _idle.pop(cid, None)
+            elif m and m["up"] and m.get("state") == "watching":
                 first = _idle.setdefault(cid, now)
                 if now - first >= idle_grace:
                     os.makedirs(FLEET, exist_ok=True)
@@ -273,9 +280,34 @@ def audit(action, target, **kw):
         pass
 
 
+PROC = "/proc"  # the Docker VM's view: a container reads the VM's meminfo and loadavg
+MIN_FREE_MB = int(os.environ.get("REGEN_MIN_FREE_MB", "2048"))  # leave this much VM memory for everything else
+MAX_LOAD = float(os.environ.get("REGEN_MAX_LOAD", "0.7"))  # 1-min load per CPU above which nothing new starts
+
+
+def headroom(proc=None):
+    """None when the machine can take one more applier (~1.6 cores, ~0.8 GB), else the reason it cannot. 10-21: 9
+    appliers held the VM at 900% CPU and 6.5 of 7.6 GB. Unreadable /proc (not Linux) says nothing. O(1)."""
+    proc = proc or PROC
+    try:
+        mem = {k: int(v.split()[0]) for k, v in (l.split(":", 1) for l in open(os.path.join(proc, "meminfo")))}
+        load = float(open(os.path.join(proc, "loadavg")).read().split()[0])
+    except (OSError, ValueError, IndexError):
+        return None
+    free_mb, cpus = mem.get("MemAvailable", 0) // 1024, os.cpu_count() or 1
+    if free_mb - 800 < MIN_FREE_MB:
+        return f"low memory: {free_mb} MB free, keeping {MIN_FREE_MB} MB"
+    if load / cpus > MAX_LOAD:
+        return f"high CPU: load {load:.1f} on {cpus} CPUs (max {MAX_LOAD:.0%})"
+    return None
+
+
 def clone(cid, rows):
     """Create and start a new applier from a running one's config (same image, env, volumes, limits, compose labels).
-    Returns the new container's name. O(1) API calls."""
+    Refuses when headroom() says the machine is busy. Returns the new container's name. O(1) API calls."""
+    why = headroom()
+    if why:
+        raise Refused(why)
     i = _docker("GET", f"/containers/{cid}/json")
     used = {int(n.rsplit("-", 1)[1]) for _, n, _ in rows if n.rsplit("-", 1)[-1].isdigit()}
     n = next(k for k in range(1, 100) if k not in used)

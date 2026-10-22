@@ -4,6 +4,17 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-21 · downshifts take effect, a resource guard on new appliers
+- **Bug: a downshift never shed appliers while work was waiting.** `scale()` drained an extra applier only after it
+  sat idle (`watching`) for 180 s; going from gear 4 to gear 2 with 5 batches in the inbox meant no applier ever
+  idled, and 9 kept the Docker VM at ~900% CPU / 6.5 of 7.6 GB. Fix (`engine/supervisor.py`): above the gear's max,
+  extras get a drain marker at once; the worker finishes its batch, then stops claiming (same handshake, nothing cut
+  mid-form). The idle grace still applies to scale-down when demand falls. Verify: `test_scale_drains_above_cap_while_busy`.
+- **Resource guard** (`headroom()`): before creating an applier the supervisor reads the VM's `/proc/meminfo` and
+  `/proc/loadavg` and refuses (audited as `refuse`) when fewer than `REGEN_MIN_FREE_MB` (2048) would stay free after
+  one more applier (~800 MB) or the 1-min load per CPU is above `REGEN_MAX_LOAD` (0.7). Running work is never touched.
+  Verify: `test_headroom_refuses_a_busy_machine`; live, gear 2 settled at 3 appliers, ~260% CPU, 5.4 GB free.
+
 ## [Unreleased] - 2026-10-20 · rules in the Fact Bank, a faster frontend, inbox attribution, filler rules
 - **Bug: page titles spun in circles** after the rules view shipped. CSS keyframe names are global and the rules
   view defined `spin`, `stroke` and `spark`, which replaced the title gradient's `spin` (the heading rotated) and the
