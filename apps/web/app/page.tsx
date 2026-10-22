@@ -49,7 +49,8 @@ export default function EngineHome() {
     get<any>("/api/snapshot").then((x) => { put("live", `${x.verified} sent with proof`); put("applications", `${x.verified} with proof`); put("room", `${x.boards.toLocaleString()} boards watched`); }).catch(() => {});
     get<any[]>("/api/human").then((x) => put("needs", `${x.length} waiting on you`)).catch(() => {});
     get<any>("/api/control/fleet").then((x) => put("control", `${x.members.filter((m: any) => m.role === "applier" && m.up).length} appliers running`)).catch(() => {});
-    get<any>("/api/control/reach?limit=1").then((x) => put("reach", `${x.listed} resumes ready`)).catch(() => {});
+    Promise.all([get<any>("/api/control/reach?limit=1"), get<any>("/api/control/bigtech").catch(() => null)])
+      .then(([x, b]) => put("reach", `${x.listed} resumes ready` + (b?.rows.length ? ` + ${b.rows.length} big tech` : ""))).catch(() => {});
     get<any[]>("/api/outreach").then((x) => put("outreach", `${x.length} drafts`)).catch(() => {});
     get<any>("/api/control/evals?n=60").then((x) => put("evals", `${x.runs.length} benchmark runs`)).catch(() => {});
     get<any>("/api/control/gearbox").then((x) => put("gearbox", `gear ${x.gear.gear}, ${x.feedback.stats.rejected ?? 0} rejections read`)).catch(() => {});

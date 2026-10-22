@@ -4,7 +4,19 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
-## [Unreleased] - 2026-10-21 · downshifts take effect, a resource guard on new appliers, smaller proofs
+## [Unreleased] - 2026-10-21 · big-tech portals, more role families, downshifts take effect, smaller proofs
+- **Big tech: 6 portals** (`engine/discovery/bigtech.py`): Google (the results page embeds its jobs as JSON in
+  `AF_initDataCallback ds:1`), Apple (CSRF token + search API; the body needs `format` or it returns 0 rows),
+  Microsoft (Eightfold `pcsx/search`; the apply/v2 list answers 403, and bursts get 429, so 5 s spacing and a clean
+  stop on 429) and Netflix (Eightfold apply/v2) join Amazon and NVIDIA. Every site gets the same 12 searches, new grad /
+  university / early career / entry level included. The pipeline runs it on sources passes, at most once an hour
+  (`REGEN_BIGTECH_EVERY_MIN`); `--force` runs now. First run: 66 new roles with tailored resumes.
+- **Big tech page** (`/bigtech`, `GET /api/control/bigtech`): portals covered, roles per company, a new-grad tab,
+  each role's posting link and resume PDF. Linked from the dock, the Reach page, and the Reach cylinder's live number.
+- **More role families** (profile filters, user's choice 10-21): data science and analytics, research / applied
+  engineer, customer-facing technical (support, implementation, solutions / sales engineer), QA / test / software
+  systems engineer. Wireless, RF, SoC and data-center titles are excluded; senior and defense rules unchanged.
+  Verify: `test_bigtech_google_and_eightfold_offline`.
 - **Proof screenshots ~70% smaller** (`engine/clean.py` `shrink()`): full-page RGB PNGs averaged ~470 KB (418 MB for
   888). Each is re-encoded in place as a 64-color palette PNG with the same name, so the event log's `proof` path
   still verifies. The filler shrinks every new shot right after taking it; the hourly clean catches the rest

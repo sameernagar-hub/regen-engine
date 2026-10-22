@@ -254,7 +254,8 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
         subprocess.run([sys.executable, "-m", "engine", "scan", str(days), "--ats", ats] + (["--hot"] if hot else []),
                        cwd=ROOT, check=False)
     if sources:  # boards miss companies we have no board for: new-grad sites (~25 s) + curated GitHub lists (~4 s)
-        for step in (["newgrad", "1"], ["feed", "1", "--queue"]):
+        # 10-21: + big-tech portals (6 sites, new grad included); bigtech skips itself when it ran < 60 min ago
+        for step in (["newgrad", "1"], ["feed", "1", "--queue"], ["bigtech", "3"]):
             beat("pipeline", state=f"scanning {step[0]}", stage=step[0])
             subprocess.run([sys.executable, "-m", "engine", *step], cwd=ROOT, check=False, timeout=900)
     q = prune(json.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8")))

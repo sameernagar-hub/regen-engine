@@ -178,6 +178,31 @@ def reach(limit: int = 100):
             "marks": dict(collections.Counter(r["mark"] for r in live)), "write": REACH_WRITE}
 
 
+BIG_ROW = re.compile(r"^\| (?P<posted>[^|]*) \| (?P<company>[^|]+) \| \[(?P<title>.+?)\]\((?P<url>[^)]+)\) \| (?P<location>[^|]*) \| "
+                     r"(?P<lane>[^|]*) \| (?P<ats>\d+)% \| `(?P<resume>[^`]+)` \|$")
+NEW_GRAD = re.compile(r"new (college )?grad|university|early career|entry.?level|graduate|junior|\bi\b|\b1\b", re.I)
+
+
+@router.get("/control/bigtech")
+def bigtech():
+    """Big-tech portals (engine/discovery/bigtech.py): roles that passed the title filter and fit gate, each with a
+    tailored resume, read from workspace/bigtech.md (newest first). Applying happens on the company's own portal."""
+    from engine.discovery import bigtech as B
+    p = os.path.join(WORKSPACE, "bigtech.md")
+    rows = []
+    for line in (open(p, encoding="utf-8").read().splitlines() if os.path.exists(p) else []):
+        m = BIG_ROW.match(line.strip())
+        if m:
+            r = m.groupdict()
+            rows.append(dict(r, ats=int(r["ats"]), resume=os.path.basename(r["resume"].replace("\\", "/")),
+                             new_grad=bool(NEW_GRAD.search(r["title"]))))
+    last = os.path.join(WORKSPACE, "bigtech_last")
+    return {"rows": rows, "sources": [s.__name__.capitalize() if s.__name__ != "nvidia" else "NVIDIA" for s in B.SOURCES],
+            "by_company": dict(collections.Counter(r["company"] for r in rows)),
+            "new_grad": sum(r["new_grad"] for r in rows), "queries": B.BIG_Q,
+            "last_run": time.strftime("%Y-%m-%dT%H:%M", time.localtime(os.path.getmtime(last))) if os.path.exists(last) else None}
+
+
 def _kit_fields():
     """The answers a Workday / iCIMS form asks for, straight from presets + Fact Bank (the same values the engine
     types into Greenhouse/Ashby forms), grouped the way those portals ask. Nothing new is generated."""

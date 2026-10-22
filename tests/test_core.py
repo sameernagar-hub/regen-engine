@@ -326,6 +326,40 @@ def test_bigtech_posted_parsing():
     assert _text("<p>Build &amp; ship</p>") == "Build & ship"
 
 
+def test_bigtech_google_and_eightfold_offline(monkeypatch, tmp_path):
+    """10-21: Google (JSON inside the results page) and Eightfold (Microsoft, Netflix) parsed without the network."""
+    import io, json, time
+    from engine.discovery import bigtech as B
+    monkeypatch.setattr(B, "PAUSE", 0)
+    monkeypatch.setattr(B, "BIG_Q", ["new grad"])
+    now = int(time.time())
+    job = ["123", "Software Engineer, Early Career", "u", [None, "<li>Build services</li>"], [None, "<li>BS in CS</li>"],
+           "p", None, "Google", "en-US", [["Mountain View, CA, USA"]], [None, "About"], [2], [now, 0], [now, 0], [now, 0],
+           [None, ""], None, None, [None, ""], [None, "<li>Python</li>"]]
+    page = "<html>AF_initDataCallback({key: 'ds:1', hash: '2', data:" + json.dumps([[job], None, 1]) + ", sideChannel: {}});"
+    monkeypatch.setattr(B.urllib.request, "urlopen", lambda req, timeout=0: io.BytesIO(page.encode()))
+    g = list(B.google(3))
+    assert g[0]["id"] == "goog_123" and g[0]["location"] == "Mountain View, CA, USA" and "Build services" in g[0]["jd"]
+    monkeypatch.setattr(B, "_get", lambda url, data=None: {"data": {"positions": [
+        {"id": 7, "name": "Data Scientist", "locations": ["Redmond, WA, US"], "postedTs": now},
+        {"id": 8, "name": "Old Role", "locations": ["Remote"], "postedTs": now - 30 * 86400}]}})
+    m = list(B.microsoft(3))  # pcsx rows: data.positions + postedTs
+    assert [j["id"] for j in m] == ["msft_7"] and m[0]["_detail"].endswith("/api/apply/v2/jobs/7?domain=microsoft.com")
+    from apps.api import control as API
+    (tmp_path / "bigtech.md").write_text(
+        "# Big-tech roles\n\n| Posted | Company | Role | Location | Lane | ATS | Resume |\n|---|---|---|---|---|---|---|\n"
+        "| 2026-10-21 | <Co> | [Software Engineer, New Grad](https://x.example/1) | Austin, TX | backend | 100% | `out/Resume_Co_1.pdf` |\n"
+        "| 2026-10-20 | <Co> | [Data Scientist](https://x.example/2) | Remote | data | 92% | `out/Resume_Co_2.pdf` |\n", encoding="utf-8")
+    monkeypatch.setattr(API, "WORKSPACE", str(tmp_path))
+    out = API.bigtech()
+    assert out["by_company"] == {"<Co>": 2} and out["new_grad"] == 1 and out["rows"][0]["resume"] == "Resume_Co_1.pdf"
+    assert len(out["sources"]) == 6 and out["last_run"] is None
+    stamp = tmp_path / "last"
+    assert B.due(str(stamp))  # never ran
+    stamp.write_text("x")
+    assert not B.due(str(stamp)) and B.due(str(stamp), now=time.time() + 3601)
+
+
 def test_non_software_discipline_titles_dropped():
     from engine.discovery.filters import load_domain, keep
     dom = load_domain()
