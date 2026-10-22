@@ -1529,6 +1529,9 @@ def job_task(page, job, dry, results, log_base=print):
                 status = "SUBMITTED" if ok else (msg if msg.startswith("NEEDS YOU") else "FAILED: " + msg)
         except Exception as e:
             status, shot = f"ERROR: {e}"[:200], ""
+    if shot and os.path.exists(shot):
+        from engine.clean import shrink
+        shrink(shot)  # ~70% smaller at once instead of waiting for the hourly clean
     log(f"   -> {status}")
     record("application", job=name, url=job["url"], status=status.split(":")[0], detail=status, proof=shot, answers=job.get("_answers"),
            drafted=job.get("_drafted"), resume=job.get("resume"), dry=dry)

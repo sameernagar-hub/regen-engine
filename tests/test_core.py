@@ -636,6 +636,26 @@ def test_scale_drains_above_cap_while_busy(tmp_path, monkeypatch):
     assert calls == []
 
 
+def test_shrink_keeps_name_and_skips_done(tmp_path, monkeypatch):
+    """10-21: proofs were 418 MB; shrink re-encodes in place (the event log's proof path still verifies)."""
+    import os, random
+    from PIL import Image
+    from engine import clean as C
+    monkeypatch.setattr(C, "WORKSPACE", str(tmp_path))
+    os.makedirs(tmp_path / "proof")
+    p = tmp_path / "proof" / "Co_Role_1021-200000.png"
+    R = random.Random(1)
+    im = Image.new("RGB", (400, 1200), "white")
+    im.putdata([(R.randrange(256), R.randrange(256), R.randrange(256)) if i % 7 == 0 else (255, 255, 255)
+                for i in range(400 * 1200)])
+    im.save(p)
+    before = os.path.getsize(p)
+    n, saved = C.shrink_proofs()
+    assert n == 1 and saved > 0 and os.path.getsize(p) == before - saved
+    assert Image.open(p).mode == "P" and not os.path.exists(str(p) + ".tmp")
+    assert C.shrink_proofs() == (0, 0)  # already a palette PNG: skipped
+
+
 def test_headroom_refuses_a_busy_machine(tmp_path, monkeypatch):
     from engine import supervisor as S
     monkeypatch.setattr(S.os, "cpu_count", lambda: 12)

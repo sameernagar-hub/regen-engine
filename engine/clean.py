@@ -11,6 +11,7 @@ Retention policy (user, 10-11). The event log keeps the record: job, status, res
   batches/done/*, batches/*.json older than 2 days
   fleet/*.json           older than 1 day                heartbeats of containers that no longer exist (one per recreate)
   pw-profile*/**/{Cache, Code Cache, GPUCache, CacheStorage}   browser caches (cookies and logins stay)
+Proofs are also shrunk in place (64-color palette PNG, same name, 10-21); they never leave the workspace volume.
 What stays: events.jsonl, queue.json, seen.json, profile/ (never touched), quarantine/ (the user reviews it),
 anything newer than its window. Each window can be overridden with REGEN_KEEP_<NAME>_DAYS (e.g. REGEN_KEEP_PROOF_DAYS).
 The supervisor runs it hourly. O(files under workspace).
@@ -89,6 +90,38 @@ def pending_resumes():
     return names
 
 
+def shrink(path, colors=64):
+    """Re-encode one proof PNG in place as a palette PNG (same name, so the event log's proof path still verifies).
+    10-21: full-page RGB shots averaged ~470 KB (418 MB for 888); 64 colors keeps text readable at ~30% of the size.
+    An already-palette file is skipped, so the hourly clean costs one header read per proof. Returns bytes saved."""
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            if im.format != "PNG" or im.mode == "P":
+                return 0
+            small = im.convert("RGB").quantize(colors, method=Image.Quantize.MEDIANCUT)
+        before, tmp = os.path.getsize(path), path + ".tmp"
+        small.save(tmp, "PNG", optimize=True)
+        if os.path.getsize(tmp) >= before:
+            os.remove(tmp)
+            return 0
+        os.replace(tmp, path)  # atomic: the API never serves half a file
+        return before - os.path.getsize(path)
+    except (ImportError, OSError, ValueError):
+        return 0
+
+
+def shrink_proofs():
+    """shrink() every proof inside workspace/proof. Returns (files shrunk, bytes saved). O(proofs)."""
+    d, n, saved = os.path.join(WORKSPACE, "proof"), 0, 0
+    for name in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+        p = os.path.join(d, name)
+        if name.lower().endswith(".png") and _inside(p):
+            s = shrink(p)
+            n, saved = n + bool(s), saved + s
+    return n, saved
+
+
 def size(p):
     if os.path.isfile(p):
         return os.path.getsize(p)
@@ -107,7 +140,9 @@ def main(argv=None):
                 pass  # in use by a running applier: next clean gets it
         for d in dirs:
             shutil.rmtree(d, ignore_errors=True)
-    print(f"clean{' (dry)' if '--dry' in argv else ''}: {len(files)} files + {len(dirs)} cache dirs, {total / 1e6:.0f} MB")
+    shrunk, saved = shrink_proofs() if "--dry" not in argv else (0, 0)
+    print(f"clean{' (dry)' if '--dry' in argv else ''}: {len(files)} files + {len(dirs)} cache dirs, {total / 1e6:.0f} MB"
+          f"; {shrunk} proofs shrunk, {saved / 1e6:.0f} MB")
 
 
 if __name__ == "__main__":

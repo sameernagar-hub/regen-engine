@@ -4,7 +4,12 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
-## [Unreleased] - 2026-10-21 · downshifts take effect, a resource guard on new appliers
+## [Unreleased] - 2026-10-21 · downshifts take effect, a resource guard on new appliers, smaller proofs
+- **Proof screenshots ~70% smaller** (`engine/clean.py` `shrink()`): full-page RGB PNGs averaged ~470 KB (418 MB for
+  888). Each is re-encoded in place as a 64-color palette PNG with the same name, so the event log's `proof` path
+  still verifies. The filler shrinks every new shot right after taking it; the hourly clean catches the rest
+  (palette files are skipped). Proofs never leave the workspace volume; the public site uses synthetic SVGs.
+  Verify: `test_shrink_keeps_name_and_skips_done`.
 - **Bug: a downshift never shed appliers while work was waiting.** `scale()` drained an extra applier only after it
   sat idle (`watching`) for 180 s; going from gear 4 to gear 2 with 5 batches in the inbox meant no applier ever
   idled, and 9 kept the Docker VM at ~900% CPU / 6.5 of 7.6 GB. Fix (`engine/supervisor.py`): above the gear's max,
