@@ -306,9 +306,33 @@ def proof_svg(j):
 
 
 def lane_of(file, jobs):
-    """Resume_<Co>_<1000+i>.pdf belongs to jobs[i]; Resume_<Co>_R<k>.pdf to reach row k (ROLES[k])."""
+    """Resume_<Co>_<1000+i>.pdf belongs to jobs[i]; Resume_<Co>_R<k>.pdf to reach row k and Resume_<Co>_B<k>.pdf to
+    big-tech row k (both ROLES[k])."""
     tail = file[:-4].rsplit("_", 1)[-1]
-    return ROLES[int(tail[1:]) % len(ROLES)][1] if tail.startswith("R") else jobs[int(tail) - 1000]["lane"]
+    return ROLES[int(tail[1:]) % len(ROLES)][1] if tail[:1] in ("R", "B") else jobs[int(tail) - 1000]["lane"]
+
+
+PORTALS = {  # the real engine's big-tech portals (engine/discovery/bigtech.py); demo rows link to each public search page
+    "Amazon": "https://www.amazon.jobs/en/search", "NVIDIA": "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite",
+    "Google": "https://www.google.com/about/careers/applications/jobs/results", "Apple": "https://jobs.apple.com/en-us/search",
+    "Microsoft": "https://apply.careers.microsoft.com/careers", "Netflix": "https://explore.jobs.netflix.net/careers"}
+
+
+def bigtech(ws, now, resumes):
+    """workspace/bigtech.md as bigtech.py writes it: demo roles (ROLES) per portal, no real posting, demo resumes."""
+    rows = []
+    for k in range(30):
+        co = list(PORTALS)[[0, 0, 0, 1, 2, 2, 3, 3, 4, 5][k % 10]]  # weighted like a real run: Amazon posts the most
+        role, lane = ROLES[k % len(ROLES)]
+        f = f"Resume_{co}_B{k}.pdf"
+        resumes.append(f)
+        rows.append(f"| {time.strftime('%Y-%m-%d', time.localtime(now - k * 7200))} | {co} | [{role}]({PORTALS[co]}) | "
+                    f"{R.choice(['Seattle, WA', 'Example City, CA', 'Austin, TX', 'New York, NY'])} | {lane} | "
+                    f"{R.randint(86, 100)}% | `out/{f}` |\n")
+    open(os.path.join(ws, "bigtech.md"), "w", encoding="utf-8").write(
+        "# Big-tech roles, resume ready (apply on their portal, signed in)\n\n"
+        "| Posted | Company | Role | Location | Lane | ATS | Resume |\n|---|---|---|---|---|---|---|\n" + "".join(rows))
+    open(os.path.join(ws, "bigtech_last"), "w").write("demo")
 
 
 def resume_html(lane):
@@ -367,6 +391,7 @@ def main():
     sys.path.insert(0, ROOT)
     profile(prof)
     jobs, proofs, resumes = workspace(ws, now)
+    bigtech(ws, now, resumes)
     # v1.1 gearbox + rejection feedback: gear 3, and what a feedback pass over the synthetic rejections looks like
     json.dump({"gear": "3", "clutch": "on"}, open(os.path.join(ws, "gear.json"), "w"))
     json.dump({"updated": time.strftime("%Y-%m-%d %H:%M:%S"), "stats": {"with_jd": 120, "rejected": 34, "positive": 3,
@@ -395,7 +420,7 @@ def main():
               "/api/graph?questions=false", "/api/control/state", "/api/control/fleet", "/api/control/bench", "/api/control/evals?n=60",
               "/api/control/reach?limit=500", "/api/control/filters", "/api/reach/desk", "/api/reach/signins", "/api/reach/kit",
               "/api/factbank", "/api/outreach", "/api/control/containers",
-              "/api/control/gearbox", "/api/control/mcp", "/api/rules"]
+              "/api/control/gearbox", "/api/control/mcp", "/api/rules", "/api/control/bigtech"]
     manifest = {"generated": now, "note": "Synthetic data: fictional candidate and companies. Built by scripts/proxy_dataset.py.",
                 "routes": {}, "jobs": {}}
     for r in routes:

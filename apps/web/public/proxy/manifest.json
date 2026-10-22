@@ -1,5 +1,5 @@
 {
- "generated": 1792558471.2459276,
+ "generated": 1792647683.2924838,
  "note": "Synthetic data: fictional candidate and companies. Built by scripts/proxy_dataset.py.",
  "routes": {
   "/api/snapshot": "snapshot.json",
@@ -22,7 +22,8 @@
   "/api/control/containers": "control_containers.json",
   "/api/control/gearbox": "control_gearbox.json",
   "/api/control/mcp": "control_mcp.json",
-  "/api/rules": "rules.json"
+  "/api/rules": "rules.json",
+  "/api/control/bigtech": "control_bigtech.json"
  },
  "jobs": {
   "https://boards.example.com/greenhouse/lumenfold/jobs/4001000": "178303a4343e.json",

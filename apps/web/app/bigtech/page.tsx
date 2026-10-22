@@ -37,6 +37,9 @@ export default function BigTechPage() {
           need your own account, so you apply there with the resume ready.</p>
       </header>
       {msg && <p className="note" role="status">{msg}</p>}
+      {process.env.NEXT_PUBLIC_REGEN_MODE === "public" && (
+        <p className="dim small">Public demo: the portals and searches are the real engine&apos;s; the roles below are demo rows
+          (each links to that portal&apos;s public search) with a fictional candidate&apos;s resume.</p>)}
 
       <section className="card" aria-label="Coverage">
         <p className="row" style={{ gap: 10, flexWrap: "wrap" }}>
@@ -64,7 +67,7 @@ export default function BigTechPage() {
           <thead><tr><th>Posted</th><th>Role</th><th>Lane</th><th>ATS</th><th>Resume</th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.url}>
+              <tr key={r.url + r.resume}>
                 <td className="mono small">{r.posted}</td>
                 <td><b>{r.company}</b> · <a href={r.url} target="_blank" rel="noreferrer">{r.title} ↗</a>
                   {r.new_grad && <small className="chip" style={{ marginLeft: 6 }}>new grad</small>}
