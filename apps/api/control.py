@@ -203,6 +203,39 @@ def bigtech():
             "last_run": time.strftime("%Y-%m-%dT%H:%M", time.localtime(os.path.getmtime(last))) if os.path.exists(last) else None}
 
 
+def _pretty(slug):
+    """Board tokens are slugs ("1800contacts", "acme-robotics"): a readable name for the discover orbs."""
+    s = re.sub(r"[-_.]+", " ", str(slug).split("/")[0].split(".")[0]).strip()
+    return s if any(c.isupper() for c in s) else s.title()
+
+
+@router.get("/control/discover")
+def discover(n: int = 36):
+    """What the Discover station is looking at: boards watched per ATS, the six big-tech portals, and `n` orbs, one
+    per company with the newest postings in the queue (company, ATS, a role). O(queue)."""
+    from engine.discovery.bigtech import SOURCES
+    boards = {}
+    try:
+        b = json.load(open(os.path.join(WORKSPACE, "boards.json"), encoding="utf-8"))
+        boards = {k: len(v) for k, v in b.items() if k != "dead"}
+    except (OSError, ValueError):
+        pass
+    try:
+        q = json.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        q = []
+    orbs, seen = [], set()
+    for j in sorted(q, key=lambda j: str(j.get("posted") or ""), reverse=True):
+        name = _pretty(j.get("company") or "")
+        if name and name.lower() not in seen:
+            seen.add(name.lower())
+            orbs.append({"company": name, "ats": j.get("ats") or "", "title": j.get("title") or ""})
+        if len(orbs) >= max(1, min(n, 80)):
+            break
+    portals = [s.__name__.capitalize() if s.__name__ != "nvidia" else "NVIDIA" for s in SOURCES]
+    return {"boards": boards, "total": sum(boards.values()), "portals": portals, "orbs": orbs}
+
+
 def _kit_fields():
     """The answers a Workday / iCIMS form asks for, straight from presets + Fact Bank (the same values the engine
     types into Greenhouse/Ashby forms), grouped the way those portals ask. Nothing new is generated."""

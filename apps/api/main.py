@@ -293,7 +293,7 @@ def graph(questions: bool = True):
 
 # v0.9 engine room: every station is a page, every job is a page, and they link to each other the way the engine does.
 STATIONS = [  # (key, name, what happens here, the stations it feeds)
-    ("listen", "Discover", "Polls ~2,400 company ATS boards and job-alert emails for postings that just went live.", ["judge"]),
+    ("listen", "Discover", "Polls ~5,500 company ATS boards, six big-tech careers portals and job-alert emails for postings that just went live.", ["judge"]),
     ("judge", "Fit gate", "Reads each job description for hard blockers (sponsorship, clearance, years, grad window, core stack).", ["write"]),
     ("write", "Compose", "Builds a one-page resume for this posting from Fact Bank entries only, then checks what an ATS parser reads back.", ["apply"]),
     ("apply", "Apply", "Round-robin form filling across parallel browsers; airbags stop anything unexpected before submit.", ["hear"]),

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { use } from "react";
 import { Nav } from "../../nav";
 import { TONE, jobHref, useStations, when } from "@/lib/room";
+import { DiscoverEyes } from "../discover-eyes";
+import { BigTechList } from "../bigtech-list";
 
 export default function StationRoom({ params }: { params: Promise<{ stage: string }> }) {
   const { stage } = use(params);
@@ -30,6 +32,7 @@ export default function StationRoom({ params }: { params: Promise<{ stage: strin
               {Object.entries(s.tones).map(([t, v]) => <div key={t}><dt style={{ color: TONE[t] }}>{t}</dt><dd>{v}</dd></div>)}
             </dl>
           </header>
+          {stage === "listen" && <DiscoverEyes />}
           <nav className="doors" aria-label="Connected rooms">
             {from.map((x) => <Link key={x.key} href={`/room/${x.key}`}>← from {x.name}</Link>)}
             {to.map((x) => <Link key={x.key} href={`/room/${x.key}`}>to {x.name} →</Link>)}
@@ -46,6 +49,7 @@ export default function StationRoom({ params }: { params: Promise<{ stage: strin
               {!s.recent.length && <li className="dim">Nothing yet.</li>}
             </ul>
           </section>
+          {stage === "listen" && <BigTechList />}
         </>
       )}
     </main>

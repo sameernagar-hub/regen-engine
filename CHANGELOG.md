@@ -11,8 +11,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   stop on 429) and Netflix (Eightfold apply/v2) join Amazon and NVIDIA. Every site gets the same 12 searches, new grad /
   university / early career / entry level included. The pipeline runs it on sources passes, at most once an hour
   (`REGEN_BIGTECH_EVERY_MIN`); `--force` runs now. First run: 66 new roles with tailored resumes.
-- **Big tech page** (`/bigtech`, `GET /api/control/bigtech`): portals covered, roles per company, a new-grad tab,
-  each role's posting link and resume PDF. Linked from the dock, the Reach page, and the Reach cylinder's live number.
+- **Discover station: the eyes** (`room/discover-eyes.tsx`, `GET /api/control/discover`): two eyes in a hall of
+  glass orbs, one orb per company with the newest postings in the queue and six gold orbs for the big-tech portals.
+  Idle, each eye wanders to a different orb (gaze ray, "scanning <ats>"), and they blink; the cursor makes both eyes
+  follow and lights every orb within reach with its company, ATS and a role. Reduced motion: no wander, no blink.
+- **Big tech lives in Discover** (`/room/listen#bigtech`, `GET /api/control/bigtech`): portals covered, roles per
+  company, a new-grad tab, each role's posting link and resume PDF. `/bigtech` redirects there; the public site
+  serves demo rows (real portals, links to each portal's public search, fictional resumes) and says so.
 - **More role families** (profile filters, user's choice 10-21): data science and analytics, research / applied
   engineer, customer-facing technical (support, implementation, solutions / sales engineer), QA / test / software
   systems engineer. Wireless, RF, SoC and data-center titles are excluded; senior and defense rules unchanged.

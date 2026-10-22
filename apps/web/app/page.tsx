@@ -46,11 +46,10 @@ export default function EngineHome() {
     const s: Record<string, string> = {};
     const put = (k: string, v: string) => { s[k] = v; setStat({ ...s }); };
     if (!PUBLIC) get<any>("/api/snapshot").then((x) => setStrip({ boards: x.boards.toLocaleString(), sent: String(x.verified), sentLabel: "applications sent with proof" })).catch(() => {});
-    get<any>("/api/snapshot").then((x) => { put("live", `${x.verified} sent with proof`); put("applications", `${x.verified} with proof`); put("room", `${x.boards.toLocaleString()} boards watched`); }).catch(() => {});
+    get<any>("/api/snapshot").then((x) => { put("live", `${x.verified} sent with proof`); put("applications", `${x.verified} with proof`); put("room", `${x.boards.toLocaleString()} boards + 6 big-tech portals watched`); }).catch(() => {});
     get<any[]>("/api/human").then((x) => put("needs", `${x.length} waiting on you`)).catch(() => {});
     get<any>("/api/control/fleet").then((x) => put("control", `${x.members.filter((m: any) => m.role === "applier" && m.up).length} appliers running`)).catch(() => {});
-    Promise.all([get<any>("/api/control/reach?limit=1"), get<any>("/api/control/bigtech").catch(() => null)])
-      .then(([x, b]) => put("reach", `${x.listed} resumes ready` + (b?.rows.length ? ` + ${b.rows.length} big tech` : ""))).catch(() => {});
+    get<any>("/api/control/reach?limit=1").then((x) => put("reach", `${x.listed} resumes ready`)).catch(() => {});
     get<any[]>("/api/outreach").then((x) => put("outreach", `${x.length} drafts`)).catch(() => {});
     get<any>("/api/control/evals?n=60").then((x) => put("evals", `${x.runs.length} benchmark runs`)).catch(() => {});
     get<any>("/api/control/gearbox").then((x) => put("gearbox", `gear ${x.gear.gear}, ${x.feedback.stats.rejected ?? 0} rejections read`)).catch(() => {});

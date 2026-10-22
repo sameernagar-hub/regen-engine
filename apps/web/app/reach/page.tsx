@@ -105,7 +105,7 @@ function ReachView() {
       <header className="hero">
         <h1>Reach list</h1>
         <p>Jobs on Workday, iCIMS and SmartRecruiters. Each one already passed the fit gate and the trust gate and has a resume tailored to its description. These portals put the form behind your own candidate account, so you submit: open the posting, upload the resume, copy the answers, then mark it submitted.
-          {" "}Amazon, NVIDIA, Google, Apple, Microsoft and Netflix roles are on <a href="/bigtech">Big tech</a>.</p>
+          {" "}Amazon, NVIDIA, Google, Apple, Microsoft and Netflix roles are in <a href="/room/listen#bigtech">Discover</a>.</p>
       </header>
       {msg && <p className="note" role="status">{msg}</p>}
 

@@ -1,0 +1,27 @@
+/* Discover eyes (room/discover-eyes.tsx). Keyframes and classes are dx-* because both are global (10-20: a `spin`
+   collision rotated every page title). A hall of glass orbs: soft gold, serif names, slow drift. */
+.dx { margin: 8px 0 28px; }
+.dx svg { width: 100%; height: auto; display: block; cursor: crosshair; touch-action: pan-y;
+  background: radial-gradient(ellipse at 50% 45%, rgba(242, 193, 78, 0.07), transparent 60%),
+              radial-gradient(ellipse at 50% 120%, rgba(111, 183, 255, 0.06), transparent 55%);
+  border: 1px solid var(--faint); border-radius: 18px; }
+.dx-orb { animation: dx-float 6s ease-in-out infinite; animation-delay: calc(var(--d, 0s) * -1); }
+.dx-orb circle { transition: r 0.25s ease, opacity 0.25s ease; }
+.dx-speck { fill: #f2c14e; opacity: 0.15; animation: dx-twinkle 5s ease-in-out infinite; }
+.dx-ray { stroke: #f2c14e; stroke-opacity: 0.28; stroke-width: 1.2; stroke-dasharray: 3 7; animation: dx-flow 1.4s linear infinite; }
+.dx-eye.blink { animation: dx-blink 7s ease-in-out infinite; }
+.dx-pupil { transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+.dx-pupil.fast { transition: transform 0.09s linear; }
+.dx-label { pointer-events: none; animation: dx-fade 0.3s ease; }
+.dx-name { fill: #f2c14e; font: 600 15px Georgia, "Times New Roman", serif; letter-spacing: 0.02em;
+  paint-order: stroke; stroke: #07090d; stroke-width: 3px; }
+.dx-ats { fill: #b9c3d1; font: italic 11px Georgia, serif; paint-order: stroke; stroke: #07090d; stroke-width: 3px; }
+@keyframes dx-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes dx-twinkle { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.55; } }
+@keyframes dx-flow { to { stroke-dashoffset: -20; } }
+@keyframes dx-blink { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
+@keyframes dx-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .dx-orb, .dx-speck, .dx-ray, .dx-eye.blink, .dx-label { animation: none; }
+  .dx-pupil { transition: none; }
+}
