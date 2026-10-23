@@ -4,7 +4,19 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
-## [Unreleased] - 2026-10-22 · Discover gets a panda
+## [Unreleased] - 2026-10-22 · Discover gets a panda, and the site gets easter eggs
+- **Easter eggs** (`app/eggs.tsx` + `eggs.css`, mounted once in the layout; the site never announces them). Nothing
+  runs per frame: one keydown listener and one hover timer; each effect builds its DOM on trigger and removes it.
+  - Konami code: the page revs (shake) and gold sparks burst; a note says the real engine stays in cruise.
+  - Type `panda` outside a text field: a panda peeks up from the bottom edge and waves.
+  - Type `hired`: paper resumes rain down ("Not yet. Keep the engine running.").
+  - Hold the cursor on the dock's gear for 3 s: it overheats, spins red-hot, "Gear 2 is the house rule."
+  - The browser console greets whoever opens it (ASCII panda, link to the repo, two hints).
+  - Panda: boop the nose to make it scrunch; five boops in 3 s and it sneezes the orbs away (they spring back).
+    Untouched for 40 s it naps (head droops, eyes shut, snoring mouth, floating z's) and startles awake on the cursor.
+    Witch hat Oct 24 - Nov 1, Santa hat Dec 15 - 31 (`?hat=witch|santa` forces one).
+  Reduced motion: the notes still appear; the shake, sparks, paper, sneeze and nap do not.
+  Verify: `/room/listen?hat=witch`, then the triggers above.
 - **Discover station: the panda** (`room/discover-panda.tsx`, replaces the two eyes): the eyes felt slow and the orbs
   were crowded with text. Now a panda (fur-edged head, slanted eye patches, ears, muzzle, shoulders, paws) sits in the
   hall of orbs, and the orbs carry no text. Hover (or tap) an orb: it swells, pings and glows, the panda turns to it

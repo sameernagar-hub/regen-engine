@@ -72,12 +72,17 @@ export function DiscoverPanda() {
   const svg = useRef<SVGSVGElement>(null);
   const el = useRef<Record<string, SVGElement | null>>({});
   const orbEls = useRef<(SVGGElement | null)[]>([]);
-  const live = useRef({ client: null as Pt | null, hover: -1, orbs: [] as Placed[] });
+  const live = useRef({ client: null as Pt | null, hover: -1, orbs: [] as Placed[], at: 0 });
+  const [hat, setHat] = useState<"witch" | "santa" | null>(null);
   live.current.orbs = orbs;
   live.current.hover = hover;
   const ref = (k: string) => (n: SVGElement | null) => { el.current[k] = n; };
 
   useEffect(() => { get<Discover>("/api/control/discover?n=40").then(setData).catch(() => setData(null)); }, []);
+  useEffect(() => {  // seasonal hats (after mount, so the server's date never disagrees with the visitor's); ?hat= forces one
+    const q = new URLSearchParams(location.search).get("hat"), d = new Date(), m = d.getMonth(), day = d.getDate();
+    setHat(q === "witch" || q === "santa" ? q : (m === 9 && day >= 24) || (m === 10 && day <= 1) ? "witch" : m === 11 && day >= 15 ? "santa" : null);
+  }, []);
 
   useEffect(() => {
     const root = svg.current;
@@ -89,6 +94,28 @@ export function DiscoverPanda() {
     let cur: Pt | null = null, last: Pt | null = null, speed = 0;
     let idle = -1, idleNext = 0, blinkAt = 1200, blinkT = -1, lit = -1, seen = true, visible = !document.hidden;
     let raf = 0, prev = 0;
+    // easter eggs: it naps after 40 s untouched (and startles awake), a boop on the nose scrunches its face, and the
+    // fifth boop in 3 s makes it sneeze the orbs away
+    let asleep = false, wakeUntil = 0, boopUntil = 0, ahUntil = 0, sneezeUntil = 0, boops: number[] = [];
+    L.at = performance.now();
+    const boop = (e: Event) => {
+      e.stopPropagation();
+      const now = performance.now();
+      L.at = now;
+      boopUntil = now + 380;
+      boops = [...boops.filter((t) => now - t < 3000), now];
+      if (boops.length < 5 || still) return;
+      boops = [];
+      ahUntil = now + 650;
+      sneezeUntil = ahUntil + 550;
+      setTimeout(() => {
+        root.classList.remove("sneeze");
+        void root.getBoundingClientRect();
+        root.classList.add("sneeze");
+        setTimeout(() => root.classList.remove("sneeze"), 1100);
+      }, 650);
+    };
+    E.nose?.addEventListener("pointerdown", boop);
 
     const toSvg = (p: Pt) => {
       const m = root.getScreenCTM();
@@ -121,9 +148,11 @@ export function DiscoverPanda() {
         idle = Math.floor(Math.random() * orbs.length);
         idleNext = now + 1300 + Math.random() * 1500;
       }
+      if (!still && !asleep && !cur && now - L.at > 40000) { asleep = true; root.classList.add("sleep"); }
+      if (asleep && cur) { asleep = false; wakeUntil = now + 700; root.classList.remove("sleep"); }
       const h = L.hover >= 0 ? orbs[L.hover] : null;
-      const target: Pt = h || cur || (idle >= 0 && orbs[idle] && !still ? orbs[idle] : { x: C.x, y: C.y + 160 });
-      light(h ? L.hover : cur || still ? -1 : idle);
+      const target: Pt = asleep ? { x: C.x, y: C.y + 200 } : h || cur || (idle >= 0 && orbs[idle] && !still ? orbs[idle] : { x: C.x, y: C.y + 160 });
+      light(asleep ? -1 : h ? L.hover : cur || still ? -1 : idle);
 
       const dx = target.x - C.x, dy = target.y - C.y, near = cur ? Math.hypot(cur.x - C.x, cur.y - C.y) < 115 : false;
       const excited = h ? 1 : 0, startled = !h && speed > 2600 ? 1 : 0;
@@ -138,6 +167,12 @@ export function DiscoverPanda() {
         open: startled ? 0.75 : excited ? 0.35 : near ? 0.15 : 0,
         blush: near ? 1 : excited ? 0.75 : 0, perk: excited || startled ? 1 : 0,
       };
+      if (asleep) Object.assign(g, { hy: 12, rot: 7, top: 1, bot: 0, smile: 0.15, perk: 0, blush: 0.2,
+                                     open: 0.06 + 0.06 * (1 + Math.sin(now / 700)) });  // snoring
+      else if (now < wakeUntil) Object.assign(g, { top: -0.15, open: 0.6, perk: 1, dil: 0.7, smile: -0.3 });
+      if (now < boopUntil) Object.assign(g, { top: 0.85, bot: 0.5, open: 0.25, blush: 1, smile: 0.6 });
+      if (now < ahUntil) Object.assign(g, { top: 0.55, open: 0.9, hy: -10, rot: -4, perk: 1 });   // ah... ah...
+      else if (now < sneezeUntil) Object.assign(g, { top: 1, open: 0.2, hy: 14, rot: 3 });     // CHOO
       const fast = still ? 1 : ease(9), face = still ? 1 : ease(7), eye = still ? 1 : ease(34);
       s.hx += (g.hx - s.hx) * fast; s.hy += (g.hy - s.hy) * fast; s.rot += (g.rot - s.rot) * fast;
       for (const k of ["dil", "top", "bot", "smile", "open", "blush", "perk"] as const) s[k] += (g[k] - s[k]) * face;
@@ -152,7 +187,7 @@ export function DiscoverPanda() {
 
       // blinks: every 2.5-6 s, now and then a double
       let blink = 0;
-      if (!still) {
+      if (!still && !asleep) {
         if (blinkT < 0 && now > blinkAt) blinkT = now;
         if (blinkT >= 0) {
           const t = (now - blinkT) / 150;
@@ -198,12 +233,14 @@ export function DiscoverPanda() {
     const vis = () => { visible = !document.hidden; wake(); };
     document.addEventListener("visibilitychange", vis);
     wake();
-    return () => { cancelAnimationFrame(raf); io.disconnect(); document.removeEventListener("visibilitychange", vis); };
+    return () => { cancelAnimationFrame(raf); io.disconnect(); document.removeEventListener("visibilitychange", vis);
+                   E.nose?.removeEventListener("pointerdown", boop); };
   }, []);
 
   // pointer: remember the client point (the frame converts it) and hit-test the orbs for the hover card
   const pick = (e: React.PointerEvent) => {
     live.current.client = { x: e.clientX, y: e.clientY };
+    live.current.at = performance.now();
     const m = svg.current?.getScreenCTM();
     if (!m) return;
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
@@ -215,9 +252,9 @@ export function DiscoverPanda() {
   const card = hover >= 0 ? orbs[hover] : null;
 
   return (
-    <figure className="pd">
+    <figure className={`pd${card ? " hot" : ""}`}>
+      {/* the svg's class list belongs to the frame loop (sleep, sneeze), so React never sets it */}
       <svg ref={svg} viewBox={`0 0 ${W} ${H}`} role="img" onPointerMove={pick} onPointerDown={pick} onPointerLeave={leave}
-           className={card ? "hot" : ""}
            aria-label={`The discover station: a panda watching ${data?.total?.toLocaleString() ?? "thousands of"} job boards and ${data?.portals.length ?? 6} big-tech portals`}>
         <defs>
           {TONES.map((t) => (
@@ -252,7 +289,9 @@ export function DiscoverPanda() {
         <circle ref={ref("halo")} className="pd-halo" r="46" fill="url(#pd-halo)" opacity="0" />
 
         {orbs.map((o, i) => (
-          <g key={o.company + i} className="pd-drift" style={{ ["--d" as any]: `${(hash(o.company) % 40) / 10}s` }}>
+          <g key={o.company + i} className="pd-drift"
+             style={{ ["--d" as any]: `${(hash(o.company) % 40) / 10}s`, ["--sx" as any]: `${((o.x - C.x) / Math.hypot(o.x - C.x, o.y - C.y)) * 70}px`,
+                      ["--sy" as any]: `${((o.y - C.y) / Math.hypot(o.x - C.x, o.y - C.y)) * 70}px` }}>
             <g ref={(n) => { orbEls.current[i] = n; }} className="pd-orb"
                style={{ transformOrigin: `${o.x}px ${o.y}px`, ["--glow" as any]: o.tone }}>
               <circle cx={o.x} cy={o.y} r={o.r * 1.9} fill={o.tone} opacity="0.1" />
@@ -283,6 +322,22 @@ export function DiscoverPanda() {
           <path d={FLUFF} fill="#e9e6de" opacity="0.45" />
           <path d={HEAD} fill="url(#pd-fur)" />
           <ellipse cx="-24" cy="-62" rx="46" ry="22" fill="#fff" opacity="0.35" />
+          {hat === "witch" && (
+            <g transform="translate(34 -92) rotate(16) scale(1.55)">
+              <ellipse cx="0" cy="0" rx="66" ry="13" fill="#1b1030" />
+              <path d="M-36 -4Q-14 -46 10 -112Q4 -70 36 -4Z" fill="#2a1846" />
+              <path d="M-33 -10Q0 -2 33 -10L31 -20Q0 -12 -31 -20Z" fill="#ff9f43" />
+              <rect x="-6" y="-21" width="12" height="11" rx="1.5" fill="none" stroke="#f2c14e" strokeWidth="2" />
+            </g>)}
+          {hat === "santa" && (
+            <g transform="translate(30 -92) rotate(12) scale(1.4)">
+              <path d="M-44 0Q-20 -70 30 -84Q60 -60 50 -20Q44 -40 32 -48Q14 -20 44 0Z" fill="#c8242f" />
+              <circle cx="52" cy="-18" r="11" fill="#fbfaf6" />
+              <rect x="-50" y="-8" width="100" height="18" rx="9" fill="#fbfaf6" />
+            </g>)}
+          <g className="pd-z" transform="translate(104 -104)" aria-hidden="true">
+            {[0, 1, 2].map((i) => <text key={i} x={i * 14} y={-i * 16} style={{ animationDelay: `${i * 0.7}s`, fontSize: 14 + i * 5 }}>z</text>)}
+          </g>
           <g ref={ref("face")}>
             <g ref={ref("blush")} opacity="0.12">
               {[-1, 1].map((k) => <ellipse key={k} className="pd-blush" cx={k * 74} cy="34" rx="17" ry="10" fill="#ff8fab" />)}
@@ -308,8 +363,11 @@ export function DiscoverPanda() {
             <ellipse cx="0" cy="44" rx="54" ry="38" fill="url(#pd-muzzle)" />
             <ellipse ref={ref("maw")} cx="0" cy="58" rx="7" ry="0" fill="#3a0d14" />
             <ellipse ref={ref("tongue")} cx="0" cy="58" rx="6" ry="0" fill="#ff7a90" />
-            <path d="M-15 24Q0 18 15 24Q14 36 0 40Q-14 36 -15 24Z" fill="url(#pd-black)" />
-            <ellipse cx="-4" cy="25" rx="5" ry="2.2" fill="#fff" opacity="0.4" />
+            <path ref={ref("nose")} className="pd-nose" d="M-15 24Q0 18 15 24Q14 36 0 40Q-14 36 -15 24Z" fill="url(#pd-black)" />
+            <ellipse cx="-4" cy="25" rx="5" ry="2.2" fill="#fff" opacity="0.4" pointerEvents="none" />
+            <g className="pd-puff" aria-hidden="true">
+              {[[-1, 0.6], [0, 1], [1, 0.6]].map(([k, s]) => <circle key={k} cx={k * 14} cy="30" r={10 * s} style={{ ["--k" as any]: k }} />)}
+            </g>
             <path d="M0 40V49" stroke="#141417" strokeWidth="2.2" strokeLinecap="round" />
             <path ref={ref("mouth")} d="M-21 51Q-10 56 0 49Q10 56 21 51" fill="none" stroke="#141417" strokeWidth="2.4" strokeLinecap="round" />
           </g>

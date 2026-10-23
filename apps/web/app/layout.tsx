@@ -7,6 +7,7 @@ import "./engine.css";
 import "./gearbox.css";
 import "./rules.css";
 import { Backdrop } from "./backdrop";
+import { Eggs } from "./eggs";
 
 export const metadata = {
   title: "REGEN · live",
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <Backdrop />
+        <Eggs />
         <ViewTransition default="page-swap">{children}</ViewTransition>
       </body>
     </html>

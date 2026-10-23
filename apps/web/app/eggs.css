@@ -1,0 +1,37 @@
+/* Easter eggs (app/eggs.tsx). Every class and keyframe is egg-* because both are global. */
+.egg-note { position: fixed; left: 50%; bottom: 28px; z-index: 50; transform: translateX(-50%); max-width: min(92vw, 460px);
+  padding: 10px 16px; border-radius: 12px; border: 1px solid var(--gold, #f2c14e); color: var(--ink, #e8edf4);
+  background: rgba(9, 11, 16, 0.92); box-shadow: 0 0 24px -6px #f2c14e; font: italic 14px Georgia, serif; text-align: center;
+  animation: egg-note 3.6s ease forwards; pointer-events: none; }
+@keyframes egg-note { 0% { opacity: 0; translate: 0 12px; } 8%, 85% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 6px; } }
+
+body.egg-rev { animation: egg-rev 0.9s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes egg-rev { 10%, 90% { translate: -1px 0; } 20%, 80% { translate: 3px 1px; } 30%, 50%, 70% { translate: -5px -1px; }
+  40%, 60% { translate: 5px 1px; } }
+.egg-sparks { position: fixed; left: 50%; top: 50%; z-index: 49; pointer-events: none; }
+.egg-sparks i { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #ffe08a;
+  box-shadow: 0 0 10px 2px #f2c14e; animation: egg-spark var(--t) cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+@keyframes egg-spark { from { transform: translate(0, 0) scale(1.4); opacity: 1; } to { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; } }
+
+.egg-peek { position: fixed; right: 7vw; bottom: 0; z-index: 48; pointer-events: none; line-height: 0;
+  animation: egg-peek 3.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.egg-peek .egg-paw { transform-origin: 104px 100px; animation: egg-wave 0.45s ease-in-out 0.8s 4 alternate; }
+@keyframes egg-peek { 0% { transform: translateY(100%); } 18%, 78% { transform: translateY(28%); } 100% { transform: translateY(100%); } }
+@keyframes egg-wave { from { transform: translateY(-6px) rotate(-14deg); } to { transform: translateY(-26px) rotate(18deg); } }
+
+.egg-paper { position: fixed; inset: 0; z-index: 48; pointer-events: none; overflow: hidden; }
+.egg-paper i { position: absolute; top: -40px; width: 22px; height: 28px; padding: 5px 4px; border-radius: 2px; background: #f7f5ef;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); display: grid; align-content: start; gap: 3px;
+  animation: egg-fall var(--s) linear var(--d) forwards; }
+.egg-paper b { height: 2px; background: #9aa3b0; border-radius: 1px; }
+.egg-paper b:first-child { width: 60%; background: #f2c14e; }
+@keyframes egg-fall { to { transform: translate(30px, 110vh) rotate(var(--r)); } }
+
+.dock .gear.egg-hot { animation: turn 0.15s linear infinite !important; filter: drop-shadow(0 0 6px #ff5a36) drop-shadow(0 0 14px #ff5a36); }
+.dock .gear.egg-hot circle { stroke: #ff7a4d; fill: #ff7a4d; transition: stroke 0.4s, fill 0.4s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .egg-note { animation: none; }
+  .egg-peek { animation: none; transform: translateY(28%); }
+  .egg-peek .egg-paw { animation: none; }
+}
