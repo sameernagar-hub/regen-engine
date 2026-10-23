@@ -1,27 +1,33 @@
-/* Discover eyes (room/discover-eyes.tsx). Keyframes and classes are dx-* because both are global (10-20: a `spin`
-   collision rotated every page title). A hall of glass orbs: soft gold, serif names, slow drift. */
-.dx { margin: 8px 0 28px; }
-.dx svg { width: 100%; height: auto; display: block; cursor: crosshair; touch-action: pan-y;
-  background: radial-gradient(ellipse at 50% 45%, rgba(242, 193, 78, 0.07), transparent 60%),
-              radial-gradient(ellipse at 50% 120%, rgba(111, 183, 255, 0.06), transparent 55%);
+/* Discover panda (room/discover-panda.tsx). Keyframes and classes are pd-* because both are global (10-20: a `spin`
+   collision rotated every page title). A hall of glass orbs around a panda; the frame loop owns the face, CSS owns
+   the orbs' drift and their lit state. */
+.pd { position: relative; margin: 8px 0 28px; }
+.pd svg { width: 100%; height: auto; display: block; cursor: crosshair; touch-action: pan-y;
+  background: radial-gradient(ellipse at 50% 55%, rgba(242, 193, 78, 0.08), transparent 55%),
+              radial-gradient(ellipse at 50% 120%, rgba(111, 183, 255, 0.07), transparent 55%);
   border: 1px solid var(--faint); border-radius: 18px; }
-.dx-orb { animation: dx-float 6s ease-in-out infinite; animation-delay: calc(var(--d, 0s) * -1); }
-.dx-orb circle { transition: r 0.25s ease, opacity 0.25s ease; }
-.dx-speck { fill: #f2c14e; opacity: 0.15; animation: dx-twinkle 5s ease-in-out infinite; }
-.dx-ray { stroke: #f2c14e; stroke-opacity: 0.28; stroke-width: 1.2; stroke-dasharray: 3 7; animation: dx-flow 1.4s linear infinite; }
-.dx-eye.blink { animation: dx-blink 7s ease-in-out infinite; }
-.dx-pupil { transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
-.dx-pupil.fast { transition: transform 0.09s linear; }
-.dx-label { pointer-events: none; animation: dx-fade 0.3s ease; }
-.dx-name { fill: #f2c14e; font: 600 15px Georgia, "Times New Roman", serif; letter-spacing: 0.02em;
-  paint-order: stroke; stroke: #07090d; stroke-width: 3px; }
-.dx-ats { fill: #b9c3d1; font: italic 11px Georgia, serif; paint-order: stroke; stroke: #07090d; stroke-width: 3px; }
-@keyframes dx-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-@keyframes dx-twinkle { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.55; } }
-@keyframes dx-flow { to { stroke-dashoffset: -20; } }
-@keyframes dx-blink { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
-@keyframes dx-fade { from { opacity: 0; } to { opacity: 1; } }
+.pd svg.hot { cursor: pointer; }
+.pd-drift { animation: pd-float 6s ease-in-out infinite; animation-delay: calc(var(--d, 0s) * -1); }
+.pd-orb { transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.18s ease; }
+.pd-orb.on { transform: scale(1.7); filter: brightness(1.45) drop-shadow(0 0 6px var(--glow, #fff)); }
+.pd-ring { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.pd-orb.on .pd-ring { animation: pd-ping 1.1s ease-out infinite; }
+.pd-halo { pointer-events: none; transition: opacity 0.2s ease; }
+.pd-speck { fill: #f2c14e; opacity: 0.15; animation: pd-twinkle 5s ease-in-out infinite; }
+.pd-card { position: absolute; transform: translate(-50%, calc(-100% - 22px)); pointer-events: none; z-index: 2;
+  display: grid; gap: 2px; min-width: 150px; max-width: 260px; padding: 9px 12px; border-radius: 12px;
+  background: rgba(9, 11, 16, 0.88); border: 1px solid var(--tone, #f2c14e);
+  box-shadow: 0 0 22px -4px var(--tone, #f2c14e), 0 10px 30px rgba(0, 0, 0, 0.45); backdrop-filter: blur(6px);
+  animation: pd-pop 0.16s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.pd-card[data-below] { transform: translate(-50%, 22px); }
+.pd-card strong { color: var(--tone, #f2c14e); font: 600 15px Georgia, "Times New Roman", serif; letter-spacing: 0.02em; }
+.pd-card span { color: #b9c3d1; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+.pd-card em { color: #e8edf4; font: italic 12px Georgia, serif; }
+@keyframes pd-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes pd-twinkle { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.55; } }
+@keyframes pd-ping { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(2.4); } }
+@keyframes pd-pop { from { opacity: 0; scale: 0.9; } to { opacity: 1; scale: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .dx-orb, .dx-speck, .dx-ray, .dx-eye.blink, .dx-label { animation: none; }
-  .dx-pupil { transition: none; }
+  .pd-drift, .pd-speck, .pd-orb.on .pd-ring, .pd-card { animation: none; }
+  .pd-orb { transition: none; }
 }

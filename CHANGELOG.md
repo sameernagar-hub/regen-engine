@@ -4,6 +4,19 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-22 · Discover gets a panda
+- **Discover station: the panda** (`room/discover-panda.tsx`, replaces the two eyes): the eyes felt slow and the orbs
+  were crowded with text. Now a panda (fur-edged head, slanted eye patches, ears, muzzle, shoulders, paws) sits in the
+  hall of orbs, and the orbs carry no text. Hover (or tap) an orb: it swells, pings and glows, the panda turns to it
+  with dilated pupils, a smile, blush, perked ears and the orb's colour in its eyes, and a card names the company, ATS
+  and role. Cursor close to the face: happy squint; a fast flick: startled, mouth open. Idle: it reads one orb after
+  another and blinks (sometimes twice).
+  Why it is faster: the face is driven from one requestAnimationFrame loop that writes SVG attributes through refs
+  (time-based easing, per-eye aim, head parallax), so React re-renders only when the data or the hovered orb
+  changes; one halo replaces 46 blurred glows; the loop sleeps off screen and in hidden tabs.
+  Verify: `/room/listen`, hover orbs; with the panda hidden vs shown the page held the same frame rate (53 vs 52 fps
+  in the dev build). Reduced motion: no wander, no blink, the gaze snaps.
+
 ## [Unreleased] - 2026-10-21 · big-tech portals, more role families, downshifts take effect, smaller proofs
 - **Big tech: 6 portals** (`engine/discovery/bigtech.py`): Google (the results page embeds its jobs as JSON in
   `AF_initDataCallback ds:1`), Apple (CSRF token + search API; the body needs `format` or it returns 0 rows),
