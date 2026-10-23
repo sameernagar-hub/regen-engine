@@ -9,7 +9,7 @@ machine **and** a request from localhost.
 | `/control` | pipeline strip (the running stage glows), run settings (days, max, appliers, tabs, cap, rescan interval, sources, ATSs, dry run), Start / Stop, queue by ATS, live applier cards (each tab's job and state, latest answers), run log, editable title/company filters | `GET /api/control/state` every 2 s, `POST /api/control/run`, `/stop`, `GET/POST /api/control/filters` |
 | `/applications` | every application with status filters and search; select one to see the **resume PDF that was sent**, every question with the answer given, Fact Bank ids used, proof screenshot | `GET /api/applications`, `GET /api/resume/{file}`, `GET /api/proof/{file}` |
 | `/facts` | the Fact Bank as a radial map (you → roles → facts, sized by use, colored by lane), every fact with usage bars, skills, sources; **Rules**: every rule that drives the engine (title filter, fit gate, learned phrases, form answers, airbags and limits, draft override) as tanks feeding a four-cylinder engine, pulses = firings from the event log, a filterable list per group | `GET /api/factbank`, `GET /api/rules` |
-| `/room`, `/room/[stage]`, `/job` | each stage as a room with its live log; one job's full timeline | `/api/stations`, `/api/job` |
+| `/room`, `/room/[stage]`, `/job` | each stage as a room with its live log; one job's full timeline; Discover shows the panda and its orbs (see [Discovery](Discovery)) and the big-tech roles | `/api/stations`, `/api/job`, `/api/control/discover`, `/api/control/bigtech` |
 | `/graph` | the knowledge graph, layer by layer | `/api/graph` |
 
 ## Gearbox and MCP pages (v1.1)
@@ -17,6 +17,9 @@ machine **and** a request from localhost.
 - `/gearbox`: the animated constant-mesh gearbox (H-pattern shifter, clutch, live speed, learned-rule table). See [Gearbox](Gearbox).
 - `/mcp`: the cord from your AI client to the engine, both MCP sockets live, every tool on its engine part. See [MCP tools](MCP-Tools).
 - The home engine gained both parts: the gearbox under the crankcase and the MCP plug wired into it.
+
+Hidden fun: the site has a few easter eggs. They are not announced in the UI; maintainers will find the list in the
+CHANGELOG (2026-10-22).
 
 ## Design system (v0.11)
 - **Living backdrop**: a canvas field whose points belong to the five stages; every real engine event (SSE) pulses

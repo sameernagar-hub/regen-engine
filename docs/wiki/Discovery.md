@@ -16,7 +16,7 @@ resolved back to the employer's own posting before anything is applied to.
 | newgrad-jobs.com | listing pages → leads | few GETs | `newgrad.py` |
 | SimplifyJobs | `listings.json` (community new-grad list) | 1 GET | `simplify.py` (`engine feed`) |
 | Reach ATSs (v0.13) | SmartRecruiters Posting API (100/page), Workday `cxs` search (20/POST, stops at week-old postings), iCIMS search HTML (first-seen dates) | 1-8 per board | `ats.py`, `reach.py` |
-| Big-tech careers APIs | Amazon `search.json` (full JD inline), NVIDIA Workday `cxs` (search + 1 GET per kept job) | ~8 + kept | `bigtech.py` |
+| Big-tech careers APIs | six portals: JSON search APIs (full JD inline), Workday `cxs`, an embedded-JSON results page, Eightfold `pcsx` / apply v2 (search + 1 GET per kept job) | ~8 + kept | `bigtech.py` |
 
 ## Sources an AI adds (v1.1)
 
@@ -27,7 +27,7 @@ employer's own board and queued), `harvest_now`, `discovery_sources`. Max 50 per
 
 ## Board registry
 
-`workspace/boards.json` holds ~5,500 live boards across nine ATSs. `engine boards harvest` grows it from public GitHub
+`workspace/boards.json` holds ~5,950 live boards across nine ATSs (6,362 listed, 406 marked dead). `engine boards harvest` grows it from public GitHub
 job lists; boards that 404 are marked dead and skipped (`engine boards recheck` retries them). A full scan runs the
 boards in parallel threads, so wall time is roughly the slowest board rather than the sum. A full scan returns ~3,400
 fresh postings before filtering.
@@ -67,7 +67,19 @@ says so.
 The largest employers run their own portals behind a candidate account. REGEN doesn't create accounts or sign in, so
 `engine bigtech` does everything up to the submit: it polls the public search APIs, applies the same domain filter
 and fit gate, builds the tailored resume and writes `workspace/bigtech.md` (link, posted date, lane, ATS score,
-resume path). Re-runs only fetch new postings (`bigtech_seen.json`). On the first run 43 roles passed.
+resume path). Re-runs only fetch new postings (`bigtech_seen.json`). Six portals since 10-21 (two search APIs, an
+embedded-JSON results page, a CSRF-token search API and two Eightfold sites); every portal gets the same 12 searches,
+new grad and early career included, at most once an hour on sources passes (`REGEN_BIGTECH_EVERY_MIN`). The first
+six-portal run passed 66 new roles. The roles show in the Discover room (`/room/listen#bigtech`) with posting links
+and resume PDFs.
+
+## The Discover room
+
+`/room/listen` (and the engine room's front page) draws discovery as a panda in a field of glass orbs: one orb per
+company with the newest postings in the queue, six gold orbs for the big-tech portals (`GET /api/control/discover`).
+The orbs carry no text; hovering or tapping one makes it glow and opens a card with the company, ATS and role while
+the panda turns to look at it. The face runs from one `requestAnimationFrame` loop that writes SVG attributes through
+refs, so React re-renders only when the data or the hovered orb changes, and the loop sleeps off screen.
 
 ## Complexity
 

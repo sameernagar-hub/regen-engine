@@ -4,7 +4,7 @@
 
 REGEN is an open-source, local-first engine that runs a job search end to end:
 
-- **Finds** roles at the source: it polls ~5,500 company boards on nine ATSs and resolves alerts, lists and
+- **Finds** roles at the source: it polls ~5,900 company boards on nine ATSs and six big-tech careers portals and resolves alerts, lists and
   careers APIs back to the employer's own posting. Your AI client can add new sources over MCP.
 - **Rejects** roles you'd be screened out of before spending any effort on them.
 - **Writes** one resume per job from a Fact Bank of claims you can prove.
@@ -14,18 +14,18 @@ REGEN is an open-source, local-first engine that runs a job search end to end:
 - **Shifts** speed with one control: the gearbox sets appliers and scan rate; your AI can drive every level.
 
 It is built like infrastructure: an append-only event log, a preemptive round-robin scheduler, typed APIs, an MCP
-server with 43 tools, a privacy gate in CI and 235 tests.
+server with 43 tools, a privacy gate in CI and 245 tests.
 
 | Applications submitted | Boards polled | Biggest day | MCP tools | Tests |
 |---|---|---|---|---|
-| **220** (ledger, 10-19) | **~5,500** | **49** (2026-10-10) | **43** | **235** |
+| **282** (ledger, 10-22) | **~5,900** | **49** (2026-10-10) | **43** | **245** |
 
 ## The system in one picture
 
 ```mermaid
 flowchart LR
     subgraph Discover
-      ATS[9 ATSs<br/>~5,500 boards] --> Q
+      ATS[9 ATSs<br/>~5,900 boards] --> Q
       AL[Alert emails · lists<br/>big-tech APIs] -->|resolve to source| Q[(queue)]
     end
     Q --> FG{Fit gate<br/>JD rules}

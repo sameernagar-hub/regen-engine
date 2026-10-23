@@ -25,7 +25,7 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 
 ## What REGEN does
 
-- **Gets there first.** Polls ~5,500 employer boards on 9 ATSs directly, rescanning every few minutes, so roles are caught the hour they go live. [Discovery →](https://github.com/sameernagar-hub/regen-engine/wiki/Discovery)
+- **Gets there first.** Polls ~5,900 employer boards on 9 ATSs and six big-tech careers portals directly, rescanning every few minutes, so roles are caught the hour they go live. [Discovery →](https://github.com/sameernagar-hub/regen-engine/wiki/Discovery)
 - **Never bluffs.** Every resume line comes from your Fact Bank; a validator rejects anything else. [Tailoring →](https://github.com/sameernagar-hub/regen-engine/wiki/Tailoring)
 - **Skips what you'd lose.** A fit gate reads the whole job description first: sponsorship, years, clearance, stack. [Fit gate →](https://github.com/sameernagar-hub/regen-engine/wiki/Fit-Gate)
 - **Learns from no.** Every rejection is read back and compared with the job descriptions that weren't rejected. [Feedback →](https://github.com/sameernagar-hub/regen-engine/wiki/Rejection-Feedback)
@@ -34,11 +34,11 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 
 ## By the numbers
 
-| 220 | 49 | ~5,500 | 43 | 0 |
+| 282 | 49 | ~5,900 | 43 | 0 |
 |:-:|:-:|:-:|:-:|:-:|
 | applications submitted | best day | employer boards watched | MCP tools | model API keys |
 
-From the engine's own ledger as of 2026-10-19 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 235 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
+From the engine's own ledger as of 2026-10-22 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 245 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
 
 ## How it works
 

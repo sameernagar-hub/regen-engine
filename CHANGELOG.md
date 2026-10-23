@@ -5,6 +5,9 @@ so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
 ## [Unreleased] - 2026-10-22 · Discover gets a panda, and the site gets easter eggs
+- **Docs current** (README, wiki Home / Metrics / Discovery / Control room / Technical reference): 282 submitted
+  (ledger, 10-22), ~5,900 live boards plus six big-tech portals, 245 tests, outcomes 271 confirmations / 80 rejections /
+  4 assessments, 14 proposed learned rules (none significant yet), the Discover room and its panda.
 - **Easter eggs** (`app/eggs.tsx` + `eggs.css`, mounted once in the layout; the site never announces them). Nothing
   runs per frame: one keydown listener and one hover timer; each effect builds its DOM on trigger and removes it.
   - Konami code: the page revs (shake) and gold sparks burst; a note says the real engine stays in cruise.
