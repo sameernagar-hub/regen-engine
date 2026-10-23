@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-22 21:03",
+"generated": "2026-10-22 21:04",
 "days": 7,
 "verified": 226,
 "verified_roles": [
@@ -911,18 +911,6 @@
 "boards": 5547,
 "last_poll": 1791700372.0784452,
 "events": [
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer, Agent - Travel & Hospitality.",
-"ts": "2026-10-21T22:33"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer, Agent - Insurance.",
-"ts": "2026-10-21T22:33"
-},
 {
 "stage": "listen",
 "tone": "calm",
@@ -1871,6 +1859,20 @@
 "tone": "quiet",
 "text": "Let a company go: seniority.",
 "ts": "2026-10-21T22:54"
+},
+{
+"stage": "hear",
+"tone": "calm",
+"text": "21 companies confirmed they have the application.",
+"ts": "2026-10-22T21:04",
+"n": 21
+},
+{
+"stage": "hear",
+"tone": "calm",
+"text": "2 companies passed this time.",
+"ts": "2026-10-22T21:04",
+"n": 2
 }
 ],
 "graph": {
@@ -7325,6 +7327,264 @@
 "id": "n819",
 "type": "Outcome",
 "label": "confirmation",
+"data": {}
+},
+{
+"id": "n820",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n821",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n822",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n823",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n824",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n825",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n826",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n827",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n828",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n829",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n830",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n831",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n832",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n833",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n834",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n835",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n836",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n837",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n838",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n839",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n840",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n841",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n842",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n843",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n844",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n845",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n846",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n847",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n848",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n849",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n850",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n851",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n852",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n853",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n854",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n855",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n856",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n857",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n858",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n859",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n860",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n861",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n862",
+"type": "Outcome",
+"label": "rejection",
 "data": {}
 }
 ],
@@ -14547,6 +14807,231 @@
 {
 "source": "n255",
 "target": "n819",
+"type": "RESULTED_IN"
+},
+{
+"source": "n258",
+"target": "n820",
+"type": "RESULTED_IN"
+},
+{
+"source": "n256",
+"target": "n821",
+"type": "RESULTED_IN"
+},
+{
+"source": "n257",
+"target": "n822",
+"type": "RESULTED_IN"
+},
+{
+"source": "n259",
+"target": "n823",
+"type": "RESULTED_IN"
+},
+{
+"source": "n30",
+"target": "n824",
+"type": "RESULTED_IN"
+},
+{
+"source": "n125",
+"target": "n825",
+"type": "RESULTED_IN"
+},
+{
+"source": "n260",
+"target": "n826",
+"type": "RESULTED_IN"
+},
+{
+"source": "n261",
+"target": "n827",
+"type": "RESULTED_IN"
+},
+{
+"source": "n262",
+"target": "n828",
+"type": "RESULTED_IN"
+},
+{
+"source": "n264",
+"target": "n829",
+"type": "RESULTED_IN"
+},
+{
+"source": "n49",
+"target": "n830",
+"type": "RESULTED_IN"
+},
+{
+"source": "n49",
+"target": "n830",
+"type": "RESULTED_IN"
+},
+{
+"source": "n230",
+"target": "n831",
+"type": "RESULTED_IN"
+},
+{
+"source": "n263",
+"target": "n832",
+"type": "RESULTED_IN"
+},
+{
+"source": "n275",
+"target": "n833",
+"type": "RESULTED_IN"
+},
+{
+"source": "n265",
+"target": "n834",
+"type": "RESULTED_IN"
+},
+{
+"source": "n122",
+"target": "n835",
+"type": "RESULTED_IN"
+},
+{
+"source": "n72",
+"target": "n836",
+"type": "RESULTED_IN"
+},
+{
+"source": "n244",
+"target": "n837",
+"type": "RESULTED_IN"
+},
+{
+"source": "n267",
+"target": "n838",
+"type": "RESULTED_IN"
+},
+{
+"source": "n266",
+"target": "n839",
+"type": "RESULTED_IN"
+},
+{
+"source": "n268",
+"target": "n840",
+"type": "RESULTED_IN"
+},
+{
+"source": "n107",
+"target": "n841",
+"type": "RESULTED_IN"
+},
+{
+"source": "n144",
+"target": "n842",
+"type": "RESULTED_IN"
+},
+{
+"source": "n269",
+"target": "n843",
+"type": "RESULTED_IN"
+},
+{
+"source": "n272",
+"target": "n844",
+"type": "RESULTED_IN"
+},
+{
+"source": "n271",
+"target": "n845",
+"type": "RESULTED_IN"
+},
+{
+"source": "n196",
+"target": "n846",
+"type": "RESULTED_IN"
+},
+{
+"source": "n270",
+"target": "n847",
+"type": "RESULTED_IN"
+},
+{
+"source": "n107",
+"target": "n848",
+"type": "RESULTED_IN"
+},
+{
+"source": "n144",
+"target": "n849",
+"type": "RESULTED_IN"
+},
+{
+"source": "n269",
+"target": "n850",
+"type": "RESULTED_IN"
+},
+{
+"source": "n272",
+"target": "n851",
+"type": "RESULTED_IN"
+},
+{
+"source": "n273",
+"target": "n852",
+"type": "RESULTED_IN"
+},
+{
+"source": "n245",
+"target": "n853",
+"type": "RESULTED_IN"
+},
+{
+"source": "n249",
+"target": "n854",
+"type": "RESULTED_IN"
+},
+{
+"source": "n274",
+"target": "n855",
+"type": "RESULTED_IN"
+},
+{
+"source": "n49",
+"target": "n856",
+"type": "RESULTED_IN"
+},
+{
+"source": "n49",
+"target": "n856",
+"type": "RESULTED_IN"
+},
+{
+"source": "n230",
+"target": "n857",
+"type": "RESULTED_IN"
+},
+{
+"source": "n263",
+"target": "n858",
+"type": "RESULTED_IN"
+},
+{
+"source": "n275",
+"target": "n859",
+"type": "RESULTED_IN"
+},
+{
+"source": "n276",
+"target": "n860",
+"type": "RESULTED_IN"
+},
+{
+"source": "n276",
+"target": "n861",
+"type": "RESULTED_IN"
+},
+{
+"source": "n273",
+"target": "n862",
 "type": "RESULTED_IN"
 }
 ]
