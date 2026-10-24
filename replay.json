@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-24 12:07",
+"generated": "2026-10-24 12:23",
 "days": 7,
 "verified": 250,
 "verified_roles": [
@@ -1008,570 +1008,6 @@
 "last_poll": 1791700372.0784452,
 "events": [
 {
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Agentic Software Engineer.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Test Engineer – Power Electronics.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer, Search Infrastructure.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: ETL Software Engineer.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Customer Engineer.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Forward Deployed Engineer.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: .NET Software Engineer - Hybrid.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Data Scientist.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer, GTM Ops.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Technical Lead, Multimodal Research.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Forward Deployed Engineer.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer, @Work.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Lead Engineer, Enterprise Systems Software.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Data Scientist - Client Platform.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Developer.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Applied AI Software Engineer, GTM.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Dedicated Support Engineer - San Francisco.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Junior Software Engineer, Edge Platform.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Machine Learning Engineer, Core Experimentation.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Support Engineer.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Data Scientist, Payments.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Full Stack Software Engineer (Hybrid).",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Data Platform Engineer.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Forward Deployed Engineer.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Product Engineer, Full Stack.",
-"ts": "2026-10-24T11:27"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Associate AI Engineer.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Technical Support Engineer.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: AI Engineer.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Development Engineer in Test (SDET).",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Associate Applied Scientist.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Associate Flight Software Test & Tools Engineer.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Flight Software Engineer.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer I, Fullstack.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer, New Grad.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:28"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, sre lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements and seniority.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 7 facts in the Fact Bank, embedded lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: not a fit.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:29"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 7 facts in the Fact Bank, embedded lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: eligibility requirements.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "write",
-"tone": "calm",
-"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-24T11:30"
-},
-{
-"stage": "judge",
-"tone": "quiet",
-"text": "Let a company go: seniority.",
-"ts": "2026-10-24T11:30"
-},
-{
 "stage": "judge",
 "tone": "quiet",
 "text": "Let a company go: eligibility requirements.",
@@ -1968,6 +1404,570 @@
 "text": "11 companies confirmed they have the application.",
 "ts": "2026-10-24T11:55",
 "n": 11
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:09"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Quality Assurance Engineer.",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Associate AI Engineer.",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Technical Support Engineer.",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: AI Engineer.",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Development Engineer in Test (SDET).",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Associate Applied Scientist.",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Associate Flight Software Test & Tools Engineer.",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Flight Software Engineer.",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer I, Fullstack.",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "listen",
+"tone": "calm",
+"text": "Spotted a company: Software Engineer, New Grad.",
+"ts": "2026-10-24T12:18"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: not a fit.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, sre lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, platform lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T12:19"
 }
 ],
 "graph": {
