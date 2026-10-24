@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-24 12:38",
+"generated": "2026-10-24 12:53",
 "days": 7,
 "verified": 251,
 "verified_roles": [
@@ -1971,8 +1971,9 @@
 {
 "stage": "apply",
 "tone": "quiet",
-"text": "A company didn't go through yet: CAPTCHA: Lever asked for a human check; finish this one by….",
-"ts": "2026-10-24T12:37"
+"text": "2 companies didn't go through yet: CAPTCHA: Lever asked for a human check; finish this one by….",
+"ts": "2026-10-24T12:37",
+"n": 2
 }
 ],
 "graph": {
