@@ -33,6 +33,8 @@ def test_answers_from_presets_and_consent(switch):
     assert a("Are you one of the following: U.S. Citizen or National. U.S. Lawful Permanent Resident.", P) == "No"
     assert a("Are you a national, citizen, or permanent resident of Belarus, Cuba, Iran, North Korea, Syria?", P) == "No"
     assert a("Does the deemed export rule affect your employment by Globex?", P) == "Yes"
+    assert a("Export Control and Compliance: For the sole purpose of determining export licensing requirements, please "
+             "list any countries of which you are a citizen or legal permanent resident", P) is None
     assert a("What are your preferred personal pronouns?", P) == "__DECLINE__"
     assert a("Current Legal Address", P) == "1 Example St, Springfield, IL, 00000"
     assert a("If yes, please confirm which type of Visa would be required", P) == "Status X; will need H-1B sponsorship in the future"
@@ -42,7 +44,8 @@ def test_answers_from_presets_and_consent(switch):
 def test_never_invents_facts_or_passes_human_checks(switch):
     for q in ("Have you ever been convicted of a felony?", "We require all US-based employees to be fully vaccinated",
               "We're always curious - have you used Globex before?", "Do you currently have an active immigration case?",
-              "Please include a copy of your college or university transcript."):
+              "Please include a copy of your college or university transcript.",
+              "If you attended an on-campus or virtual event, which did you attend?"):
         assert O.blocked(q) == "fact" and O.answer(q, P) is None, q
     for q in ("To confirm you carefully read instructions, please select the SECOND option below",
               "We include this question to ensure each application is completed by a person."):

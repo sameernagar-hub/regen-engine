@@ -29,7 +29,7 @@ PATH = os.path.join(PROFILE, "override.json")
 # facts only the user knows: never drafted, never defaulted
 FACT_ONLY = re.compile(r"convict|felony|misdemeanor|indict|criminal (record|history)|vaccin|have you used \w+ before|"
                        r"used .{0,30} before\?|which of these devices|devices do you (have|own)|active immigration case|"
-                       r"credit report|bankruptcy|foreclosure|transcript|video", re.I)
+                       r"credit report|bankruptcy|foreclosure|transcript|video|which .{0,40}did you attend", re.I)
 # a check that a human is filling the form: never automated
 HUMAN_CHECK = re.compile(r"completed by a person|carefully read (the )?instructions|select the (first|second|third|last) "
                          r"option|captcha|human check|are you a (robot|human)|access code you received", re.I)
@@ -97,6 +97,8 @@ def answer(label, P):
     if US_PERSON.search(l) and P.get("us_citizen_or_us_person_itar"):
         return "Yes" if us_person else "No"
     if DEEMED.search(l) and P.get("us_citizen_or_us_person_itar"):
+        if re.search(r"\blist\b|which countr|countries of", l, re.I):
+            return None  # asks you to name your citizenships (Zoox 10-24 got "Yes" from "licensing requirements")
         if re.search(r"affect|require|need", l, re.I):
             return "No" if us_person else "Yes"  # a non-U.S. person is who the deemed export rule covers
         return None  # a self-certification list (pick your status): the option text is the employer's, left to you
