@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-24 23:24",
+"generated": "2026-10-24 23:39",
 "days": 7,
 "verified": 252,
 "verified_roles": [
@@ -1018,90 +1018,6 @@
 {
 "stage": "listen",
 "tone": "calm",
-"text": "Spotted a company: Software Engineer.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer, AI Applications.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer, Data Infrastructure.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Risk Data Analyst.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer, Engine Scalability.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Test Engineer - Day Shift - (NVD).",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Scientific Machine Learning Engineer.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: AI Software Engineer (Remote).",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Lead Robotics Software Systems Engineer.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Seasonal Front End Sales Associate / Cashier - Eataly Flati….",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Data Engineer.",
-"ts": "2026-10-24T23:14"
-},
-{
-"stage": "listen",
-"tone": "calm",
 "text": "Spotted a company: IT Software Engineer II.",
 "ts": "2026-10-24T23:14"
 },
@@ -1974,6 +1890,90 @@
 "tone": "win",
 "text": "Applied to a company, Data Analyst. Proof saved.",
 "ts": "2026-10-24T23:23"
+},
+{
+"stage": "apply",
+"tone": "quiet",
+"text": "A company didn't go through yet: CAPTCHA: Lever asked for a human check; finish this one by….",
+"ts": "2026-10-24T23:25"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 9 facts in the Fact Bank, ai lane.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements and seniority.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, data lane.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: eligibility requirements and seniority.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, fullstack lane.",
+"ts": "2026-10-24T23:35"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 10 facts in the Fact Bank, backend lane.",
+"ts": "2026-10-24T23:36"
 }
 ],
 "graph": {
