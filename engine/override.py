@@ -98,7 +98,8 @@ def answer(label, P):
         return "Yes" if us_person else "No"
     if DEEMED.search(l) and P.get("us_citizen_or_us_person_itar"):
         if re.search(r"\blist\b|which countr|countries of", l, re.I):
-            return None  # asks you to name your citizenships (Zoox 10-24 got "Yes" from "licensing requirements")
+            # asks you to name your citizenships (Zoox 10-24 got "Yes" from "licensing requirements")
+            return P.get("citizenship_country") or None
         if re.search(r"affect|require|need", l, re.I):
             return "No" if us_person else "Yes"  # a non-U.S. person is who the deemed export rule covers
         return None  # a self-certification list (pick your status): the option text is the employer's, left to you

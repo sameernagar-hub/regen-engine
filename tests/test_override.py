@@ -34,7 +34,7 @@ def test_answers_from_presets_and_consent(switch):
     assert a("Are you a national, citizen, or permanent resident of Belarus, Cuba, Iran, North Korea, Syria?", P) == "No"
     assert a("Does the deemed export rule affect your employment by Globex?", P) == "Yes"
     assert a("Export Control and Compliance: For the sole purpose of determining export licensing requirements, please "
-             "list any countries of which you are a citizen or legal permanent resident", P) is None
+             "list any countries of which you are a citizen or legal permanent resident", P) == "India"
     assert a("What are your preferred personal pronouns?", P) == "__DECLINE__"
     assert a("Current Legal Address", P) == "1 Example St, Springfield, IL, 00000"
     assert a("If yes, please confirm which type of Visa would be required", P) == "Status X; will need H-1B sponsorship in the future"
