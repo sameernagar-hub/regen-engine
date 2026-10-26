@@ -1363,7 +1363,7 @@ def set_gh(page, f, ans, label="", loc=""):
             hs = skill_options(opts)
             for h in hs: h.check(force=True)
             return bool(hs)
-        h = pick_option(opts, ans)
+        h = pick_option(opts, ans) or office_option(opts, label, loc)  # office lists are often checkboxes
         if h: h.check(force=True); return True
         return False
     if txt:

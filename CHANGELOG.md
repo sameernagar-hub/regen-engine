@@ -9,7 +9,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   box (no option to tick) got the ack answer, typed nothing and parked the job (2 roles at one employer on 10-25).
   Now such a box gets your legal name from presets; ack boxes with options are unchanged.
 - **Office-list questions pick the posting's city** (`runner.office_option`): "office-first culture ... the
-  specified location/s" with a multi-select of office cities got the onsite "Yes" and matched nothing. The Greenhouse
+  specified location/s" with a checkbox list (or dropdown) of office cities got the onsite "Yes" and matched nothing. The Greenhouse
   filler now reads the posting's `.job__location` and, when the label is about offices and that city is an option
   (whole-word), picks it. Anything else still goes to you.
   Verify: `pytest tests/test_v1_answers.py -k "attestation or office"` (247 tests pass).
