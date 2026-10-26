@@ -4,6 +4,16 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-25 · Typed attestations and office-list questions
+- **Typed attestation boxes are signed** (`runner.attest_text`): "I certify that the facts ... are true" with a text
+  box (no option to tick) got the ack answer, typed nothing and parked the job (2 roles at one employer on 10-25).
+  Now such a box gets your legal name from presets; ack boxes with options are unchanged.
+- **Office-list questions pick the posting's city** (`runner.office_option`): "office-first culture ... the
+  specified location/s" with a multi-select of office cities got the onsite "Yes" and matched nothing. The Greenhouse
+  filler now reads the posting's `.job__location` and, when the label is about offices and that city is an option
+  (whole-word), picks it. Anything else still goes to you.
+  Verify: `pytest tests/test_v1_answers.py -k "attestation or office"` (247 tests pass).
+
 ## [Unreleased] - 2026-10-22 · Discover gets a panda, and the site gets easter eggs
 - **Docs current** (README, wiki Home / Metrics / Discovery / Control room / Technical reference): 282 submitted
   (ledger, 10-22), ~5,900 live boards plus six big-tech portals, 245 tests, outcomes 271 confirmations / 80 rejections /

@@ -97,3 +97,24 @@ def test_background_facts_come_from_presets():
         assert answer_for(q, {}) == P.get(key), q  # unset in the fictional fixture -> None -> still asks
     assert answer_for("we ask all candidates to undergo a criminal background check. Are you willing to consent to a background check?", {}) \
         == P.get("willing_background_check")
+
+
+def test_typed_attestation_is_signed_with_legal_name():
+    from engine.apply.runner import attest_text
+    q = ("I certify that the facts set forth in this Application for Employment are true and complete to the best of "
+         "my knowledge.")
+    assert attest_text(q, "__ACK__") == f"{P['first_name']} {P['last_name']}"
+    assert attest_text(q, "Yes") == f"{P['first_name']} {P['last_name']}"
+    assert attest_text("Please review the linked document:", "__ACK__") is None  # an ack box, not a signature
+    assert attest_text(q, "No") is None
+
+
+def test_office_list_picks_the_posting_city():
+    from engine.apply.runner import office_option
+    opts = [(c, c) for c in ("Boca Raton, FL", "Boston, MA", "Des Moines, IA", "New York, NY")]
+    q = ("Globex is an office-first culture, as such all employees are required to work in the office "
+         "Monday-Thursday. Please review the job description to identify the specified location/s for the role.")
+    assert office_option(opts, q, "Des Moines, Iowa, United States") == "Des Moines, IA"
+    assert office_option(opts, q, "Remote") is None  # no office named -> still asks
+    assert office_option(opts, "How did you hear about us?", "Boston, Massachusetts") is None  # not an office question
+    assert office_option([("Newark, NJ", 1)], q, "New York, NY") is None  # whole-word city only

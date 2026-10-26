@@ -243,6 +243,31 @@ MAX_OPTION = 80  # longest answer we will try to match against dropdown / choice
 YESNO_Q = re.compile(r"^\s*(are|do|does|did|will|would|have|has|had|is|was|can|could|should|may|any)\b", re.I)
 
 
+ATTEST_Q = re.compile(r"\b(i certify|i attest|i affirm|certify that|attest that|electronic signature|e-?signature|type your (full )?(legal )?name)\b", re.I)
+
+
+def attest_text(label, ans):
+    """10-25: "I certify that the facts ... are true" with a TEXT box (no option to tick) got the ack answer
+    and stayed empty. A typed attestation is signed with your legal name from presets; None for any other box."""
+    if ans in ("__ACK__", "Yes") and ATTEST_Q.search(label or ""):
+        return f"{P['first_name']} {P['last_name']}"
+    return None
+
+
+OFFICE_Q = re.compile(r"office|on-?site|in-?person|hybrid|which (location|city)|work location|location\(?s\)?\b", re.I)
+
+
+def office_option(options, label, loc):
+    """10-25: an "office-first culture ..." question whose options are office cities got "Yes" (onsite
+    preset) and nothing matched. When the label is about offices and the posting's own city is one of the options,
+    pick it (you applied to that location, and your preset says you work onsite). None otherwise."""
+    city = (loc or "").split(",")[0].strip()
+    if len(city) < 3 or not OFFICE_Q.search(label or ""):
+        return None
+    rx = re.compile(r"(?<![a-z])" + re.escape(city.lower()) + r"(?![a-z])")
+    return next((h for t, h in options if rx.search(_norm_opt(t))), None)
+
+
 def text_ok(label, ans):
     """A free-text box only gets a bare Yes/No when its label is actually a yes/no question
     (keeps "Yes" out of e.g. "What address will you work from? If you'd relocate, ...")."""
@@ -791,6 +816,7 @@ def set_field(page, f, label, ans):
             if combo.input_value() == want: return True
         page.keyboard.press("Escape"); return False
     if txt:
+        ans = attest_text(label, ans) or ans
         if ans.startswith("__") or not text_ok(label, ans): return False
         txt.fill(ans); return True
     return False
@@ -1225,6 +1251,7 @@ def fill_gh(page, job, log):
                     cc.click(timeout=3000, force=True); cc.type("United States"); time.sleep(0.8); page.keyboard.press("Enter")
             except Exception as e: log(f"  ! phone country: {str(e)[:160]}")
     yield from fill_employment(page, log)
+    loc = page.evaluate("() => (document.querySelector('.job__location, .location') || {}).innerText || ''").strip()
     seen = set()
     for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question, .eeoc__question__wrapper, .education--form .select__container, .education--form .text-input-wrapper"):
         key = f.evaluate("e => e.innerText.slice(0,120)")
@@ -1244,7 +1271,7 @@ def fill_gh(page, job, log):
                 ta.fill(ans); log(f"   . {label[:60]} -> {ans[:30]}"); job.setdefault("_answers", []).append([label[:200], ans]); continue
         try:
             log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
-            ok = yield from set_gh(page, f, ans, label)
+            ok = yield from set_gh(page, f, ans, label, loc)
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
         if not ok and req: missing.append(label[:90])
@@ -1258,8 +1285,9 @@ def menu_options(page):
     return [o for o in page.query_selector_all("[role=option], .select__option") if "iti__" not in (o.get_attribute("class") or "")]
 
 
-def set_gh(page, f, ans, label=""):
-    """Generator: `ok = yield from set_gh(...)`; yields only before the field (see set_field)."""
+def set_gh(page, f, ans, label="", loc=""):
+    """Generator: `ok = yield from set_gh(...)`; yields only before the field (see set_field).
+    loc: the posting's location, for office-list questions (office_option)."""
     yield  # checkpoint
     if ans is None: return False
     sel = f.query_selector("input[role=combobox], .select__input input, [class*=select__control]")
@@ -1311,6 +1339,7 @@ def set_gh(page, f, ans, label=""):
             for term in (terms if ans == "Company careers page" else [ans] + ALIASES.get(ans, [])):
                 h = pick_option(labeled, term)
                 if h: break
+            h = h or office_option(labeled, label, loc)
         for term in ([] if h else terms):
             inp.click(timeout=4000); inp.fill(""); inp.type(term); time.sleep(0.9)
             real = options()
@@ -1338,6 +1367,7 @@ def set_gh(page, f, ans, label=""):
         if h: h.check(force=True); return True
         return False
     if txt:
+        ans = attest_text(label, ans) or ans
         if ans.startswith("__") or not text_ok(label, ans): return False
         if txt.input_value(): return True
         txt.fill(ans); return True
