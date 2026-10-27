@@ -98,6 +98,12 @@ RULES = [
     (r"(?<![a-z])referr(ed|ing|er|al)\b.{0,80}(name|individual)|name of .{0,30}referr", "N/A"),  # (?<![a-z]): not "preferred"
     (r"have you (added|entered|provided|included|used) your (full )?(legal )?(name|surname)", "__ACK__"),  # a yes/no check, not a name box
     (r"(did|has) (someone|anyone|an employee) refer(red)? you|were you referred", P.get("referred", "No")),  # the engine applies cold
+    # 10-26: split address forms ("Home Address City / State / Country") each got the whole address from the override
+    # (a country dropdown can't take a street); each box gets its own part. Line 2 is ADDR_BLANK (left empty).
+    (r"\baddress,? ?(city|town)\b", P.get("city")),
+    (r"\baddress,? ?(state|province|region)\b", P.get("state")),
+    (r"\baddress,? ?(zip|postal)", P.get("zip")),
+    (r"\baddress,? ?country\b", P.get("country")),
     (r"(what is|provide|enter|share) (us )?(with )?your (current |home |full |mailing )?(street )?address\b",", ".join(x for x in (P.get("address_line1"), P.get("city"), P.get("state_abbr")) if x) if P.get("address_line1") else None),
     (r"preferred (first )?name", P["first_name"]),
     # 10-19: "what is the phonetic spelling of your name?" parked a job; the name as written is the truthful answer
@@ -241,6 +247,11 @@ ALIASES = {k: [v for v in vs if v] for k, vs in ALIASES.items()}
 
 MAX_OPTION = 80  # longest answer we will try to match against dropdown / choice options
 YESNO_Q = re.compile(r"^\s*(are|do|does|did|will|would|have|has|had|is|was|can|could|should|may|any)\b", re.I)
+
+
+# Address boxes the presets have nothing for: apartment/suite line, or a box only another country fills ("CEP (Brazil Only)")
+ADDR_BLANK = re.compile(r"address,? ?(line ?2|apt|apartment|suite|unit)\b|^\W*(address )?line ?2\W*$"
+                        r"|\((?!united states|u\.?s\.?a?\b)[a-z ]+ only\)", re.I)
 
 
 ATTEST_Q = re.compile(r"\b(i certify|i attest|i affirm|certify that|attest that|electronic signature|e-?signature|type your (full )?(legal )?name)\b", re.I)
@@ -522,6 +533,8 @@ def answer(label, job, field=None):
     ans = derived(label) or ans  # computed from Fact Bank dates/years: beats the generic years rule
     if ans is None and re.fullmatch(r"\s*(attach|upload|dropbox|google drive|enter manually|browse)\s*", label, re.I):
         return None  # a file-upload control, not a question
+    if ans is None and ADDR_BLANK.search(" ".join(label.split())):
+        return None  # Line 2 / another country's box: left empty, never drafted or overridden (10-26)
     if ans is None and override.on():  # the user's "draft" switch (engine/override.py): presets + consent, logged
         ans = override.answer(label, P)
         if ans is not None:
@@ -750,7 +763,9 @@ def set_field(page, f, label, ans):
     authorization, sponsorship and EEO selects left on "Select..."). The short waits inside are bounded sleeps."""
     yield  # checkpoint: a safe place to switch tabs
     if ans is None: return False
-    txt = f.query_selector("input[type=text]:not([role=combobox]), input[type=email], input[type=tel], input[type=url], input[type=number], input:not([type]), textarea")
+    # 10-26: Ashby's Location autocomplete is an <input role=combobox> with no type; `input:not([type])` took it as a
+    # text box, so the city was typed but no suggestion picked and Ashby refused the submit ("Missing entry: Location")
+    txt = f.query_selector("input[type=text]:not([role=combobox]), input[type=email], input[type=tel], input[type=url], input[type=number], input:not([type]):not([role=combobox]), textarea")
     combo = f.query_selector("input[role=combobox]")
     btns = [b for b in f.query_selector_all("button") if b.inner_text().strip() in ("Yes", "No")]
     choices = f.query_selector_all("input[type=radio], input[type=checkbox]")

@@ -241,3 +241,23 @@ def test_degree_year_clearance_level_region():
     if R.P.get("security_clearance") == "No":
         assert R.answer_for("What is your clearance level?", {}) == "None"
     assert R.answer_for("Please provide the state/region in which you currently reside.", {}) == R.P["state"]
+
+
+def test_ashby_untyped_combobox_picks_a_suggestion(browser):
+    """10-26: Ashby's Location is <input role=combobox> with no type; it was filled as text, no suggestion picked,
+    and the submit was refused ("Missing entry for required field: Location")."""
+    page = browser.new_page()
+    page.set_content("""<div class="ashby-application-form-field-entry"><label>Location</label>
+      <input role="combobox" aria-autocomplete="list" value=""><ul id="m"></ul></div>
+      <script>const i=document.querySelector('input'), m=document.getElementById('m');
+      i.addEventListener('input', () => { m.innerHTML = i.value ? ['San José, San José, Costa Rica',
+        'San Jose, California, United States'].map(t => `<li role="option">${t}</li>`).join('') : ''; });
+      m.addEventListener('click', e => { i.value = e.target.innerText; m.innerHTML = ''; });</script>""")
+    f = page.query_selector(".ashby-application-form-field-entry")
+    gen = R.set_field(page, f, "Location", f"{R.P['city']}, {R.P['state']}")
+    try:
+        while True: next(gen)
+    except StopIteration as s:
+        ok = s.value
+    assert ok and page.input_value("input").endswith("United States") and R.P["city"] in page.input_value("input")
+    page.close()

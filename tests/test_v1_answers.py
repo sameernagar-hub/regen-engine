@@ -118,3 +118,15 @@ def test_office_list_picks_the_posting_city():
     assert office_option(opts, q, "Remote") is None  # no office named -> still asks
     assert office_option(opts, "How did you hear about us?", "Boston, Massachusetts") is None  # not an office question
     assert office_option([("Newark, NJ", 1)], q, "New York, NY") is None  # whole-word city only
+
+
+def test_split_home_address_gets_each_part():
+    """10-26: a split address form had the whole address typed into Line 2, City, State, Country and a Brazil-only box."""
+    from engine.apply.runner import answer
+    assert answer_for("Home Address City", {}) == P["city"]
+    assert answer_for("Home Address State", {}) == P["state"]
+    assert answer_for("Home Address Zip Code", {}) == P["zip"]
+    assert answer_for("Home Address Country", {}) == P["country"]
+    job = {"name": "Globex - SWE", "url": "https://job-boards.greenhouse.io/globex/jobs/1"}
+    for q in ("Home Address Line 2", "Address Line 2", "Home Address CEP (Brazil Only)"):
+        assert answer(q, job) is None and not job.get("_drafted")  # left empty, never drafted
