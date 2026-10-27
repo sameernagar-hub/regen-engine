@@ -83,6 +83,10 @@ RULES = [
     # 10-20 parked: wordings the general rules below missed; every answer is on file
     (r"(year|when) .{0,30}(receive|complete|earn|finish|graduat)\w* .{0,20}(undergraduate|bachelor)", undergrad_year()),
     (r"(security )?clearance level", "None" if P.get("security_clearance") == "No" else None),
+    # 10-27: "What level clearance do you currently possess?" / "Do you have a Top-Secret Clearance or higher?" parked
+    # (presets: security_clearance); eligibility to obtain one is a different question and is left alone
+    (r"(what|which) (level|type) (of )?clearance", "None" if P.get("security_clearance") == "No" else None),
+    (r"^\W*(do|does) you (currently )?(have|hold|possess) (an? )?(active |current )?(top.?secret|ts/sci|secret|security|government)\b.{0,30}clearance(?!.{0,40}(obtain|eligib))", P.get("security_clearance")),
     # optional marketing opt-ins: the privacy-preserving choice
     (r"(recruit(ment|ing)|talent) marketing|marketing (communications|emails|updates)|receive .{0,40}(newsletters?|marketing)", P.get("marketing_opt_in", "No")),
     (r"adverse credit|credit report|bankruptcy|foreclosure", P.get("adverse_credit")),
@@ -123,6 +127,10 @@ RULES = [
     (r"(perform(ing)?|provid(e|ing)) (work|services) (on behalf of|for) .{0,60}(as an? )?(contractor|consultant|vendor)", P.get("former_contractor_of_company")),  # B2
     (r"considered for (future|other) (opportunities|roles|positions)", P.get("future_opportunities")),
     (r"^have you (ever )?held h-?1b|h-?1b petition (been )?approved", P.get("held_h1b")),  # not "require ... (e.g., H-1B visa)": sponsorship rules own those
+    # 10-27: "full-time/part-time employee or appointee of <co>" / "ever been employed or appointed by <co>" parked
+    (r"(currently|presently) an? .{0,40}\b(employee|appointee)( or (employee|appointee))? (of|at|with|for)\b|ever been (employed|appointed) (or (employed|appointed) )?by\b", P.get("previous_employer_of_company")),
+    # 10-27: "Would you like to get an email notification whenever we find a role..." got the email address typed in
+    (r"(e-?mail|job|role) (notification|alert)s?\b|notif(y|ication)s? .{0,60}\b(roles?|jobs?|positions?|openings?)\b", P.get("job_alert_emails")),
     (r"e-?mail", P["email"]), (r"phone", P["phone"]),
     (r"(current|former|previous|ever been an?) (contractor|consultant|intern|temp)" + r"\b", P.get("former_contractor_of_company")),  # 10-08 Lucid: got a drafted paragraph
     (r"(list|share|provide).{0,40}(professional )?certifications?", P.get("certifications")),

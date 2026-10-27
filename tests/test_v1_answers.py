@@ -130,3 +130,17 @@ def test_split_home_address_gets_each_part():
     job = {"name": "Globex - SWE", "url": "https://job-boards.greenhouse.io/globex/jobs/1"}
     for q in ("Home Address Line 2", "Address Line 2", "Home Address CEP (Brazil Only)"):
         assert answer(q, job) is None and not job.get("_drafted")  # left empty, never drafted
+
+
+def test_clearance_employee_and_job_alert_phrasings():
+    """10-27: questions that parked although presets answer them (and a job-alert opt-in that got the email address)."""
+    if P.get("security_clearance") == "No":
+        assert answer_for("Do you have a Top-Secret Clearance or higher?", {}) == "No"
+        assert answer_for("What level clearance do you currently possess?", {}) == "None"
+    q = "Are you currently a Full-Time/Part-Time employee or appointee of Globex Inc or any of its subsidiaries?"
+    assert answer_for(q, {}) == P.get("previous_employer_of_company")
+    q = "Have you ever been employed or appointed by Globex or any of its subsidiaries as a Full-Time employee?"
+    assert answer_for(q, {}) == P.get("previous_employer_of_company")
+    q = "Would you like to get an email notification whenever we find a role that meets your tech and location preferences?"
+    assert answer_for(q, {}) == P.get("job_alert_emails") and answer_for(q, {}) != P["email"]
+    assert answer_for("Email Address", {}) == P["email"]
