@@ -1,5 +1,5 @@
 {
-"generated": "2026-10-27 22:06",
+"generated": "2026-10-27 22:07",
 "days": 7,
 "verified": 279,
 "verified_roles": [
@@ -8846,6 +8846,30 @@
 "type": "Outcome",
 "label": "confirmation",
 "data": {}
+},
+{
+"id": "n1020",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n1021",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
+},
+{
+"id": "n1022",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n1023",
+"type": "Outcome",
+"label": "rejection",
+"data": {}
 }
 ],
 "edges": [
@@ -17362,6 +17386,26 @@
 {
 "source": "n238",
 "target": "n1019",
+"type": "RESULTED_IN"
+},
+{
+"source": "n126",
+"target": "n1020",
+"type": "RESULTED_IN"
+},
+{
+"source": "n203",
+"target": "n1021",
+"type": "RESULTED_IN"
+},
+{
+"source": "n271",
+"target": "n1022",
+"type": "RESULTED_IN"
+},
+{
+"source": "n289",
+"target": "n1023",
 "type": "RESULTED_IN"
 }
 ]
