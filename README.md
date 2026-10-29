@@ -38,7 +38,7 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 |:-:|:-:|:-:|:-:|:-:|
 | applications submitted | best day | employer boards watched | MCP tools | model API keys |
 
-From the engine's own ledger as of 2026-10-22 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 245 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
+From the engine's own ledger as of 2026-10-22 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 261 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
 
 ## How it works
 
@@ -54,6 +54,11 @@ From the engine's own ledger as of 2026-10-22 (latest status per posting; `pytho
 |:-:|:-:|
 | <img src="docs/assets/gearbox.png" alt="The gearbox: a constant-mesh gearbox driven by the engine's crankshaft, gear 3 engaged, and the rejection feedback chain returning through the clutch" width="100%"> | <img src="docs/assets/mcp-cord.png" alt="The MCP cord: an AI client plugged into the engine, branching to discovery, fit gate, memory, pipeline, needs you, gearbox, fleet, ledger and repo" width="100%"> |
 | **[Gearbox](https://github.com/sameernagar-hub/regen-engine/wiki/Gearbox).** One shift sets appliers and scan rate; the clutch couples what rejections taught. | **[The cord](https://github.com/sameernagar-hub/regen-engine/wiki/MCP-Tools).** 43 MCP tools reach every level, from finding new job sources to the kill switch. |
+
+**[Maintenance](https://github.com/sameernagar-hub/regen-engine/wiki/Maintenance)** (the engine's "oil change"). Every application leaves
+leftovers: tailored resumes, job-description copies, verification-code and job-alert mail, closed postings, Docker cache.
+The supervisor measures them every 5 minutes as a health score and clears them once a day (or on a click at `/oilchange`),
+playing each step live and logging what each one removed. Proof is shrunk, never deleted; your Fact Bank, answers, application log and starred mail are never touched.
 
 Everything runs in Docker on your machine: a pipeline, N appliers (headed Chromium), a supervisor that scales them,
 a feedback loop on your inbox, a Postgres ledger, the control room, and the MCP server.

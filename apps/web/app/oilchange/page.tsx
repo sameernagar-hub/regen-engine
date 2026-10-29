@@ -37,6 +37,7 @@ const KIND: Record<string, { stage: string; label: string; color: string }> = {
 };
 // the engine is a metaphor; this is what each part means for a job search
 const GLOSSARY: [string, string][] = [
+  ["Proof", "every submit keeps its screenshot, the exact resume and every answer sent. Maintenance shrinks proof images but never deletes them, and each clean-up is logged below with what it removed, so nothing disappears without a record."],
   ["Oil", "the engine's working data: queue, resumes, mail, cache. Clean oil means applications go out fast and nothing stale is picked."],
   ["Oil change", "this page: the daily clean-up of leftovers that slow the engine down."],
   ["Health (oil life)", "100% right after a clean-up; it falls with time and with whichever leftover is closest to its limit."],
