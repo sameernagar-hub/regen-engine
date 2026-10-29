@@ -28,6 +28,10 @@ def test_keep_titles_levels_companies():
     assert keep(d, "Platform Engineer - Polygraph Required", "Chantilly, VA") == "level/title excluded"
     assert keep(d, "Software Engineer", "Hawthorne, CA", "SpaceX") == "company excluded"
     assert keep(d, "Software Engineer", "Lisbon, Portugal") == "non-US"
+    # 10-28: a "(Remote Eligible in Bulgaria)" title listed as plain Remote was submitted
+    assert keep(d, "Software Engineer, Edge (Remote Eligible in Bulgaria)", "Remote") == "non-US"
+    assert keep(d, "Software Engineer", "Lima, Peru") == "non-US"
+    assert keep(d, "Software Engineer", "Rigaville, OH") is None  # whole words only
     assert keep(d, "Account Executive", "NYC") == "title"
 
 
