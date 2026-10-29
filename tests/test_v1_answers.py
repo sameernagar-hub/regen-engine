@@ -144,3 +144,15 @@ def test_clearance_employee_and_job_alert_phrasings():
     q = "Would you like to get an email notification whenever we find a role that meets your tech and location preferences?"
     assert answer_for(q, {}) == P.get("job_alert_emails") and answer_for(q, {}) != P["email"]
     assert answer_for("Email Address", {}) == P["email"]
+
+
+def test_most_specific_saved_answer_wins(monkeypatch):
+    # 10-28: an older broad entry beat the exact one saved later; a saved answer also beats the salary rule
+    from engine.apply import runner as R
+    monkeypatch.setattr(R, "BANK", [("do you have experience", "Yes"),
+                                    ("do you have experience supporting troubleshooting for both hardware", "Software"),
+                                    ("our compensation is standardized", "Yes, I understand")])
+    assert R.answer_for("Do you have experience supporting troubleshooting for both hardware &/or software?", {}) == "Software"
+    assert R.answer_for("Do you have experience with Kafka?", {}) == "Yes"
+    q = "Our compensation is standardized. We do not negotiate. Is the expected base salary of $97,000 acceptable?"
+    assert R.answer(q, {"extra": {}, "url": "x", "title": "Engineer"}) == "Yes, I understand"

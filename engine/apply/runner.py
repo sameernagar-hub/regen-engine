@@ -372,8 +372,11 @@ def answer_for(label, extra):
     age = re.search(r"\byears?( of)? (age|old)\b", l)  # the age question goes to the over_18 rule below
     if not age and YEARS_YN.search(" ".join(label.split())) and not any(re.search(p, l, re.I) for p, _ in list(extra.items()) + BANK):
         return years_yesno(label)  # yes/no, never the "years of experience" number; None -> you (a saved answer wins)
-    # per-job extras first, then your approved answer bank, then the built-in rules
-    for pat, ans in list(extra.items()) + BANK + RULES:
+    # per-job extras first, then your approved answer bank, then the built-in rules. 10-28: within the bank the most
+    # specific (longest) matching pattern wins: an older broad entry answered "Yes" to a Hardware/Software/Both
+    # question and the home city to a state dropdown that had its own exact entry
+    bank = sorted((b for b in BANK if re.search(b[0], l, re.I)), key=lambda b: -len(b[0]))
+    for pat, ans in list(extra.items()) + bank + RULES:
         if re.search(pat, l, re.I):
             if isinstance(ans, str) and ans.startswith("<"):
                 return None  # an unfilled "<placeholder>" from profile.example is never submitted
@@ -524,7 +527,10 @@ def answer(label, job, field=None):
     ans = answer_for(label, job.get("extra", {}))
     if NOTE_Q.search(label) and job.get("note"):
         return job["note"]
-    if SALARY_Q.search(label) and not any(re.search(p, label, re.I) for p in (job.get("extra") or {})):  # any extra used to skip this
+    l = " ".join(label.split()).lower()
+    if SALARY_Q.search(label) and not any(re.search(p, l, re.I) for p in list(job.get("extra") or {}) + [b[0] for b in BANK]):
+        # an extra or a saved answer for this exact question wins (10-28: a "salary is non-negotiable, still
+        # interested?" acknowledgment got the market-rate number)
         from engine.tailoring.salary import expected
         ans = expected(job, P) or ans  # midpoint of the posted range, else the market rate (user policy)
     lists = country_list_answer(label) or area_answer(label)
