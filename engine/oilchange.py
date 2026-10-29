@@ -10,7 +10,7 @@ Stages, in order (each one is logged with what it found and what it removed):
            JD cache, logs, codes, batches, dead heartbeats, browser caches), then proofs are shrunk in place
   filter   mailbox: Greenhouse security-code mail older than 2 days and job-alert mail (exact alert senders) older
            than 7 days moves to Bin (Gmail keeps Bin 30 days, so it is undoable; starred mail is never touched; All Mail is never expunged)
-  flush    Docker: dangling images, build cache unused for 72 h, and idle appliers whose memory grew past
+  flush    Docker: dangling images, build cache beyond CACHE_KEEP_GB (least recently used first), and idle appliers whose memory grew past
            REGEN_OIL_APPLIER_MB (drained with the supervisor's handshake, so a batch is never cut off)
   refill   queue: postings older than REGEN_OIL_QUEUE_DAYS (45) and jobs with a final status leave queue.json
   check    dipstick: inspect again and record the oil life after the change
@@ -37,6 +37,7 @@ INTERVAL_H = float(os.environ.get("REGEN_OIL_INTERVAL_H", "24"))
 CHANGE_AT = float(os.environ.get("REGEN_OIL_CHANGE_AT", "10"))  # oil life at or below this: change now
 QUEUE_DAYS = float(os.environ.get("REGEN_OIL_QUEUE_DAYS", "45"))
 APPLIER_MB = float(os.environ.get("REGEN_OIL_APPLIER_MB", "1400"))
+CACHE_KEEP_GB = float(os.environ.get("REGEN_OIL_CACHE_KEEP_GB", "2"))  # build cache kept after a change (newest first)
 LIMITS = {"workspace_mb": 400, "build_cache_gb": 6, "old_mail": 300, "stale_queue": 300, "applier_mb": APPLIER_MB}
 SLOW_EVERY = 1800  # Docker /system/df and IMAP searches: at most every 30 min while inspecting
 # Gmail search syntax (X-GM-RAW). Exact alert senders only, never a whole platform domain: 10-27 a domain-wide query
@@ -243,7 +244,16 @@ def life(st, now=None):
 
 
 def due(st, now=None):
-    return bool(st.get("life") is not None and st["life"] <= CHANGE_AT) or os.path.exists(REQUEST)
+    if os.path.exists(REQUEST):
+        return True  # you asked: always
+    if st.get("life") is None or st["life"] > CHANGE_AT:
+        return False
+    # 10-28: a change that could not lift oil life above CHANGE_AT re-ran every 5 minutes (12 times in an hour).
+    # After such a change, the schedule waits one service interval; asking still works.
+    last = (st.get("history") or [None])[0]
+    after = next((s.get("life_after") for s in (last or {}).get("stages", []) if s.get("name") == "check"), None)
+    now = now or time.time()
+    return not (last and after is not None and after <= CHANGE_AT and now - (last.get("finished") or last["started"]) < INTERVAL_H * 3600)
 
 
 # ---------------- the change ----------------
@@ -297,7 +307,10 @@ def change(dry=False, by="supervisor"):
         if not dry:
             r = _docker("POST", "/images/prune?filters=" + quote(json.dumps({"dangling": ["true"]}))) or {}
             out["images"] = len(r.get("ImagesDeleted") or [])
-            r = _docker("POST", "/build/prune?filters=" + quote(json.dumps({"until": ["72h"]}))) or {}
+            # 10-28: the "until: 72h" filter freed 0 B on Docker Desktop (API and CLI alike) while 10 GB piled up and
+            # oil life sat at 0. BuildKit's own budget works: least-recently-used cache goes first down to
+            # CACHE_KEEP_GB, so the newest builds stay warm
+            r = _docker("POST", f"/build/prune?keep-storage={int(CACHE_KEEP_GB * 1e9)}") or {}
             out["cache_records"] = len(r.get("CachesDeleted") or [])
             out["freed_mb"] = round(((r.get("SpaceReclaimed") or 0)) / 1e6)
             for b in bloated():

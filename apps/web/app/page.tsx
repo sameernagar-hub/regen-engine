@@ -26,13 +26,13 @@ const FUEL: Part = { key: "facts", href: "/facts", label: "Fact Bank", about: "T
 const WIRES: Part = { key: "graph", href: "/graph", label: "Memory graph", about: "The wiring: you, lanes, applications, companies, facts and outcomes, connected.", tone: "#5ee6b5" };
 const GEARBOX: Part = { key: "gearbox", href: "/gearbox", label: "Gearbox", about: "Shift the engine's speed (appliers, scan rate) and see what rejections taught it, fed back through the clutch.", tone: "#5ee6b5" };
 const CORD: Part = { key: "mcp", href: "/mcp", label: "MCP cord", about: "Your AI client plugs in here and operates the engine at zero cost: 35 tools, from memory to the gearbox.", tone: "#5ee6b5" };
-const OIL: Part = { key: "oilchange", href: "/oilchange", label: "Oil filter", about: "The deep clean: oil life, what is clogging it (stale files, old mail, Docker cache, dead postings), and the change as it runs.", tone: "#f0b64c" };
+const OIL: Part = { key: "oilchange", href: "/oilchange", label: "Maintenance", about: "Clears what applications leave behind (expired files, old code and alert mail, closed postings) so the search stays fast. Shows the engine’s health and each clean-up live.", tone: "#f0b64c" };
 const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL];
 const FIRING = [0, 2, 4, 6, 1, 3, 5];  // radial engines fire every other cylinder
 
 const ang = (i: number) => -90 + (i * 360) / CYL.length;
 const at = (deg: number, r: number) => [CX + Math.cos((deg * Math.PI) / 180) * r, CY + Math.sin((deg * Math.PI) / 180) * r];
-const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 }, PLUG = { x: 150, y: 150 }, FLT = { x: 1050, y: 160 };
+const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 }, PLUG = { x: 150, y: 150 }, FLT = { x: W - 150, y: 150 };
 
 export default function EngineHome() {
   const router = useRouter();
@@ -55,7 +55,7 @@ export default function EngineHome() {
     get<any[]>("/api/outreach").then((x) => put("outreach", `${x.length} drafts`)).catch(() => {});
     get<any>("/api/control/evals?n=60").then((x) => put("evals", `${x.runs.length} benchmark runs`)).catch(() => {});
     get<any>("/api/control/gearbox").then((x) => put("gearbox", `gear ${x.gear.gear}, ${x.feedback.stats.rejected ?? 0} rejections read`)).catch(() => {});
-    get<any>("/api/control/oilchange").then((x) => { setOilLife(x.life ?? 100); put("oilchange", x.running ? `changing: ${x.stage}` : `oil life ${Math.round(x.life ?? 100)}%`); }).catch(() => {});
+    get<any>("/api/control/oilchange").then((x) => { setOilLife(x.life ?? 100); put("oilchange", x.running ? `cleaning up: ${x.stage}` : `health ${Math.round(x.life ?? 100)}%`); }).catch(() => {});
     get<any>("/api/control/mcp").then((x) => put("mcp", `${x.tools.length} tools, bank ${x.servers[0].up ? "up" : "down"}`)).catch(() => {});
     get<any>("/api/factbank").then((x) => { put("facts", `${x.facts.length} facts, ${x.resumes_built} resumes`); put("graph", `${x.roles.length + x.facts.length + x.projects.length}+ nodes`); }).catch(() => {});
   }, []);
@@ -132,17 +132,18 @@ export default function EngineHome() {
             <text className="part-label" x={TANK.x} y={TANK.y + 112}>Fact Bank</text>
           </g>
 
-          {/* oil filter: the oil line runs from the crankcase to the canister; its window shows the oil life */}
+          {/* oil filter: the MCP plug's mirror image (same size, height, label offset; its oil line mirrors the cord)
+              so the two top corners read as a pair; the window shows the oil life */}
           <g {...part(OIL)}>
-            <path className="ocf-line" d={`M ${CX + 70} ${CY - 40} C ${CX + 220} ${CY - 120} ${FLT.x - 160} ${FLT.y + 120} ${FLT.x - 40} ${FLT.y + 40}`} />
-            <g transform={`translate(${FLT.x} ${FLT.y})`}>
+            <path className="ocf-line" d={`M ${FLT.x - 22} ${FLT.y + 10} C ${FLT.x - 160} ${FLT.y + 20} ${CX + 200} ${CY - 60} ${CX + 60} ${CY - 20}`} />
+            <g transform={`translate(${FLT.x} ${FLT.y + 5}) scale(.5)`}>
               <rect className="ocf-can" x={-32} y={-60} width={64} height={120} rx={14} />
               <rect className="ocf-can" x={-40} y={-74} width={80} height={16} rx={5} />
               {[-18, -6, 6, 18].map((x) => <line key={x} className="ocf-pleat" x1={x} y1={-44} x2={x} y2={44} />)}
               <rect className="ocf-level" x={-24} y={44 - 0.88 * oilLife} width={6} height={0.88 * oilLife} rx={3} />
-              <rect className="hit" x={-60} y={-84} width={120} height={160} />
+              <rect className="hit" x={-100} y={-90} width={200} height={200} />
             </g>
-            <text className="part-label" x={FLT.x} y={FLT.y + 86}>Oil filter</text>
+            <text className="part-label" x={FLT.x} y={FLT.y + 62}>Maintenance</text>
           </g>
 
           {/* the MCP cord: your AI client's plug, wired into the crankcase (drawn behind the cylinders) */}

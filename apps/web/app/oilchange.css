@@ -139,7 +139,13 @@ svg.oc-svg { width: 100%; height: auto; display: block; overflow: visible; }
 }
 
 /* home engine: the oil filter part (app/page.tsx) */
-.engine-home .ocf-can { fill: #1d2530; stroke: #3d8ee0; stroke-width: 1.6; transition: stroke .3s, fill .3s; }
-.engine-home .ocf-pleat { stroke: rgba(111, 183, 255, .3); stroke-width: 2; }
+.engine-home .ocf-can { fill: #1d2530; stroke: #3d8ee0; stroke-width: 1.6; vector-effect: non-scaling-stroke; transition: stroke .3s, fill .3s; }
+.engine-home .ocf-pleat { stroke: rgba(111, 183, 255, .3); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .engine-home .ocf-line { fill: none; stroke: var(--oil-home, #f0b64c); stroke-width: 3; stroke-dasharray: 6 6; opacity: .5; animation: ocFlow 1s linear infinite; }
 .engine-home .ocf-level { fill: var(--oil-home, #f0b64c); transition: height 1s, y 1s; }
+
+/* how to read the engine: the metaphor, in job-search terms */
+.oc .oc-key { margin-top: 24px; }
+.oc .oc-key dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px 24px; margin: 12px 0 0; }
+.oc .oc-key dt { font-weight: 600; color: var(--ink); font-size: 14px; }
+.oc .oc-key dd { margin: 2px 0 0; color: var(--dim); font-size: 13px; line-height: 1.45; }

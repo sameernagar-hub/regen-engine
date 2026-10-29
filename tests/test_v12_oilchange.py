@@ -96,3 +96,18 @@ def test_real_change_and_request():
     assert st["history"][0]["started"] == run["started"] and st["last_change"]
     assert len(json.load(open(os.path.join(WORKSPACE, "queue.json")))) == 1
     assert st["life"] > 0 and not O.due(st)
+
+
+def test_failed_change_backs_off():
+    # 10-28: a change that could not lift oil life re-ran every 5 minutes; now the schedule waits an interval
+    now = time.time()
+    stuck = {"life": 0.0, "history": [{"started": now - 60, "finished": now - 50,
+                                       "stages": [{"name": "check", "life_before": 0.0, "life_after": 0.0}]}]}
+    if os.path.exists(O.REQUEST):
+        os.remove(O.REQUEST)
+    assert not O.due(stuck, now)
+    assert O.due({**stuck, "history": []}, now)  # never changed: due
+    assert O.due(stuck, now + O.INTERVAL_H * 3600 + 1)  # an interval later: try again
+    O.request("test")
+    assert O.due(stuck, now)  # asking always works
+    os.remove(O.REQUEST)

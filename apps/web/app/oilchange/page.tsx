@@ -1,11 +1,10 @@
 "use client";
-// The oil change (v1.2): the engine's deep clean, drawn as what it is. The sump holds the oil; every contaminant the
-// supervisor measures (stale workspace files, old code and alert mail, Docker build cache, postings past their date,
-// an applier whose browser has grown) floats in it as a particle, and the oil darkens as its life runs down. When a
-// change runs (engine/oilchange.py, every 24 h or sooner when something fills up), each stage plays as it happens:
-// drain (workspace files fall out of the plug), filter (the old filter carries the mail to the Bin and a new one
-// screws in), flush (Docker sludge runs to the drum), refill (fresh oil pours in: the queue keeps only live postings)
-// and check (the gauge reads the new oil life). The page polls the API every 3 s while a change runs.
+// Maintenance (v1.2; "the oil change" in the engine picture): the daily clean-up of what applications leave behind.
+// The tank holds the engine's working data; every leftover the supervisor measures (expired files, old code and alert
+// mail, Docker cache, closed postings, an applier whose browser has grown) floats in it as a dot, and the tank darkens
+// as health falls. A clean-up (engine/oilchange.py, every 24 h or sooner when something fills up) plays each step as
+// it happens: clear expired files, tidy the inbox, free machine space, refresh the job queue, health check. From the
+// click until the run ends the page polls every second and holds each step on screen for at least MIN_MS.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Nav } from "../nav";
 import { PUBLIC } from "@/lib/engine";
@@ -20,21 +19,35 @@ type Oil = {
 };
 
 const STAGES = ["drain", "filter", "flush", "refill", "check"] as const;
+// stage names stay the engine's (engine/oilchange.py); what each one does is said in job-search terms
 const ABOUT: Record<string, [string, string]> = {
-  drain: ["Drain", "workspace files past their retention fall out of the plug; proofs are shrunk in place"],
-  filter: ["New filter", "the old filter carries Greenhouse code mail (2 d+) and job-alert mail (7 d+) to Gmail's Bin"],
-  flush: ["Flush", "dangling images and build cache unused for 72 h run to the drum; bloated idle appliers are drained"],
-  refill: ["Refill", "the queue keeps live postings only: older than 45 days or already final, they leave"],
-  check: ["Dipstick", "inspect again and read the new oil life"],
+  drain: ["Clear expired files", "tailored resumes, job-description copies, logs and old batches past their keep-by date are deleted; proof screenshots are shrunk, never lost"],
+  filter: ["Tidy the inbox", "verification-code emails (2 days+) and job-alert emails (7 days+) move to Gmail's Bin, undoable for 30 days; starred mail is never touched"],
+  flush: ["Free machine space", "unused Docker cache is cleared, and an applier whose browser has grown is restarted between applications"],
+  refill: ["Refresh the job queue", "postings older than 45 days, and jobs already applied to or ruled out, leave the queue so only live openings remain"],
+  check: ["Health check", "measure everything again and record the new health score"],
 };
-// which contaminant each stage takes out, and the particle color it has in the oil
+// which leftover each stage clears, and the dot color it has in the tank
 const KIND: Record<string, { stage: string; label: string; color: string }> = {
-  workspace_mb: { stage: "drain", label: "Workspace", color: "#9aa7b8" },
-  old_mail: { stage: "filter", label: "Old mail", color: "#ff7a6b" },
+  workspace_mb: { stage: "drain", label: "Expired files", color: "#9aa7b8" },
+  old_mail: { stage: "filter", label: "Old code and job-alert mail", color: "#ff7a6b" },
   build_cache_gb: { stage: "flush", label: "Docker cache", color: "#6fb7ff" },
   applier_mb: { stage: "flush", label: "Applier memory", color: "#b18cff" },
   stale_queue: { stage: "refill", label: "Stale postings", color: "#5ee6b5" },
 };
+// the engine is a metaphor; this is what each part means for a job search
+const GLOSSARY: [string, string][] = [
+  ["Oil", "the engine's working data: queue, resumes, mail, cache. Clean oil means applications go out fast and nothing stale is picked."],
+  ["Oil change", "this page: the daily clean-up of leftovers that slow the engine down."],
+  ["Health (oil life)", "100% right after a clean-up; it falls with time and with whichever leftover is closest to its limit."],
+  ["Cylinders and pistons", "the seven working views (Live, Control, Applications, Needs you, Reach, Outreach, Evals); a firing piston is that view doing work."],
+  ["Fuel", "your Fact Bank: every resume line is burned from a fact you can prove."],
+  ["Gears", "speed: how many appliers run at once and how often job boards are scanned."],
+  ["Clutch", "whether lessons learned from rejections are allowed to change which jobs are applied to."],
+  ["Wiring", "the memory graph linking you, applications, companies, facts and outcomes."],
+  ["MCP cord", "where your AI assistant plugs in to operate the engine."],
+];
+const MIN_MS = 2800;  // each stage stays on screen at least this long, however fast the server ran it
 
 // a believable dirty engine for the public site (no supervisor there): numbers are illustrative
 const DEMO: Oil = {
@@ -70,24 +83,54 @@ export default function OilChange() {
   const [oil, setOil] = useState<Oil | null>(null);
   const [msg, setMsg] = useState("");
   const [sim, setSim] = useState<string | null>(null);  // the public site plays the change locally
-  const fast = useRef(false);
+  // real time: from the click until the run ends the page polls every second; every stage the server reports
+  // (running now, or finished between two polls) is queued and shown in order for at least MIN_MS
+  const [shown, setShown] = useState<string | null>(null);
+  const fast = useRef(false), kick = useRef<() => void>(() => {});
+  const queue = useRef<string[]>([]), seen = useRef(new Set<string>()), runKey = useRef<number | null>(null);
+  const shownRef = useRef<string | null>(null), since = useRef(0), asked = useRef(0), before = useRef<number | null>(null);
+  const latest = useRef<Oil | null>(null);
 
   useEffect(() => {
     if (PUBLIC) { setOil(DEMO); return; }
     let stop = () => {};
+    const busy = (o: Oil) => o.running || o.requested || !!asked.current || !!shownRef.current || queue.current.length > 0;
     const pull = () => get<Oil>("/api/control/oilchange").then((o) => {
+      latest.current = o;
+      // the run to show: the one running now, or the one that finished since you asked
+      const run = o.running ? o.run : asked.current && o.history?.[0] && o.history[0].started >= asked.current - 5 ? o.history[0] : null;
+      if (run && run.started !== runKey.current) { runKey.current = run.started; seen.current = new Set(); if (before.current == null) before.current = o.life; }
+      if (run) {
+        for (const n of [...run.stages.map((s) => s.name), ...(o.running && o.stage ? [o.stage] : [])])
+          if (!seen.current.has(n)) { seen.current.add(n); queue.current.push(n); }
+        if (!o.running) asked.current = 0;
+      }
       setOil(o);
-      if (o.running !== fast.current) { fast.current = o.running; stop(); stop = poll(pull, o.running ? 3000 : 15000); }
-    }).catch((e) => setMsg(`oil change unreachable: ${e.message}`));
+      const f = busy(o);
+      if (f !== fast.current) { fast.current = f; stop(); stop = poll(pull, f ? 1000 : 15000); }
+    }).catch((e) => setMsg(`maintenance status unreachable: ${e.message}`));
+    kick.current = () => { fast.current = true; stop(); stop = poll(pull, 1000); };
     pull();
     stop = poll(pull, 15000);
-    return () => stop();
+    // the stage player: hold each stage MIN_MS, and keep the one the server is still running on screen
+    const t = setInterval(() => {
+      const cur = shownRef.current, o = latest.current;
+      if (cur && Date.now() - since.current < MIN_MS) return;
+      if (cur && !queue.current.length && o?.running && o.stage === cur) return;
+      const next = queue.current.shift() ?? null;
+      if (next !== cur) {
+        shownRef.current = next; since.current = Date.now(); setShown(next);
+        if (!next) before.current = null;
+      }
+    }, 200);
+    return () => { stop(); clearInterval(t); };
   }, []);
 
-  const stage = sim || (oil?.running ? oil.stage : null);
+  const stage = sim || shown;
   const idx = stage ? STAGES.indexOf(stage as any) : -1;
-  const doneStages = sim ? STAGES.slice(0, idx) : (oil?.run?.stages || []).map((s) => s.name);
-  const life = sim && idx >= 3 ? 96 : oil?.life ?? 100;
+  const doneStages: string[] = stage ? STAGES.slice(0, idx) : (oil?.history?.[0]?.stages || []).map((s) => s.name);
+  // health: the old reading until the tank is refilled on screen, then the new one
+  const life = sim ? (idx >= 3 ? 96 : oil?.life ?? 100) : shown && idx < 3 && before.current != null ? before.current : oil?.life ?? 100;
   const color = oilColor(life);
   // sump level: low while drained (drain .. flush), rising on refill
   const level = stage === "drain" || stage === "filter" || stage === "flush" ? 0.06 : 0.82;
@@ -117,8 +160,10 @@ export default function OilChange() {
       return;
     }
     try {
+      asked.current = Date.now() / 1000; before.current = oil?.life ?? null;
+      kick.current();  // poll every second from now on, so no stage is missed
       setOil(await post<Oil>("/api/control/oilchange", {}));
-      setMsg("Change requested: the supervisor starts it within 15 seconds.");
+      setMsg("Clean-up requested: the supervisor starts it within 15 seconds, and each step plays here as it runs.");
     } catch (e: any) { setMsg(e.message); }
   };
 
@@ -127,12 +172,12 @@ export default function OilChange() {
   const due = oil ? life <= oil.change_at : false;
   const gaugeA = -120 + (240 * life) / 100;  // needle angle
   const rows: [string, string, string, number][] = [  // key, label, amount, wear %
-    ["age", "Since last change", oil?.last_change ? ago(oil.last_change, now) : "never changed", oil?.wear.age ?? 0],
-    ["workspace_mb", "Workspace past retention", `${c.workspace_files ?? "·"} files · ${c.workspace_mb ?? "·"} MB of ${oil?.limits.workspace_mb ?? 400}`, oil?.wear.workspace_mb ?? 0],
-    ["old_mail", "Old code + alert mail", c.mail?.skipped ? c.mail.skipped : `${c.mail?.codes ?? "·"} code · ${c.mail?.alerts ?? "·"} alert of ${oil?.limits.old_mail ?? 300}`, oil?.wear.old_mail ?? 0],
-    ["build_cache_gb", "Docker build cache (idle)", `${c.build_cache_gb ?? "·"} GB of ${oil?.limits.build_cache_gb ?? 6} · ${c.dangling_images ?? 0} dangling images`, oil?.wear.build_cache_gb ?? 0],
-    ["stale_queue", "Stale postings in queue", `${c.stale_queue ?? "·"} of ${c.queue ?? "·"} queued (limit ${oil?.limits.stale_queue ?? 300})`, oil?.wear.stale_queue ?? 0],
-    ["applier_mb", "Bloated idle appliers", (c.bloated || []).length ? c.bloated.map((b: any) => `${b.name} ${b.mem_mb} MB`).join(", ") : `none over ${oil?.limits.applier_mb ?? 1400} MB`, oil?.wear.applier_mb ?? 0],
+    ["age", "Since last clean-up", oil?.last_change ? ago(oil.last_change, now) : "never cleaned", oil?.wear.age ?? 0],
+    ["workspace_mb", "Expired files", `${c.workspace_files ?? "·"} files · ${c.workspace_mb ?? "·"} MB of ${oil?.limits.workspace_mb ?? 400}`, oil?.wear.workspace_mb ?? 0],
+    ["old_mail", "Old code and job-alert mail", c.mail?.skipped ? c.mail.skipped : `${c.mail?.codes ?? "·"} code · ${c.mail?.alerts ?? "·"} alert of ${oil?.limits.old_mail ?? 300}`, oil?.wear.old_mail ?? 0],
+    ["build_cache_gb", "Unused Docker cache", `${c.build_cache_gb ?? "·"} GB of ${oil?.limits.build_cache_gb ?? 6} · ${c.dangling_images ?? 0} dangling images`, oil?.wear.build_cache_gb ?? 0],
+    ["stale_queue", "Closed or stale postings in the queue", `${c.stale_queue ?? "·"} of ${c.queue ?? "·"} queued (limit ${oil?.limits.stale_queue ?? 300})`, oil?.wear.stale_queue ?? 0],
+    ["applier_mb", "Appliers using too much memory", (c.bloated || []).length ? c.bloated.map((b: any) => `${b.name} ${b.mem_mb} MB`).join(", ") : `none over ${oil?.limits.applier_mb ?? 1400} MB`, oil?.wear.applier_mb ?? 0],
   ];
   const lastRun = oil?.running ? oil.run : oil?.history?.[0];
 
@@ -140,17 +185,18 @@ export default function OilChange() {
     <main className={`page oc${stage ? ` oc-run oc-st-${stage}` : ""}${due ? " oc-due" : ""}`} style={{ ["--oil" as any]: color }}>
       <Nav />
       <header className="hero">
-        <h1>Oil change</h1>
-        <p>Everything the engine leaves behind ends up in the oil: files past their retention, old code and alert mail,
-          Docker build cache, postings past their date, a browser that has grown. The supervisor measures it every five
-          minutes and changes the oil once a day, sooner when something fills up. The hourly clean is the top-up; this
-          is the service. Your Fact Bank, the event log, starred mail and other projects&apos; containers are never touched.</p>
+        <h1>Maintenance</h1>
+        <p>Every application leaves something behind: a tailored resume, a copy of the job description, a verification-code
+          email, a job-alert email, a posting that has since closed. Left alone, they slow the search down and stale jobs
+          creep back into the queue. The engine measures these leftovers every five minutes and clears them once a day,
+          sooner when one fills up (in the engine picture, this is the oil change). Your Fact Bank, your answers, the
+          application log with its proof, and starred mail are never touched.</p>
       </header>
       {msg && <p className="note" role="status">{msg}</p>}
 
       <section className="oc-stage">
         <svg className="oc-svg" viewBox="0 0 1180 560" role="img"
-             aria-label={`Oil life ${life} percent${stage ? `, oil change running: ${stage}` : ""}`}>
+             aria-label={`Engine health ${life} percent${stage ? `, clean-up running: ${ABOUT[stage]?.[0] ?? stage}` : ""}`}>
           <defs>
             <linearGradient id="ocsteel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#3a4556" /><stop offset=".55" stopColor="#1d2530" /><stop offset="1" stopColor="#11161d" /></linearGradient>
             <linearGradient id="ocfilter" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#1b4f8a" /><stop offset=".45" stopColor="#3d8ee0" /><stop offset="1" stopColor="#163e6d" /></linearGradient>
@@ -173,13 +219,13 @@ export default function OilChange() {
               <circle r={52} className="oc-crank-web" /><rect x={-8} y={-48} width={16} height={40} rx={6} className="oc-crank-pin" /><circle r={11} className="oc-crank-bore" />
             </g></g>
             <rect className="oc-cap" x={456} y={40} width={30} height={20} rx={5} />
-            <text className="oc-label" x={340} y={36}>engine</text>
+            <text className="oc-label" x={340} y={36}>REGEN</text>
           </g>
 
           {/* refill jug: tips over the filler cap on refill */}
           <g className="oc-jug" transform="translate(520 -10)">
             <path d="M0 10 H54 V70 H0 Z" className="oc-jug-body" /><rect x={8} y={0} width={20} height={14} rx={3} className="oc-jug-body" />
-            <text className="oc-tiny" x={27} y={46}>fresh</text>
+            <text className="oc-tiny" x={27} y={46}>live jobs</text>
           </g>
           <path className="oc-pour" d="M 470 34 L 470 330" />
 
@@ -193,27 +239,27 @@ export default function OilChange() {
                       style={{ animationDelay: `${p.d}s`, ["--dx" as any]: `${(KIND[p.k].stage === "filter" ? FILTER.x : KIND[p.k].stage === "flush" ? DRUM.x : PLUG.x) - p.x}px`,
                                ["--dy" as any]: `${(KIND[p.k].stage === "filter" ? FILTER.y : KIND[p.k].stage === "flush" ? DRUM.y : 520) - p.y}px` }} />))}
           </g>
-          <text className="oc-label" x={340} y={PAN.bottom + 2} dy={-8}>sump</text>
+          <text className="oc-label" x={340} y={PAN.bottom + 2} dy={-8}>working data</text>
 
           {/* drain plug, the dark stream and the catch tray */}
           <rect className="oc-plug" x={PLUG.x - 10} y={PLUG.y - 4} width={20} height={12} rx={3} />
           <path className="oc-stream" d={`M ${PLUG.x} ${PLUG.y + 8} C ${PLUG.x + 6} 470 ${PLUG.x - 4} 490 ${PLUG.x} 508`} />
           <path className="oc-tray" d={`M ${PLUG.x - 80} 506 H ${PLUG.x + 80} L ${PLUG.x + 66} 536 H ${PLUG.x - 66} Z`} />
-          <text className="oc-tiny" x={PLUG.x} y={552}>old oil: workspace files</text>
+          <text className="oc-tiny" x={PLUG.x} y={552}>expired files</text>
 
           {/* filter mount and two canisters: the old one leaves for the Bin, the new one screws in */}
           <rect className="oc-mount" x={FILTER.x - 58} y={FILTER.y - 108} width={116} height={20} rx={5} />
           <g className="oc-filter old">
             <rect x={FILTER.x - 44} y={FILTER.y - 88} width={88} height={180} rx={18} fill="url(#ocold)" />
             {Array.from({ length: 7 }, (_, k) => <line key={k} x1={FILTER.x - 30 + k * 10} y1={FILTER.y - 70} x2={FILTER.x - 30 + k * 10} y2={FILTER.y + 74} />)}
-            <text className="oc-tiny dark" x={FILTER.x} y={FILTER.y + 6}>{life < 50 ? "clogged" : "filter"}</text>
+            <text className="oc-tiny dark" x={FILTER.x} y={FILTER.y + 6}>{life < 50 ? "full" : "inbox"}</text>
           </g>
           <g className="oc-filter new">
             <rect x={FILTER.x - 44} y={FILTER.y - 88} width={88} height={180} rx={18} fill="url(#ocfilter)" />
             {Array.from({ length: 7 }, (_, k) => <line key={k} x1={FILTER.x - 30 + k * 10} y1={FILTER.y - 70} x2={FILTER.x - 30 + k * 10} y2={FILTER.y + 74} />)}
-            <text className="oc-tiny" x={FILTER.x} y={FILTER.y + 6}>new</text>
+            <text className="oc-tiny" x={FILTER.x} y={FILTER.y + 6}>tidy</text>
           </g>
-          <text className="oc-label" x={FILTER.x} y={FILTER.y - 118}>filter</text>
+          <text className="oc-label" x={FILTER.x} y={FILTER.y - 118}>inbox filter</text>
 
           {/* where things go: Gmail's Bin (undoable for 30 days) and the Docker sludge drum */}
           <g className="oc-bin" transform="translate(840 430)">
@@ -226,7 +272,7 @@ export default function OilChange() {
             <rect width={100} height={110} rx={12} /><line x1={0} y1={36} x2={100} y2={36} /><line x1={0} y1={74} x2={100} y2={74} />
             <text className="oc-tiny" x={50} y={26}>Docker</text>
             <text className="oc-num" x={50} y={60}>{c.build_cache_gb ?? 0} GB</text>
-            <text className="oc-tiny" x={50} y={98}>sludge</text>
+            <text className="oc-tiny" x={50} y={98}>cache</text>
           </g>
 
           {/* oil-life gauge */}
@@ -235,12 +281,12 @@ export default function OilChange() {
             <path className="oc-arc red" d="M -95 55 A 110 110 0 0 1 -108 -20" />
             <g style={{ transform: `rotate(${gaugeA}deg)` }} className="oc-needle"><line x1={0} y1={0} x2={0} y2={-92} /><circle r={9} /></g>
             <text className="oc-life" y={44}>{oil?.life == null && !sim ? "·" : `${Math.round(life)}%`}</text>
-            <text className="oc-tiny" y={66}>oil life</text>
+            <text className="oc-tiny" y={66}>health</text>
           </g>
         </svg>
 
         <aside className="oc-side">
-          <ol className="oc-steps" aria-label="Oil change stages">
+          <ol className="oc-steps" aria-label="Clean-up steps">
             {STAGES.map((s, i) => {
               const res = (sim ? undefined : lastRun?.stages.find((x) => x.name === s));
               const state = stage === s ? "on" : doneStages.includes(s) ? "done" : "wait";
@@ -249,26 +295,26 @@ export default function OilChange() {
                   <span className="oc-dot">{state === "done" ? "✓" : i + 1}</span>
                   <div><b>{ABOUT[s][0]}</b><small>{ABOUT[s][1]}</small>
                     {res && <em>{res.error ? `error: ${res.error}` : res.skipped ? res.skipped :
-                      s === "check" ? `life ${res.life_before ?? "·"}% → ${res.life_after ?? "·"}%` :
+                      s === "check" ? `health ${res.life_before ?? "·"}% → ${res.life_after ?? "·"}%` :
                       `${res.removed ?? 0} removed${res.freed_mb ? ` · ${res.freed_mb} MB freed` : ""}`}</em>}
                   </div>
                 </li>);
             })}
           </ol>
-          <button className="oc-btn" onClick={ask} disabled={!!stage || oil?.requested}>
-            {stage ? `Changing: ${ABOUT[stage]?.[0] ?? stage}…` : oil?.requested ? "Requested: starting…" : PUBLIC ? "Play an oil change" : "Change the oil now"}
+          <button className="oc-btn" onClick={ask} disabled={!!stage || !!oil?.requested}>
+            {stage ? `${ABOUT[stage]?.[0] ?? stage}…` : oil?.requested ? "Requested: starting…" : PUBLIC ? "Play a clean-up" : "Clean up now"}
           </button>
           <dl className="oc-facts">
-            <div><dt>Next change</dt><dd>{due ? "due now" : until(oil?.next_due, now)}</dd><small>every {oil?.interval_h ?? 24} h or at {oil?.change_at ?? 10}% life</small></div>
-            <div><dt>Last change</dt><dd>{ago(oil?.last_change, now)}</dd><small>{oil?.history?.[0] ? `${oil.history[0].freed_mb ?? 0} MB, ${oil.history[0].removed ?? 0} items` : "none yet"}</small></div>
+            <div><dt>Next clean-up</dt><dd>{due ? "due now" : until(oil?.next_due, now)}</dd><small>every {oil?.interval_h ?? 24} h, or when health falls to {oil?.change_at ?? 10}%</small></div>
+            <div><dt>Last clean-up</dt><dd>{ago(oil?.last_change, now)}</dd><small>{oil?.history?.[0] ? `${oil.history[0].freed_mb ?? 0} MB, ${oil.history[0].removed ?? 0} items` : "none yet"}</small></div>
           </dl>
         </aside>
       </section>
 
       <section className="oc-grid">
         <div className="oc-card">
-          <h2>What is in the oil</h2>
-          <p className="dim small">Each line is its share of its limit; the worst one (or the time since the last change) sets the oil life.
+          <h2>What is slowing the engine</h2>
+          <p className="dim small">Each line shows how close a leftover is to its limit; the fullest one (or the time since the last clean-up) sets the health score.
             Inspected {ago(oil?.inspected, now)}.</p>
           <ul className="oc-rows">
             {rows.map(([k, label, amount, w]) => (
@@ -283,17 +329,26 @@ export default function OilChange() {
             <p className="dim small">Left alone (other projects&apos; stopped containers, yours to decide): {c.foreign_stopped.join(", ")}.</p>)}
         </div>
         <div className="oc-card">
-          <h2>Service history</h2>
+          <h2>Clean-up history</h2>
           <ul className="oc-hist">
             {(oil?.history || []).map((h) => (
               <li key={h.started}>
                 <time>{when(h.started)}</time>
                 <span>{h.freed_mb ?? 0} MB freed · {h.removed ?? 0} items</span>
-                <small>{h.by} · life {h.stages.find((s) => s.name === "check")?.life_before ?? "·"}% → {h.stages.find((s) => s.name === "check")?.life_after ?? "·"}%</small>
+                <small>{h.by} · health {h.stages.find((s) => s.name === "check")?.life_before ?? "·"}% → {h.stages.find((s) => s.name === "check")?.life_after ?? "·"}%</small>
               </li>))}
-            {!oil?.history?.length && <li className="dim">No change yet. The first one runs when oil life reaches {oil?.change_at ?? 10}% or when you ask.</li>}
+            {!oil?.history?.length && <li className="dim">No clean-up yet. The first runs when health reaches {oil?.change_at ?? 10}% or when you ask.</li>}
           </ul>
         </div>
+      </section>
+
+      <section className="oc-card oc-key">
+        <h2>How to read the engine</h2>
+        <p className="dim small">REGEN is drawn as an engine because a job search runs like one: fuel in, work done in
+          cycles, speed you can shift, upkeep so it keeps running. Each part stands for one thing:</p>
+        <dl>
+          {GLOSSARY.map(([t, d]) => <div key={t}><dt>{t}</dt><dd>{d}</dd></div>)}
+        </dl>
       </section>
     </main>
   );
