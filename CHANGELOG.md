@@ -4,6 +4,19 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-28 · Oil change, employer application caps, more rejection wordings
+- **Oil change** (`engine/oilchange.py`, `python -m engine oilchange [--status|--now|--dry]`, web `/oilchange`, an oil
+  filter part on the home engine): the deep clean the hourly top-up does not reach, in five logged stages (drain
+  workspace, filter old code / job-alert mail to Bin, flush Docker build cache and bloated idle appliers, refill the
+  queue without stale or final jobs, check). Oil life 0-100; the supervisor changes it at 10 or below. Never touches
+  profile/, events.jsonl, volumes, starred mail; All Mail is never expunged.
+- **Employer application caps**: mail like "a maximum of five applications within any 30-day period" records a
+  `company_limit` event (`inbox.application_limit`) and `pipeline.capped()` stops selecting that company until the
+  window has room (an employer auto-closed applications over its cap on 10-27).
+- **Rejections read as confirmations**: "not been selected", "sorry to inform", "automatically closed" (10-27) and
+  "move forward ... with candidates whose experience ..." (10-28, subject "Update on your interview").
+  Verify: `pytest tests/test_v12_oilchange.py` (258 tests pass); alert senders now live in profile/alert_senders.json.
+
 ## [Unreleased] - 2026-10-25 · Typed attestations and office-list questions
 - **Typed attestation boxes are signed** (`runner.attest_text`): "I certify that the facts ... are true" with a text
   box (no option to tick) got the ack answer, typed nothing and parked the job (2 roles at one employer on 10-25).

@@ -29,7 +29,13 @@ CLASSES = [  # first match wins. Order matters: scam > offer > rejection > OA > 
                   r"won.t be proceeding|not be proceeding|(move|moving|progress|proceed)( forward| ahead)? with (an)?other|another candidate|"
                   r"filled all (of )?(our|the) openings|not be able to (explore|consider|move)|do not have an? (immediate )?opening|"
                   r"wasn.t selected|not (an exact|a strong) match for the requirements|(going|go) in a (different )?direction|"
-                  r"not to (proceed|move forward|pursue)|unable to (move|offer|proceed)"),  # snippets often stop mid-sentence
+                  r"not to (proceed|move forward|pursue)|unable to (move|offer|proceed)|"
+                  # 10-27: "you have not been selected for an interview" read as a confirmation; an application closed
+                  # by an employer's per-candidate limit is a no as well
+                  r"not been selected|sorry to inform|application (was |has been )?automatically closed|"
+                  # 10-28: "elected to move forward ... with candidates whose experience ... most closely align" (DRW,
+                  # subject "Update on your interview") was read as a confirmation
+                  r"with candidates whose (experience|qualifications|background|skills)"),  # snippets often stop mid-sentence
     ("oa", r"online assessment|coding (challenge|assessment|test)|hackerrank|codesignal|codility|karat|take-?home|"
            r"assessment invitation|complete the (following )?assessment"),
     # strong signals only: confirmations often say "if selected, we'll reach out to schedule an interview"
@@ -55,6 +61,21 @@ def classify(subject, snippet=""):
         if re.search(rx, firm if name in ("interview", "rejection") else text):
             return name
     return "other"
+
+
+NUMBERS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+LIMIT = re.compile(r"(?:maximum|limit|up to|no more than) (?:of )?(\d+|" + "|".join(NUMBERS) + r") applications? "
+                   r"(?:with)?in (?:any|a|each|every) (\d+)[- ]day", re.I)
+
+
+def application_limit(text):
+    """(max applications, days) when an employer states a per-candidate cap ("we limit candidates to a maximum of five
+    applications within any 30-day period", 10-27), else None."""
+    m = LIMIT.search(text or "")
+    if not m:
+        return None
+    n = m.group(1).lower()
+    return int(NUMBERS.get(n, n)), int(m.group(2))
 
 
 def applied_companies():
@@ -153,6 +174,9 @@ def ingest(messages):
             return sum(1 for w in words if w in text)
         best = max((overlap(a) for a in siblings), default=0)
         apps = [a for a in siblings if overlap(a) == best] if best else companies.get(co, [])
+        cap = application_limit(text)
+        if co and cap:  # pipeline.select() stops picking this company until the window has room again
+            record("company_limit", company=co, max=cap[0], days=cap[1], msg_id=mid)
         ev = record("outcome", msg_id=mid, outcome=cls, company=co, subject=m.get("subject", "")[:200],
                     sender=m.get("from", "")[:120], date=m.get("date", ""), jobs=[a["job"] for a in apps],
                     lanes=[a.get("lane") for a in apps])

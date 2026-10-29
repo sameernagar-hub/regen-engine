@@ -30,6 +30,7 @@ alerts  <file>                   job-alert emails (gmail_alerts.js output) resol
   site    [days]                   build the public face (site/): the live view replaying anonymized recent activity
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
   clean   [--dry]                  delete logged, regenerable files (old proofs, resumes, logs, browser caches)
+  oilchange [--now|--dry|--slow]   oil life + the deep clean (workspace, old code/alert mail, Docker cache, stale queue)
   relay   [port]                   local code relay: a Gmail tab POSTs codes (engine/discovery/gmail_relay.js)
   worker  [--once]                 applier worker: claim batches from workspace/batches/inbox (one per container)
   run     [--days 1 --max 30 --appliers 2 --tabs 3 --no-scan --dry]   the whole pipeline: discover, select, build, apply, report
@@ -109,6 +110,8 @@ def main():
         from engine.discovery.watch import main as m
     elif cmd == "clean":
         from engine.clean import main as m
+    elif cmd == "oilchange":
+        from engine.oilchange import main as m
     elif cmd == "relay":
         from engine.apply.code_relay import main as m
     elif cmd == "hn":

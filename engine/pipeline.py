@@ -155,11 +155,33 @@ def in_flight():
     return out
 
 
+def capped(now=None):
+    """Company slugs at an employer-stated application cap: a `company_limit` event (engine/feedback/inbox.py reads it
+    from mail like "a maximum of five applications within any 30-day period") and at least that many submissions in
+    the window. One pass over the events: O(E)."""
+    now = now or datetime.datetime.now()
+    limits = {}
+    for e in read("company_limit"):
+        limits[company_slug(e.get("company") or "")] = (int(e.get("max") or 0), int(e.get("days") or 30))
+    if not limits:
+        return set()
+    subs = collections.Counter()
+    oldest = (now - datetime.timedelta(days=max(d for _, d in limits.values()))).isoformat()
+    for e in read("application"):
+        if e.get("dry") or not (e.get("status") or "").startswith("SUBMITTED") or (e.get("ts") or "") < oldest:
+            continue
+        co = company_slug((e.get("job") or "").split(" - ")[0])
+        if co in limits and e["ts"] >= (now - datetime.timedelta(days=limits[co][1])).isoformat():
+            subs[co] += 1
+    return {co for co, (cap, _) in limits.items() if cap and subs[co] >= cap}
+
+
 def select(queue, max_jobs, ashby_ok=True, per_company=3):
     """Highest-priority jobs (engine/discovery/priority.py) that were never tried (or only hit a transient failure),
     capped per company, interleaved by company."""
     st = latest_status()
     walled, blocked = history()
+    blocked |= capped()  # an employer's own per-candidate limit: more applications there are closed unread
     if walled:
         print(f"select: skipping {', '.join(sorted(walled))} (captcha walls on most recent attempts; see the assist list)")
     from engine.discovery.priority import band, lane_rates, score

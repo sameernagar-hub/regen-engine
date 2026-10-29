@@ -1,0 +1,145 @@
+/* v1.2 oil change: the engine's deep clean (app/oilchange/page.tsx). Keyframe names are prefixed "oc" (they are global). */
+.oc { --oil: rgb(240, 182, 76); }
+.oc .oc-stage { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+@media (max-width: 980px) { .oc .oc-stage { grid-template-columns: 1fr; } }
+svg.oc-svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+/* engine block */
+.oc-svg .oc-case { fill: url(#ocsteel); stroke: #4a5668; stroke-width: 1.5; }
+.oc-svg .oc-head { fill: #1d2530; stroke: #4a5668; stroke-width: 1.2; }
+.oc-svg .oc-fin { fill: #0d1218; opacity: .6; }
+.oc-svg .oc-crank { animation: ocSpin 3.2s linear infinite; transform-box: view-box; }
+.oc.oc-run .oc-svg .oc-crank { animation-duration: 14s; }  /* engine idles while it is serviced */
+.oc-svg .oc-crank-web { fill: #232c39; stroke: var(--gold); stroke-width: 1.6; }
+.oc-svg .oc-crank-pin { fill: var(--gold); }
+.oc-svg .oc-crank-bore { fill: #0b0f15; stroke: #5b687b; stroke-width: 2; }
+.oc-svg .oc-cap { fill: var(--gold); }
+@keyframes ocSpin { to { transform: rotate(360deg); } }
+
+.oc-svg .oc-label { fill: var(--dim); font-size: 14px; letter-spacing: .06em; text-anchor: middle; }
+.oc-svg .oc-tiny { fill: var(--dim); font-size: 11.5px; text-anchor: middle; letter-spacing: .04em; }
+.oc-svg .oc-tiny.dark { fill: #c9b79a; }
+.oc-svg .oc-num { fill: #e8eef6; font-size: 13px; text-anchor: middle; font-family: var(--mono); }
+
+/* oil: color follows oil life (--oil set from the page), the surface waves, the level eases on drain / refill */
+.oc-svg .oc-pan { fill: #0d121a; stroke: #4a5668; stroke-width: 2; }
+.oc-svg .oc-oil, .oc-svg .oc-wave { fill: var(--oil); transition: y 2.2s cubic-bezier(.45, 0, .2, 1), fill 1.6s ease; }
+.oc-svg .oc-oil { opacity: .92; }
+.oc-svg .oc-wave { animation: ocWave 2.6s linear infinite; opacity: .95; transition: transform 2.2s; }
+@keyframes ocWave { from { transform: translateX(0); } to { transform: translateX(-100px); } }
+.oc-svg .oc-circ { fill: none; stroke: var(--oil); stroke-width: 6; opacity: .28; stroke-linecap: round; stroke-linejoin: round; transition: stroke 1.6s; }
+.oc-svg .oc-drop { fill: var(--oil); filter: url(#ocglow); }
+
+/* contaminant particles drift; on their stage they leave for the plug, the filter or the drum (--dx/--dy) */
+.oc-svg .oc-p { transform-box: fill-box; transform-origin: center; animation: ocDrift 6s ease-in-out infinite; opacity: .9; }
+@keyframes ocDrift { 0%, 100% { transform: translate(0, 0); } 33% { transform: translate(6px, -4px); } 66% { transform: translate(-5px, 3px); } }
+.oc.oc-st-drain .oc-p.k-drain, .oc.oc-st-filter .oc-p.k-filter, .oc.oc-st-flush .oc-p.k-flush, .oc.oc-st-refill .oc-p.k-refill {
+  animation: ocLeave 1.8s cubic-bezier(.5, 0, .75, 0) forwards; }
+.oc.oc-st-filter .oc-p.k-drain, .oc.oc-st-flush .oc-p.k-drain, .oc.oc-st-flush .oc-p.k-filter, .oc.oc-st-refill .oc-p:not(.k-refill),
+.oc.oc-st-check .oc-p { opacity: 0; animation: none; }
+@keyframes ocLeave { to { transform: translate(var(--dx), var(--dy)) scale(.4); opacity: 0; } }
+
+/* drain: plug drops, a dark stream runs into the tray */
+.oc-svg .oc-plug { fill: #8793a3; transition: transform .5s; }
+.oc-svg .oc-stream { fill: none; stroke: #3a2a17; stroke-width: 9; stroke-linecap: round; stroke-dasharray: 14 10; opacity: 0; }
+.oc.oc-st-drain .oc-svg .oc-plug { transform: translateY(14px); }
+.oc.oc-st-drain .oc-svg .oc-stream { opacity: 1; animation: ocFlow .5s linear infinite; }
+@keyframes ocFlow { to { stroke-dashoffset: -24; } }
+.oc-svg .oc-tray { fill: #151b24; stroke: #4a5668; stroke-width: 1.5; }
+.oc.oc-st-drain .oc-svg .oc-tray { stroke: #8a6a3d; }
+
+/* filter: the old one unscrews and drops to the Bin, the new one comes in from the right and screws on */
+.oc-svg .oc-mount { fill: #2a3442; stroke: #5b687b; }
+.oc-svg .oc-filter { transform-box: fill-box; transform-origin: 50% 0; transition: transform 1.4s cubic-bezier(.5, -0.2, .3, 1.2), opacity 1.2s; }
+.oc-svg .oc-filter rect { stroke: #5b687b; stroke-width: 1.5; }
+.oc-svg .oc-filter line { stroke: rgba(255, 255, 255, .14); stroke-width: 2; }
+.oc-svg .oc-filter.new { transform: translate(380px, -40px) rotate(28deg); opacity: 0; }
+.oc.oc-st-filter .oc-svg .oc-filter.old { transform: translate(195px, 230px) rotate(-30deg) scale(.45); opacity: 0; transition-duration: 1.6s; }
+.oc.oc-st-filter .oc-svg .oc-filter.new { animation: ocScrewIn 2.2s .9s cubic-bezier(.3, .8, .3, 1) forwards; }
+.oc.oc-st-flush .oc-svg .oc-filter.old, .oc.oc-st-refill .oc-svg .oc-filter.old, .oc.oc-st-check .oc-svg .oc-filter.old { opacity: 0; }
+.oc.oc-st-flush .oc-svg .oc-filter.new, .oc.oc-st-refill .oc-svg .oc-filter.new, .oc.oc-st-check .oc-svg .oc-filter.new { transform: none; opacity: 1; filter: url(#ocglow); }
+@keyframes ocScrewIn { 0% { transform: translate(380px, -40px) rotate(28deg); opacity: 0; } 55% { transform: translate(0, 30px) rotate(0); opacity: 1; }
+  70% { transform: translate(0, 12px) rotate(-12deg); } 85% { transform: translate(0, 4px) rotate(8deg); } 100% { transform: none; opacity: 1; } }
+.oc-svg .oc-bin path, .oc-svg .oc-bin rect { fill: #151b24; stroke: #ff7a6b; stroke-width: 1.5; stroke-opacity: .5; }
+.oc.oc-st-filter .oc-svg .oc-bin path { stroke-opacity: 1; filter: url(#ocglow); }
+
+/* flush: sludge runs down the line into the drum */
+.oc-svg .oc-flushline { fill: none; stroke: #6fb7ff; stroke-width: 4; stroke-dasharray: 8 9; opacity: .18; }
+.oc.oc-st-flush .oc-svg .oc-flushline { opacity: .9; animation: ocFlow .45s linear infinite; }
+.oc-svg .oc-drum rect { fill: #151b24; stroke: #6fb7ff; stroke-opacity: .5; stroke-width: 1.5; }
+.oc-svg .oc-drum line { stroke: #2b3644; stroke-width: 2; }
+.oc.oc-st-flush .oc-svg .oc-drum rect { stroke-opacity: 1; filter: url(#ocglow); }
+
+/* refill: the jug tips over the filler cap and fresh oil pours */
+.oc-svg .oc-jug { transition: transform 1s cubic-bezier(.4, 0, .2, 1); transform-box: view-box; }
+.oc-svg .oc-jug-body { fill: #2a3442; stroke: var(--gold); stroke-width: 1.5; }
+.oc.oc-st-refill .oc-svg .oc-jug { transform: translate(470px, -2px) rotate(-62deg); }
+.oc-svg .oc-pour { fill: none; stroke: rgb(240, 182, 76); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 12 8; opacity: 0; }
+.oc.oc-st-refill .oc-svg .oc-pour { opacity: .95; animation: ocFlow .4s linear infinite; transition: opacity .4s .8s; }
+.oc.oc-st-refill { --oil: rgb(240, 182, 76) !important; }
+
+/* gauge */
+.oc-svg .oc-arc { fill: none; stroke: #2b3644; stroke-width: 14; stroke-linecap: round; }
+.oc-svg .oc-arc.red { stroke: #ff5d5d; opacity: .7; }
+.oc-svg .oc-needle { transition: transform 1.8s cubic-bezier(.3, 1.5, .5, 1); transform-box: view-box; transform-origin: 0 0; }
+.oc-svg .oc-needle line { stroke: var(--gold); stroke-width: 4; stroke-linecap: round; }
+.oc-svg .oc-needle circle { fill: var(--gold); }
+.oc-svg .oc-life { fill: #e8eef6; font-size: 34px; font-weight: 700; text-anchor: middle; font-family: var(--mono); }
+.oc.oc-due .oc-svg .oc-life { fill: #ff7a6b; animation: ocBlink 1.6s ease-in-out infinite; }
+@keyframes ocBlink { 50% { opacity: .45; } }
+.oc.oc-st-check .oc-svg .oc-gauge { filter: url(#ocglow); }
+
+/* side: stages + controls */
+.oc .oc-side { display: grid; gap: 14px; }
+.oc .oc-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.oc .oc-step { display: grid; grid-template-columns: 28px 1fr; gap: 10px; padding: 10px 12px; border-radius: 12px;
+  border: 1px solid var(--line); background: rgba(13, 18, 26, .55); transition: border-color .4s, background .4s, opacity .4s; }
+.oc .oc-step.wait { opacity: .62; }
+.oc .oc-step.on { border-color: var(--gold); background: rgba(242, 193, 78, .08); }
+.oc .oc-step.done { border-color: rgba(94, 230, 181, .45); }
+.oc .oc-step b { display: block; font-size: 14px; }
+.oc .oc-step small { display: block; color: var(--dim); font-size: 12px; line-height: 1.35; }
+.oc .oc-step em { display: block; font-style: normal; font-family: var(--mono); font-size: 12px; color: #5ee6b5; margin-top: 4px; }
+.oc .oc-dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px;
+  border: 1px solid var(--line); color: var(--dim); }
+.oc .oc-step.on .oc-dot { border-color: var(--gold); color: var(--gold); animation: ocPulse 1.2s ease-in-out infinite; }
+.oc .oc-step.done .oc-dot { background: #5ee6b5; color: #0b0f15; border-color: #5ee6b5; }
+@keyframes ocPulse { 50% { box-shadow: 0 0 0 6px rgba(242, 193, 78, .18); } }
+.oc .oc-btn { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--gold); background: rgba(242, 193, 78, .12);
+  color: var(--gold); font-weight: 600; cursor: pointer; transition: background .2s; }
+.oc .oc-btn:hover:not(:disabled) { background: rgba(242, 193, 78, .22); }
+.oc .oc-btn:disabled { opacity: .6; cursor: progress; }
+.oc .oc-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+.oc .oc-facts div { padding: 10px; border-radius: 12px; border: 1px solid var(--line); }
+.oc .oc-facts dt { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+.oc .oc-facts dd { margin: 2px 0; font-size: 18px; font-weight: 600; }
+.oc .oc-facts small { color: var(--dim); font-size: 11.5px; }
+
+/* cards: contaminants + history */
+.oc .oc-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; margin-top: 28px; }
+@media (max-width: 980px) { .oc .oc-grid { grid-template-columns: 1fr; } }
+.oc .oc-card { border: 1px solid var(--line); border-radius: 16px; padding: 18px; background: rgba(13, 18, 26, .45); min-width: 0; }
+.oc .oc-card h2 { margin: 0 0 6px; font-size: 18px; }
+.oc .oc-rows, .oc .oc-hist { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
+.oc .oc-rows li { display: grid; grid-template-columns: 10px minmax(0, 1fr) minmax(80px, 160px) 42px; gap: 10px; align-items: center; }
+.oc .oc-swatch { width: 10px; height: 10px; border-radius: 50%; }
+.oc .oc-row-text b { display: block; font-size: 13.5px; }
+.oc .oc-row-text small { display: block; color: var(--dim); font-size: 12px; overflow-wrap: anywhere; }
+.oc .oc-bar { height: 8px; border-radius: 6px; background: #1d2530; overflow: hidden; }
+.oc .oc-bar i { display: block; height: 100%; background: #5ee6b5; border-radius: 6px; transition: width 1.2s ease; }
+.oc .oc-bar i.warm { background: var(--gold); }
+.oc .oc-bar i.hot { background: #ff7a6b; }
+.oc .oc-pct { font-family: var(--mono); font-size: 12px; text-align: right; color: var(--dim); }
+.oc .oc-hist li { display: grid; gap: 2px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+.oc .oc-hist time { font-family: var(--mono); font-size: 12px; color: var(--gold); }
+.oc .oc-hist small { color: var(--dim); font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .oc .oc-svg *, .oc .oc-dot { animation: none !important; transition: none !important; }
+}
+
+/* home engine: the oil filter part (app/page.tsx) */
+.engine-home .ocf-can { fill: #1d2530; stroke: #3d8ee0; stroke-width: 1.6; transition: stroke .3s, fill .3s; }
+.engine-home .ocf-pleat { stroke: rgba(111, 183, 255, .3); stroke-width: 2; }
+.engine-home .ocf-line { fill: none; stroke: var(--oil-home, #f0b64c); stroke-width: 3; stroke-dasharray: 6 6; opacity: .5; animation: ocFlow 1s linear infinite; }
+.engine-home .ocf-level { fill: var(--oil-home, #f0b64c); transition: height 1s, y 1s; }

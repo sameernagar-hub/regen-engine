@@ -1017,6 +1017,9 @@ def supervise(argv=None):
                 prune_images()
                 from engine.clean import main as clean
                 clean([])
+            if n >= 8:  # from 2 min after start: oil-life inspection every 5 min, the oil change when due (v1.2)
+                from engine.oilchange import tick_async
+                tick_async()
             if imap and n % 240 == 40:  # hourly (10 min after start): LinkedIn alert mail -> leads -> queue
                 threading.Thread(target=alerts, daemon=True).start()
             if n % 4 == 2 and n >= 20:  # every minute from 5 min after start: eval containers for pending triggers

@@ -617,6 +617,33 @@ def shift(body: dict, request: Request):
     return gearbox()
 
 
+# ---------------- oil change: the deep clean the supervisor runs when oil life runs low (engine/oilchange.py) -------
+@router.get("/control/oilchange")
+def oilchange():
+    """Oil life, what is contaminating it, the change running now (stage by stage) and the last 20 changes. Reads
+    workspace/oilchange.json, which the supervisor rewrites every 5 minutes and after every stage. O(1)."""
+    from engine import oilchange as O
+    st = O.load()
+    now = time.time()
+    return {"life": st.get("life"), "wear": st.get("wear") or {}, "contaminants": st.get("contaminants") or {},
+            "limits": O.LIMITS, "interval_h": O.INTERVAL_H, "change_at": O.CHANGE_AT, "stages": list(O.STAGES),
+            "running": bool(st.get("running")), "stage": st.get("stage"), "run": st.get("run") if st.get("running") else None,
+            "last_change": st.get("last_change"), "next_due": st.get("next_due"), "inspected": st.get("inspected"),
+            "requested": os.path.exists(O.REQUEST), "history": (st.get("history") or [])[:20], "now": now}
+
+
+@router.post("/control/oilchange")
+def oilchange_now(request: Request):
+    """Ask the supervisor to change the oil now (it starts within 15 s). Same write gate as the gearbox."""
+    if not GEAR_WRITE:
+        raise HTTPException(403, "control writes are disabled (REGEN_API_GEAR=1 in the bank, REGEN_API_WRITE=1 locally)")
+    if not TRUST_PORT and (request.client.host if request.client else "") not in LOCAL:
+        raise HTTPException(403, "only from this computer")
+    from engine import oilchange as O
+    O.request("control room")
+    return oilchange()
+
+
 # ---------------- MCP: the cord any AI client drives the engine with (engine/connectors/mcp_server.py) ----------------
 MCP_GROUPS = [("discovery", r"discovery|boards_add|feed_add|companies_probe|leads_add|harvest|job_queue|priority"),
               ("fitgate", r"fit_check|feedback_rule|trust_check|filters"), ("gearbox", r"gear|feedback"), ("fleet", r"fleet|kill|scale|audit|quarantine"),
