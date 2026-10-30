@@ -334,6 +334,8 @@ def change(dry=False, by="supervisor"):
         if not dry and len(keep) != len(q):
             tmp = os.path.join(WORKSPACE, "queue.json.tmp")
             json.dump(keep, open(tmp, "w", encoding="utf-8"), indent=1)
+            if os.name != "nt" and os.getuid() == 0:  # 10-29: run by the root supervisor, a root-owned queue.json
+                os.chown(tmp, 10001, 10001)           # broke every engine-user write (alerts --imap, pipeline: EACCES)
             os.replace(tmp, os.path.join(WORKSPACE, "queue.json"))
         return {"removed": len(q) - len(keep), "queue": len(keep)}
 

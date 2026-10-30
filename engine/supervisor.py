@@ -631,7 +631,10 @@ def control(argv):
 # services without a heartbeat of their own: the supervisor probes them over the compose network
 SERVICES = {"api": "http://api:8787/api/health", "web": "http://web:3000/", "mcp": "http://mcp:8790/mcp",
             "ledger": None, "postgres": None, "answers": None, "reposync": None,
-            "desk": "http://desk:6080/"}
+            "desk": "http://desk:6080/",
+            # 10-29 (user: "one container is always checking the mails"): liveness() only restarts a RUNNING feedback
+            # whose beat went stale; a stopped one was never started again
+            "feedback": None}
 
 
 CONTAINERS = os.path.join(WORKSPACE, "containers.json")  # not under fleet/: those files are heartbeats
