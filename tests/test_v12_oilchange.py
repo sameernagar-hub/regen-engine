@@ -111,3 +111,23 @@ def test_failed_change_backs_off():
     O.request("test")
     assert O.due(stuck, now)  # asking always works
     os.remove(O.REQUEST)
+
+
+def test_missing_resume_is_rebuilt_from_spec(tmp_path, monkeypatch):
+    """10-29: a retried job whose out/*.pdf was cleaned gets it rebuilt from specs/ instead of RESUME UPLOAD FAILED."""
+    from engine.apply import runner
+    from engine.tailoring import resume
+    monkeypatch.chdir(tmp_path)
+    os.makedirs("specs"); os.makedirs("out")
+    json.dump({"file": "ignored.pdf", "roles": []}, open("specs/Acme_123.json", "w"))
+    built = []
+
+    def fake_fit(spec):
+        built.append(spec["file"])
+        open(os.path.join("out", spec["file"]), "wb").write(b"%PDF")
+        return os.path.join("out", spec["file"])
+    monkeypatch.setattr(resume, "fit", fake_fit)
+    assert runner.ensure_resume({"resume": "out/Resume_Acme_123.pdf"})
+    assert built == ["Resume_Acme_123.pdf"]
+    assert runner.ensure_resume({"resume": "out/Resume_Acme_123.pdf"}) and len(built) == 1  # exists: no rebuild
+    assert not runner.ensure_resume({"resume": "out/Resume_Gone_9.pdf"})  # no spec: reported, not invented

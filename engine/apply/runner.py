@@ -1478,6 +1478,30 @@ def field_error(e):
         lab = ""
     return f"{lab}: {msg}" if lab and lab.lower() not in msg.lower() else msg
 
+def ensure_resume(job):
+    """10-29: clean.py drops out/*.pdf after 3 days, so a retried job's resume can be gone (16 RESUME UPLOAD FAILED
+    on 10-28: "No such file"). Rebuild it from the spec the batch saved (specs/<co>_<id>.json, same Fact Bank
+    entries) instead of failing the upload. Returns True when the file exists afterwards."""
+    path = job["resume"]
+    if os.path.exists(path):
+        return True
+    stem = os.path.splitext(os.path.basename(path))[0]
+    spec_path = os.path.join("specs", (stem[len("Resume_"):] if stem.startswith("Resume_") else stem) + ".json")
+    if not os.path.exists(spec_path):
+        print(f"   ! resume {path} is gone and has no spec to rebuild it from", flush=True)
+        return False
+    from engine.tailoring import resume
+    spec = json.load(open(spec_path, encoding="utf-8"))
+    spec["file"] = os.path.basename(path)
+    try:
+        resume.fit(spec)
+    except (SystemExit, Exception) as e:
+        print(f"   ! resume rebuild failed for {path}: {str(e)[:80]}", flush=True)
+        return False
+    print(f"   . rebuilt {path} from {spec_path}", flush=True)
+    return os.path.exists(path)
+
+
 def main(argv=None):
     """apply <batch.json> [--dry] [--only regex]   --only limits the batch to jobs whose name matches"""
     argv = sys.argv[1:] if argv is None else argv
@@ -1486,6 +1510,7 @@ def main(argv=None):
         for j in jobs:  # batches built on Windows say "out\\x.pdf"; a Linux container worker needs "out/x.pdf"
             if j.get("resume"):
                 j["resume"] = j["resume"].replace("\\", "/")
+                ensure_resume(j)
         if "--only" in argv:
             pat = argv[argv.index("--only") + 1]
             jobs = [j for j in jobs if re.search(pat, j.get("name", ""), re.I)]
