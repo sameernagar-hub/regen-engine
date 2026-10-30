@@ -95,6 +95,10 @@ export default function EngineHome() {
           <li><b>{strip.boards}</b> company boards watched</li><li><b>{strip.sent}</b> {strip.sentLabel}</li><li><b>$0</b> in model costs</li>
         </ul>
         {PUBLIC && <p className="demo-pill" title="Built by scripts/proxy_dataset.py: the real API over a synthetic engine">Interactive demo on synthetic data. Every part of the engine is a door: hover to wake it, click to step inside.</p>}
+        {/* 10-29: the part card lives under the pitch, never over the engine; its slot is reserved so nothing jumps */}
+        <aside className={`engine-card${info ? " on" : ""}`} aria-live="polite" style={info ? { ["--tone" as any]: info.tone } : undefined}>
+          {info && (<><b>{info.label}</b><span className="stat">{stat[info.key] || "·"}</span><p>{info.about}</p><small>click to open</small></>)}
+        </aside>
       </header>
 
       <svg className="engine" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" aria-label="The REGEN engine. Each part opens a view.">
@@ -208,10 +212,6 @@ export default function EngineHome() {
         </g>
       </svg>
 
-      <aside className={`engine-card${info ? " on" : ""}`} aria-live="polite" style={info ? { ["--tone" as any]: info.tone } : undefined}>
-        {info ? (<><b>{info.label}</b><span className="stat">{stat[info.key] || "·"}</span><p>{info.about}</p><small>click to open</small></>)
-              : (<><b>Twelve parts, one engine</b><p>Discover, judge, write, apply, hear back. Pick a part.</p></>)}
-      </aside>
 
       <nav className="engine-list" aria-label="Engine parts">
         {ALL.map((p) => (

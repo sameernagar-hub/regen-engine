@@ -71,13 +71,14 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
 .part.hot .tank { stroke: var(--tone); }
 .part.hot .fuel-line { stroke-opacity: 1; }
 
-.engine-card { position: absolute; right: 32px; top: 22px; width: min(340px, calc(100vw - 32px)); padding: 14px 16px; border-radius: 14px;
+.engine-card { margin-top: 20px; width: min(420px, 100%); padding: 14px 16px; border-radius: 14px;
   border: 1px solid var(--faint); background: color-mix(in oklab, var(--bg) 78%, transparent); backdrop-filter: blur(10px);
   transition: border-color .25s, box-shadow .25s;
   /* 10-28: the card sat over the oil filter; hovering grew it onto the part, the pointer landed on the card, the hover
      ended, it shrank, and the loop flickered. The card is read-only text: it never takes the pointer, and it keeps one
      size (room for the longest part text) so hovering changes only its content, never its box */
   pointer-events: none; min-height: 132px; box-sizing: border-box; }
+.engine-card:not(.on) { border-color: transparent; background: none; backdrop-filter: none; }
 .engine-card.on { border-color: var(--tone); box-shadow: 0 0 40px color-mix(in oklab, var(--tone) 20%, transparent); }
 .engine-card b { display: block; font-size: 17px; color: var(--tone, var(--ink)); }
 .engine-card .stat { display: block; margin-top: 2px; font-size: 13px; color: var(--ink); font-family: var(--mono); }
@@ -97,7 +98,7 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
 }
 @media (max-width: 720px) {
   .engine-title { padding: 16px 16px 0; }
-  .engine-card { right: 16px; left: 16px; top: auto; bottom: 96px; width: auto; }
+  .engine-card { width: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .piston, .crank, .spark, .wire, .fuel-line, .graph-node, .tank-fuel { animation: none; }
