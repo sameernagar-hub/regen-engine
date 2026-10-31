@@ -1,3 +1,15 @@
+# Handoff: 10-30 ~22:10. Stack is UP in gear 2. main = local commits after 362ca5b (reposync opens the PR).
+
+## Done 10-30
+- `engine vc`: venture portals (YC pages + yc-oss hiring list, Getro/Consider fund boards, Next.js server-action
+  portals from profile/vc_portals.json) -> leads -> employer ATS; careers-page crawl for unresolved startups.
+  In the pipeline sources step (hourly self-throttle). YC Work-at-a-Startup-only roles: workspace/yc_waas.md (user).
+- Cover note per batch job (compose.cover_note) fills optional cover letters / "why" boxes from Fact Bank facts.
+
+## Next
+- Watch whether notes change outcomes (feedback.md); consider more fund portals in profile/vc_portals.json.
+- yc probe: ~1.3k YC companies left, 120 per run.
+
 # Handoff: 10-19 ~23:00. Stack is DOWN (stopped cleanly, 0 claimed, volumes kept). main = fc2a489, everything merged.
 
 ## START (if down)

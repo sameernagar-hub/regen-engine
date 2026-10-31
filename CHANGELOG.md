@@ -4,6 +4,19 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-30 · Venture portals and cover notes
+- **Venture-portal drivers** (`engine/discovery/vc.py`, `python -m engine vc [days] [--only next,yc,getro,consider] [--dry]`):
+  YC job pages, Getro and Consider fund boards, and Next.js server-action portals (hosts in profile/vc_portals.json)
+  are read as leads and resolved on the employer's own ATS. A lead that links straight to an ATS posting pins the
+  company's board. For an unresolved startup, the crawler looks for the ATS behind its own site (`/careers`, `/jobs`,
+  home page; at most 5 GETs, cached for a week). Each run also probes 120 hiring YC companies for boards. YC roles
+  that only take Work-at-a-Startup applications go to workspace/yc_waas.md. The pipeline runs it with the other
+  sources, at most once an hour. First run: about 60 jobs queued and 20 new boards.
+- **Cover note per job** (`compose.cover_note`): the runner's `note` hook was never set, so the optional cover-letter
+  box was empty on all 390 submissions. Each batch job now has a note built from the role, the company, the JD terms
+  the resume already shows, and the resume's top two Fact Bank entries. It is logged on the `resume` event.
+  Verify: `pytest tests/test_vc.py` (265 tests pass).
+
 ## [Unreleased] - 2026-10-28 · Oil change, employer application caps, more rejection wordings
 - **Oil change** (`engine/oilchange.py`, `python -m engine oilchange [--status|--now|--dry]`, web `/oilchange`, an oil
   filter part on the home engine): the deep clean the hourly top-up does not reach, in five logged stages (drain
