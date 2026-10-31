@@ -1,4 +1,4 @@
-# Handoff: 10-30 ~22:10. Stack is UP in gear 2. main = local commits after 362ca5b (reposync opens the PR).
+# Handoff: 10-30 ~23:45. Stack is DOWN (gear N, drained, compose stop, volumes kept). main = 4a05818 pushed.
 
 ## Done 10-30
 - `engine vc`: venture portals (YC pages + yc-oss hiring list, Getro/Consider fund boards, Next.js server-action
@@ -7,6 +7,9 @@
 - Cover note per batch job (compose.cover_note) fills optional cover letters / "why" boxes from Fact Bank facts.
 
 ## Next
+- On start: shift to gear 2. The desk lost its two filled YC tabs on recreate: re-request Axiom + Drillbit
+  (workday.request from batches/yc_test.json and manual/yc_dry.json). YC jobs reach the desk 2 a pass; the user
+  ticks hCaptcha + Submit at http://127.0.0.1:6080.
 - Watch whether notes change outcomes (feedback.md); consider more fund portals in profile/vc_portals.json.
 - yc probe: ~1.3k YC companies left, 120 per run.
 
