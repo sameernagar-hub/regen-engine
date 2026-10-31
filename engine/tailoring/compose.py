@@ -150,3 +150,27 @@ def ats_check(pdf, want):
     found = sorted(t for t in want if re.search(r"(?<![a-z0-9])" + re.escape(t) + r"(?![a-z0-9])", low))
     return {"chars": len(text), "jd_terms_found_in_pdf_text": found,
             "score": round(100 * len(found) / len(want)) if want else 100}
+
+
+def cover_note(title, company, jd, spec, want, facts, roles, skills, hits):
+    """Short cover note for this posting (optional cover-letter boxes, "why this role" questions).
+
+    The 10-30 review found the runner's `note` hook was never set, so every optional cover letter was left empty.
+    Built like the drafts (engine/apply/drafts.py): the role and company come from the posting, the stack line names
+    only JD terms the tailored resume already shows (Fact Bank skills), and the two body sentences are the resume's
+    own top-ranked Fact Bank entries, rewritten only grammatically. No claim appears here that the resume lacks."""
+    from engine.apply.drafts import _sentence
+    shown = set()
+    for _, fids in spec["roles"]:
+        for f in fids:
+            shown |= hits(facts[f])
+    for k in spec["skills"]:
+        shown |= hits(spec.get("skill_text", {}).get(k, skills[k][1]))
+    terms = [display(t, skills) for t in ranked_terms(jd, shown & set(want)) if t not in GENERIC][:3]
+    fb = {"facts": facts, "roles": roles}
+    pick = [f for _, fids in spec["roles"] for f in fids][:2]
+    body = " ".join(s for s in (_sentence(f, fb, pick[i - 1] if i else None) for i, f in enumerate(pick)) if s)
+    role, co = role_name(title), (company or "your team").strip()
+    stack = (", ".join(terms[:-1]) + " and " + terms[-1]) if len(terms) > 1 else (terms[0] if terms else "")
+    lead = f"I'm applying for the {role} role at {co}" + (f": the posting's focus on {stack} matches the work on my resume." if stack else ".")
+    return f"{lead} {body} I'd welcome the chance to bring that experience to {co}.".replace("  ", " ").strip()

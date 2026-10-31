@@ -2,6 +2,7 @@
 
   scan    [days] [--ats a,b]       Greenhouse + Ashby + Lever boards -> workspace/queue.json
   newgrad [days]                   newgrad-jobs.com leads, resolved to the employer's ATS -> queue.json / leads.json
+  vc      [days] [--only a,b] [--dry] YC / Getro / Consider / Next.js fund portals -> employer ATS -> queue.json
   outreach [days]                  recruiter / founder notes for recent submissions (Fact Bank only; nothing sent)
   bigtech [days]                   Amazon + NVIDIA careers APIs -> fit-gated roles with tailored resumes (workspace/bigtech.md)
   reach   [max]                    Workday / iCIMS / SmartRecruiters jobs -> fit-gated, tailored, you submit (workspace/reach.md)
@@ -132,6 +133,8 @@ def main():
         from engine.discovery.newgrad import main as m
     elif cmd == "bigtech":
         from engine.discovery.bigtech import main as m
+    elif cmd == "vc":
+        from engine.discovery.vc import main as m
     elif cmd == "desk":
         from engine.apply.workday import main as m
     elif cmd == "reach":

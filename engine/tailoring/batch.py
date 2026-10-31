@@ -11,7 +11,7 @@ import json, os, re, sys
 from engine.config import WORKSPACE, in_workspace, profile_file
 from engine.discovery.ats import job_description
 from engine.feedback.events import record
-from engine.tailoring import resume
+from engine.tailoring import compose, resume
 from engine.tailoring.tailor import tailor, fit
 from engine.tailoring.salary import parse_range
 
@@ -49,6 +49,11 @@ def _safe_fetch(j):
     except Exception as e:  # one dead posting must not sink the batch
         print(f"  ! {j.get('company')} | {j.get('title')}: {e}")
         return FETCH_ERROR, "", []  # a network error: worth another pass (a 404 / missing job means removed)
+
+
+def _terms_in(text):
+    from engine.tailoring.tailor import _hits, vocabulary
+    return _hits(text, vocabulary())
 
 
 def _match(cov):
@@ -111,6 +116,8 @@ def build(name, ids, force=False):
             ln = route(cfg, j["title"], jd)
             spec = tailor(cfg["lanes"][ln], jd, title=j["title"], lanes=cfg["lanes"])
             cov = spec.pop("_coverage")
+            note = compose.cover_note(j["title"], j["company"], jd, spec, cov["jd_terms_you_have"], resume.FACTS,
+                                      resume.ROLES, resume.SKILLS, lambda t: set(cov["jd_terms_you_have"]) & _terms_in(t))
             spec["file"] = f"Resume_{co}_{short}.pdf"
             json.dump(spec, open(f"specs/{co}_{short}.json", "w"), indent=1)
             try:
@@ -124,9 +131,9 @@ def build(name, ids, force=False):
                   + (f" | flagged: {flagged}" if flagged else ""))
             # transparency: the exact Fact Bank entries this resume used, so every claim is traceable
             record("resume", job=label, url=j["url"], lane=ln, file=spec["file"], facts=spec["roles"],
-                   projects=spec.get("projects", []), skills=spec["skills"], coverage=cov)
+                   projects=spec.get("projects", []), skills=spec["skills"], coverage=cov, note=note)
             batch.append({"name": label, "url": j["url"], "ats": j["ats"], "resume": os.path.relpath(pdf, WORKSPACE),
-                          "lane": ln, "extra": {}, "salary_range": parse_range(jd), "jd_match": _match(cov)})
+                          "lane": ln, "extra": {}, "salary_range": parse_range(jd), "jd_match": _match(cov), "note": note})
         # after reading every description: highest JD match first (stable, so ties keep queue priority)
         from engine.discovery.priority import jd_match
         batch.sort(key=lambda b: -b.get("jd_match", 0))
