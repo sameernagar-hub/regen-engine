@@ -17,6 +17,24 @@ resolved back to the employer's own posting before anything is applied to.
 | SimplifyJobs | `listings.json` (community new-grad list) | 1 GET | `simplify.py` (`engine feed`) |
 | Reach ATSs (v0.13) | SmartRecruiters Posting API (100/page), Workday `cxs` search (20/POST, stops at week-old postings), iCIMS search HTML (first-seen dates) | 1-8 per board | `ats.py`, `reach.py` |
 | Big-tech careers APIs | six portals: JSON search APIs (full JD inline), Workday `cxs`, an embedded-JSON results page, Eightfold `pcsx` / apply v2 (search + 1 GET per kept job) | ~8 + kept | `bigtech.py` |
+| Venture portals (v1.2) | YC job pages (Inertia JSON) + the yc-oss list of hiring YC companies; Getro fund boards (public search API); Consider fund boards (search API behind the page's CSRF token); Next.js server-action fund portals (hosts in `profile/vc_portals.json`) | ~40 + 1 per lead | `vc.py` (`engine vc`) |
+
+## Venture portals (v1.2)
+
+Startups backed by the big funds post on their fund's job portal before they reach the GitHub lists. `engine vc`
+reads each portal as leads (company, title, link), gates them on title / location / level, and resolves them on the
+employer's own ATS:
+
+1. A link that is already an ATS posting pins the company's board, so the title match is exact.
+2. Otherwise the usual slug guesses (Greenhouse, Ashby, Lever, Workable, SmartRecruiters).
+3. Still unresolved: the startup's own site (`/careers`, `/jobs`, home page) is read for the ATS behind it (at most 5
+   GETs a company, cached for a week either way).
+4. A YC posting with no employer ATS but the page's own apply dialog is queued as `ats=yc` (see
+   [Apply engine](Apply-Engine)); the rest are listed in `workspace/yc_waas.md`.
+
+Each run also probes 120 not-yet-probed hiring YC companies for boards (`workspace/vc_state.json`). The pipeline runs
+`vc` with the other sources, at most once an hour. First run: about 60 jobs queued, about 20 new boards, and 43 YC
+direct-apply roles.
 
 ## Sources an AI adds (v1.1)
 

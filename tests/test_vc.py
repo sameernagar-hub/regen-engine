@@ -82,3 +82,10 @@ def test_yc_jobs_go_to_the_desk_and_are_never_retried(monkeypatch, tmp_path):
         status = e.value
     assert status.startswith("NEEDS YOU") and "hCaptcha" in status
     assert sent == [(job["url"], "out/r.pdf", "hello")]
+
+
+def test_work_authorization_wordings_answer_from_presets():
+    from engine.apply import runner
+    for q in ("Are you currently authorized to reside and work in the United States?",
+              "Are you presently authorized under U.S. immigration laws to work in the United States?"):
+        assert runner.answer(q, {"extra": {}}) == runner.P.get("work_authorized_us")

@@ -12,6 +12,11 @@ the job stops before submitting.
 | Ashby | Yes/No buttons, CSS-only required markers, follow-up questions (second pass) | resubmit once on "Missing entry" | bot-check → 24 h cooldown for all Ashby jobs |
 | Lever | location autocomplete limited to your state, EEO selects | confirmation text | hCaptcha → human queue |
 | Workable | text, radios, uploads | confirmation text, 60 s wait | Cloudflare Turnstile → human queue; `REGEN_SKIP_ATS=workable` when it bot-walls |
+| YC job pages (v1.2) | opens the "Apply to role" dialog: name, email, LinkedIn, phone, city (a place suggestion must be picked), both work-authorization radios from presets, resume, cover note, custom questions | the user's click in the desk | the dialog ends in a **visible hCaptcha checkbox**, never ticked by the engine: yc jobs are filled in the desk (noVNC :6080) and recorded NEEDS YOU; 2 a pass (`REGEN_YC_PER_PASS`) |
+
+**Cover note (v1.2).** Every batch job carries a `note`. It names the role and the company, the JD terms the
+resume already shows, and the resume's top two Fact Bank entries (`compose.cover_note`). The note fills optional
+cover-letter boxes and "why this role" questions; before v1.2 those boxes were left empty on every submission.
 
 Each adapter is a **generator**: it `yield`s at every field (a checkpoint) and at every wait (`yield <seconds>`), which
 is what lets the scheduler interleave many forms.

@@ -160,7 +160,8 @@ RULES = [
     (r"(currently|presently) (in|on|hold(ing)?) (an? )?f-?1( status| visa)?|(currently )?on (optional practical training|\(?opt\)?)\b", P.get("f1_status")),  # student-visa practical training
     (r"^(what is )?your country\W*$|^country of residence", P["country"]),
     (r"^(what is )?your state\b|state ?/ ?province", P["state"]),
-    (r"authori[sz]ed to work|eligible to work|legally (authori|work|permitted)|work authori", P.get("work_authorized_us")),
+    # 10-30: "authorized to reside and work in ...", "authorized under U.S. immigration laws to work" parked jobs
+    (r"authori[sz]ed (under [a-z. ]{0,30}laws? )?to (reside and )?work|eligible to work|legally (authori|work|permitted)|work authori", P.get("work_authorized_us")),
     # "What company are you currently employed at?" must not reach the previous-employer rule below (it answered "No")
     (r"(what|which) (company|organi[sz]ation|employer) .{0,30}(employed|work(ing)?) (at|for)|(currently|presently) employed (at|by|with)\b.{0,10}\?|worked (at|for) most recently", P["current_employer"]),
     (r"(ever )?(been )?(previously )?employed (by|at)|worked (for|at) .{0,30} before|former employee|previous employee|(currently|previously|ever).{0,30}work(ed)? (at|for) (?!(a|an|any|or|with|the|one|another)\b)", P.get("previous_employer_of_company", "No")),

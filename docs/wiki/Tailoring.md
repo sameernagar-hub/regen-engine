@@ -39,6 +39,11 @@ Lanes encode the user's real tracks; they are not personas.
 - **Skills lines:** reordered so the JD's terms come first; nothing is added that isn't in the Fact Bank.
 - **Roles and projects:** fact ids ranked by JD-term overlap within each role; projects titled per lane.
 - **Overlap groups:** facts that describe the same achievement in different words never appear twice.
+- **Cover note (v1.2, `cover_note`):** "I'm applying for the <role> role at <company>: the posting's focus on <up to
+  three named skills the resume shows> matches the work on my resume." It then gives the resume's two top-ranked
+  facts, rewritten only grammatically, and a one-line close. Loose JD words ("review", "workflows") never appear; only
+  Fact Bank skill items do. Measured before the change: over the last 300 resumes, the tailored resume showed 98% of
+  the JD terms the Fact Bank has, and the ATS read-back scored 98%. So the note, not more keywords, was the gap.
 
 ### Validator (`resume.validate`)
 Rejects any spec that references a fact, project or skill id that isn't in the Fact Bank. This check is the
