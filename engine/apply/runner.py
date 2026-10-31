@@ -1166,6 +1166,127 @@ def submit_workable(page):
         if errs and _ > 3: return False, "; ".join(e.inner_text()[:80] for e in errs[:5])
     return False, "no confirmation seen"
 
+# ---------------- Y Combinator job pages (ycombinator.com/companies/<co>/jobs/<id>) ----------------
+# 10-30: YC postings show their own no-account "Apply to <company>" form (props.showDirectApply) beside the posting:
+# name, email, LinkedIn, phone, current city (a places combobox), two work-authorization radios, resume, a note.
+# The page loads invisible reCAPTCHA / hCaptcha; a visible challenge is never worked around (NEEDS YOU).
+YC_STD = ("first_name", "last_name", "email", "linkedin_url", "city_current", "us_authorized", "us_visa_sponsorship",
+          "resume", "message", "g-recaptcha-response", "h-captcha-response")
+
+
+def yc_radio(page, name, label, job, log):
+    ans = answer(label, job) or ""
+    if not re.match(r"(yes|no)\b", str(ans), re.I):  # fall back to the presets these two questions map to
+        ans = P.get("work_authorized_us") if name == "us_authorized" else P.get("needs_sponsorship_now_or_future")
+    val = "yes" if str(ans).lower().startswith("y") else "no" if str(ans).lower().startswith("n") else ""
+    log(f"   . {label[:60]} -> {val}"); job.setdefault("_answers", []).append([label[:200], val.capitalize()])  # airbag compares to "Yes"/"No"
+    el = page.query_selector(f"input[name={name}][value={val}]") if val else None
+    if not el:
+        return False
+    lab = page.query_selector(f"label[for='{el.get_attribute('id')}']")
+    (lab or el).click(force=True)  # the styled label carries the click handler (a plain .checked set does not stick)
+    return el.is_checked()
+
+
+def fill_yc(page, job, log):
+    page.goto(job["url"].split("?")[0], wait_until="networkidle")
+    try:  # the form is a dialog: "Apply to role" opens it when the posting allows direct applies (else -> YC sign-in)
+        page.click("a:has-text('Apply to role')", timeout=15000)
+        page.wait_for_selector("[role=dialog] input[name=first_name]", timeout=15000)
+    except Exception:
+        if "account.ycombinator.com" in page.url:
+            return ["no direct apply form (YC sign-in / Work at a Startup only); resume ready"]
+        return ["YC apply dialog did not open; resume ready"]
+    yield 1.5
+    missing = []
+    std = {"first_name": P["first_name"], "last_name": P["last_name"], "email": P["email"],
+           "linkedin_url": P.get("linkedin") or ""}
+    for name, val in std.items():
+        el = page.query_selector(f"input[name={name}]")
+        if el and val:
+            el.fill(val); job.setdefault("_answers", []).append([name, val])
+        elif el:
+            missing.append(name)
+    tel = page.query_selector("input[type=tel]")
+    if tel:
+        tel.fill(re.sub(r"^\+1\s*", "", P["phone"]))
+    city = page.query_selector("input[name=city_current]")
+    if city:  # Google-places style combobox: type, then pick the suggestion that starts with the city
+        city.click(); city.fill(""); city.type(P["city"], delay=40); yield 1
+        try:  # typed text alone fails validation ("Required"): a suggestion must be picked (10-30)
+            page.locator(f"[role=dialog] >> text=/^{re.escape(P['city'])}, /").first.click(timeout=6000)
+        except Exception:
+            missing.append("Current location (no city suggestion to pick)")
+        yield 0.5
+        job.setdefault("_answers", []).append(["Current location", city.input_value()])
+    body = page.inner_text("body")
+    for name, rx in (("us_authorized", r"[^\n]*authorized to work[^\n]*"), ("us_visa_sponsorship", r"[^\n]*sponsorship[^\n]*")):
+        if page.query_selector(f"input[name={name}]"):
+            m = re.search(rx, body, re.I)
+            if not yc_radio(page, name, (m.group(0) if m else name).strip().rstrip("*").strip(), job, log):
+                missing.append(name)
+    fi = page.query_selector("input[type=file][name=resume]") or page.query_selector("input[type=file]")
+    if fi:
+        fi.set_input_files(job["resume"]); yield 2
+    msg = page.query_selector("textarea[name=message]")
+    if msg:
+        label = msg.get_attribute("placeholder") or "What interests you about this company?"
+        ans = job.get("note") or answer(label, job)
+        if ans and not str(ans).startswith("__"):
+            msg.fill(ans); log(f"   . {label[:60]} -> {ans[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
+    # custom questions some companies add (props.customQuestions): any other visible box
+    for el in page.query_selector_all("input[type=text]:visible, input:not([type]):visible, textarea:visible"):
+        name = el.get_attribute("name") or ""
+        if name in YC_STD or el.get_attribute("type") == "tel" or (el.get_attribute("id") or "").startswith("react-select"):
+            continue
+        label = (el.get_attribute("aria-label") or el.get_attribute("placeholder") or "").strip().rstrip("*").strip()
+        if not label:
+            continue
+        ans = answer(label, job)
+        log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
+        if ans and not str(ans).startswith("__") and text_ok(label, ans):
+            el.fill(str(ans))
+        elif "*" in (el.get_attribute("placeholder") or "") or el.get_attribute("required") is not None:
+            missing.append(label[:90])
+        yield
+    return missing
+
+
+def submit_yc(page):
+    """The dialog's own success text is not known yet (10-30: the first live submit saw none), so the POST the form
+    sends to ycombinator.com is the confirmation: a 2xx answer = sent. On no answer, the dialog text goes in the
+    status so the wording can be learned."""
+    posts = []
+    def on_resp(r):
+        try:
+            if r.request.method == "POST" and "ycombinator.com" in r.url and not re.search(r"analytics|collect|track|log", r.url):
+                posts.append((r.status, r.url.split("?")[0][-70:]))
+        except Exception:
+            pass
+    page.on("response", on_resp)
+    page.click("[role=dialog] button[type=submit]:has-text('Submit')")
+    for _ in range(40):
+        yield 1
+        if challenge_on(page):
+            return False, "CAPTCHA: the YC apply form asked for a human check; submit it by hand (form filled, resume ready)"
+        if any(200 <= s < 300 for s, _u in posts) and _ > 1:
+            return True, f"success (POST {[p for p in posts if 200 <= p[0] < 300][-1]})"
+        bad = [p for p in posts if p[0] >= 400]
+        if bad and _ > 2:
+            return False, f"YC answered {bad[-1]}"
+        body = page.inner_text("body")
+        form_gone = not page.query_selector("input[name=first_name]:visible")
+        if re.search(r"application (has been |was )?(submitted|sent|received)|thanks? (you )?for (applying|your (application|interest))|"
+                     r"we.ll be in touch|has been sent to", body, re.I) or (form_gone and _ > 3 and re.search(r"thank|sent|success", body, re.I)):
+            return True, "success"
+        errs = [e.inner_text().strip() for e in page.query_selector_all("[role=alert]:visible, .error:visible, [class*=error]:visible")]
+        errs = [e for e in errs if e]
+        if errs and _ > 3:
+            return False, "; ".join(e[:80] for e in errs[:5])
+    dlg = page.query_selector("[role=dialog]")
+    tail = " ".join((dlg.inner_text() if dlg else "dialog closed").split())[-160:]
+    return False, f"no confirmation seen (posts {posts[-3:]}; dialog: {tail})"
+
 # ---------------- Greenhouse (job-boards.greenhouse.io) ----------------
 def gh_embed_url(url):
     """The bare embedded application form is faster and has a stable DOM across company skins."""
@@ -1560,17 +1681,23 @@ def job_task(page, job, dry, results, log_base=print):
     log = lambda s: log_base(f"[{tag}] {s.strip()}", flush=True)
     log(f"== {name}")
     ash = "ashbyhq" in job["url"]; lev = "jobs.lever.co" in job["url"]; wk = "workable.com" in job["url"]
-    rip = "ats.rippling.com" in job["url"]
+    rip = "ats.rippling.com" in job["url"]; yc = "ycombinator.com/companies/" in job["url"]
     shot = ""
-    if not (ash or lev or wk or rip) and "greenhouse" not in job["url"]:
+    if not (ash or lev or wk or rip or yc) and "greenhouse" not in job["url"]:
         status = f"NEEDS YOU: no adapter for {job.get('ats') or 'this site'} yet; resume ready at {job.get('resume')}"
+    elif yc and not dry:
+        # the YC dialog ends in a visible hCaptcha checkbox (never ticked here): the desk fills it in a tab the user
+        # sees (noVNC), so the tick + Submit is all that is left. NEEDS YOU keeps select() from retrying it.
+        from engine.apply.workday import request as desk_request
+        desk_request(job["url"], name, job.get("resume"), note=job.get("note"))
+        status = "NEEDS YOU: YC form has an hCaptcha checkbox; filled in the desk (http://127.0.0.1:6080): tick it and Submit"
     elif ash and not dry and ashby_cooling():
         # the tab is reused right after, so a filled-but-unsubmitted form would be lost anyway: don't spend the time
         status = "NEEDS YOU: Ashby cooldown after a bot-check; not opened (re-run after the cooldown, resume ready)"
     else:
         try:
             missing = yield from (fill_ashby(page, job, log) if ash else fill_lever(page, job, log) if lev
-                                  else fill_workable(page, job, log) if wk
+                                  else fill_workable(page, job, log) if wk else fill_yc(page, job, log) if yc
                                   else fill_rippling(page, job, log) if rip else fill_gh(page, job, log))
             stamp = datetime.datetime.now().strftime("%m%d-%H%M%S")
             shot = f"proof/{re.sub(r'[^A-Za-z0-9]+', '_', name)[:50]}_{stamp}.png"
@@ -1597,7 +1724,8 @@ def job_task(page, job, dry, results, log_base=print):
                 status = "STOPPED: kill switch before submit (" + (safety.killed() or "workspace/STOP")[:80] + ")"
             else:
                 sub = (lambda: submit_ashby(page)) if ash else (lambda: submit_lever(page)) if lev else \
-                      (lambda: submit_workable(page)) if wk else (lambda: submit_rippling(page)) if rip else (lambda: submit_gh(page, job))
+                      (lambda: submit_workable(page)) if wk else (lambda: submit_yc(page)) if yc else \
+                      (lambda: submit_rippling(page)) if rip else (lambda: submit_gh(page, job))
                 ok, msg = yield from sub()
                 if not ok and ash and msg.startswith("Missing entry"):
                     # fields that only appeared after earlier answers: fill them and submit once more
@@ -1630,7 +1758,7 @@ def job_task(page, job, dry, results, log_base=print):
 
 def ats_key(url):
     return "ashby" if "ashbyhq" in url else "lever" if "lever.co" in url else "workable" if "workable.com" in url \
-        else "rippling" if "rippling.com" in url else "greenhouse"
+        else "rippling" if "rippling.com" in url else "yc" if "ycombinator.com" in url else "greenhouse"
 
 
 def interleave(jobs):

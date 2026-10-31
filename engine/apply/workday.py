@@ -47,14 +47,14 @@ FIXED = {"legalNameSection_firstName": "first_name", "legalNameSection_lastName"
          "addressSection_postalCode": "zip", "email": "email", "phone-number": "phone"}
 
 
-def request(url, name=None, resume=None, kind="fill"):
+def request(url, name=None, resume=None, kind="fill", note=None):
     """Queue one desk request (atomic write): kind "fill" (walk the form) or "open" (open a Workday employer's site
     and press Sign In, for the user to sign in). Returns the request path."""
     os.makedirs(INBOX, exist_ok=True)
     key = re.sub(r"[^A-Za-z0-9]+", "_", url)[-80:]
     path = os.path.join(INBOX, key + ".json")
     tmp = os.path.join(INBOX, "." + key + ".json")
-    json.dump({"url": url, "name": name or url, "resume": resume, "kind": kind, "ts": time.time()},
+    json.dump({"url": url, "name": name or url, "resume": resume, "kind": kind, "note": note, "ts": time.time()},
               open(tmp, "w", encoding="utf-8"))
     os.replace(tmp, path)
     return path
@@ -249,6 +249,24 @@ def walk_sr(page, job, log):
     return "FILLED: review and submit in the desk (http://127.0.0.1:6080)"
 
 
+def walk_yc(page, job, log):
+    """A YC posting's own apply dialog, filled by the runner's fill_yc. The dialog ends in a visible hCaptcha
+    checkbox (10-30: "Required" under it, nothing sent without it), which is never ticked by the engine: the tab
+    stays open for the user's tick + Submit."""
+    from engine.apply.runner import fill_yc
+    g = fill_yc(page, job, log)
+    try:
+        while True:
+            d = next(g)
+            time.sleep(d if isinstance(d, (int, float)) else 0.1)
+    except StopIteration as e:
+        missing = e.value or []
+    if missing:
+        return "NEEDS YOU: " + " | ".join(missing)
+    # NEEDS YOU, not FILLED: select() skips NEEDS YOU, so a filled tab is never filled a second time
+    return "NEEDS YOU: filled in the desk (http://127.0.0.1:6080); tick the hCaptcha box and press Submit"
+
+
 def open_signin(page, url):
     """Open a Workday employer's site and press its Sign In button: the user signs in (or creates the account)."""
     page.goto(url, wait_until="domcontentloaded")
@@ -272,11 +290,13 @@ def handle(ctx, req, log=print):
             st = f"open failed: {str(e)[:80]}"
         log(f"desk: {req.get('name')} -> {st}")
         return st
-    job = {"name": req.get("name") or req["url"], "url": req["url"], "resume": req.get("resume"), "extra": {}}
+    job = {"name": req.get("name") or req["url"], "url": req["url"], "resume": req.get("resume"), "extra": {},
+           "note": req.get("note")}
     if job["resume"] and not os.path.isabs(job["resume"]):
         job["resume"] = os.path.join(WORKSPACE, job["resume"].replace("\\", "/"))
     try:
-        status = (walk_sr if "smartrecruiters.com" in job["url"] else walk)(page, job, log)
+        status = (walk_yc if "ycombinator.com/companies/" in job["url"] else
+                  walk_sr if "smartrecruiters.com" in job["url"] else walk)(page, job, log)
     except Exception as e:
         status = f"FAILED: {str(e)[:160]}"
     shot = ""
@@ -322,7 +342,7 @@ def loop(poll=3):
                 os.remove(path)
                 if req and req.get("url"):
                     last = handle(ctx, req)
-            for p in ctx.pages[1:][:-10]:  # keep the 10 newest tabs for the user (sign-ins, filled forms); older ones close
+            for p in ctx.pages[1:][:-15]:  # keep the 15 newest tabs for the user (sign-ins, filled forms); older ones close
                 try:
                     p.close()
                 except Exception:

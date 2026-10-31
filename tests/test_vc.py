@@ -44,3 +44,41 @@ def test_cover_note_uses_only_resume_facts_and_jd_terms():
     assert "At Acme Corp, I built Kafka pipelines in Python." in n and "I also cut p95 latency" in n
     assert "Rust" not in n and "hiring loop" not in n
     assert compose.role_name("Mid-level Full Stack Developer (Java/Spring)") == "Full Stack Developer"  # no JD term the resume lacks, no fact the resume didn't pick
+
+
+def test_yc_direct_queues_only_pages_with_the_apply_form(monkeypatch):
+    from engine.discovery import ats as A
+    pages = {"https://www.ycombinator.com/companies/acme/jobs/AbC-swe":
+             {"showDirectApply": True, "job": {"id": "42", "companyUrl": "/companies/acme", "visa": "Will sponsor"}},
+             "https://www.ycombinator.com/companies/beta/jobs/XyZ-swe": {"showDirectApply": False, "job": {}}}
+    monkeypatch.setattr(A, "yc_job", lambda u: pages.get(u))
+    leads = [vc._lead("Acme", "Software Engineer", "SF", "https://www.ycombinator.com/companies/acme/jobs/AbC-swe"),
+             vc._lead("Beta", "Software Engineer", "NY", "https://www.ycombinator.com/companies/beta/jobs/XyZ-swe"),
+             vc._lead("Gamma", "Software Engineer", "NY", "https://gamma.dev/careers")]
+    jobs, rest = vc.yc_direct(leads)
+    assert [(j["id"], j["ats"], j["token"]) for j in jobs] == [("yc-42", "yc", "acme")]
+    assert sorted(l["company"] for l in rest) == ["Beta", "Gamma"]
+
+
+def test_yc_urls_route_to_the_yc_filler():
+    from engine.apply.runner import ats_key
+    from engine.pipeline import ats_of
+    u = "https://www.ycombinator.com/companies/acme/jobs/AbC-swe"
+    assert ats_key(u) == "yc" and ats_of(u) == "yc"
+
+
+def test_yc_jobs_go_to_the_desk_and_are_never_retried(monkeypatch, tmp_path):
+    from engine.apply import runner, workday
+    sent = []
+    monkeypatch.setattr(workday, "request", lambda url, name=None, resume=None, kind="fill", note=None: sent.append((url, resume, note)))
+    monkeypatch.setattr(runner, "record", lambda *a, **k: None)
+    monkeypatch.chdir(tmp_path)
+    job = {"name": "Acme - Software Engineer", "url": "https://www.ycombinator.com/companies/acme/jobs/AbC-swe",
+           "resume": "out/r.pdf", "note": "hello"}
+    g = runner.job_task(None, job, False, [])
+    try:
+        while True: next(g)
+    except StopIteration as e:
+        status = e.value
+    assert status.startswith("NEEDS YOU") and "hCaptcha" in status
+    assert sent == [(job["url"], "out/r.pdf", "hello")]

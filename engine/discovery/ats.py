@@ -316,6 +316,17 @@ FETCH = {"greenhouse": greenhouse, "ashby": ashby, "lever": lever, "workable": w
          "smartrecruiters": smartrecruiters, "workday": workday, "icims": icims, "rippling": rippling, "jazzhr": jazzhr}
 
 
+def yc_job(url):
+    """Props of a ycombinator.com job page (Inertia data-page JSON): job (description, visa), company,
+    showDirectApply (the page's own no-account "Apply to <company>" form is there) and customQuestions."""
+    import html as H
+    m = re.search(r'data-page="([^"]*)"', _html(url) or "")
+    try:
+        return json.loads(H.unescape(m.group(1))).get("props") if m else None
+    except ValueError:
+        return None
+
+
 def job_description(job):
     """(raw json, plain-text JD, greenhouse questions or []) for one normalized job."""
     import html as H
@@ -364,6 +375,14 @@ def job_description(job):
         desc = (d or {}).get("description") or {}
         text = " ".join(str(v) for v in desc.values()) if isinstance(desc, dict) else str(desc)
         return d, clean(text), []
+    if job["ats"] == "yc":
+        d = yc_job(job["url"])
+        if not d:
+            return None, "", []
+        j = d.get("job") or {}
+        qs = [{"label": q.get("question") or q.get("label") or str(q), "required": bool(q.get("required"))}
+              for q in d.get("customQuestions") or [] if isinstance(q, dict)]
+        return d, clean(" ".join([j.get("description") or "", f"Visa: {j.get('visa') or ''}."])), qs
     if job["ats"] == "jazzhr":
         page = _html(f"https://{job['token']}.applytojob.com/apply/jobs/details/{job['id']}")
         for blob in re.findall(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', page or "", re.S):

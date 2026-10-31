@@ -358,6 +358,27 @@ def ingest(leads, source):
     return fresh, unresolved, dropped, len(q)
 
 
+def yc_direct(unresolved):
+    """YC leads with no employer ATS -> queue jobs (ats "yc") when the posting page has its own no-account apply form
+    (showDirectApply: name, email, LinkedIn, phone, city, work authorization, sponsorship, resume, a note). The runner
+    fills that form (fill_yc). One page GET per lead; the rest stay Work-at-a-Startup only (yc_waas.md)."""
+    import concurrent.futures as cf
+    leads = [l for l in unresolved if "ycombinator.com/companies/" in (l.get("lead_url") or "")]
+    with cf.ThreadPoolExecutor(8) as ex:
+        props = list(ex.map(lambda l: A.yc_job(l["lead_url"]), leads))
+    now, jobs, rest = datetime.now(timezone.utc).isoformat(), [], [l for l in unresolved if l not in leads]
+    for l, p in zip(leads, props):
+        if not p or not p.get("showDirectApply"):
+            rest.append(l)
+            continue
+        j = p.get("job") or {}
+        jobs.append({"id": f"yc-{j.get('id') or l['lead_url'].rsplit('/', 1)[-1]}", "ats": "yc",
+                     "token": (j.get("companyUrl") or "").rsplit("/", 1)[-1], "company": l["company"],
+                     "title": l["title"], "location": l["location"], "url": l["lead_url"].split("?")[0],
+                     "posted": now, "source": "vc:yc", "h1b": l.get("h1b"), "visa": j.get("visa")})
+    return jobs, rest
+
+
 def waas(unresolved):
     """YC postings with no public ATS: they take applications only through Work at a Startup (one YC profile, the
     user's account), so they are listed for the user in workspace/yc_waas.md instead of being dropped."""
@@ -420,7 +441,13 @@ def main(argv=None):
         print(f"{name}: {len(fresh)} queued (queue {qn}), {len(unresolved)} unresolved -> leads.json, dropped {dropped}")
         total[name] = {"postings": len(raw), "leads": len(leads), "queued": len(fresh), "unresolved": len(unresolved)}
         if name == "yc":
-            waas(unresolved)
+            direct, rest = yc_direct(unresolved)
+            from engine.discovery.scan import filter_jobs, merge_queue
+            ok, why = filter_jobs(direct, 3650)
+            qn = len(merge_queue(ok))
+            print(f"yc: {len(ok)} roles with the page's own apply form queued as ats=yc (queue {qn}), dropped {why}")
+            total[name]["direct"] = len(ok)
+            waas(rest)
         record("source", what="vc", portal=name, postings=len(raw), leads=len(leads), queued=len(fresh),
                unresolved=len(unresolved))
     return total

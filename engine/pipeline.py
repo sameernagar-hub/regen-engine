@@ -103,7 +103,8 @@ HUMAN_ONLY = ("arbitration", "assessment", "transcript", "export c", "any disput
 def ats_of(url):
     """ATS key from a posting URL (greenhouse / ashby / lever / workable / other)."""
     u = url or ""
-    return next((k for k, m in (("greenhouse", "greenhouse"), ("ashby", "ashbyhq"), ("lever", "lever.co"), ("workable", "workable"))
+    return next((k for k, m in (("greenhouse", "greenhouse"), ("ashby", "ashbyhq"), ("lever", "lever.co"), ("workable", "workable"),
+                                                ("yc", "ycombinator.com"))  # 10-30: a YC captcha wall must skip yc jobs
                  if m in u), "other")
 
 
@@ -139,6 +140,7 @@ def history(days=3, min_tries=4, wall_rate=0.5):
 
 
 ASHBY_PER_PASS = int(os.environ.get("REGEN_ASHBY_PER_PASS", "1"))
+YC_PER_PASS = int(os.environ.get("REGEN_YC_PER_PASS", "2"))  # YC dialogs go to the desk for the user's hCaptcha tick
 
 
 def in_flight():
@@ -213,6 +215,10 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
             continue  # this company is waiting on the user (arbitration, assessment, captcha)
         if per[co] >= per_company:
             continue
+        if j.get("ats") == "yc":  # each one waits on the user's hCaptcha tick in the desk: a few per pass, tabs stay few
+            if per["__yc__"] >= YC_PER_PASS:
+                continue
+            per["__yc__"] += 1
         if j.get("ats") == "ashby":  # Ashby bot-flags bursts (5 parallel workers tripped it on 10-10): a few per hour
             if per["__ashby__"] >= ASHBY_PER_PASS:
                 continue
