@@ -4,6 +4,15 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-10-30 (late) · YC direct apply through the desk
+- **YC postings with their own apply dialog** are queued as `ats=yc` (`vc.yc_direct`): 43 of the 43 YC roles with
+  no employer ATS had one. `runner.fill_yc` fills the dialog: name, email, LinkedIn, phone, city (it must pick a
+  place suggestion), both work-authorization answers from presets, resume, cover note and custom questions.
+- The dialog ends in a **visible hCaptcha checkbox**, and nothing is sent without it. The engine never ticks it, so
+  yc jobs go to the desk (http://127.0.0.1:6080), and the user ticks the box and presses Submit in the filled tab.
+  The status is NEEDS YOU, so a job is never filled twice. At most 2 yc jobs a pass (`REGEN_YC_PER_PASS`); the
+  desk keeps 15 tabs. Verify: `pytest tests/test_vc.py` (268 pass).
+
 ## [Unreleased] - 2026-10-30 · Venture portals and cover notes
 - **Venture-portal drivers** (`engine/discovery/vc.py`, `python -m engine vc [days] [--only next,yc,getro,consider] [--dry]`):
   YC job pages, Getro and Consider fund boards, and Next.js server-action portals (hosts in profile/vc_portals.json)
