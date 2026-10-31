@@ -42,4 +42,5 @@ def test_cover_note_uses_only_resume_facts_and_jd_terms():
     n = compose.cover_note("Senior Backend Engineer (Remote)", "Initech", jd, spec, want, facts, roles, skills, hits)
     assert n.startswith("I'm applying for the Backend Engineer role at Initech: the posting's focus on Kafka")
     assert "At Acme Corp, I built Kafka pipelines in Python." in n and "I also cut p95 latency" in n
-    assert "Rust" not in n and "hiring loop" not in n  # no JD term the resume lacks, no fact the resume didn't pick
+    assert "Rust" not in n and "hiring loop" not in n
+    assert compose.role_name("Mid-level Full Stack Developer (Java/Spring)") == "Full Stack Developer"  # no JD term the resume lacks, no fact the resume didn't pick

@@ -17,7 +17,7 @@ Complexity: S = summary sentences (~40), T = JD terms the candidate has (~30), n
 import html
 import re
 
-LEVEL = re.compile(r"\b(senior|sr\.?|staff|principal|lead|junior|jr\.?|intern(ship)?|new grad(uate)?|early career|entry[- ]level|"
+LEVEL = re.compile(r"\b(senior|sr\.?|staff|principal|lead|junior|jr\.?|mid[- ]level|intern(ship)?|new grad(uate)?|early career|entry[- ]level|"
                    r"i{1,3}|iv|[1-4])\b|\(.*?\)|,.*$| - .*$| \| .*$|\s+[–—-]\s+.*$", re.I)
 
 
@@ -166,7 +166,8 @@ def cover_note(title, company, jd, spec, want, facts, roles, skills, hits):
             shown |= hits(facts[f])
     for k in spec["skills"]:
         shown |= hits(spec.get("skill_text", {}).get(k, skills[k][1]))
-    terms = [display(t, skills) for t in ranked_terms(jd, shown & set(want)) if t not in GENERIC][:3]
+    items = {it.lower() for it in skill_items(skills)}  # named skills only ("Kubernetes"), never loose words ("review")
+    terms = [display(t, skills) for t in ranked_terms(jd, shown & set(want)) if t not in GENERIC and t in items][:3]
     fb = {"facts": facts, "roles": roles}
     pick = [f for _, fids in spec["roles"] for f in fids][:2]
     body = " ".join(s for s in (_sentence(f, fb, pick[i - 1] if i else None) for i, f in enumerate(pick)) if s)
