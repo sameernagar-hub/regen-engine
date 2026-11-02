@@ -624,15 +624,16 @@ def pick_option(options, ans):
             if len(nums) == 1 and (re.search(r"\b(over|above|more than|at least|greater than)\b", t, re.I) and n > nums[0]
                                    or re.search(r"\b(under|below|less than|up to)\b", t, re.I) and n < nums[0]):
                 return h  # open-ended buckets: "Over $75,000", "Under $65,000"
-    if re.fullmatch(r"\d{1,2}\+?", ans or "") and not any(t.strip() == ans for t, _ in options):
-        # 11-01: years "3" against buckets "0-2 / 2-4 / 4-6 / 7+" parked a Lever form; pick the bucket holding it
-        n = int(ans.rstrip("+"))
+    if re.fullmatch(r"\d{1,2}(\.\d{1,2})?\+?", ans or "") and not any(t.strip() == ans for t, _ in options):
+        # 11-01: years "3" against buckets "0-2 / 2-4 / 4-6 / 7+" parked a Lever form, a GPA "3.66" against
+        # "3.6 - 3.69"; pick the bucket holding it
+        n, num = float(ans.rstrip("+")), r"(\d{1,2}(?:\.\d{1,2})?)"
         for t, h in options:
-            m = re.fullmatch(r"\s*(\d{1,2})\s*(?:-|to|–)\s*(\d{1,2})\s*(years?|yrs?)?\s*", t, re.I)
-            if m and int(m.group(1)) <= n <= int(m.group(2)): return h
+            m = re.fullmatch(rf"\s*{num}\s*(?:-|to|–)\s*{num}\s*(years?|yrs?)?\s*", t, re.I)
+            if m and float(m.group(1)) <= n <= float(m.group(2)): return h
         for t, h in options:
-            m = re.fullmatch(r"\s*(\d{1,2})\s*\+\s*(years?|yrs?)?\s*", t, re.I)
-            if m and n >= int(m.group(1)): return h
+            m = re.fullmatch(rf"\s*{num}\s*\+\s*(years?|yrs?)?\s*", t, re.I)
+            if m and n >= float(m.group(1)): return h
     a = _norm_opt(ans)
     options = [(_norm_opt(t), h) for t, h in options]
     for t, h in options:

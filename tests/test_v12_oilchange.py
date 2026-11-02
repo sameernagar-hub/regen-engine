@@ -158,3 +158,6 @@ def test_years_answer_picks_its_bucket():
     assert pick_option([(t, t) for t in ("1", "2", "3", "4+")], "3") == "3"
     assert pick_option([(t, t) for t in ("1-2 years", "3-5 years", "6+ years")], "3") == "3-5 years"
     assert pick_option([(t, t) for t in ("ET", "CT", "MT", "PT", "Other")], "Eastern Time (ET)") == "ET"
+    gpa = [(t, t) for t in ("Below 3", "3.0-3.09", "3.5 - 3.59", "3.6 - 3.69", "3.7 - 3.79")]
+    assert pick_option(gpa, "3.66") == "3.6 - 3.69"
+    assert pick_option([(t, t) for t in ("< 2 years", "2 - 3 years", "4 - 6 years")], "3") == "2 - 3 years"
