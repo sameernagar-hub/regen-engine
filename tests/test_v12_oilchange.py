@@ -146,6 +146,7 @@ def test_sponsorship_lessons_11_01():
                                    "immigration sponsorship at this time.")
     for t in ("Bilingual Implementation Specialist", "Associate Technical Consultant"):
         assert NOT_ENGINEERING.search(t)
+    assert NOT_ENGINEERING.search("Sales Engineer, SLED") and NOT_ENGINEERING.search("Presales Engineer")
     assert not NOT_ENGINEERING.search("Software Engineer, Implementation Platform")
 
 

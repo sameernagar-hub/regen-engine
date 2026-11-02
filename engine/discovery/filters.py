@@ -58,7 +58,8 @@ def us_location(loc):
 # tag in the title doesn't make them engineering roles, so these are dropped even with a software word
 # 11-01: a bilingual implementation-specialist role and an associate technical consultant role were submitted
 NOT_ENGINEERING = re.compile(r"salesforce admin|\brevenue cycle\b|^consultant\b|\bconsultant,|sensors? integration|"
-                             r"\bbilingual\b|implementation specialist|technical consultant\b", re.I)
+                             r"\bbilingual\b|implementation specialist|technical consultant\b|"
+                             r"\b(pre-?)?sales engineer", re.I)  # 11-01: two sales-engineer roles went out in one pass
 
 
 def keep(dom, title, location, company=""):
