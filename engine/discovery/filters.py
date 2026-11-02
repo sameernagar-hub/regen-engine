@@ -56,7 +56,9 @@ def us_location(loc):
 
 # 10-13 rejection review: admin / consulting / hardware-integration titles were submitted and rejected; a "(Software)"
 # tag in the title doesn't make them engineering roles, so these are dropped even with a software word
-NOT_ENGINEERING = re.compile(r"salesforce admin|\brevenue cycle\b|^consultant\b|\bconsultant,|sensors? integration", re.I)
+# 11-01: a bilingual implementation-specialist role and an associate technical consultant role were submitted
+NOT_ENGINEERING = re.compile(r"salesforce admin|\brevenue cycle\b|^consultant\b|\bconsultant,|sensors? integration|"
+                             r"\bbilingual\b|implementation specialist|technical consultant\b", re.I)
 
 
 def keep(dom, title, location, company=""):

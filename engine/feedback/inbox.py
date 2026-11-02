@@ -35,7 +35,11 @@ CLASSES = [  # first match wins. Order matters: scam > offer > rejection > OA > 
                   r"not been selected|sorry to inform|application (was |has been )?automatically closed|"
                   # 10-28: "elected to move forward ... with candidates whose experience ... most closely align" (DRW,
                   # subject "Update on your interview") was read as a confirmation
-                  r"with candidates whose (experience|qualifications|background|skills)"),  # snippets often stop mid-sentence
+                  r"with candidates whose (experience|qualifications|background|skills)|"
+                  # 11-01: a recruiter's "we're unable to sponsor employment visas ... or consider OPT/CPT" was read
+                  # as a confirmation
+                  r"(unable|not able) to (sponsor|consider opt)|(can|will) not (be able to )?(sponsor|consider opt)|"
+                  r"due to you (now or in the future )?requiring"),  # snippets often stop mid-sentence
     ("oa", r"online assessment|coding (challenge|assessment|test)|hackerrank|codesignal|codility|karat|take-?home|"
            r"assessment invitation|complete the (following )?assessment"),
     # strong signals only: confirmations often say "if selected, we'll reach out to schedule an interview"

@@ -131,3 +131,19 @@ def test_missing_resume_is_rebuilt_from_spec(tmp_path, monkeypatch):
     assert built == ["Resume_Acme_123.pdf"]
     assert runner.ensure_resume({"resume": "out/Resume_Acme_123.pdf"}) and len(built) == 1  # exists: no rebuild
     assert not runner.ensure_resume({"resume": "out/Resume_Gone_9.pdf"})  # no spec: reported, not invented
+
+
+def test_sponsorship_lessons_11_01():
+    from engine.discovery.filters import NOT_ENGINEERING
+    from engine.tailoring.tailor import fit
+    assert inbox.classify("Quality Assurance Engineer at Acme",
+                          "However, we're unable to sponsor employment visas, take over sponsorship of an existing "
+                          "employment visa, or consider OPT/CPT.") == "rejection"
+    assert inbox.classify("Acme Full Stack Engineer Application",
+                          "we will not be able to move forward with your application due to you now or in the future "
+                          "requiring Acme to sponsor") == "rejection"
+    assert "no sponsorship" in fit("Authorized to work lawfully in the United States as Acme does not engage in "
+                                   "immigration sponsorship at this time.")
+    for t in ("Bilingual Implementation Specialist", "Associate Technical Consultant"):
+        assert NOT_ENGINEERING.search(t)
+    assert not NOT_ENGINEERING.search("Software Engineer, Implementation Platform")

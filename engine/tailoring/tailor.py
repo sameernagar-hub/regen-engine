@@ -160,7 +160,9 @@ BLOCKERS = [
     ("no sponsorship", r"(unable|not able|will not|won.t|cannot|can.t|do(es)? not|no longer)( be able to)? (to )?(provide |offer )?(visa )?sponsor|sponsorship (is )?not (available|provided|offered)|without (the need for )?(current or future )?(visa )?sponsorship|not eligible for (visa )?sponsorship"
      # 10-18: "does not offer support or sponsorship ... You should not apply if you will require ... sponsorship"
      r"|(do(es)? not|will not|cannot|unable to) (offer|provide)( [a-z-]+){0,3} or (visa )?sponsorship"
-     r"|should not apply .{0,80}sponsorship|(must|should) not (require|need) .{0,60}sponsorship"),
+     r"|should not apply .{0,80}sponsorship|(must|should) not (require|need) .{0,60}sponsorship"
+     # 11-01: "<employer> does not engage in immigration sponsorship at this time" -> submitted, then rejected for it
+     r"|(do(es)? not|will not|cannot|unable to) (engage in|support|pursue|participate in)( [a-z-]+){0,2} sponsorship"),
     ("grad window", r"(graduating|graduation date|expected to graduate|graduate) (in|between|from|during)[^.]{0,40}(2027|2028)|class of (2027|2028)|(2027|2028) (start|new grads?|graduates)|"
                     r"degree (by|in|before|no later than) [^.]{0,30}(2027|2028)|(currently|actively) (enrolled|pursuing)[^.]{0,60}(degree|program|university)|"
                     r"rising (junior|senior)|returning to school"),  # 10-07 rejection from a 2027-grad rotational program: "Bachelor's Degree by May/June 2027"
