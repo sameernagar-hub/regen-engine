@@ -147,3 +147,13 @@ def test_sponsorship_lessons_11_01():
     for t in ("Bilingual Implementation Specialist", "Associate Technical Consultant"):
         assert NOT_ENGINEERING.search(t)
     assert not NOT_ENGINEERING.search("Software Engineer, Implementation Platform")
+
+
+def test_years_answer_picks_its_bucket():
+    from engine.apply.runner import pick_option
+    opts = [(t, t) for t in ("entry level", "0-2", "2-4", "4-6", "7+")]
+    assert pick_option(opts, "3") == "2-4"
+    assert pick_option(opts, "9") == "7+"
+    assert pick_option([(t, t) for t in ("1", "2", "3", "4+")], "3") == "3"
+    assert pick_option([(t, t) for t in ("1-2 years", "3-5 years", "6+ years")], "3") == "3-5 years"
+    assert pick_option([(t, t) for t in ("ET", "CT", "MT", "PT", "Other")], "Eastern Time (ET)") == "ET"
