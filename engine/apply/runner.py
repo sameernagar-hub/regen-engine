@@ -1190,7 +1190,12 @@ def yc_radio(page, name, label, job, log):
 
 
 def fill_yc(page, job, log):
-    page.goto(job["url"].split("?")[0], wait_until="networkidle")
+    # 11-01: YC pages keep a connection open, so "networkidle" timed out in the desk (15 s) on every posting
+    page.goto(job["url"].split("?")[0], wait_until="domcontentloaded", timeout=30000)
+    try:
+        page.wait_for_load_state("networkidle", timeout=8000)
+    except Exception:
+        pass
     try:  # the form is a dialog: "Apply to role" opens it when the posting allows direct applies (else -> YC sign-in)
         page.click("a:has-text('Apply to role')", timeout=15000)
         page.wait_for_selector("[role=dialog] input[name=first_name]", timeout=15000)
