@@ -77,8 +77,10 @@ def score(job, lane_rates=None):
         parts["tier"] = 4
     elif t.get("tier2") and t["tier2"].search(co):
         parts["tier"] = 2
-    if t.get("sponsors") and t["sponsors"].search(co):
+    if (t.get("sponsors") and t["sponsors"].search(co)) or job.get("h1b") is True:  # portal says "Will sponsor"
         parts["sponsor"] = 2
+    if (job.get("source") or "").startswith("vc:"):
+        parts["startup"] = 1  # user 11-01: YC and fund-portfolio startups too
     # user, 2026-10-10: onsite roles land more often than remote ones; prefer them (Bay Area most), remote still applied
     loc = job.get("location", "") or ""
     if re.search(r"\bremote\b|anywhere|work from home", loc, re.I) and not re.search(r"hybrid|on.?site|office", loc, re.I):

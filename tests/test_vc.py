@@ -89,3 +89,18 @@ def test_work_authorization_wordings_answer_from_presets():
     for q in ("Are you currently authorized to reside and work in the United States?",
               "Are you presently authorized under U.S. immigration laws to work in the United States?"):
         assert runner.answer(q, {"extra": {}}) == runner.P.get("work_authorized_us")
+
+
+def test_gate_drops_portals_that_wont_sponsor_and_priority_boosts_sponsors(monkeypatch):
+    from engine.discovery import priority
+    monkeypatch.setattr(vc, "load_domain", lambda: None)
+    monkeypatch.setattr(vc, "keep", lambda dom, t, loc, co: None)
+    leads = [vc._lead("Acme", "Software Engineer", "SF", "u1", h1b=False),
+             vc._lead("Beta", "Software Engineer", "SF", "u2", h1b=True), vc._lead("Gamma", "Software Engineer", "SF", "u3")]
+    out, dropped = vc.gate(leads)
+    assert [l["lead_url"] for l in out] == ["u2", "u3"] and dropped == {"no sponsorship": 1}
+    monkeypatch.setattr(priority, "tiers", lambda: {})
+    _, parts = priority.score({"title": "Software Engineer", "company": "Beta", "h1b": True, "source": "vc:yc"})
+    assert parts["sponsor"] == 2 and parts["startup"] == 1
+    _, parts = priority.score({"title": "Software Engineer", "company": "Gamma", "source": "ats"})
+    assert "sponsor" not in parts and "startup" not in parts

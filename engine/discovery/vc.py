@@ -122,9 +122,12 @@ def yc_jobs():
                 continue
             for j in posts:
                 visa = j.get("visa") or ""
+                # 11-01: "US citizen/visa only" = the startup won't sponsor (33 of 40 queued YC roles); the user
+                # needs sponsorship later, so gate() drops them (h1b False)
                 out.append(_lead(j.get("companyName"), j.get("title"), j.get("location"),
                                  "https://www.ycombinator.com" + (j.get("url") or ""),
-                                 h1b=True if visa == "Will sponsor" else None, portal="yc",
+                                 h1b=True if visa == "Will sponsor" else False if visa == "US citizen/visa only" else None,
+                                 portal="yc",
                                  domain=sites.get(j.get("companyName"))))
     return out
 
@@ -300,7 +303,7 @@ def gate(leads):
     for l in leads:
         if not l["company"] or not l["title"]:
             continue
-        why = keep(dom, l["title"], l["location"], l["company"])
+        why = keep(dom, l["title"], l["location"], l["company"]) or ("no sponsorship" if l.get("h1b") is False else None)
         if why:
             dropped[why] = dropped.get(why, 0) + 1
             continue
