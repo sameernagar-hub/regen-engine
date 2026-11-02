@@ -1,3 +1,22 @@
+# Handoff: 11-01 ~22:45. Stack is DOWN (gear N, drained, compose stop, volumes kept). Local commits on main -> reposync PR.
+
+## Done 11-01
+- Gmail review -> lessons: OPT/CPT sponsorship rejection wording (inbox), "does not engage in sponsorship" JDs (fit
+  gate), bilingual / implementation-specialist / technical-consultant / sales-engineer titles are non-engineering.
+  Two no-sponsor employers added to the volume's domains.json (names stay out of the repo).
+- YC "US citizen/visa only" roles are dropped at discovery (33 of 40 queued YC roles); portal "Will sponsor" and
+  venture-portal jobs get priority boosts.
+- Filler: YC pages load on domcontentloaded (networkidle hung the desk), numeric/decimal range buckets (years, GPA),
+  "(XX)" abbreviations match bare options. 10+ bank answers (backup answers.json.bak-20261101).
+- Run 21:20-22:40: 7 submitted. Stuck: 19 parked questions, 19 JD-gated, 6 desk hCaptcha, 5 Lever CAPTCHAs.
+
+## Next
+- On start: shift to gear 2. The desk lost its filled YC tabs on stop (Drillbit, Legion Health, GhostEye, Evidence,
+  Reframe): re-request them (`engine batch <name> <id>` then workday.request), then tell the user to tick hCaptcha.
+- Never recreate the desk while it holds filled tabs.
+- Throughput: parked questions are the bottleneck; ask the user for the repeating ones early in the session.
+- Pending user: Sezzle transcript upload; Plaid AI opinion; Telnyx distributed-systems rating; PlayStation W2 rate.
+
 # Handoff: 10-30 ~23:45. Stack is DOWN (gear N, drained, compose stop, volumes kept). main = 4a05818 pushed.
 
 ## Done 10-30
