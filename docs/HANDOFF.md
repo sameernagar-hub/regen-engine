@@ -1,3 +1,28 @@
+# Handoff: 11-02 ~22:40. Stack is STOPPED mid-batch (gear N, not drained; volumes kept). Local commits -> reposync PR.
+
+## Done 11-02
+- Started at gear 3, REGEN_MAX_PER_DAY=250 / REGEN_MAX=250 (6 appliers). Run 22:11-22:40: 0 submitted, 15 NEEDS YOU,
+  27 skipped, 1 failed. Stopped early: the user's Claude session limit, not the machine.
+- 9 parked questions answered from presets (relocation Yes, Master's / Computer Science, home city, no accommodation,
+  essential functions Yes); backup answers.json.bak-20261102. Retry batch answers_20261102_221144 (16 jobs).
+- Mail since 11-01: 8 confirmations, 10 rejections, no OA / interview.
+- Commit 2ed8d6e: /desk page (apps/web/app/desk/page.tsx): the desk noVNC inline via the password-carrying
+  /api/reach/desk `open` link (the user never types the VNC password; the password itself stays, it keeps other web
+  pages off ws://127.0.0.1:6080), plus every hCaptcha / Lever CAPTCHA / Ashby human-click job with Open posting /
+  Mark submitted / Skip. New POST /api/human/mark (records SUBMITTED / SKIPPED "by you"). Status text points to
+  http://127.0.0.1:3000/desk. Front page: 8 cylinders, V8 firing order.
+- CAPTCHA bypass was asked for and declined: human checks stay the user's (now on /desk).
+
+## Next
+- NOT BUILT OR TESTED: run tests, `compose build`, recreate api + web (appliers + pipeline when claimed is 0), open
+  /desk in the browser: iframe connects, Mark submitted removes the row, the front-page engine renders 8 cylinders.
+- On start: shift to gear 2 (gear 3 if the user asks). 5 claimed + 4 inbox run batches were left: check the
+  supervisor requeues the claimed ones.
+- The desk lost its 9 YC fills (names on /desk): re-request them (runner.ensure_resume + workday.request; run from
+  /data/workspace, paths are relative).
+- Pending user: 7 employer-specific questions (product familiarity, travel, AI opinion, ratings, a transcript upload,
+  attention checks); see /needs.
+
 # Handoff: 11-01 ~22:45. Stack is DOWN (gear N, drained, compose stop, volumes kept). Local commits on main -> reposync PR.
 
 ## Done 11-01
