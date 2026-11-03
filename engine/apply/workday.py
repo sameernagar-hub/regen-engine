@@ -228,7 +228,7 @@ def walk_sr(page, job, log):
     except Exception:
         pass
     if page.query_selector(BOT_CHECK) or re.search(r"an error occurred, please try again", page.inner_text("body"), re.I):
-        return "NEEDS YOU: SmartRecruiters shows a human check in the desk (http://127.0.0.1:6080); solve it, then press Fill again"
+        return "NEEDS YOU: SmartRecruiters shows a human check in the desk (http://127.0.0.1:3000/desk); solve it, then press Fill again"
     missing = []
     for _ in range(3):  # the form may reveal more questions after the first answers / a Next step
         missing = fill_page(page, job, log)
@@ -264,7 +264,7 @@ def walk_yc(page, job, log):
     if missing:
         return "NEEDS YOU: " + " | ".join(missing)
     # NEEDS YOU, not FILLED: select() skips NEEDS YOU, so a filled tab is never filled a second time
-    return "NEEDS YOU: filled in the desk (http://127.0.0.1:6080); tick the hCaptcha box and press Submit"
+    return "NEEDS YOU: filled in the desk (http://127.0.0.1:3000/desk); tick the hCaptcha box and press Submit"
 
 
 def open_signin(page, url):

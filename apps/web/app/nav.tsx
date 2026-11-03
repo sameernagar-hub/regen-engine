@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { API_ORIGIN } from "../lib/types";
 
 const HERE: [string, string][] = [
-  ["/live", "Live"], ["/control", "Control"], ["/applications", "Applications"], ["/needs", "Needs you"], ["/reach", "Reach"],
+  ["/live", "Live"], ["/control", "Control"], ["/applications", "Applications"], ["/needs", "Needs you"], ["/desk", "Desk"], ["/reach", "Reach"],
   ["/outreach", "Outreach"], ["/room", "Engine room"], ["/gearbox", "Gearbox"], ["/oilchange", "Maintenance"], ["/mcp", "MCP cord"], ["/job", "Job"], ["/evals", "Evals"], ["/facts", "Fact Bank"], ["/graph", "Memory graph"],
 ];
 

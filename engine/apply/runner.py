@@ -1710,7 +1710,7 @@ def job_task(page, job, dry, results, log_base=print):
         # sees (noVNC), so the tick + Submit is all that is left. NEEDS YOU keeps select() from retrying it.
         from engine.apply.workday import request as desk_request
         desk_request(job["url"], name, job.get("resume"), note=job.get("note"))
-        status = "NEEDS YOU: YC form has an hCaptcha checkbox; filled in the desk (http://127.0.0.1:6080): tick it and Submit"
+        status = "NEEDS YOU: YC form has an hCaptcha checkbox; filled in the desk (http://127.0.0.1:3000/desk): tick it and Submit"
     elif ash and not dry and ashby_cooling():
         # the tab is reused right after, so a filled-but-unsubmitted form would be lost anyway: don't spend the time
         status = "NEEDS YOU: Ashby cooldown after a bot-check; not opened (re-run after the cooldown, resume ready)"

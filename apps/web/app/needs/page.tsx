@@ -74,7 +74,7 @@ function NeedsView() {
               </div>
               <ul className="chips">{g.jobs.slice(0, 8).map((j) => <li key={(j.url || j.job) + j.status} className="chip">{j.url ? <a href={j.url} target="_blank" rel="noreferrer noopener">{j.job}</a> : j.job}</li>)}{g.jobs.length > 8 && <li className="chip">+{g.jobs.length - 8}</li>}</ul>
               {g.legal ? (
-                <p className="dim small">Yours to decide on the employer’s page (legal / attestation / human check). The form is prepared and the resume is ready.</p>
+                <p className="dim small">Yours to decide on the employer’s page (legal / attestation / human check). The form is prepared and the resume is ready. CAPTCHAs and desk forms: <a href="/desk">Desk</a>.</p>
               ) : done[g.q] ? (
                 <p className="small">Answered: <b>{done[g.q]}</b></p>
               ) : (

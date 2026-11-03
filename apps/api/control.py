@@ -390,6 +390,29 @@ def reach_mark(body: dict, request: Request):
     return {"ok": True, "url": url, "mark": mark, "ts": ev.get("ts") if isinstance(ev, dict) else None}
 
 
+@router.post("/human/mark")
+def human_mark(body: dict, request: Request):
+    """The user finished (or dropped) a parked job by hand on the /desk page: a hCaptcha ticked in the desk, a Lever
+    CAPTCHA or an Ashby human click on the employer's page. The desk never sees that Submit, so the user's mark is
+    the record: an application event SUBMITTED / SKIPPED "by you". Only for jobs waiting on the user right now; same
+    guard as /reach/mark (REGEN_API_REACH=1 and a request from this computer)."""
+    if not REACH_WRITE:
+        raise HTTPException(403, "writes are disabled (REGEN_API_REACH=1 in the bank, REGEN_API_WRITE=1 locally)")
+    if not TRUST_PORT and (request.client.host if request.client else "") not in LOCAL:
+        raise HTTPException(403, "only from this computer")
+    from apps.api.main import _human
+    from engine.feedback.events import record
+    url, mark = str(body.get("url") or ""), str(body.get("mark") or "")
+    if mark not in ("submitted", "skipped"):
+        raise HTTPException(400, "mark must be submitted or skipped")
+    item = next((h for h in _human() if h.url == url), None)
+    if not item:
+        raise HTTPException(404, "not waiting on you")
+    ev = record("application", job=item.job, url=url, status=REACH_STATUS[mark], detail="by you (desk page)",
+                resume=item.resume, dry=False, by="user")
+    return {"ok": True, "url": url, "mark": mark, "ts": ev.get("ts") if isinstance(ev, dict) else None}
+
+
 @router.get("/control/bench")
 def bench():
     """Latest benchmark run B1-B7 (engine/bench.py; the supervisor saves one every REGEN_BENCH_HOURS)."""

@@ -17,6 +17,7 @@ const CYL: Part[] = [  // clockwise from the top, which is also the firing order
   { key: "control", href: "/control", label: "Control", about: "Start a run with your filters; watch every applier, tab and question as it happens.", tone: "#6fb7ff" },
   { key: "applications", href: "/applications", label: "Applications", about: "Every application with the exact resume, answers and proof that were sent.", tone: "#f2c14e" },
   { key: "needs", href: "/needs", label: "Needs you", about: "Questions only you can answer, grouped so one answer clears many jobs.", tone: "#ff9f43" },
+  { key: "desk", href: "/desk", label: "Desk", about: "Human checks in one place: the desk browser inline, no password prompt, and every CAPTCHA job.", tone: "#ffd166" },
   { key: "reach", href: "/reach", label: "Reach", about: "Workday and iCIMS jobs with a tailored resume and a copy-ready fill kit.", tone: "#b18cff" },
   { key: "outreach", href: "/outreach", label: "Outreach", about: "Truthful notes to recruiters after each application, drafted from your facts.", tone: "#5ee6b5" },
   { key: "evals", href: "/evals", label: "Evals", about: "Benchmarks B1-B10 on every commit: answer rate, JD coverage, fit gate, latency.", tone: "#ff7eb6" },
@@ -28,7 +29,7 @@ const GEARBOX: Part = { key: "gearbox", href: "/gearbox", label: "Gearbox", abou
 const CORD: Part = { key: "mcp", href: "/mcp", label: "MCP cord", about: "Your AI client plugs in here and operates the engine at zero cost: 35 tools, from memory to the gearbox.", tone: "#5ee6b5" };
 const OIL: Part = { key: "oilchange", href: "/oilchange", label: "Maintenance", about: "Clears what applications leave behind (expired files, old code and alert mail, closed postings) so the search stays fast. Shows the engine’s health and each clean-up live.", tone: "#f0b64c" };
 const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL];
-const FIRING = [0, 2, 4, 6, 1, 3, 5];  // radial engines fire every other cylinder
+const FIRING = [0, 7, 3, 2, 5, 4, 6, 1];  // eight cylinders since Desk joined (11-02): the classic V8 order 1-8-4-3-6-5-7-2
 
 const ang = (i: number) => -90 + (i * 360) / CYL.length;
 const at = (deg: number, r: number) => [CX + Math.cos((deg * Math.PI) / 180) * r, CY + Math.sin((deg * Math.PI) / 180) * r];
