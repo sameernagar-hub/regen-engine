@@ -1,3 +1,29 @@
+# Handoff: 11-03 ~22:05. Stack is STOPPED (user: shut it down now): gear N, 4 batches were still claimed (supervisor
+# requeues them on start), `compose stop`, volumes kept. On start: shift to gear 2. Local commits on main -> reposync PR.
+
+## Done 11-03
+- Tests 272 pass; all images rebuilt; /desk verified: the desk embeds and connects with no password prompt after
+  the CSP fix (frame-src now allows the noVNC origin, next.config.mjs).
+- Reposync was blocked by the privacy scan: handoff text named the user's city and employers. Scrubbed and squashed
+  into the unpushed handoff commit. Rule: handoffs never name employers or the city (the scan also flags substrings,
+  e.g. a CSS property containing a denylisted company name).
+- 8 bank answers drafted from presets (answers.json.bak-20261103); 20 parked jobs requeued via answer_queue._retry
+  (run with -e PYTHONPATH=/app -w /data/workspace). The local regen-engine MCP has writes OFF: edit answers.json
+  in the volume instead.
+- A "real V8" front engine was built and REJECTED by the user (pistons not joined to rods, cylinders overlapping,
+  untidy). It was removed (commit dropped, never pushed); the earlier radial engine is live again.
+
+## Next (front engine, the user's words: "the earlier version was good")
+- Keep the earlier engine (apps/web/app/page.tsx, radial). Only fix: Desk and Gearbox must be clearly separate.
+  Cause: 8 cylinders on a circle put cylinder 5 (Desk) at 90 deg, straight down, on the gearbox at GBX (600, 696).
+  Smallest fix: rotate the ring by half a step (ang(i) = -90 + 22.5 + i*45) so no cylinder points straight down,
+  or move the gearbox off the bottom axis; then check the Desk label and the Gearbox label do not touch (screenshot).
+- Only if the user asks again for a V8: their picture is 4 cylinders on the left and 4 on the right, each bank in a
+  straight row (left-right-left-right firing), pistons visibly joined to their rods, no cylinder overlapping another.
+- Desk: the 9-10 YC fills listed on /desk are stale (the desk holds 1 tab); re-request them before telling the user to
+  tick hCaptcha. Human checks waiting: ~189 (Ashby clicks, Lever CAPTCHAs). Deemed-export questions need the user.
+- The user wants a warning near 90% of the 5-hour limit (get_usage); this session stopped at ~88%.
+
 # Handoff: 11-02 ~22:40. Stack is STOPPED mid-batch (gear N, not drained; volumes kept). Local commits -> reposync PR.
 
 ## Done 11-02
