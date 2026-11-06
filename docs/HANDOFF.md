@@ -1,3 +1,24 @@
+# Handoff: 11-06 ~00:30. Stack is STOPPED cleanly (gear N, inbox + claimed drained, `compose stop`, volumes kept).
+# On start: shift to gear 2. Local commits on main -> reposync PR.
+
+## Done 11-05
+- Resume builder (763a7ec, d7ba762): dense one page filled from a ranked reserve of Fact Bank bullets; 2-line summary;
+  every JD keyword the page lacks goes on a "Role Keywords" line (keywords.py, uncapped, JD spelling kept).
+- Fact Bank "variants": 91 one-line wordings of 42 facts, each leading with a different angle; tailor ranks them per
+  JD, resume.fit prints the first that fits one line. role_prefix adds the teaching role. Backup fact_bank.json.bak-20261105.
+- Feedback loop: resume.qa gate (pages, fill, wrapped bullets, duplicates); selftest.py hourly over recent JDs
+  (batch holds if most fail; 7/8 pass at the start); learn.py weights wordings by OA/interview vs rejection outcomes.
+- Title filter: software, AI and CS-related hardware only (no sales/solutions/support/analyst); domains.json in the
+  volume (.bak-20261105); answer retries go through the filter too (cc74d85).
+- 16 bank answers from presets (answers.json.bak-20261105). Run 21:00-00:30: 26 submitted, 76 NEEDS YOU, 76 skipped.
+
+## Next
+- Pending user: employer-familiarity questions (5 roles at one streaming employer), a past-employer confidentiality
+  affirmation, a new-grad "<1 year experience" question, a distributed-systems rating, a W2 hourly rate, a human
+  verification question, a motor/controls experience question; desk hCaptcha tick; one Ashby bot-check.
+- Filler gaps: required cover-letter FILE upload; resume upload failed on two employers' forms.
+- The appliers were not recreated on the newest image (only the pipeline/answers were): fine, tailoring runs in the pipeline.
+
 # Handoff: 11-03 ~22:05. Stack is STOPPED (user: shut it down now): gear N, 4 batches were still claimed (supervisor
 # requeues them on start), `compose stop`, volumes kept. On start: shift to gear 2. Local commits on main -> reposync PR.
 
