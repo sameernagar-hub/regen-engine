@@ -27,6 +27,7 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 
 - **Gets there first.** Polls ~6,400 employer boards on 9 ATSs, six big-tech careers portals and the venture-fund job portals (YC, Getro and Consider fund boards) directly, rescanning every few minutes, so roles are caught the hour they go live. Startups with no public board are traced through their own careers pages. [Discovery →](https://github.com/sameernagar-hub/regen-engine/wiki/Discovery)
 - **Never bluffs.** Every resume line comes from your Fact Bank; a validator rejects anything else. Each application also carries a short cover note built from the same facts. [Tailoring →](https://github.com/sameernagar-hub/regen-engine/wiki/Tailoring)
+- **Fills the page for each posting.** Each fact has several one-line wordings, each leading with a different angle (performance, reliability, AI, front end, data, hardware). The engine picks the wording that best matches the posting, fills one dense page from a ranked reserve of real bullets, and lists every remaining JD keyword on its own line. Each resume is self-tested before it is sent (one page, no wrapped bullets, page filled, keyword coverage), and wordings that led to interviews rank higher next time.
 - **Skips what you'd lose.** A fit gate reads the whole job description first: sponsorship, years, clearance, stack. [Fit gate →](https://github.com/sameernagar-hub/regen-engine/wiki/Fit-Gate)
 - **Learns from no.** Every rejection is read back and compared with the job descriptions that weren't rejected. [Feedback →](https://github.com/sameernagar-hub/regen-engine/wiki/Rejection-Feedback)
 - **Proves it.** A submit counts only when the confirmation page is saved. [Evidence →](https://github.com/sameernagar-hub/regen-engine/wiki/Evidence)
@@ -38,7 +39,7 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 |:-:|:-:|:-:|:-:|:-:|
 | applications submitted | best day | employer boards watched | MCP tools | model API keys |
 
-From the engine's own ledger as of 2026-10-30 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 269 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
+From the engine's own ledger as of 2026-10-30 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 272 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
 
 ## How it works
 

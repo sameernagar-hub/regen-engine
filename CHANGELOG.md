@@ -4,6 +4,22 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-05 · Dense JD-shaped resumes, keyword line, QA gate and wording feedback loop
+- **Full page, one line per bullet** (`resume.fit`): smaller justified type; the page fills from a ranked reserve of
+  Fact Bank bullets and projects (`spec["_more"]`) until it is full, then uses the largest type that still fits. The
+  summary is capped at 2 sentences. Every role in the bank gets a place (`role_prefix`).
+- **Wordings per fact** (Fact Bank `variants`): several one-line rewordings of the same fact, each leading with a
+  different angle. `tailor` ranks them by JD match; `resume.pick_text` prints the first that fits one line (width
+  measured in points). `validate` checks every pick exists in the bank.
+- **Role Keywords line** (`engine/tailoring/keywords.py`): every technical term in the JD that the page does not show
+  yet, in the JD's own spelling, uncapped; recorded per job (`spec["jd_keywords"]`, resume event). `REGEN_JD_KEYWORDS=0`
+  turns it off.
+- **QA gate + self-test + learning**: `resume.qa` (pages, fill ratio, wrapped bullets, duplicates, picks) skips a broken
+  resume; `selftest.py` tailors recent JDs hourly and holds the batch if most fail; `learn.py` weights wordings by
+  OA/interview vs rejection outcomes (`workspace/variant_stats.json`), capped so the JD match always leads.
+- **Titles**: software, AI and CS-related hardware only; sales, solutions, support and analyst roles are dropped in
+  discovery and in answer retries. Verify: `pytest` (272 pass); `python -m engine.tailoring.selftest 8` (7/8 pass).
+
 ## [Unreleased] - 2026-10-30 (late) · YC direct apply through the desk
 - **YC postings with their own apply dialog** are queued as `ats=yc` (`vc.yc_direct`): 43 of the 43 YC roles with
   no employer ATS had one. `runner.fill_yc` fills the dialog: name, email, LinkedIn, phone, city (it must pick a
