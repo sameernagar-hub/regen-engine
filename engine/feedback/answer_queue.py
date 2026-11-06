@@ -126,6 +126,12 @@ def _retry(jobs):
         e = find_entry(job)
         if not e or e.get("url") in seen or st.get(e.get("url")) == "SUBMITTED":
             continue
+        try:  # 11-06: a retry never brings back a title the current filter drops (sales, support, analyst roles)
+            from engine.discovery.filters import keep, load_domain
+            if keep(load_domain(), str(job).split(" - ", 1)[-1], "United States", "") not in (None, "location", "non-US"):
+                continue
+        except Exception:
+            pass
         seen.add(e["url"])
         mine = job_extras().get(job)
         if mine:
