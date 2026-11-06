@@ -59,7 +59,9 @@ def us_location(loc):
 # 11-01: a bilingual implementation-specialist role and an associate technical consultant role were submitted
 NOT_ENGINEERING = re.compile(r"salesforce admin|\brevenue cycle\b|^consultant\b|\bconsultant,|sensors? integration|"
                              r"\bbilingual\b|implementation specialist|technical consultant\b|"
-                             r"\b(pre-?)?sales engineer", re.I)  # 11-01: two sales-engineer roles went out in one pass
+                             r"\b(pre-?)?sales engineer|solutions? (engineer|architect|consultant)|support engineer|"
+                             r"customer (success|engineer)|technical account|\banalyst\b", re.I)
+# 11-01: two sales-engineer roles went out in one pass. 11-05 (user): software, AI and CS-related hardware only
 
 
 def keep(dom, title, location, company=""):

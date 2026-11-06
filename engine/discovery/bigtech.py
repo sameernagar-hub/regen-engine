@@ -24,12 +24,13 @@ from engine.feedback.events import record
 
 UA = {"User-Agent": "Mozilla/5.0", "Accept": "application/json", "Content-Type": "application/json"}
 AMAZON_Q = ["software development engineer", "software engineer", "machine learning engineer", "data engineer",
-            "new grad", "university graduate", "data scientist", "support engineer"]
+            "new grad", "university graduate", "data scientist", "AI engineer", "hardware engineer"]
 NVIDIA_Q = ["software engineer new college grad", "software engineer", "AI engineer", "systems software engineer",
             "new college grad", "data scientist"]
 # 10-21: the same search words on every other site, new grad / early career included (user: "new grad in all of them")
 BIG_Q = ["software engineer", "new grad", "university graduate", "early career", "entry level", "machine learning engineer",
-         "data scientist", "data analyst", "research engineer", "solutions engineer", "support engineer", "test engineer"]
+         "data scientist", "research engineer", "AI engineer", "hardware engineer", "systems software engineer"]
+# 11-05 (user): software, AI and CS-related hardware roles only; no sales / solutions / support / analyst searches
 NV = "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite"
 BIG_EVERY_MIN = float(os.environ.get("REGEN_BIGTECH_EVERY_MIN", "60"))
 PAUSE = 1.0  # seconds between requests to one site: a slow, steady client (Microsoft answered 429 to a burst)

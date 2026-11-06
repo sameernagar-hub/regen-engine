@@ -90,7 +90,7 @@ def _sentences(text):
     return [s.strip() for s in re.split(r"(?<=[.!?])\s+(?=[A-Z])", text or "") if len(s.strip()) > 20]
 
 
-def summary(jd, lane, lanes, hits, max_sentences=4):
+def summary(jd, lane, lanes, hits, max_sentences=4, max_chars=None):
     """Opener from the routed lane, then the user-written sentences (any lane) that answer the most JD terms."""
     own = _sentences(lane.get("summary", ""))
     if not own:
@@ -103,6 +103,8 @@ def summary(jd, lane, lanes, hits, max_sentences=4):
     for s in best:
         if len(out) == max_sentences:
             break
+        if max_chars and len(" ".join(out + [s])) > max_chars:  # 11-05: summary stays ~2 printed lines
+            continue
         new = hits(s) - covered
         if not new and s not in own:  # a borrowed sentence must bring a JD term the summary doesn't have yet
             continue
