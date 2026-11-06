@@ -101,21 +101,38 @@ def tailor(spec, jd, title=None, lanes=None):
     by_role = {}
     for fid, text in resume.FACTS.items():
         by_role.setdefault(fid.split("_")[0], []).append(fid)
+    from engine.tailoring import learn
+    won = learn.weights()  # outcome-learned weight per "fid#variant" (learn.py), small next to JD matching
+    jd_hits = lambda f, i: score(resume.texts(f)[i])
+    best = lambda f: max(jd_hits(f, i) + won.get(f"{f}#{i}", 0.0) for i in range(len(resume.texts(f))))
+    fact_pick = {}
+    # 11-05: every role in the bank gets a place (more real experience on the page); lane roles keep their order
+    lane_roles = [[rk, list(f)] for rk, f in spec["roles"]]
+    used_prefix = {f[0].split("_")[0] for _, f in lane_roles if f}
+    spare = sorted(p for p in by_role if p not in used_prefix)
+    for rk in resume.ROLES:
+        if rk not in {r for r, _ in lane_roles}:
+            pre = resume.ROLE_PREFIX.get(rk) or next((p for p in spare if p == rk[0]), None)
+            if pre and by_role.get(pre):
+                lane_roles.append([rk, by_role[pre][:1]])
     roles, more = [], {}
-    for rk, fids in spec["roles"]:
+    for rk, fids in lane_roles:
         prefix = fids[0].split("_")[0] if fids else rk[0]
         pool = list(dict.fromkeys(fids + by_role.get(prefix, [])))  # lane order first, then the rest of the role
         pos = {f: i for i, f in enumerate(pool)}
-        rank = sorted(pool, key=lambda f: (-score(resume.FACTS[f]), pos[f]))
+        rank = sorted(pool, key=lambda f: (-best(f), pos[f]))
         roles.append([rk, distinct(rank, len(fids))])
         more[rk] = [f for f in distinct(rank, len(rank)) if f not in roles[-1][1]]  # 11-05 reserve for resume.fit
+        for f in pool:  # wordings of this fact, best JD fit (plus learned weight) first; resume.fit takes the first one-liner
+            fact_pick[f] = sorted(range(len(resume.texts(f))), key=lambda i: (-(jd_hits(f, i) + won.get(f"{f}#{i}", 0.0)), i))
     projects = spec.get("projects", [])
     if projects:
-        allp = list(dict.fromkeys(projects + list(resume.PROJECTS)))
+        allp = [p for p in dict.fromkeys(projects + list(resume.PROJECTS))
+                if not (p == "os_teach" and any(r == "csuf" for r, _ in roles))]  # the role already says it
         ptxt = lambda p: " ".join([resume.PROJECTS[p][0]] + resume.PROJECTS[p][2])
         ppos = {p: i for i, p in enumerate(allp)}
         rankp = sorted(allp, key=lambda p: (-score(ptxt(p)), ppos[p]))
-        projects, more["_projects"] = rankp[:len(projects)], [p for p in rankp[len(projects):] if score(ptxt(p))]
+        projects, more["_projects"] = rankp[:len(projects)], rankp[len(projects):]
     spos = {k: i for i, k in enumerate(spec["skills"])}
     skills = sorted(spec["skills"], key=lambda k: (-score(resume.SKILLS[k][1]), spos[k]))
     # one extra skills line the lane doesn't carry, when the JD clearly asks for it (e.g. Salesforce, AI dev tools)
@@ -124,7 +141,7 @@ def tailor(spec, jd, title=None, lanes=None):
         skills.append(extra)
     # v0.11 coverage fill: JD terms the candidate has but no chosen line shows yet pull in (at most 2) more of the
     # Fact Bank's own skills lines, best gap-closer first; never invented wording, so the page stays truthful.
-    shown = set().union(*(hits(resume.FACTS[f]) for _, fids in roles for f in fids), *(hits(resume.SKILLS[k][1]) for k in skills))
+    shown = set().union(*(hits(resume.texts(f)[fact_pick[f][0]]) for _, fids in roles for f in fids), *(hits(resume.SKILLS[k][1]) for k in skills))
     for _ in range(2):
         gap = want - shown
         best = max((k for k in resume.SKILLS if k not in skills), key=lambda k: len(hits(resume.SKILLS[k][1]) & gap), default=None)
@@ -135,7 +152,7 @@ def tailor(spec, jd, title=None, lanes=None):
     # v0.9 JD-first composition: each skills line leads with the posting's terms, in the posting's spelling
     skill_text = {k: t for k in skills
                   if (t := resume.jd_spelling(compose.order_skill_line(resume.SKILLS[k][1], want), jd)) != resume.SKILLS[k][1]}
-    out = dict(spec, roles=roles, projects=projects, skills=skills, skill_text=skill_text, _more=more)
+    out = dict(spec, roles=roles, projects=projects, skills=skills, skill_text=skill_text, _more=more, fact_pick=fact_pick)
     if title is not None:  # headline names the role + the posting's top terms; summary leads with what answers it
         out["headline"] = compose.headline(title, jd, want, resume.SKILLS, spec["headline"])
         out["summary"] = compose.summary(jd, spec, lanes or {}, hits, max_sentences=2, max_chars=290)  # 11-05: two lines
@@ -144,7 +161,7 @@ def tailor(spec, jd, title=None, lanes=None):
     covered = set()
     for _, fids in roles:
         for f in fids:
-            covered |= hits(resume.FACTS[f])
+            covered |= hits(resume.texts(f)[fact_pick[f][0]])
     for k in skills:
         covered |= hits(skill_text.get(k, resume.SKILLS[k][1]))
     for p in projects:
@@ -153,7 +170,7 @@ def tailor(spec, jd, title=None, lanes=None):
         covered |= hits(out[k]) if isinstance(out.get(k), str) else set()
     from engine.tailoring import keywords
     if keywords.enabled():  # 11-05 (user): every JD keyword on the page; the ones from the JD are listed apart
-        page = " ".join([out.get("headline", ""), out.get("summary", "")] + [resume.FACTS[f] for _, fids in roles for f in fids]
+        page = " ".join([out.get("headline", ""), out.get("summary", "")] + [resume.texts(f)[fact_pick[f][0]] for _, fids in roles for f in fids]
                         + [skill_text.get(k, resume.SKILLS[k][1]) for k in skills]
                         + [" ".join([resume.PROJECTS[p][0]] + resume.PROJECTS[p][2]) for p in projects])
         out["jd_keywords"] = keywords.missing(jd, page)

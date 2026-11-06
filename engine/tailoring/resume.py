@@ -16,17 +16,62 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from engine.config import WORKSPACE, profile_file
 
 FACTS = ROLES = PROJECTS = SKILLS = EDU = CONTACT = None
+VARIANTS = {}  # 11-05: fid -> one-line rewordings of that same fact, each leading with a different angle
 
 
 OVERLAPS = []
 
 
 def load_bank():
-    global FACTS, ROLES, PROJECTS, SKILLS, EDU, CONTACT, OVERLAPS
+    global FACTS, ROLES, PROJECTS, SKILLS, EDU, CONTACT, OVERLAPS, VARIANTS, ROLE_PREFIX
     if FACTS is None:
         fb = json.load(open(os.environ.get("REGEN_FACTS", profile_file("fact_bank.json")), encoding="utf-8"))
         FACTS, ROLES, PROJECTS, SKILLS, EDU, CONTACT = fb["facts"], fb["roles"], fb["projects"], fb["skills"], fb["education"], fb["contact"]
         OVERLAPS = fb.get("_overlaps", [])
+        VARIANTS = fb.get("variants", {})
+        ROLE_PREFIX = fb.get("role_prefix", {})
+
+
+ROLE_PREFIX = {}
+
+
+def texts(fid):
+    """Every wording the bank holds for one fact: index 0 is the fact itself, then its variants."""
+    return [FACTS[fid]] + list(VARIANTS.get(fid, []))
+
+
+def width(text, size):
+    """Printed width in points of a bullet's text (bold runs measured in bold)."""
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    w, bold = 0.0, False
+    for part in re.split(r"(</?b>)", text):
+        if part in ("<b>", "</b>"):
+            bold = part == "<b>"
+            continue
+        w += stringWidth(html_unescape(re.sub(r"<[^>]+>", "", part)), "Helvetica-Bold" if bold else "Helvetica", size)
+    return w
+
+
+def html_unescape(t):
+    import html
+    return html.unescape(t)
+
+
+LINE_W = 8.5 * 72 - 2 * 0.45 * 72 - 9 - 2  # page width - margins - bullet indent - safety
+
+
+def pick_text(spec, fid, size):
+    """The first wording in the spec's JD-ranked order that fits on one printed line; else the narrowest one."""
+    opts = texts(fid)
+    order = [i for i in spec.get("fact_pick", {}).get(fid, []) if i < len(opts)] or list(range(len(opts)))
+    for i in order:
+        if width(opts[i], size) <= LINE_W:
+            return opts[i]
+    WRAPPED.append(fid)
+    return min(opts, key=lambda t: width(t, size))
+
+
+WRAPPED = []
 
 
 # Same skill, other spellings a JD (and its ATS keyword scan) may use. A skills line may show "Canonical (Alias)" only
@@ -71,6 +116,7 @@ def validate(spec):
     bad = [f"skill_text:{k}" for k, v in spec.get("skill_text", {}).items() if k not in SKILLS or not same_items(strip_aliases(v), SKILLS[k][1])]
     bad += [f"role:{r}" for r, _ in spec["roles"] if r not in ROLES]
     bad += [f"fact:{f}" for _, fids in spec["roles"] for f in fids if f not in FACTS]
+    bad += [f"fact_pick:{f}" for f, ix in spec.get("fact_pick", {}).items() if f not in FACTS or any(i >= len(texts(f)) for i in ix)]
     bad += [f"project:{p}" for p in spec.get("projects", []) if p not in PROJECTS]
     bad += [f"skill:{k}" for k in spec["skills"] if k not in SKILLS]
     if bad:
@@ -86,7 +132,7 @@ BODY = S("b", alignment=TA_JUSTIFY)
 BUL = S("bul", leftIndent=9, bulletIndent=1, spaceAfter=0.4, alignment=TA_JUSTIFY)
 L = S("l", f="Helvetica-Bold", s=8.9)
 R = S("r", s=8.7, alignment=2)
-SIZES = [(10.4, 8.9), (10.2, 8.8), (10.0, 8.7), (9.8, 8.6), (9.6, 8.5), (9.4, 8.4), (9.2, 8.3), (9.0, 8.2), (8.8, 8.1)]
+SIZES = [(11.4, 9.6), (11.0, 9.3), (10.7, 9.1), (10.4, 8.9), (10.2, 8.8), (10.0, 8.7), (9.8, 8.6), (9.6, 8.5), (9.4, 8.4), (9.2, 8.3), (9.0, 8.2), (8.8, 8.1)]
 
 def row(left, right):
     t = Table([[Paragraph(left, L), Paragraph(right, R)]], colWidths=[6.0 * inch, 1.6 * inch])
@@ -99,6 +145,7 @@ def section(story, title):
 
 def build(spec):
     load_bank()
+    WRAPPED.clear()
     os.makedirs(os.path.join(WORKSPACE, "out"), exist_ok=True)
     out = os.path.join(WORKSPACE, "out", spec["file"])
     st = [Paragraph(CONTACT["name"], NAME), Paragraph(CONTACT["line"], CON),
@@ -108,7 +155,7 @@ def build(spec):
     for rk, fids in spec["roles"]:
         c, t, loc, d = ROLES[rk]
         st.append(row(f"{c} -- {t}, {loc}", d))
-        st += [Paragraph(FACTS[f], BUL, bulletText="•") for f in fids]
+        st += [Paragraph(pick_text(spec, f, BUL.fontSize), BUL, bulletText="•") for f in fids]
     if spec.get("projects"):
         section(st, spec.get("projects_title", "PROJECTS"))
         for pk in spec["projects"]:
@@ -169,10 +216,32 @@ def fit(spec):
     for lead, size in SIZES:  # then the largest type that still fits
         if _pages(cur, lead, size) == 1:
             spec.update(roles=cur["roles"], projects=cur.get("projects", []))
-            return build(cur)
+            out = build(cur)
+            spec["_qa"] = qa(out, cur, size)
+            return out
     if len(cur.get("projects") or []) > 1:
         return fit(dict(cur, projects=cur["projects"][:-1], _more={}))
     raise SystemExit("still 2 pages: drop a bullet from the spec")
+
+
+def fill_ratio(pdf):
+    """How far down the page the text reaches (1.0 = the bottom margin)."""
+    from pypdf import PdfReader
+    page = PdfReader(pdf).pages[0]
+    ys = []
+    page.extract_text(visitor_text=lambda t, cm, tm, fd, fs: ys.append(tm[5] * cm[3] + cm[5]) if t.strip() else None)
+    h = float(page.mediabox.height)
+    top, bottom = h - 0.35 * 72, 0.3 * 72
+    return round((top - min(ys)) / (top - bottom), 3) if ys else 0.0
+
+
+def qa(pdf, spec, size):
+    """Self-test of one built resume (11-05): one page, bullets on one line, page filled, no repeated fact."""
+    from pypdf import PdfReader
+    fids = [f for _, fs in spec["roles"] for f in fs]
+    return {"pages": len(PdfReader(pdf).pages), "size": size, "bullets": len(fids), "wrapped": list(WRAPPED),
+            "fill": fill_ratio(pdf), "duplicates": len(fids) - len(set(fids)),
+            "picks": {f: texts(f).index(pick_text(spec, f, size)) for f in fids}}
 
 
 def main(argv=None):

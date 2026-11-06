@@ -6,7 +6,8 @@ Lanes and routing rules live in profile/lanes.json (your domains). See profile.e
 Usage: python -m engine batch <batch-name> <job_id,job_id,...> [--force]   (ids from workspace/queue.json)
        --force   keep jobs that have JD blockers (they're still printed)
 """
-import json, os, re, sys
+import json
+import os, re, sys, time
 
 from engine.config import WORKSPACE, in_workspace, profile_file
 from engine.discovery.ats import job_description
@@ -61,8 +62,32 @@ def _match(cov):
     return jd_match(cov)
 
 
+def _hourly_checks():
+    """11-05 feedback loop: recount wording outcomes, then self-test the resume pipeline on recent JDs (once an hour).
+    Returns a reason string when the self-test fails on most samples (the batch then stops), else None."""
+    from engine.tailoring import learn, selftest
+    stamp = os.path.join(WORKSPACE, "selftest.json")
+    try:
+        if os.path.exists(stamp) and time.time() - os.path.getmtime(stamp) < 3600:
+            rep = json.load(open(stamp))
+        else:
+            learn.refresh()
+            rep = selftest.run(quiet=True)
+            print(f"selftest: {rep['passed']}/{rep['of']} resumes pass the QA gate; wording stats refreshed", flush=True)
+    except Exception as e:  # the checks never stop the engine by crashing
+        print(f"selftest skipped: {str(e)[:100]}", flush=True)
+        return None
+    if rep["of"] >= 4 and rep["passed"] < rep["of"] / 2:
+        return f"resume self-test failing ({rep['passed']}/{rep['of']}): " + "; ".join({r["why"] for r in rep["rows"] if not r["ok"]})[:200]
+    return None
+
+
 def build(name, ids, force=False):
     cfg = load_lanes()
+    halt = _hourly_checks()
+    if halt:
+        print("  x batch held: " + halt, flush=True)
+        return None
     with in_workspace():
         q = load_queue()
         for d in ("specs", "batches", "jd"):
@@ -125,13 +150,18 @@ def build(name, ids, force=False):
             except SystemExit as e:  # one resume that won't fit never stops the whole batch
                 print(f"  x {label}: resume: {e}"); skipped.append(label); continue
             from engine.tailoring.compose import ats_check
+            from engine.tailoring import selftest
             cov["ats"] = ats_check(pdf, set(cov["jd_terms_you_have"]))  # what a parser reads back out of the PDF
+            qa = spec.get("_qa") or {}
+            if qa and (qa["pages"] != 1 or qa["duplicates"]):  # 11-05 QA gate: never send a broken resume
+                print(f"  x {label}: resume QA: {selftest.why(qa, cov['ats']['score'])}"); skipped.append(label); continue
             flagged = [qq["label"][:100] for qq in questions if qq.get("required") and FLAG.search(qq["label"])]
             print(f"{label} | {j['ats']} | lane={ln} | resume covers {len(cov['on_resume'])}/{len(cov['jd_terms_you_have'])} JD terms, ATS text {cov['ats']['score']}%"
                   + (f" | flagged: {flagged}" if flagged else ""))
             # transparency: the exact Fact Bank entries this resume used, so every claim is traceable
             record("resume", job=label, url=j["url"], lane=ln, file=spec["file"], facts=spec["roles"],
-                   projects=spec.get("projects", []), skills=spec["skills"], coverage=cov, note=note)
+                   projects=spec.get("projects", []), skills=spec["skills"], coverage=cov, note=note,
+                   qa=spec.get("_qa"), jd_keywords=spec.get("jd_keywords", []))
             batch.append({"name": label, "url": j["url"], "ats": j["ats"], "resume": os.path.relpath(pdf, WORKSPACE),
                           "lane": ln, "extra": {}, "salary_range": parse_range(jd), "jd_match": _match(cov), "note": note})
         # after reading every description: highest JD match first (stable, so ties keep queue priority)

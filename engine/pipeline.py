@@ -304,6 +304,9 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
     from engine.tailoring.batch import build
     beat("pipeline", state=f"gate + tailoring {len(chosen)} jobs", stage="apply")
     batch = build(f"run_{stamp}", [str(j["id"]) for j in chosen])
+    if batch is None:  # 11-05: resume self-test failed; nothing is sent until the resume pipeline passes again
+        record("pipeline", stage="build", jobs=0, held="resume self-test")
+        return []
     record("pipeline", stage="build", jobs=len(batch))
     # hybrid scale-out: REGEN_DOCKER_PARTS=K extra parts go to container workers (engine/apply/worker.py) while
     # `appliers` local browsers take the rest; REGEN_APPLIERS=docker sends everything to the containers.
