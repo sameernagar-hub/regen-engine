@@ -30,17 +30,17 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 - **Fills the page for each posting.** Each fact has several one-line wordings, each leading with a different angle (performance, reliability, AI, front end, data, hardware). The engine picks the wording that best matches the posting, fills one dense page from a ranked reserve of real bullets, and lists every remaining JD keyword on its own line. Each resume is self-tested before it is sent (one page, no wrapped bullets, page filled, keyword coverage), and wordings that led to interviews rank higher next time.
 - **Skips what you'd lose.** A fit gate reads the whole job description first: sponsorship, years, clearance, stack. [Fit gate →](https://github.com/sameernagar-hub/regen-engine/wiki/Fit-Gate)
 - **Learns from no.** Every rejection is read back and compared with the job descriptions that weren't rejected. [Feedback →](https://github.com/sameernagar-hub/regen-engine/wiki/Rejection-Feedback)
-- **Never stalls.** When a form stops on a question, the engine calls you twice. If neither call is picked up, **Shadow**, your AI delegate, picks up and finishes the application as you, truthfully, from your presets and Fact Bank. The supervisor records who cleared every form: you, Shadow, or the engine's own rules. [Shadow ↓](#shadow)
+- **Never stalls.** When a form stops on a question, the engine calls you twice. If neither call is picked up, **Shadow**, your AI delegate, picks up and finishes the application as you, truthfully, from your presets and Fact Bank. The supervisor records who cleared every form: you, Shadow, or the engine's own rules. [Shadow →](https://github.com/sameernagar-hub/regen-engine/wiki/Shadow)
 - **Proves it.** A submit counts only when the confirmation page is saved. [Evidence →](https://github.com/sameernagar-hub/regen-engine/wiki/Evidence)
 - **Costs nothing to think.** No model keys: Claude, Cursor or any MCP client operates it. [Zero cost →](https://github.com/sameernagar-hub/regen-engine/wiki/Zero-Cost-and-MCP)
 
 ## By the numbers
 
-| 387 | 49 | ~6,400 | 43 | 0 |
+| 424 | 49 | ~6,400 | 43 | 0 |
 |:-:|:-:|:-:|:-:|:-:|
 | applications submitted | best day | employer boards watched | MCP tools | model API keys |
 
-From the engine's own ledger as of 2026-10-30 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 286 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
+From the engine's own ledger as of 2026-11-06 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 286 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
 
 ## How it works
 
