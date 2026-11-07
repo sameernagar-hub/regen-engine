@@ -30,6 +30,7 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 - **Fills the page for each posting.** Each fact has several one-line wordings, each leading with a different angle (performance, reliability, AI, front end, data, hardware). The engine picks the wording that best matches the posting, fills one dense page from a ranked reserve of real bullets, and lists every remaining JD keyword on its own line. Each resume is self-tested before it is sent (one page, no wrapped bullets, page filled, keyword coverage), and wordings that led to interviews rank higher next time.
 - **Skips what you'd lose.** A fit gate reads the whole job description first: sponsorship, years, clearance, stack. [Fit gate →](https://github.com/sameernagar-hub/regen-engine/wiki/Fit-Gate)
 - **Learns from no.** Every rejection is read back and compared with the job descriptions that weren't rejected. [Feedback →](https://github.com/sameernagar-hub/regen-engine/wiki/Rejection-Feedback)
+- **Never stalls.** When a form stops on a question, the engine calls you twice. If neither call is picked up, **Shadow**, your AI delegate, picks up and finishes the application as you, truthfully, from your presets and Fact Bank. The supervisor records who cleared every form: you, Shadow, or the engine's own rules. [Shadow ↓](#shadow)
 - **Proves it.** A submit counts only when the confirmation page is saved. [Evidence →](https://github.com/sameernagar-hub/regen-engine/wiki/Evidence)
 - **Costs nothing to think.** No model keys: Claude, Cursor or any MCP client operates it. [Zero cost →](https://github.com/sameernagar-hub/regen-engine/wiki/Zero-Cost-and-MCP)
 
@@ -39,7 +40,7 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 |:-:|:-:|:-:|:-:|:-:|
 | applications submitted | best day | employer boards watched | MCP tools | model API keys |
 
-From the engine's own ledger as of 2026-10-30 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 272 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
+From the engine's own ledger as of 2026-10-30 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 284 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
 
 ## How it works
 
@@ -61,6 +62,22 @@ leftovers: tailored resumes, job-description copies, verification-code and job-a
 The supervisor measures them every 5 minutes as a health score and clears them once a day (or on a click at `/oilchange`),
 playing each step live and logging what each one removed. Proof is shrunk, never deleted; your Fact Bank, answers, application log and starred mail are never touched.
 
+### Shadow
+
+```
+ parked on a question ──► call 1 ──(timer)──► call 2 ──(timer)──► Shadow picks up ──► retried, answered as you
+                             └────── you pick up (answer it, or press Pick up) ──────► the job waits for you
+```
+
+Shadow is your AI delegate (for its author, Claude, through the MCP cord). The gates treat Shadow and you as the same
+person: an answer Shadow gives carries the weight of one you typed, and every one is logged with its source. The
+backend is one small timer (`engine/shadow.py`, a 30-second tick in the answers container, no network calls); `/shadow`
+in the control room shows the ignition sequence, every line ringing with its countdown, and who cleared the forms in
+the last 24 hours. Modes: **two calls, then Shadow** (default), **Shadow always** (nothing parks), **only me**.
+Shadow never invents experience or a fact (if the honest answer is no, it says no), never ticks a CAPTCHA, and
+declines every EEO question. Concept credit: the watching-to-autopilot handoff of
+[Oto.ai](https://github.com/KrishnaJ-bit/Memory_Meets_Motion) (Memory Meets Motion, 2026).
+
 Everything runs in Docker on your machine: a pipeline, N appliers (headed Chromium), a supervisor that scales them,
 a feedback loop on your inbox, a Postgres ledger, the control room, and the MCP server.
 [Architecture →](https://github.com/sameernagar-hub/regen-engine/wiki/Architecture)
@@ -79,7 +96,8 @@ Step by step: [Running the engine](https://github.com/sameernagar-hub/regen-engi
 
 ## Guardrails
 
-Legal, sponsorship and EEO answers come only from your presets. CAPTCHAs and human checks always go to you.
+Legal and sponsorship answers come from your presets, from you, or from Shadow acting for you (kept on that one job);
+EEO questions are always declined. CAPTCHAs and human checks always go to you; Shadow never touches them.
 Personal data is only typed into employer-owned ATS forms that pass a scam check. Your data stays on your machine;
 the only things published are an anonymized activity feed and the code, and a privacy gate blocks names and secrets from both. [Truthfulness and safety →](https://github.com/sameernagar-hub/regen-engine/wiki/Truthfulness-and-Safety)
 

@@ -589,6 +589,11 @@ def status():
     f["containers"] = containers()
     f["limits"] = dict(zip(("min", "max"), limits(int(os.environ.get("REGEN_MIN_APPLIERS", "1")),
                                                   int(os.environ.get("REGEN_MAX_APPLIERS", "7")))))
+    try:
+        from engine.shadow import oversight
+        f["shadow"] = oversight()  # who is answering: you or Shadow
+    except Exception as e:
+        f["shadow"] = {"error": str(e)[:120]}
     return f
 
 
@@ -1033,7 +1038,14 @@ def supervise(argv=None):
                 live = liveness()  # running but silent -> restarted (audited)
                 svc.update({k: v for k, v in live.items() if v != "ok"})
                 threading.Thread(target=inventory, daemon=True).start()  # stats take ~1 s each: off the 15 s loop
-            beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap, services=svc)
+            if n % 4 == 0:  # every minute: who is answering, you or Shadow (engine/shadow.py)
+                try:
+                    from engine.shadow import oversight
+                    shadow_seen = oversight()
+                except Exception as e:
+                    shadow_seen = {"error": str(e)[:120]}
+            beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap, services=svc,
+                 shadow=locals().get("shadow_seen"))
         except Exception as ex:  # never die: a supervisor that crashes leaves the fleet at its last size
             print(f"supervisor: {ex}", flush=True)
             beat("supervisor", state=f"error: {str(ex)[:80]}")

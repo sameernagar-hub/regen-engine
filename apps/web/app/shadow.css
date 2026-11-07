@@ -1,0 +1,85 @@
+/* Shadow (11-06): the ignition backup. Every class and keyframe is namespaced shadow-* (CSS names are global). */
+.shadow-page { --shadow: #a78bfa; }
+.shadow-tag { font-size: 22px; letter-spacing: .04em; color: var(--shadow); margin: 0 0 6px; }
+
+/* the ignition sequence: parked piston -> call 1 plug -> call 2 plug -> Shadow cylinder */
+.shadow-ignition svg { width: 100%; height: auto; display: block; overflow: visible; }
+.shadow-wire { fill: none; stroke: #ffffff1f; stroke-width: 6; stroke-linecap: round; }
+.shadow-spark { fill: none; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 8 92; opacity: 0; filter: drop-shadow(0 0 6px #f2c14e); }
+.shadow-spark.on { opacity: 1; animation: shadow-run 2.4s linear infinite; }
+@keyframes shadow-run { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+.shadow-block { fill: #11151c; stroke: #ffffff2e; stroke-width: 2; }
+.shadow-block-s { stroke: var(--shadow); }
+.shadow-piston { fill: #2a3240; stroke: #ffffff40; }
+.shadow-piston.stalled { fill: #3a2a1a; stroke: #ff9f43; }
+.shadow-cyl.armed .shadow-piston { fill: #a78bfa55; stroke: var(--shadow); animation: shadow-fire 1.6s ease-in-out infinite; }
+.shadow-rod { fill: #ffffff30; }
+.shadow-cyl.armed .shadow-rod { animation: shadow-fire 1.6s ease-in-out infinite; }
+@keyframes shadow-fire { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(14px); } }
+.shadow-plug-body { fill: #1a1f29; stroke: #f2c14e; stroke-width: 2; }
+.shadow-plug-halo { fill: #f2c14e10; stroke: none; }
+.shadow-plug.ringing .shadow-plug-halo { animation: shadow-ring 1.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.shadow-plug.ringing .shadow-plug-body { fill: #f2c14e22; }
+@keyframes shadow-ring { 0% { transform: scale(.7); opacity: .9; fill: #f2c14e40; } 100% { transform: scale(1.35); opacity: 0; } }
+.shadow-bolt { fill: none; stroke: #f2c14e; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.shadow-node-label { fill: #e8ecf2; font-size: 17px; text-anchor: middle; font-weight: 600; }
+.shadow-node-label.shadow-s { fill: var(--shadow); }
+.shadow-node-sub { fill: var(--dim); font-size: 13px; text-anchor: middle; }
+
+/* mode */
+.shadow-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.shadow-mode { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 12px 14px; border-radius: 10px;
+  background: #ffffff08; border: 1px solid #ffffff1a; color: inherit; cursor: pointer; font: inherit; }
+.shadow-mode.on { border-color: var(--shadow); background: #a78bfa1f; }
+.shadow-mode:focus-visible { outline: 2px solid var(--shadow); outline-offset: 2px; }
+.shadow-idle { margin-top: 14px; gap: 8px; align-items: center; }
+.shadow-idle input { width: 72px; background: #ffffff0d; border: 1px solid #ffffff26; color: inherit; border-radius: 6px; padding: 4px 8px; font: inherit; }
+
+/* the switchboard */
+.shadow-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.shadow-line { padding: 12px 14px; border-radius: 10px; background: #ffffff06; border: 1px solid #ffffff14; }
+.shadow-line[data-state="call 2"] { border-color: #a78bfa66; }
+.shadow-line-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.shadow-line-head b { overflow-wrap: anywhere; }
+.shadow-bulbs { display: inline-flex; gap: 4px; }
+.shadow-bulbs i { width: 9px; height: 9px; border-radius: 50%; background: #ffffff1f; display: block; }
+.shadow-bulbs i.on { background: #f2c14e; box-shadow: 0 0 8px #f2c14e; animation: shadow-blink 1.2s ease-in-out infinite; }
+.shadow-bulbs i:last-child { background: #a78bfa33; }
+@keyframes shadow-blink { 50% { opacity: .35; } }
+.shadow-q { margin: 6px 0 0; overflow-wrap: anywhere; }
+.shadow-gauge { height: 4px; border-radius: 2px; background: #ffffff12; margin: 10px 0 8px; overflow: hidden; }
+.shadow-gauge span { display: block; height: 100%; background: linear-gradient(90deg, #f2c14e, #a78bfa); transition: width 1s linear; }
+
+.shadow-policy { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.shadow-policy ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.shadow-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.shadow-feed li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 8px 0; border-top: 1px solid #ffffff10; }
+.shadow-feed li > span:last-child { overflow-wrap: anywhere; }
+.shadow-feed li[data-by="shadow"] b { color: var(--shadow); }
+
+@media (prefers-reduced-motion: reduce) {
+  .shadow-spark.on, .shadow-cyl.armed .shadow-piston, .shadow-cyl.armed .shadow-rod, .shadow-plug.ringing .shadow-plug-halo, .shadow-bulbs i.on { animation: none; }
+}
+
+/* responsive ignition: a row on desktop, a column on phones */
+.shadow-ignition .shadow-tall { display: none; max-width: 360px; margin: 0 auto; }
+.shadow-node-label.shadow-left, .shadow-node-sub.shadow-left { text-anchor: start; }
+@media (max-width: 640px) { .shadow-ignition .shadow-wide { display: none; } .shadow-ignition .shadow-tall { display: block; } }
+
+/* who answered: bars grow in */
+.shadow-who h2 span { font-weight: 400; margin-left: 8px; }
+.shadow-bar { display: grid; grid-template-columns: 110px 1fr 40px; gap: 10px; align-items: center; margin: 8px 0; }
+.shadow-bar b { text-align: right; }
+.shadow-bar-track { height: 10px; border-radius: 5px; background: #ffffff10; overflow: hidden; }
+.shadow-bar-track span { display: block; height: 100%; border-radius: 5px; background: #6fb7ff; transition: width .8s cubic-bezier(.2,.8,.2,1);
+  animation: shadow-grow .9s cubic-bezier(.2,.8,.2,1) both; transform-origin: left; }
+.shadow-bar[data-by="you"] .shadow-bar-track span { background: #f2c14e; }
+.shadow-bar[data-by="shadow"] .shadow-bar-track span { background: var(--shadow); box-shadow: 0 0 12px #a78bfa88; }
+@keyframes shadow-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* lines slide in as they start ringing; the page fades up */
+.shadow-line { animation: shadow-in .45s ease-out both; }
+.shadow-page .card { animation: shadow-in .5s ease-out both; }
+@keyframes shadow-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) { .shadow-bar { grid-template-columns: 84px 1fr 32px; } .shadow-tag { font-size: 18px; } }
+@media (prefers-reduced-motion: reduce) { .shadow-line, .shadow-page .card, .shadow-bar-track span { animation: none; } }

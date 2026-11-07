@@ -195,14 +195,16 @@ def needs_by_question() -> list[dict]:
                    for q, js in groups.items()), key=lambda g: (g["user_only"], -g["count"]))
 
 
-@mcp.tool(description="Save the user's answer to a blocking question (reused on every form that asks it; legal / EEO / "
-                      "sponsorship questions are refused: those come from presets only). Needs REGEN_MCP_WRITE=1.")
-def answer_save(job: str, question: str, answer: str) -> dict:
+@mcp.tool(description="Save an answer to a blocking question as Shadow, the user's AI delegate (policy: engine/override.py; "
+                      "the gate treats Shadow as the user). Reused on every form that asks it; legal / sponsorship answers "
+                      "stay on that one job; EEO is decline-only. Answers must be true: Fact Bank or presets, never "
+                      "invented experience. by='user' when the user dictated it. Needs REGEN_MCP_WRITE=1.")
+def answer_save(job: str, question: str, answer: str, by: str = "shadow") -> dict:
     if not WRITE:
         return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
     from engine.feedback import answers as A
     try:
-        return A.save(job, question, answer)
+        return A.save(job, question, answer, by=by if by in A.TRUSTED else "shadow")
     except ValueError as e:
         return {"error": str(e)}
 

@@ -518,6 +518,15 @@ NO_AI_Q = re.compile(r"(do not|don.t|please don.t|without( using)?|no) (use )?(a
 IF_YES_Q = re.compile(r"\W*if (yes|so|applicable)\b", re.I)  # a follow-up to a question answered just before it
 
 
+def _answered_by(job):
+    """Who cleared this form's open questions (11-06, for the supervisor): "shadow" when Shadow answered any of them
+    (a job it picked up after two calls, or a draft tagged shadow), "you" when it carries answers you typed for it,
+    else "engine" (presets, the answer bank and rules alone)."""
+    if job.get("shadow") or any("shadow" in str(src) for _, _, src in (job.get("_drafted") or [])):
+        return "shadow"
+    return "you" if job.get("extra") else "engine"
+
+
 def answer(label, job, field=None):
     """Presets / approved answers / rules, the job's note for "why us", derived facts, a Fact Bank draft for open
     questions, then (autofill) yes/no defaults and drafts for any remaining non-sensitive text box."""
@@ -550,17 +559,17 @@ def answer(label, job, field=None):
         return None  # a file-upload control, not a question
     if ans is None and ADDR_BLANK.search(" ".join(label.split())):
         return None  # Line 2 / another country's box: left empty, never drafted or overridden (10-26)
-    if ans is None and override.on():  # the user's "draft" switch (engine/override.py): presets + consent, logged
+    if ans is None and (override.on() or job.get("shadow")):  # Shadow: mode "always", or this job after two unanswered calls (engine/shadow.py)
         ans = override.answer(label, P)
         if ans is not None:
-            job.setdefault("_drafted", []).append([" ".join(label.split())[:200], ans, ["user override"]])
+            job.setdefault("_drafted", []).append([" ".join(label.split())[:200], ans, ["shadow"]])
             return ans
         # never a paragraph into a yes/no question (10-17): those fall through to the Fact Bank yes/no autofill below
         if not override.blocked(label) and DRAFT and not STATUS_Q.search(label) and not YESNO_Q.search(label):
             d = drafts.draft(label, job, fact_bank(), WORKSPACE, P, force=True)
             if d:
                 ans, fids = d
-                job.setdefault("_drafted", []).append([" ".join(label.split())[:200], ans, list(fids) + ["user override"]])
+                job.setdefault("_drafted", []).append([" ".join(label.split())[:200], ans, list(fids) + ["shadow"]])
                 drafts.log_review(WORKSPACE, job, label, ans, fids)
                 return ans
     if ans is None and DRAFT:
@@ -617,13 +626,18 @@ def pick_option(options, ans):
         return options[0][1] if len(options) == 1 and not NACK.search(options[0][0]) else None
     if re.fullmatch(r"\d{4,7}", ans or ""):  # a salary number against range buckets ("$80,000 - $100,000", "120,000+")
         n = int(ans)
+        nums_of = lambda t: [int(x.replace(",", "")) * (1000 if k else 1) for x, k in re.findall(r"(\d[\d,]*)\s*(k\b)?", t, re.I)]
         for t, h in options:
-            nums = [int(x.replace(",", "")) * (1000 if k else 1) for x, k in re.findall(r"(\d[\d,]*)\s*(k\b)?", t, re.I)]
+            nums = nums_of(t)
             if len(nums) >= 2 and nums[0] <= n < nums[1] or len(nums) == 1 and "+" in t and n >= nums[0]:
-                return h
+                return h  # shared edges ("130-140 / 140-150"): 140000 goes up
             if len(nums) == 1 and (re.search(r"\b(over|above|more than|at least|greater than)\b", t, re.I) and n > nums[0]
                                    or re.search(r"\b(under|below|less than|up to)\b", t, re.I) and n < nums[0]):
                 return h  # open-ended buckets: "Over $75,000", "Under $65,000"
+        for t, h in options:  # 11-06: gapped bands ("121,000-140,000 / 141,000-..."): the top edge counts
+            nums = nums_of(t)
+            if len(nums) >= 2 and nums[0] <= n <= nums[1]:
+                return h
     if re.fullmatch(r"\d{1,2}(\.\d{1,2})?\+?", ans or "") and not any(t.strip() == ans for t, _ in options):
         # 11-01: years "3" against buckets "0-2 / 2-4 / 4-6 / 7+" parked a Lever form, a GPA "3.66" against
         # "3.6 - 3.69"; pick the bucket holding it
@@ -655,6 +669,11 @@ def pick_option(options, ans):
     if ans == P.get("preferred_location") and re.search(BAY_AREA, ans, re.I):
         # an office list ("San Mateo", "Raleigh", ...): any Bay Area office is the preferred location, else remote
         for rx in (BAY_AREA, r"\bremote\b"):
+            for t, h in options:
+                if re.search(rx, t, re.I): return h
+    if ans in ("Company careers page", P.get("how_heard")):
+        # 11-06: a "how did you hear" list without our wording -> the nearest true source, else Other
+        for rx in (r"careers? (page|site)|company (web)?site|website", r"job (board|site|posting)|online|internet", r"^other\b"):
             for t, h in options:
                 if re.search(rx, t, re.I): return h
     return option_fallback(options, a)
@@ -1766,7 +1785,8 @@ def job_task(page, job, dry, results, log_base=print):
         shrink(shot)  # ~70% smaller at once instead of waiting for the hourly clean
     log(f"   -> {status}")
     record("application", job=name, url=job["url"], status=status.split(":")[0], detail=status, proof=shot, answers=job.get("_answers"),
-           drafted=job.get("_drafted"), resume=job.get("resume"), dry=dry)
+           drafted=job.get("_drafted"), resume=job.get("resume"), dry=dry,
+           answered_by=_answered_by(job))  # you / shadow / engine: the supervisor counts who cleared each form
     if status == "SUBMITTED":
         m = re.search(r"(?:jobs/|token=|gh_jid=)(\d+)", job["url"])
         if m:

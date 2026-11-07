@@ -7,7 +7,7 @@
   bigtech [days]                   Amazon + NVIDIA careers APIs -> fit-gated roles with tailored resumes (workspace/bigtech.md)
   reach   [max]                    Workday / iCIMS / SmartRecruiters jobs -> fit-gated, tailored, you submit (workspace/reach.md)
   desk    [--fill url]             the desk: a visible browser you sign in to (noVNC :6080); fills Workday forms there
-  draft   on|off|status [note]     the human override: while on, drafts + submits instead of parking (engine/override.py)
+  shadow  on|off|status [note]     Shadow, your AI delegate (alias: draft): answers as you instead of parking (engine/override.py)
   bench   [--save]                 system benchmarks B1-B7 (selection, answers, claims, coverage, rate, codes, fit gate)
 alerts  <file>                   job-alert emails (gmail_alerts.js output) resolved to the employer's ATS -> queue.json
   watch   [min] [--once] [--newgrad] poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)
@@ -123,7 +123,7 @@ def main():
         from engine.supervisor import supervise as m
     elif cmd == "answers":
         from engine.feedback.answer_queue import main as m
-    elif cmd == "draft":
+    elif cmd in ("draft", "shadow"):  # Shadow (11-06) is the draft override grown up: the user's AI delegate
         from engine.override import main as m
     elif cmd == "reposync":
         from engine.reposync import main as m

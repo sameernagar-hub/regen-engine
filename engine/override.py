@@ -1,9 +1,16 @@
-"""Human override (user, 2026-10-17): "when I say draft, then draft". One switch the user flips; while it is on, the
-engine drafts and submits where it would otherwise park a job for the user.
+"""Shadow (user, 2026-11-06; grew out of the 2026-10-17 "draft" override). Shadow is the user's AI delegate: an AI
+agent (for this user, Claude, through the MCP cord and this module) that answers for the user when the user is not
+there, so an application never halts on a question. Policy: the gates treat Shadow and the user as the same person.
+An answer Shadow gives carries the same weight as one the user typed (engine/feedback/answers.py `by="shadow"`), it
+is logged with source "shadow", and the user can read or overrule every one of them.
 
-    python -m engine draft on [note]     the user's standing approval, logged with time and note
-    python -m engine draft off
-    python -m engine draft status
+    python -m engine shadow on [note]    (same as `draft on`) the user's standing approval, logged with time and note
+    python -m engine shadow off
+    python -m engine shadow status
+
+Shadow stays truthful: it answers from presets, the Fact Bank and what can be derived from them (dates, a market-rate
+salary). Where the honest answer to "have you done X?" is no, it says no; it never invents experience, a credential
+or a fact to clear a gate or to match a job description.
 
 State lives in profile/override.json (git-ignored, in the bank volume): {"draft": true, "since": iso, "note": ...}.
 
@@ -35,12 +42,12 @@ HUMAN_CHECK = re.compile(r"completed by a person|carefully read (the )?instructi
                          r"option|captcha|human check|are you a (robot|human)|access code you received", re.I)
 AGREEMENT = re.compile(r"arbitrat|any disputes|agreement to arbitrate|terms (&|and) conditions|code of conduct|"
                        r"confidential information|affirmation|personal information policy|review the linked document|"
-                       r"^\W*(i |by )?(certify|agree|acknowledge|understand|attest)|please (review|read) .{0,60}(agreement|policy|document)", re.I)
+                       r"^\W*(i |by )?(hereby )?(certify|agree|acknowledge|understand|attest)|please (review|read) .{0,60}(agreement|policy|document)", re.I)
 US_PERSON = re.compile(r"u\.?s\.? person|lawful permanent resident|u\.?s\.? citizen or national|(asylee|refugee)|"
                        r"22 c\.?f\.?r|itar|are you (currently )?a (u\.?s\.?|us) citizen", re.I)
 SANCTIONED = re.compile(r"belarus|cuba|iran|north korea|syria|crimea|russia|venezuela", re.I)
 DEEMED = re.compile(r"deemed export rule affect|export licens|export control", re.I)
-ADDRESS = re.compile(r"(legal|physical|home|current|residential|mailing) address|list your (current |home )?address|^\W*address\W*$", re.I)
+ADDRESS = re.compile(r"(legal|physical|home|current|residential|mailing|permanent) address|list your (current |home )?address|^\W*address\W*$", re.I)
 
 
 def state():
@@ -51,7 +58,8 @@ def state():
 
 
 def on():
-    """True while the user's draft override is on. O(1) file read."""
+    """True while Shadow answers on every form (mode "always"). In mode "calls" Shadow answers only the jobs it
+    picked up after two unanswered calls (job["shadow"], engine/shadow.py). O(1) file read."""
     return bool(state().get("draft"))
 
 
@@ -107,6 +115,11 @@ def answer(label, P):
         return "__ACK__"
     if ADDRESS.search(l) and P.get("address_line1"):
         return ", ".join(x for x in (P.get("address_line1"), P.get("city"), P.get("state_abbr"), P.get("zip")) if x)
+    m = re.search(r"which (quarter|year) .{0,40}(available|begin|start)", l, re.I)
+    if m:  # 11-06: "In which quarter / year would you be available to begin?" -> from the start-date preset
+        w = re.search(r"(\d+) ?weeks?", str(P.get("start_date") or ""))
+        d = datetime.date.today() + datetime.timedelta(weeks=int(w.group(1)) if w else 0)
+        return f"Q{(d.month - 1) // 3 + 1}" if m.group(1).lower() == "quarter" else str(d.year)
     if re.search(r"(provide|furnish|submit) .{0,40}(documentation|proof|verification)|verification of .{0,40}(identity|authori)", l, re.I):
         return "Yes"
     if re.search(r"background (check|screen|investigation)|consumer (and/or )?investigative report", l, re.I):
@@ -120,12 +133,15 @@ def answer(label, P):
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     cmd = argv[0] if argv else "status"
-    if cmd in ("on", "off"):
-        s = set_state(cmd == "on", " ".join(argv[1:]))
-        print(f"draft override {'ON' if s['draft'] else 'OFF'} since {s['since']}")
+    from engine import shadow
+    if cmd in ("on", "off", "always", "calls"):  # on = always; calls = two calls to you, then Shadow (shadow.py)
+        ring = next((a for a in argv[1:] if a.replace(".", "", 1).isdigit()), None)
+        s = shadow.configure({"on": "always"}.get(cmd, cmd), ring, " ".join(a for a in argv[1:] if a != ring))
+        print(f"Shadow mode {s['mode']} (calls ring {s['ring_min']:g} min apart)")
         return
-    s = state()
-    print(f"draft override {'ON since ' + s.get('since', '?') if s.get('draft') else 'OFF'}")
+    s = shadow.status()
+    print(f"Shadow mode {s['mode']}, calls ring {s['ring_min']:g} min apart; {s['ringing']} ringing, "
+          f"{s['by_shadow']} picked up by Shadow, {s['by_you']} by you")
     from engine.feedback.answers import missing_questions
     from engine.pipeline import latest_status
     from engine.feedback.events import read

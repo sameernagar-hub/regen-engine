@@ -4,6 +4,28 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-06 · Shadow: two calls, then your AI delegate picks up
+- **Policy** (`engine/override.py`): Shadow is the user's AI delegate; the gates treat Shadow and the user as the same
+  person. `answers.save(..., by="shadow"|"user")` accepts legal / sponsorship answers on that one job (as the /needs
+  page does for the user); EEO stays decline-only for both. MCP `answer_save` saves as Shadow by default. Shadow never
+  invents a fact or experience and never touches a CAPTCHA.
+- **Two-call handoff** (`engine/shadow.py`): a parked job (NEEDS YOU, last 48 h, not a human check) rings call 1, then
+  call 2 after `ring_min` (default 5), then Shadow picks it up: the job is retried with `shadow: true`, and the runner
+  answers it as the user. You pick up by answering on /needs or with `POST /api/shadow/pickup`. Modes: `calls`,
+  `always` (the old `draft on`), `off`. The tick runs every 30 s in the answers container; at most 15 pickups per tick.
+  CLI: `python -m engine shadow calls|always|off [ring_min]` (`draft` still works).
+- **Supervisor knows who answered**: every application event carries `answered_by` (you / shadow / engine);
+  `shadow.oversight()` (last 24 h by source) is on the supervisor heartbeat and `supervise --status`.
+- **/shadow page**: an ignition sequence (parked piston, two spark-plug calls, the Shadow cylinder firing), the live
+  switchboard with countdown gauges and Pick up / Let Shadow take it, who cleared the forms (24 h bars), and the
+  policy. A row on desktop, a column on phones; animations respect reduced motion. The public site acts it out with
+  made-up companies.
+- **Answer fixes found tonight**: "I hereby certify" is an agreement; "permanent address" is an address; "which
+  quarter / year can you begin" comes from the start-date preset; a "how did you hear" list without our wording picks
+  the nearest true source (careers site, job board, else Other); a salary figure on the edge of gapped bands
+  ("121,000-140,000 / 141,000-...") lands in the lower band; HTML-escaped Greenhouse pay ranges are read.
+- Verify: `python -m pytest tests/test_shadow.py` (12 tests); open http://127.0.0.1:3000/shadow.
+
 ## [Unreleased] - 2026-11-05 · Dense JD-shaped resumes, keyword line, QA gate and wording feedback loop
 - **Full page, one line per bullet** (`resume.fit`): smaller justified type; the page fills from a ranked reserve of
   Fact Bank bullets and projects (`spec["_more"]`) until it is full, then uses the largest type that still fits. The

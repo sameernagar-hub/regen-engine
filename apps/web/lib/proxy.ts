@@ -43,7 +43,35 @@ function rebase(v: any, by: number, key = ""): any {
 
 const nowIso = () => isoLocal(new Date());
 
+// Shadow's switchboard, acted out in this tab (made-up companies): lines ring call 1, call 2, then Shadow picks up.
+const SHADOW_DEMO = [
+  ["Northwind Robotics - Software Engineer", "Desired Salary", 20],
+  ["Lumen Health - Backend Engineer", "How did you hear about Lumen Health?", 75],
+  ["Arcfield AI - ML Engineer", "Have you built or evaluated a workflow that uses a large language model?", 140],
+  ["Quarry Labs - Platform Engineer", "In which quarter would you be available to begin?", 400],
+] as const;
+const shadowDemo = { mode: "calls", ring_min: 1, t0: Date.now(), picked: new Map<string, { who: string; at: number }>() };
+function shadowState() {
+  const ring = shadowDemo.ring_min * 60, now = Date.now() / 1000, lines: any[] = [];
+  for (const [job, question, ago] of SHADOW_DEMO) {
+    const url = "https://example.com/" + job.split(" - ")[0].toLowerCase().replace(/\W+/g, "-");
+    const call1 = shadowDemo.t0 / 1000 - ago + 15, p = shadowDemo.picked.get(url);
+    const shadowAt = call1 + 2 * ring, iso = (t: number) => isoLocal(new Date(t * 1000));
+    if (p) { lines.push({ url, job, question, state: `picked up by ${p.who}`, by: p.who, next_s: null, open: false, ts: iso(p.at) }); continue; }
+    if (now < call1) continue;
+    if (now >= shadowAt && shadowDemo.mode !== "off") { lines.push({ url, job, question, state: "picked up by shadow", by: "shadow", next_s: null, open: false, ts: iso(shadowAt) }); continue; }
+    const second = now >= call1 + ring;
+    lines.push({ url, job, question, state: second ? "call 2" : "call 1", by: null, open: true, ts: iso(now),
+                 next_s: Math.max(0, Math.round((second ? call1 + 2 * ring : call1 + ring) - now)) });
+  }
+  return { mode: shadowDemo.mode, ring_min: shadowDemo.ring_min, lines, ringing: lines.filter((l) => l.open).length,
+           by_shadow: lines.filter((l) => l.by === "shadow").length, by_you: lines.filter((l) => l.by === "you").length,
+           who: { applications: { "you:SUBMITTED": 4, "shadow:SUBMITTED": 6 + lines.filter((l) => l.by === "shadow").length, "engine:SUBMITTED": 17 },
+                  answers: { you: 3, shadow: 9 } } };
+}
+
 export async function proxyGet<T>(path: string): Promise<T> {
+  if (path.split("?")[0] === "/api/shadow") return shadowState() as T;
   const m = await getManifest();
   const u = new URL(path, "http://x");
   const by = Date.now() / 1000 - m.generated;
@@ -158,6 +186,13 @@ export async function proxyPost<T>(path: string, body: any): Promise<T> {
       return { ok: true, opening: body.url } as T;
     case "/api/outreach/build":
       return proxyGet<T>("/api/outreach");
+    case "/api/shadow":
+      if (body.mode) shadowDemo.mode = body.mode;
+      if (body.ring_min) shadowDemo.ring_min = Math.min(240, Math.max(0.5, Number(body.ring_min)));
+      return shadowState() as T;
+    case "/api/shadow/pickup":
+      shadowDemo.picked.set(body.url, { who: body.who, at: Date.now() / 1000 });
+      return { ok: true } as T;
   }
   throw new Error(`${p}: not available in the public demo`);
 }

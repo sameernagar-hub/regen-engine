@@ -150,8 +150,18 @@ def _retry(jobs):
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     from engine.supervisor import beat
+    from engine import shadow
+    last_tick = 0.0
     while True:
         r = drain()
+        if time.time() - last_tick >= 30 and not r.get("held"):  # Shadow's switchboard: call 1, call 2, pickup
+            last_tick = time.time()
+            try:
+                c = shadow.tick()
+                if any(c.values()):
+                    print(f"shadow: {json.dumps(c)}", flush=True)
+            except Exception as e:  # never let the switchboard stop the answers loop
+                print(f"shadow tick failed: {e}", flush=True)
         if r.get("saved") or r.get("refused"):
             print(f"answers: {json.dumps(r)}", flush=True)
         waiting = len([n for n in os.listdir(_dirs()["inbox"]) if n.endswith(".json")])

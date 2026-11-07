@@ -7,6 +7,7 @@ import "./engine.css";
 import "./gearbox.css";
 import "./oilchange.css";
 import "./rules.css";
+import "./shadow.css";
 import { Backdrop } from "./backdrop";
 import { Eggs } from "./eggs";
 

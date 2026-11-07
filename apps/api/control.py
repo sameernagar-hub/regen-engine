@@ -413,6 +413,48 @@ def human_mark(body: dict, request: Request):
     return {"ok": True, "url": url, "mark": mark, "ts": ev.get("ts") if isinstance(ev, dict) else None}
 
 
+# ---- Shadow mode (engine/shadow.py): presence heartbeat, who is answering, Shadow's recent work ----
+def _local_write(request: Request):
+    if not REACH_WRITE:
+        raise HTTPException(403, "writes are disabled (REGEN_API_REACH=1 in the bank, REGEN_API_WRITE=1 locally)")
+    if not TRUST_PORT and (request.client.host if request.client else "") not in LOCAL:
+        raise HTTPException(403, "only from this computer")
+
+
+@router.get("/shadow")
+def shadow_get():
+    """Shadow's switchboard (engine/shadow.py): mode (calls / always / off), minutes between calls, and every line:
+    ringing (call 1 / call 2, seconds to the next step) or picked up (by you or by Shadow)."""
+    from engine import shadow
+    o = shadow.oversight()
+    return {**shadow.status(), "who": {"applications": o["applications"], "answers": o["answers"]}}
+
+
+@router.post("/shadow")
+def shadow_set(body: dict, request: Request):
+    """Set Shadow's mode and ring interval: {"mode": "calls"|"always"|"off", "ring_min": 0.5-240}. Local only."""
+    _local_write(request)
+    from engine import shadow
+    try:
+        return shadow.configure(body.get("mode"), body.get("ring_min"), str(body.get("note") or ""))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.post("/shadow/pickup")
+def shadow_pickup(body: dict, request: Request):
+    """Answer a ringing line: {"url", "who": "you"|"shadow"}. you = the job waits for you; shadow = Shadow now."""
+    _local_write(request)
+    from engine import shadow
+    who = str(body.get("who") or "you")
+    if who not in ("you", "shadow"):
+        raise HTTPException(400, "who must be you or shadow")
+    try:
+        return shadow.pickup(str(body.get("url") or ""), who)
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+
+
 @router.get("/control/bench")
 def bench():
     """Latest benchmark run B1-B7 (engine/bench.py; the supervisor saves one every REGEN_BENCH_HOURS)."""

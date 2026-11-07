@@ -56,19 +56,32 @@ def job_scoped(question):
     return bool(LEGAL_OR_SENSITIVE.search(" ".join((question or "").split())))
 
 
-def save(job, question, answer, profile=None, workspace=None, requeue_job=True):
-    """Validate and store one answer. Returns the stored record; raises ValueError with a reason when refused."""
+TRUSTED = ("user", "shadow")  # Shadow policy (engine/override.py, 11-06): the gate treats the user's AI as the user
+
+
+def save(job, question, answer, profile=None, workspace=None, requeue_job=True, by="web app"):
+    """Validate and store one answer. Returns the stored record; raises ValueError with a reason when refused.
+    by="user" / "shadow": the same trust as the user typing it, so a legal / sponsorship answer is accepted and kept
+    on that one job (answer_queue.keep_for_job), as the /needs page does; EEO stays decline-only for everyone."""
     profile, workspace = profile or PROFILE, workspace or WORKSPACE
+    if by in TRUSTED and job_scoped(question):
+        question, answer = validate(question, answer, allow_legal=True)
+        from engine.feedback.answer_queue import keep_for_job
+        keep_for_job(job, question, answer)
+        record("answer", job=job, question=question[:300], pattern=pattern_for(question), source=by)
+        if requeue_job:
+            requeue(job, workspace)
+        return {"pattern": pattern_for(question), "answer": answer, "source": f"{by}, job-scoped, for {job}"}
     question, answer = validate(question, answer)
     path = os.path.join(profile, "answers.json")
     bank = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []
     pat = pattern_for(question)
-    rec = {"pattern": pat, "answer": answer, "source": f"web app, {datetime.datetime.now().isoformat(timespec='seconds')}, for {job}"}
+    rec = {"pattern": pat, "answer": answer, "source": f"{by}, {datetime.datetime.now().isoformat(timespec='seconds')}, for {job}"}
     bank = [b for b in bank if b.get("pattern") != pat] + [rec]
     tmp = path + ".tmp"
     json.dump(bank, open(tmp, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     os.replace(tmp, path)  # atomic: a reader never sees half a file
-    record("answer", job=job, question=question[:300], pattern=pat, source="web app")
+    record("answer", job=job, question=question[:300], pattern=pat, source=by)
     if requeue_job:
         requeue(job, workspace)
     return rec
