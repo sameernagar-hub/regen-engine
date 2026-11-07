@@ -28,7 +28,7 @@ const WIRES: Part = { key: "graph", href: "/graph", label: "Memory graph", about
 const GEARBOX: Part = { key: "gearbox", href: "/gearbox", label: "Gearbox", about: "Shift the engine's speed (appliers, scan rate) and see what rejections taught it, fed back through the clutch.", tone: "#5ee6b5" };
 const CORD: Part = { key: "mcp", href: "/mcp", label: "MCP cord", about: "Your AI client plugs in here and operates the engine at zero cost: 35 tools, from memory to the gearbox.", tone: "#5ee6b5" };
 const OIL: Part = { key: "oilchange", href: "/oilchange", label: "Maintenance", about: "Clears what applications leave behind (expired files, old code and alert mail, closed postings) so the search stays fast. Shows the engine’s health and each clean-up live.", tone: "#f0b64c" };
-const SHADOW: Part = { key: "shadow", href: "/shadow", label: "Shadow", about: "Your AI delegate. A stuck form calls you twice; if neither call is picked up, Shadow answers as you, truthfully, and remembers the answer, so no application halts.", tone: "#a78bfa" };
+const SHADOW: Part = { key: "shadow", href: "/shadow", label: "Shadow", about: "Your AI delegate. It answers stuck forms as you from five strategies, abstains when unsure, is trained and tested on your own answers, and earns ownership of the engine's agents rung by rung.", tone: "#a78bfa" };
 const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL, SHADOW];
 const FIRING = [0, 7, 3, 2, 5, 4, 6, 1];  // eight cylinders since Desk joined (11-02): the classic V8 order 1-8-4-3-6-5-7-2
 
@@ -56,8 +56,12 @@ export default function EngineHome() {
       const checks = x.filter((i) => /captcha|human click|human check|filled in the desk/i.test(`${i.text} ${(i.missing || []).join(" ")}`)).length;
       put("desk", `${checks} human check${checks === 1 ? "" : "s"} waiting`);
     }).catch(() => {});
-    get<any>("/api/shadow").then((x) => put("shadow", x.mode === "always" ? "answers every form" : x.mode === "off" ? "off: questions wait for you"
-      : `${x.ringing} ringing · ${x.by_shadow} picked up`)).catch(() => {});
+    Promise.all([get<any>("/api/shadow"), get<any>("/api/shadow/brain").catch(() => null)]).then(([x, b]) => {
+      const mode = x.mode === "autopilot" ? "autopilot" : x.mode === "always" ? "answers every form" : x.mode === "off" ? "off: questions wait for you"
+        : `${x.ringing} ringing · ${x.by_shadow} picked up`;
+      const p = b?.latest?.test?.precision;
+      put("shadow", b ? `${mode} · level ${b.ladder.level}${p != null ? ` · ${Math.round(p * 100)}% right on test` : ""}` : mode);
+    }).catch(() => {});
     get<any>("/api/control/fleet").then((x) => put("control", `${x.members.filter((m: any) => m.role === "applier" && m.up).length} appliers running`)).catch(() => {});
     get<any>("/api/control/reach?limit=1").then((x) => put("reach", `${x.listed} resumes ready`)).catch(() => {});
     get<any[]>("/api/outreach").then((x) => put("outreach", `${x.length} drafts`)).catch(() => {});

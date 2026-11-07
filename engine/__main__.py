@@ -7,7 +7,8 @@
   bigtech [days]                   Amazon + NVIDIA careers APIs -> fit-gated roles with tailored resumes (workspace/bigtech.md)
   reach   [max]                    Workday / iCIMS / SmartRecruiters jobs -> fit-gated, tailored, you submit (workspace/reach.md)
   desk    [--fill url]             the desk: a visible browser you sign in to (noVNC :6080); fills Workday forms there
-  shadow  on|off|status [note]     Shadow, your AI delegate (alias: draft): answers as you instead of parking (engine/override.py)
+  shadow  calls|autopilot|always|off|status|train|ladder|agents   Shadow, your AI delegate (alias: draft): answers as you;
+                                   train = train/test on your answers, ladder = ownership level, agents = agent graph
   bench   [--save]                 system benchmarks B1-B7 (selection, answers, claims, coverage, rate, codes, fit gate)
 alerts  <file>                   job-alert emails (gmail_alerts.js output) resolved to the employer's ATS -> queue.json
   watch   [min] [--once] [--newgrad] poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)

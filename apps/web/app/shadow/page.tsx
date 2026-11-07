@@ -8,14 +8,16 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Nav } from "../nav";
 import { get, post, poll } from "@/lib/types";
+import { AgentGraph, Decide, Training, Vision, useBrain } from "./brain";
 
-type Rec = { q: string; a: string | null; from: string };
+type Rec = { q: string; a: string | null; from: string; conf?: number | null; strategy?: string | null };
 type Line = { url: string; job: string; question?: string; state: string; by?: string | null; next_s: number | null; open: boolean; ts: string; recommend?: Rec[] };
 type Mem = { known: number; by_you: number; entries: { question: string; answer: string; by: string; used: number; submitted?: number; parked_again?: number; moved_forward?: number; overridden?: number; weak?: boolean }[] };
 type Who = { applications: Record<string, number>; answers: Record<string, number> };
-type State = { mode: "calls" | "always" | "off"; ring_min: number; lines: Line[]; ringing: number; by_shadow: number; by_you: number; who?: Who; memory?: Mem };
+type State = { mode: "calls" | "autopilot" | "always" | "off"; ring_min: number; lines: Line[]; ringing: number; by_shadow: number; by_you: number; who?: Who; memory?: Mem };
 
 const MODES: [State["mode"], string, string][] = [
+  ["autopilot", "Autopilot", "No calls. Shadow answers what it is sure of at once; the rest waits for you."],
   ["calls", "Two calls, then Shadow", "The engine calls you twice. No pickup, Shadow takes the job."],
   ["always", "Shadow always", "Shadow answers on the form itself. Nothing waits, nothing rings."],
   ["off", "Only me", "Calls ring, Shadow never picks up. Every question waits for you."],
@@ -38,16 +40,18 @@ export default function ShadowPage() {
   const ring = (s?.ring_min ?? 5) * 60;
   const open = (s?.lines || []).filter((l) => l.open), closed = (s?.lines || []).filter((l) => !l.open);
   const c1 = open.filter((l) => l.state === "call 1").length, c2 = open.filter((l) => l.state === "call 2").length;
-  const live = s?.mode === "calls";
+  const live = s?.mode === "calls" || s?.mode === "autopilot";
+  const { b, a, pull: pullBrain } = useBrain();
 
   return (
     <main className="page shadow-page" data-mode={s?.mode}>
       <Nav />
       <header className="hero">
         <h1>Shadow</h1>
-        <p className="shadow-tag">Two calls. Then Shadow.</p>
-        <p>When a job stops on a question, the engine calls you, then calls again. If neither call is picked up, Shadow,
-          your AI delegate, picks up and finishes the application as you, so the engine never stalls.</p>
+        <p className="shadow-tag">{s?.mode === "autopilot" ? "Autopilot. Shadow flies, you overrule." : "Two calls. Then Shadow."}</p>
+        <p>Shadow is your AI delegate inside the engine. It answers form questions as you from five strategies, abstains
+          when it is not sure, is trained and tested on your own answers, and earns ownership of the engine's agents one
+          rung at a time{b ? ` (today: level ${b.ladder.level}, ${b.ladder.rungs[b.ladder.level]?.name.toLowerCase()})` : ""}.</p>
       </header>
       {msg && <p className="note" role="status">{msg}</p>}
 
@@ -55,8 +59,6 @@ export default function ShadowPage() {
         <Ignition wide s={s} c1={c1} c2={c2} parked={open.length} live={live} />
         <Ignition s={s} c1={c1} c2={c2} parked={open.length} live={live} />
       </section>
-
-      <Who who={s?.who} />
 
       <section className="card">
         <h2>Mode</h2>
@@ -71,6 +73,13 @@ export default function ShadowPage() {
           <input type="number" min={0.5} max={240} step={0.5} defaultValue={s?.ring_min ?? 5} key={s?.ring_min}
                  onBlur={(e) => act("/api/shadow", { ring_min: Number(e.target.value) }, "Ring interval saved.")} /> minutes
         </label>
+      </section>
+
+      <Vision b={b} />
+      <AgentGraph a={a} />
+      <section className="shadow-brain-row">
+        <Decide b={b} />
+        <Training b={b} onTrained={pullBrain} />
       </section>
 
       <section className="card">
@@ -92,7 +101,7 @@ export default function ShadowPage() {
                         <li key={i} className={r.a ? "" : "shadow-rec-none"}>
                           <span className="dim small">{r.q}</span>
                           <span className="shadow-rec"><em>Shadow recommends</em> <b>{r.a || "nothing on file: it will not invent one"}</b>
-                            <span className="dim small"> · {r.from}</span></span>
+                            <span className="dim small"> · {r.from}{r.a && r.conf != null ? ` · ${Math.round(r.conf * 100)}% sure` : ""}</span></span>
                         </li>))}
                     </ul>) : l.question && <p className="dim small shadow-q">{l.question}</p>}
                   <div className="shadow-gauge" aria-hidden="true"><span style={{ width: `${Math.round(pct * 100)}%` }} /></div>
@@ -105,6 +114,7 @@ export default function ShadowPage() {
           </ol>)}
       </section>
 
+      <Who who={s?.who} />
       <MemoryPanel m={s?.memory} />
 
       <section className="shadow-policy">

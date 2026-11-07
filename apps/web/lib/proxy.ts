@@ -82,8 +82,50 @@ function shadowState() {
            ] } };
 }
 
+// 11-07: Shadow's brain and agent graph on the public site: illustrative numbers in the shape of the real API
+// (engine/shadow_brain.py brain(), engine/agents.py), so the panels can be seen without the engine.
+function shadowBrainDemo() {
+  const need = (k: string, want: number, have: number) => ({ need: k, want, have });
+  const run = (p: number, c: number, i: number) => ({ ts: isoLocal(new Date(Date.now() - (6 - i) * 3600e3)), precision: p, coverage: c, baseline: 0.62 });
+  const rungs = [
+    { level: 0, name: "Observe", owns: "nothing: reads the ledger", needs: {}, missing: [], unlocked: true },
+    { level: 1, name: "Answer", owns: "questions, as you (mode calls or autopilot), abstaining when unsure", needs: {}, missing: [], unlocked: true },
+    { level: 2, name: "Job agents", owns: "retry, requeue and skip its own parked jobs", needs: {}, missing: [need("test_n", 20, 19), need("test_precision", 0.9, 0.8)], unlocked: false },
+    { level: 3, name: "Applier agents", owns: "scale and balance appliers inside the gear's limits", needs: {}, missing: [need("test_n", 40, 19), need("test_precision", 0.95, 0.8), need("live_answers", 30, 12), need("shadow_submitted", 10, 4)], unlocked: false },
+    { level: 4, name: "Service agents", owns: "restart and update the engine's containers", needs: {}, missing: [need("test_n", 60, 19), need("live_answers", 100, 12), need("clean_days", 7, 2)], unlocked: false },
+    { level: 5, name: "Owner", owns: "create, update, delete, scale and balance every agent", needs: {}, missing: [need("test_n", 100, 19), need("live_answers", 300, 12), need("clean_days", 30, 2)], unlocked: false },
+  ];
+  const test = { n: 19, answered: 5, correct: 4, wrong: 1, abstained: 14, precision: 0.8, coverage: 0.263 };
+  return { policy: { tau: 0.5, sigma: 0.85, trained: isoLocal(new Date()), live: {},
+                     reliability: { bank: 0.84, memory: 0.75, neighbor: 0.41, engine: 0.36, yesno: 0.46 } },
+           latest: { ts: isoLocal(new Date()), secs: 1.7, gold: 104, train: { ...test, n: 85 }, test, tau: 0.5, sigma: 0.85, violations: [],
+                     baseline_test: { ...test, answered: 8, correct: 5, wrong: 3, abstained: 11, precision: 0.625, coverage: 0.421 },
+                     reliability: {}, misses: [{ q: "how did you hear about us?", you: "LinkedIn", shadow: "Company careers page" }] },
+           history: [run(0.5, 0.42, 0), run(0.6, 0.26, 1), run(0.8, 0.26, 2)],
+           ladder: { level: 1, rungs, record: {} } };
+}
+function shadowAgentsDemo() {
+  const q = (id: string, label: string, answer: string | null, conf: number) => ({ id, kind: "question", label, state: answer ? "answer ready" : "abstains (yours)", owner: "shadow", answer, conf, children: [] });
+  const job = (id: string, label: string, state: string, owner: string, kids: any[]) => ({ id, kind: "job", label, state, owner, children: kids });
+  const graph = { id: "shadow", kind: "shadow", label: "Shadow", state: "mode autopilot, level 1", owner: "you", children: [
+    { id: "g:a", kind: "group", label: "Applier agents", state: "2 running", owner: "supervisor", children: [
+      { id: "a1", kind: "applier", label: "applier 3fa91c", state: "applying", owner: "supervisor", children: [
+        job("j1", "Robotics startup - Software Engineer", "applying", "engine", []), job("j2", "Fintech - Backend Engineer", "applying", "engine", [])] },
+      { id: "a2", kind: "applier", label: "applier 9b07de", state: "watching", owner: "supervisor", children: [] }] },
+    { id: "g:p", kind: "group", label: "Parked jobs", state: "2 on a call", owner: "shadow", children: [
+      job("p1", "AI lab - ML Engineer", "call 1", "shadow", [q("q1", "Are you open to relocation?", "Yes", 0.92), q("q2", "Earliest start date?", "Immediately (2 weeks notice)", 0.88)]),
+      job("p2", "Streaming platform - SWE I", "call 2", "shadow", [q("q3", "Describe your experience with our product", null, 0.31)])] },
+    { id: "g:s", kind: "group", label: "Service agents", state: "6 services", owner: "supervisor", children:
+      ["pipeline", "answers", "desk", "feedback", "ledger", "web"].map((n) => ({ id: `s:${n}`, kind: "service", label: n, state: "ok", owner: "supervisor", children: [] })) }] };
+  return { graph, counts: { shadow: 1, group: 3, applier: 2, job: 4, question: 3, service: 6 },
+           plan: [{ action: "retry", target: "AI lab - ML Engineer", why: "Shadow has a confident answer for every open question", needs_level: 2, allowed: false },
+                  { action: "scale", target: "appliers 2 -> 3", why: "8 jobs waiting; memory used 2400 MB", needs_level: 3, allowed: false }] };
+}
+
 export async function proxyGet<T>(path: string): Promise<T> {
   if (path.split("?")[0] === "/api/shadow") return shadowState() as T;
+  if (path.split("?")[0] === "/api/shadow/brain") return shadowBrainDemo() as T;
+  if (path.split("?")[0] === "/api/shadow/agents") return shadowAgentsDemo() as T;
   const m = await getManifest();
   const u = new URL(path, "http://x");
   const by = Date.now() / 1000 - m.generated;
@@ -161,6 +203,7 @@ const GEAR_APPLIERS: Record<string, number[]> = { N: [0, 0], "1": [1, 1], "2": [
 const GEAR_LOOP: Record<string, number | null> = { N: null, "1": 10, "2": 5, "3": 3, "4": 2 };
 export async function proxyPost<T>(path: string, body: any): Promise<T> {
   const p = path.split("?")[0];
+  if (p === "/api/shadow/train") return shadowBrainDemo().latest as T;
   switch (p) {
     case "/api/control/gearbox":
       overlay.gear = { ...(overlay.gear || {}), ...(body.gear ? { gear: String(body.gear).toUpperCase() } : {}), ...(body.clutch ? { clutch: body.clutch } : {}) };

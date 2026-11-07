@@ -134,7 +134,17 @@ def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     cmd = argv[0] if argv else "status"
     from engine import shadow
-    if cmd in ("on", "off", "always", "calls"):  # on = always; calls = two calls to you, then Shadow (shadow.py)
+    if cmd in ("train", "ladder", "ask"):  # 11-07: the brain (engine/shadow_brain.py)
+        from engine import shadow_brain
+        return shadow_brain.main(["status" if cmd == "ladder" else cmd] + argv[1:])
+    if cmd == "agents":  # the agent graph and what Shadow would do now (engine/agents.py)
+        from engine import agents
+        g = agents.graph()
+        print(f"agent graph: {agents.count(g)}")
+        for a in agents.plan():
+            print(f"  {'ALLOWED' if a['allowed'] else 'locked '} L{a['needs_level']} {a['action']}: {a['target']} ({a['why']})")
+        return
+    if cmd in ("on", "off", "always", "calls", "autopilot"):  # on = always; calls = two calls to you, then Shadow (shadow.py)
         ring = next((a for a in argv[1:] if a.replace(".", "", 1).isdigit()), None)
         s = shadow.configure({"on": "always"}.get(cmd, cmd), ring, " ".join(a for a in argv[1:] if a != ring))
         print(f"Shadow mode {s['mode']} (calls ring {s['ring_min']:g} min apart)")

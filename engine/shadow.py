@@ -21,7 +21,7 @@ import json, os, time
 from engine.config import WORKSPACE
 
 CALLS = os.path.join(WORKSPACE, "shadow_calls.json")
-MODES = ("calls", "always", "off")
+MODES = ("calls", "autopilot", "always", "off")  # autopilot (11-07): inline answers + parked jobs picked up at once
 RING_MIN = 5          # minutes between parking, call 1, call 2 and Shadow's pickup
 WINDOW_H = 48         # jobs parked longer ago than this never ring (the old backlog stays on Needs you)
 MAX_PICKUPS = 15
@@ -54,7 +54,7 @@ def configure(mode=None, ring_min=None, note=""):
     if mode is not None:
         if mode not in MODES:
             raise ValueError(f"mode must be one of {', '.join(MODES)}")
-        s["mode"], s["draft"] = mode, mode == "always"  # override.on() is True only when Shadow answers inline
+        s["mode"], s["draft"] = mode, mode in ("always", "autopilot")  # override.on(): Shadow answers inline
     if ring_min is not None:
         ring_min = float(ring_min)
         if not 0.5 <= ring_min <= 240:
@@ -104,7 +104,7 @@ def tick(now=None):
     from engine.feedback.events import record
     now = now or time.time()
     st, calls = settings(), _load(CALLS, {})
-    ring = st["ring_min"] * 60
+    ring = 0 if st["mode"] == "autopilot" else st["ring_min"] * 60  # autopilot: no calls, Shadow picks up at once
     stamp = lambda t: time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(t))
     counts, pickups = {"call1": 0, "call2": 0, "shadow": 0, "you": 0}, []
     parked = _parked(now)
@@ -135,7 +135,7 @@ def tick(now=None):
             c["call2"] = now
             record("shadow", action="call2", job=job, url=u)
             counts["call2"] += 1
-        elif c.get("call2") and now - c["call2"] >= ring and st["mode"] in ("calls", "always") and len(pickups) < MAX_PICKUPS:
+        elif c.get("call2") and now - c["call2"] >= ring and st["mode"] in ("calls", "autopilot", "always") and len(pickups) < MAX_PICKUPS:
             c.update(by="shadow", done=True, picked=now)
             _use_recommendations(c)
             record("shadow", action="pickup", by="shadow", job=job, url=u, used=len([r for r in c.get("recommend") or [] if r.get("a")]))
@@ -147,6 +147,16 @@ def tick(now=None):
     if now - _LEARNED[0] >= 300:  # every 5 min: feedback from the ledger and your answers into Shadow's memory
         _LEARNED[0] = now
         learn()
+        try:
+            from engine import shadow_brain, agents
+            shadow_brain.feedback()  # live record per strategy -> reliabilities
+            if now - _TRAINED[0] >= 3600 and os.environ.get("REGEN_SHADOW_TRAIN", "1") != "0":  # hourly retrain + re-test
+                _TRAINED[0] = now
+                shadow_brain.train_and_test()
+            if shadow_brain.allowed("job"):
+                agents.act()  # only actions Shadow has earned (engine/agents.py)
+        except Exception as e:
+            print(f"shadow brain: {e}", flush=True)
     return counts
 
 
@@ -187,6 +197,7 @@ def _retry_as_shadow(jobs):
 from engine.config import PROFILE as _PROFILE
 MEMORY = os.path.join(_PROFILE, "shadow_memory.json")  # on the profile volume, next to the Fact Bank and answers
 _LEARNED = [0.0]
+_TRAINED = [0.0]
 SHOW = {"__ACK__": "Agree / acknowledge", "__DECLINE__": "Decline to answer", "__SKILLS__": "Pick the matching skills"}
 
 
@@ -196,8 +207,15 @@ def recommend(question, job=""):
     with nothing on file the yes/no policy gives the honest answer. -> {"q", "a", "from"}."""
     from engine.feedback.answers import pattern_for
     hit = _load(MEMORY, {}).get(pattern_for(question))
+    if hit and hit.get("answer") and hit.get("by") == "you":
+        return {"q": question, "a": hit["answer"], "from": "you, before", "conf": 1.0, "strategy": "memory"}
+    try:  # 11-07: the brain (engine/shadow_brain.py): five strategies, confidence, abstains when unsure
+        from engine import shadow_brain
+        return shadow_brain.decide(question, job)
+    except Exception:
+        pass
     if hit and hit.get("answer"):
-        return {"q": question, "a": hit["answer"], "from": "you, before" if hit.get("by") == "you" else "Shadow's memory"}
+        return {"q": question, "a": hit["answer"], "from": "Shadow's memory"}
     a = None
     try:
         from engine.apply import runner
@@ -212,7 +230,7 @@ def recommend(question, job=""):
     return {"q": question, "a": a, "from": "Fact Bank draft" if a else "nothing on file"}
 
 
-def remember(question, answer, by, job):
+def remember(question, answer, by, job, strategy=None):
     from engine.feedback.answers import pattern_for
     mem = _load(MEMORY, {})
     p = pattern_for(question)
@@ -221,6 +239,8 @@ def remember(question, answer, by, job):
         e["overridden"] = e.get("overridden", 0) + 1  # you corrected Shadow: your answer replaces it
     if by == "you" or e.get("by") != "you":  # never overwrite your answer with Shadow's
         e.update(answer=answer, by=by)
+        if strategy:
+            e["strategy"] = strategy  # which brain strategy gave it: its record trains that strategy's reliability
     if job and job not in e["jobs"]:
         e["jobs"] = (e["jobs"] + [job])[-50:]
     e["ts"] = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -281,7 +301,7 @@ def _use_recommendations(c):
             A.save(c["job"], r["q"], r["a"], requeue_job=False, by="shadow")
         except (ValueError, OSError):
             continue  # EEO and the like: never saved, the form's own rules decline them
-        remember(r["q"], r["a"], "shadow", c["job"])
+        remember(r["q"], r["a"], "shadow", c["job"], r.get("strategy"))
 
 
 def pickup(url, who="you"):

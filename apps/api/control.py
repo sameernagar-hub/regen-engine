@@ -432,7 +432,7 @@ def shadow_get():
 
 @router.post("/shadow")
 def shadow_set(body: dict, request: Request):
-    """Set Shadow's mode and ring interval: {"mode": "calls"|"always"|"off", "ring_min": 0.5-240}. Local only."""
+    """Set Shadow's mode and ring interval: {"mode": "calls"|"autopilot"|"always"|"off", "ring_min": 0.5-240}."""
     _local_write(request)
     from engine import shadow
     try:
@@ -453,6 +453,31 @@ def shadow_pickup(body: dict, request: Request):
         return shadow.pickup(str(body.get("url") or ""), who)
     except KeyError as e:
         raise HTTPException(404, str(e))
+
+
+@router.get("/shadow/brain")
+def shadow_brain_get():
+    """Shadow's brain (engine/shadow_brain.py): tuned thresholds, reliability per strategy, the latest train/test run,
+    the test-precision history, and the ownership ladder with what each locked rung still needs."""
+    from engine import shadow_brain
+    return shadow_brain.brain()
+
+
+@router.post("/shadow/train")
+def shadow_train(request: Request):
+    """Retrain now: tune on your answers (train split), score on the held-out split. Local only. ~2 s."""
+    _local_write(request)
+    from engine import shadow_brain
+    return shadow_brain.train_and_test()
+
+
+@router.get("/shadow/agents")
+def shadow_agents():
+    """The agent graph (engine/agents.py): Shadow -> applier / parked-job / service agents -> job agents -> question
+    agents, each with its owner today, plus the actions Shadow would take now (allowed or locked by the ladder)."""
+    from engine import agents
+    g = agents.graph()
+    return {"graph": g, "counts": agents.count(g), "plan": agents.plan()}
 
 
 @router.get("/control/bench")

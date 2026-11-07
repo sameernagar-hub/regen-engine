@@ -171,6 +171,13 @@ def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container
     with state "draining", and only a container whose heartbeat says "draining" is stopped and deleted. More work
     arriving cancels pending drains first."""
     want, jobs = desired(lo, hi)
+    try:  # 11-07: once Shadow has earned level 3 (engine/shadow_brain.py) it owns the balance, inside the same limits
+        from engine import shadow_brain
+        if shadow_brain.allowed("scale"):
+            from engine.agents import shadow_want, _load as _ld
+            want = shadow_want(lo, hi, jobs, (_ld(os.path.join(WORKSPACE, "containers.json"), {}).get("totals") or {}).get("mem_mb"))
+    except Exception:
+        pass
     rows = appliers()
     running = [r for r in rows if r[2]]
     beats = {m["host"]: m for m in fleet()["members"] if m.get("role") == "applier"}
