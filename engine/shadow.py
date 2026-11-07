@@ -147,6 +147,12 @@ def _retry_as_shadow(jobs):
     out = []
     for job in jobs:
         e = find_entry(job)
+        try:  # the same title / location filter as answer retries: a non-US or non-SWE role is never retried
+            from engine.discovery.filters import keep, load_domain
+            if keep(load_domain(), str(job).split(" - ", 1)[-1], "United States", "") not in (None, "location", "non-US"):
+                e = None
+        except Exception:
+            pass
         if e:
             e["shadow"] = True
             mine = job_extras().get(job)
