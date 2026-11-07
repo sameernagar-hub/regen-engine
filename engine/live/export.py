@@ -15,7 +15,7 @@ SITE = os.path.join(ROOT, "site")
 
 
 COMMON_WORD_NAMES = {"applied", "affirm", "ramp", "compass", "scale", "figure", "notion", "current", "atoms", "mercury",
-                     "anchor", "persona", "together", "modal", "pylon", "remote"}  # same list as scripts/privacy_scan.py
+                     "anchor", "persona", "together", "modal", "pylon", "remote", "engine"}  # same list as scripts/privacy_scan.py
 
 
 def anonymize(text, company):

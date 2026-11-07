@@ -1,12 +1,9 @@
-# Handoff: 11-07 ~13:15. Docker Desktop was PAUSED by the user mid-run (gear 2, Shadow autopilot). Containers are
-# frozen, not stopped. Last seen before the pause: inbox 0, claimed 0 (nothing mid-apply), fleet ok.
-# Next start, in order:
-#   1. Unpause Docker (whale menu). The stack resumes where it froze, in gear 2.
-#   2. If not running now: `docker exec -u 10001 deploy-pipeline-1 python -m engine gear N`, wait for inbox+claimed 0
-#      (`docker exec deploy-supervisor-1 python -m engine fleet`), then `docker compose -f deploy/bank.compose.yml stop`.
-#   3. If Docker was quit instead: the START command below; the supervisor requeues any lost claimed batch; then gear 2.
-#   4. After any start: check `docker port deploy-api-1` (recreating api dropped its port once on 11-07: re-run
-#      `compose up -d --no-deps api`), then `python -m engine shadow ladder` and /shadow.
+# Handoff: 11-07 ~14:10. Stack is STOPPED. Docker Desktop was paused, then shut down, which SIGKILLed every container
+# (exit 137; postgres exited cleanly). Checked afterwards: claimed 0, inbox 0, no temp files, every JSON whole, the
+# event log ends on a complete line. gear.json set to N in the volume (backup gear.json.bak-20261107).
+# Next start: the START command below, then `docker port deploy-api-1`, then shift to gear 2. Recreate reposync too
+# (`compose up -d --no-deps --force-recreate reposync`): it ran the old feed check, which blocked the public feed on
+# the words "remote" and "engine" (both now common words, commit below).
 # Local commits 5f54c38 (feed airbag "remote") + 8e31ab7 (Shadow brain) -> reposync PR. Wiki 62983f0 pushed.
 
 ## Done 11-07
