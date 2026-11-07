@@ -85,6 +85,12 @@ def board(tmp_path, monkeypatch):
     monkeypatch.setattr("engine.feedback.events.record", lambda kind, **k: evs.setdefault(kind, []).append(k))
     retried = []
     monkeypatch.setattr(S, "_retry_as_shadow", lambda jobs: retried.extend(jobs) or len(jobs))
+    monkeypatch.setattr(S, "MEMORY", str(tmp_path / "shadow_memory.json"))
+    monkeypatch.setattr("engine.config.PROFILE", str(tmp_path))
+    saved = []
+    monkeypatch.setattr("engine.feedback.answers.save", lambda job, q, a, **k: saved.append((job, q, a, k.get("by"))))
+    monkeypatch.setattr(S, "recommend", lambda q, job="": {"q": q, "a": "No" if "used" in q else None, "from": "Fact Bank draft"})
+    evs["saved"] = saved
     S.configure("calls", 5)
     return evs, retried
 
@@ -138,3 +144,30 @@ def test_manual_pickup_hands_to_shadow(board):
     S.tick()
     S.pickup("u/Acme - SWE", "shadow")
     assert retried == ["Acme - SWE"] and S.status()["by_shadow"] == 1
+
+
+def test_recommends_at_call1_and_uses_it_when_nobody_answers(board):
+    evs, retried = board
+    _park(evs, "Acme - SWE", detail="NEEDS YOU: Have you used Foo before? | Describe a hobby")
+    now = _t.time()
+    S.tick(now)
+    line = S.lines(now)[0]
+    assert [r["a"] for r in line["recommend"]] == ["No", None]  # nothing on file for the hobby: no invented answer
+    S.tick(now + 300); S.tick(now + 600)
+    assert evs["saved"] == [("Acme - SWE", "Have you used Foo before?", "No", "shadow")]
+    mem = json.load(open(S.MEMORY))
+    assert list(mem.values())[0]["answer"] == "No" and list(mem.values())[0]["by"] == "shadow"
+
+
+def test_your_answer_overrides_shadow_memory_and_learning_counts(board, tmp_path):
+    evs, _ = board
+    S.remember("Have you used Foo before?", "No", "shadow", "Acme - SWE")
+    S.remember("Have you used Foo before?", "Yes", "you", "Acme - SWE")
+    S.remember("Have you used Foo before?", "No", "shadow", "Beta - SWE")  # Shadow never overwrites you
+    e = list(json.load(open(S.MEMORY)).values())[0]
+    assert e["answer"] == "Yes" and e["by"] == "you" and e["overridden"] == 1
+    evs["application"].append({"ts": "2026-11-06T22:00:00", "job": "Acme - SWE", "status": "SUBMITTED"})
+    evs["outcome"] = [{"outcome": "interview", "jobs": ["Acme - SWE"]}]
+    S.learn()
+    e = list(json.load(open(S.MEMORY)).values())[0]
+    assert e["submitted"] == 1 and e["moved_forward"] == 1

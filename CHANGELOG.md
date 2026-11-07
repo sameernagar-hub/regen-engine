@@ -24,7 +24,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   quarter / year can you begin" comes from the start-date preset; a "how did you hear" list without our wording picks
   the nearest true source (careers site, job board, else Other); a salary figure on the edge of gapped bands
   ("121,000-140,000 / 141,000-...") lands in the lower band; HTML-escaped Greenhouse pay ranges are read.
-- Verify: `python -m pytest tests/test_shadow.py` (12 tests); open http://127.0.0.1:3000/shadow.
+- **Shadow recommends, remembers, learns**: at call 1 Shadow records what it would answer for each open question
+  (your earlier answer, else its memory, else the engine's draft as Shadow; nothing on file -> no answer, never an
+  invented one) and the line shows "Shadow recommends". After two unanswered calls those answers are saved (source
+  shadow) and used. `profile/shadow_memory.json` keeps every question with its answer, who gave it (yours always
+  wins; corrections are counted) and its record from the ledger every 5 min (submitted, parked again, rejected, moved
+  forward); an answer used 3 times without a submit is marked weak. Retries go through the title filter.
+- Verify: `python -m pytest tests/test_shadow.py` (14 tests); open http://127.0.0.1:3000/shadow.
 
 ## [Unreleased] - 2026-11-05 · Dense JD-shaped resumes, keyword line, QA gate and wording feedback loop
 - **Full page, one line per bullet** (`resume.fit`): smaller justified type; the page fills from a ranked reserve of

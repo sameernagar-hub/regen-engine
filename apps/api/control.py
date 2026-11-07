@@ -427,7 +427,7 @@ def shadow_get():
     ringing (call 1 / call 2, seconds to the next step) or picked up (by you or by Shadow)."""
     from engine import shadow
     o = shadow.oversight()
-    return {**shadow.status(), "who": {"applications": o["applications"], "answers": o["answers"]}}
+    return {**shadow.status(), "who": {"applications": o["applications"], "answers": o["answers"]}, "memory": shadow.memory()}
 
 
 @router.post("/shadow")

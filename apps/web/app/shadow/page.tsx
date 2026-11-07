@@ -9,9 +9,11 @@ import { useEffect, useState } from "react";
 import { Nav } from "../nav";
 import { get, post, poll } from "@/lib/types";
 
-type Line = { url: string; job: string; question?: string; state: string; by?: string | null; next_s: number | null; open: boolean; ts: string };
+type Rec = { q: string; a: string | null; from: string };
+type Line = { url: string; job: string; question?: string; state: string; by?: string | null; next_s: number | null; open: boolean; ts: string; recommend?: Rec[] };
+type Mem = { known: number; by_you: number; entries: { question: string; answer: string; by: string; used: number; submitted?: number; parked_again?: number; moved_forward?: number; overridden?: number; weak?: boolean }[] };
 type Who = { applications: Record<string, number>; answers: Record<string, number> };
-type State = { mode: "calls" | "always" | "off"; ring_min: number; lines: Line[]; ringing: number; by_shadow: number; by_you: number; who?: Who };
+type State = { mode: "calls" | "always" | "off"; ring_min: number; lines: Line[]; ringing: number; by_shadow: number; by_you: number; who?: Who; memory?: Mem };
 
 const MODES: [State["mode"], string, string][] = [
   ["calls", "Two calls, then Shadow", "The engine calls you twice. No pickup, Shadow takes the job."],
@@ -84,7 +86,15 @@ export default function ShadowPage() {
                     <b>{l.job}</b>
                     <span className="dim small">{l.state} · {t == null ? "" : t > 0 ? `${l.state === "call 1" ? "call 2" : "Shadow"} in ${mmss(t)}` : "next tick"}</span>
                   </div>
-                  {l.question && <p className="dim small shadow-q">{l.question}</p>}
+                  {l.recommend?.length ? (
+                    <ul className="shadow-recs">
+                      {l.recommend.map((r, i) => (
+                        <li key={i} className={r.a ? "" : "shadow-rec-none"}>
+                          <span className="dim small">{r.q}</span>
+                          <span className="shadow-rec"><em>Shadow recommends</em> <b>{r.a || "nothing on file: it will not invent one"}</b>
+                            <span className="dim small"> · {r.from}</span></span>
+                        </li>))}
+                    </ul>) : l.question && <p className="dim small shadow-q">{l.question}</p>}
                   <div className="shadow-gauge" aria-hidden="true"><span style={{ width: `${Math.round(pct * 100)}%` }} /></div>
                   <p className="row small">
                     <Link className="btn gold" href="/needs" onClick={() => post("/api/shadow/pickup", { url: l.url, who: "you" }).catch(() => {})}>Pick up</Link>
@@ -95,6 +105,8 @@ export default function ShadowPage() {
           </ol>)}
       </section>
 
+      <MemoryPanel m={s?.memory} />
+
       <section className="shadow-policy">
         <div className="card">
           <h2>Shadow answers as you</h2>
@@ -102,7 +114,10 @@ export default function ShadowPage() {
             <li>The gates treat Shadow and you as the same person: its answers carry the weight of yours.</li>
             <li>Salary: the middle of the posted range, else your market-rate preset, matched to the form's bands.</li>
             <li>Certifications, start dates, addresses, how you heard about the role: from your presets.</li>
-            <li>Open questions: drafted from your Fact Bank, every draft logged on the application.</li>
+            <li>A question the Fact Bank cannot settle: Shadow writes down what it recommends at call 1, so you see it while
+              the calls ring. Nobody picks up, Shadow uses it, remembers it, and never drafts that question again.</li>
+            <li>It learns: your answers replace its own, and each remembered answer carries its record (submitted, parked
+              again, moved forward, corrected by you).</li>
           </ul>
         </div>
         <div className="card">
@@ -193,6 +208,26 @@ function Who({ who }: { who?: Who }) {
           <b>{n}</b>
         </div>))}
       <p className="dim small">Answers saved: you {who?.answers?.you || 0} · Shadow {who?.answers?.shadow || 0}</p>
+    </section>
+  );
+}
+
+// Shadow's memory: every question it has seen, the answer, who gave it (you win), and how it went. Learned from
+// the ledger every 5 minutes (engine/shadow.py learn()), so the same question is never drafted twice.
+function MemoryPanel({ m }: { m?: Mem }) {
+  return (
+    <section className="card shadow-memory" aria-label="Shadow's memory">
+      <h2>Shadow's memory <span className="dim small">{m ? `${m.known} questions known · ${m.by_you} answered by you` : ""}</span></h2>
+      {!m?.entries?.length ? <p className="dim">Empty so far. Every answer Shadow gives or learns from you lands here.</p> : (
+        <ol className="shadow-mem">
+          {m.entries.map((e, i) => (
+            <li key={i} data-by={e.by} data-weak={e.weak ? "true" : "false"} style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}>
+              <span className="dim small">{e.question}</span>
+              <span><b>{e.answer}</b> <span className={`shadow-chip ${e.by}`}>{e.by === "you" ? "you" : "Shadow"}</span>
+                <span className="dim small"> used {e.used} · submitted {e.submitted || 0}{e.moved_forward ? ` · ${e.moved_forward} moved forward` : ""}
+                  {e.overridden ? ` · you corrected it ${e.overridden}×` : ""}{e.weak ? " · weak: rethinking" : ""}</span></span>
+            </li>))}
+        </ol>)}
     </section>
   );
 }

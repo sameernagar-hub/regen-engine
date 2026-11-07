@@ -50,6 +50,10 @@ const SHADOW_DEMO = [
   ["Arcfield AI - ML Engineer", "Have you built or evaluated a workflow that uses a large language model?", 140],
   ["Quarry Labs - Platform Engineer", "In which quarter would you be available to begin?", 400],
 ] as const;
+const DEMO_REC: Record<string, string> = {
+  "Desired Salary": "$141,000-$160,000 (middle of the posted range)", "How did you hear about Lumen Health?": "Company website",
+  "Have you built or evaluated a workflow that uses a large language model?": "Yes", "In which quarter would you be available to begin?": "Q4",
+};
 const shadowDemo = { mode: "calls", ring_min: 1, t0: Date.now(), picked: new Map<string, { who: string; at: number }>() };
 function shadowState() {
   const ring = shadowDemo.ring_min * 60, now = Date.now() / 1000, lines: any[] = [];
@@ -62,12 +66,20 @@ function shadowState() {
     if (now >= shadowAt && shadowDemo.mode !== "off") { lines.push({ url, job, question, state: "picked up by shadow", by: "shadow", next_s: null, open: false, ts: iso(shadowAt) }); continue; }
     const second = now >= call1 + ring;
     lines.push({ url, job, question, state: second ? "call 2" : "call 1", by: null, open: true, ts: iso(now),
+                 recommend: [{ q: question, a: DEMO_REC[question] ?? null, from: DEMO_REC[question] ? "Fact Bank draft" : "nothing on file" }],
                  next_s: Math.max(0, Math.round((second ? call1 + 2 * ring : call1 + ring) - now)) });
   }
   return { mode: shadowDemo.mode, ring_min: shadowDemo.ring_min, lines, ringing: lines.filter((l) => l.open).length,
            by_shadow: lines.filter((l) => l.by === "shadow").length, by_you: lines.filter((l) => l.by === "you").length,
            who: { applications: { "you:SUBMITTED": 4, "shadow:SUBMITTED": 6 + lines.filter((l) => l.by === "shadow").length, "engine:SUBMITTED": 17 },
-                  answers: { you: 3, shadow: 9 } } };
+                  answers: { you: 3, shadow: 9 } },
+           memory: { known: 5, by_you: 1, entries: [
+             { question: "Are you willing to relocate?", answer: "Yes", by: "you", used: 6, submitted: 5, overridden: 1 },
+             { question: "How did you hear about this role?", answer: "Company website", by: "shadow", used: 9, submitted: 8, moved_forward: 1 },
+             { question: "Desired Salary", answer: "Middle of the posted range", by: "shadow", used: 7, submitted: 6 },
+             { question: "Have you used our product before?", answer: "No", by: "shadow", used: 3, submitted: 3 },
+             { question: "In which year would you be available to begin?", answer: "2026", by: "shadow", used: 2, submitted: 1 },
+           ] } };
 }
 
 export async function proxyGet<T>(path: string): Promise<T> {

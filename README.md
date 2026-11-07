@@ -40,7 +40,7 @@ Auto-apply tools make it worse: one resume for every posting, invented answers f
 |:-:|:-:|:-:|:-:|:-:|
 | applications submitted | best day | employer boards watched | MCP tools | model API keys |
 
-From the engine's own ledger as of 2026-10-30 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 284 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
+From the engine's own ledger as of 2026-10-30 (latest status per posting; `python -m engine report` lists the ones whose confirmation screenshot is still on disk). 286 tests in CI, plus a privacy gate on every push. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
 
 ## How it works
 
@@ -70,7 +70,11 @@ playing each step live and logging what each one removed. Proof is shrunk, never
 ```
 
 Shadow is your AI delegate (for its author, Claude, through the MCP cord). The gates treat Shadow and you as the same
-person: an answer Shadow gives carries the weight of one you typed, and every one is logged with its source. The
+person: an answer Shadow gives carries the weight of one you typed, and every one is logged with its source. For a
+question your Fact Bank cannot settle, Shadow shows what it recommends while the calls ring; if nobody picks up, it
+uses that answer and remembers it, so the same question is never drafted twice. Its memory learns from the rest of
+the engine: your answers replace its own, and each remembered answer carries its record (submitted, parked again,
+moved forward, corrected by you). The
 backend is one small timer (`engine/shadow.py`, a 30-second tick in the answers container, no network calls); `/shadow`
 in the control room shows the ignition sequence, every line ringing with its countdown, and who cleared the forms in
 the last 24 hours. Modes: **two calls, then Shadow** (default), **Shadow always** (nothing parks), **only me**.

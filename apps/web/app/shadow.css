@@ -83,3 +83,19 @@
 @keyframes shadow-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (max-width: 640px) { .shadow-bar { grid-template-columns: 84px 1fr 32px; } .shadow-tag { font-size: 18px; } }
 @media (prefers-reduced-motion: reduce) { .shadow-line, .shadow-page .card, .shadow-bar-track span { animation: none; } }
+
+/* recommendations on a ringing line */
+.shadow-recs { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.shadow-recs li { display: grid; gap: 2px; padding-left: 10px; border-left: 2px solid #a78bfa66; animation: shadow-in .4s ease-out both; }
+.shadow-recs li.shadow-rec-none { border-left-color: #ffffff26; }
+.shadow-rec { overflow-wrap: anywhere; }
+.shadow-rec em { font-style: normal; color: var(--shadow); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+
+/* memory */
+.shadow-memory h2 span { font-weight: 400; margin-left: 8px; }
+.shadow-mem { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 420px; overflow: auto; }
+.shadow-mem li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid #ffffff10; animation: shadow-in .4s ease-out both; overflow-wrap: anywhere; }
+.shadow-mem li[data-weak="true"] b { color: #ff9f43; }
+.shadow-chip { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: #a78bfa2e; color: var(--shadow); margin-left: 4px; }
+.shadow-chip.you { background: #f2c14e2e; color: var(--gold); }
+@media (prefers-reduced-motion: reduce) { .shadow-recs li, .shadow-mem li { animation: none; } }
