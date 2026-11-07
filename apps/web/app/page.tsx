@@ -28,7 +28,7 @@ const WIRES: Part = { key: "graph", href: "/graph", label: "Memory graph", about
 const GEARBOX: Part = { key: "gearbox", href: "/gearbox", label: "Gearbox", about: "Shift the engine's speed (appliers, scan rate) and see what rejections taught it, fed back through the clutch.", tone: "#5ee6b5" };
 const CORD: Part = { key: "mcp", href: "/mcp", label: "MCP cord", about: "Your AI client plugs in here and operates the engine at zero cost: 35 tools, from memory to the gearbox.", tone: "#5ee6b5" };
 const OIL: Part = { key: "oilchange", href: "/oilchange", label: "Maintenance", about: "Clears what applications leave behind (expired files, old code and alert mail, closed postings) so the search stays fast. Shows the engine’s health and each clean-up live.", tone: "#f0b64c" };
-const SHADOW: Part = { key: "shadow", href: "/shadow", label: "Shadow", about: "Your AI delegate. When you step away from the desk, Shadow takes the wheel and answers as you, truthfully, so no application halts; it hands back the moment you return.", tone: "#a78bfa" };
+const SHADOW: Part = { key: "shadow", href: "/shadow", label: "Shadow", about: "Your AI delegate. A stuck form calls you twice; if neither call is picked up, Shadow answers as you, truthfully, and remembers the answer, so no application halts.", tone: "#a78bfa" };
 const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL, SHADOW];
 const FIRING = [0, 7, 3, 2, 5, 4, 6, 1];  // eight cylinders since Desk joined (11-02): the classic V8 order 1-8-4-3-6-5-7-2
 
@@ -51,7 +51,13 @@ export default function EngineHome() {
     const put = (k: string, v: string) => { s[k] = v; setStat({ ...s }); };
     if (!PUBLIC) get<any>("/api/snapshot").then((x) => setStrip({ boards: x.boards.toLocaleString(), sent: String(x.verified), sentLabel: "applications sent with proof" })).catch(() => {});
     get<any>("/api/snapshot").then((x) => { put("live", `${x.verified} sent with proof`); put("applications", `${x.verified} with proof`); put("room", `${x.boards.toLocaleString()} boards + 6 big-tech portals watched`); }).catch(() => {});
-    get<any[]>("/api/human").then((x) => put("needs", `${x.length} waiting on you`)).catch(() => {});
+    get<any[]>("/api/human").then((x) => {
+      put("needs", `${x.length} waiting on you`);
+      const checks = x.filter((i) => /captcha|human click|human check|filled in the desk/i.test(`${i.text} ${(i.missing || []).join(" ")}`)).length;
+      put("desk", `${checks} human check${checks === 1 ? "" : "s"} waiting`);
+    }).catch(() => {});
+    get<any>("/api/shadow").then((x) => put("shadow", x.mode === "always" ? "answers every form" : x.mode === "off" ? "off: questions wait for you"
+      : `${x.ringing} ringing · ${x.by_shadow} picked up`)).catch(() => {});
     get<any>("/api/control/fleet").then((x) => put("control", `${x.members.filter((m: any) => m.role === "applier" && m.up).length} appliers running`)).catch(() => {});
     get<any>("/api/control/reach?limit=1").then((x) => put("reach", `${x.listed} resumes ready`)).catch(() => {});
     get<any[]>("/api/outreach").then((x) => put("outreach", `${x.length} drafts`)).catch(() => {});
@@ -99,7 +105,7 @@ export default function EngineHome() {
         {PUBLIC && <p className="demo-pill" title="Built by scripts/proxy_dataset.py: the real API over a synthetic engine">Interactive demo on synthetic data. Every part of the engine is a door: hover to wake it, click to step inside.</p>}
         {/* 10-29: the part card lives under the pitch, never over the engine; its slot is reserved so nothing jumps */}
         <aside className={`engine-card${info ? " on" : ""}`} aria-live="polite" style={info ? { ["--tone" as any]: info.tone } : undefined}>
-          {info && (<><b>{info.label}</b><span className="stat">{stat[info.key] || "·"}</span><p>{info.about}</p><small>click to open</small></>)}
+          {info && (<><b>{info.label}</b>{stat[info.key] && <span className="stat">{stat[info.key]}</span>}<p>{info.about}</p><small>click to open</small></>)}
         </aside>
       </header>
 
