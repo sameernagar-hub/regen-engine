@@ -1,3 +1,34 @@
+# Handoff: 11-07 ~13:15. Docker Desktop was PAUSED by the user mid-run (gear 2, Shadow autopilot). Containers are
+# frozen, not stopped. Last seen before the pause: inbox 0, claimed 0 (nothing mid-apply), fleet ok.
+# Next start, in order:
+#   1. Unpause Docker (whale menu). The stack resumes where it froze, in gear 2.
+#   2. If not running now: `docker exec -u 10001 deploy-pipeline-1 python -m engine gear N`, wait for inbox+claimed 0
+#      (`docker exec deploy-supervisor-1 python -m engine fleet`), then `docker compose -f deploy/bank.compose.yml stop`.
+#   3. If Docker was quit instead: the START command below; the supervisor requeues any lost claimed batch; then gear 2.
+#   4. After any start: check `docker port deploy-api-1` (recreating api dropped its port once on 11-07: re-run
+#      `compose up -d --no-deps api`), then `python -m engine shadow ladder` and /shadow.
+# Local commits 5f54c38 (feed airbag "remote") + 8e31ab7 (Shadow brain) -> reposync PR. Wiki 62983f0 pushed.
+
+## Done 11-07
+- Shadow brain (engine/shadow_brain.py): five strategies (bank, memory, TF-IDF neighbour, engine, yes/no), confidence
+  = raw x per-(strategy, question type) Beta reliability, shape check, noisy-OR voting, abstains below tau. Trained and
+  tested on the user's own answers (fixed 80/20 split, leave-one-out tuning, wrong costs 3x); hourly retrain in the
+  answers tick; live feedback per strategy. First runs: test precision 0.60 -> 0.80, coverage 0.26, 0 violations.
+- Ownership ladder L0-L5 + "nested agents" and the agent graph (engine/agents.py); actions run only when earned;
+  supervisor takes Shadow's applier balance at L3. Shadow is at L1 (L2 needs 20 held-out at 0.90; has 19 at 0.80).
+- Mode `autopilot` (set 11-07 at the user's request): inline answers, parked jobs picked up at once, no calls.
+- /shadow: vision map, agent graph, how Shadow decides, training ground; front-page popup shows level + test score.
+- Shutdown rule is now 80% of the Claude 5-hour limit (user, 11-07).
+- Run 11:20-13:15: 1 submitted, 14 NEEDS YOU (mostly last night's Shadow retries parking again -> yours by rule),
+  54 skipped (fit gate: 5+ yrs, citizenship, C#). Supply-limited: 0 of ~2,040 queued selectable, Ashby cooling down.
+
+## Next
+- Title filter let "Maintenance Tech Lead" through as backend (reach list only): tighten.
+- Engine yes/no policy matched the user's own answers only ~35% ("N years of X"): consider bank-first for those.
+- Parked for the user: employer-familiarity questions (one streaming employer, 6 roles; one lending employer), a
+  distributed-systems self-rating, a robotics role's "2+ years" questions (tried 6x since 11-03), a CST/EST residence
+  question (honest No from the home-city preset), one human verification.
+
 # Handoff: 11-06 ~23:45. Stack is STOPPED cleanly (gear N, inbox + claimed drained, `compose stop`, volumes kept).
 # On start: shift to gear 2. Shadow mode is "calls" (ring 5 min). main = pushed (Shadow commits 2a93985..892b121).
 
