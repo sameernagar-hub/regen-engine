@@ -1,3 +1,21 @@
+# Handoff: 11-06 ~23:45. Stack is STOPPED cleanly (gear N, inbox + claimed drained, `compose stop`, volumes kept).
+# On start: shift to gear 2. Shadow mode is "calls" (ring 5 min). main = pushed (Shadow commits 2a93985..892b121).
+
+## Done 11-06
+- Shadow (engine/shadow.py, wiki/Shadow): a parked job rings call 1, call 2, then Shadow retries it as the user.
+  Shadow recommends at call 1, remembers (profile/shadow_memory.json + answer bank), learns from the ledger every
+  5 min; your answers win. answered_by on every application; supervisor heartbeat `shadow`. /shadow page.
+- The gate treats Shadow as the user (answers.save by="shadow"; legal answers job-scoped; EEO decline-only).
+- Answer fixes: hereby certify, permanent address, start quarter/year, how-heard nearest option, gapped salary
+  bands, HTML-escaped Greenhouse pay ranges. Front page: Desk/Shadow popups show live figures (no placeholder dot).
+- Run 20:20-23:40: 11 submitted (7 + 3 engine + 1 Shadow), 28 jobs picked up by Shadow; most Shadow retries parked
+  again on questions it could not settle truthfully, or hit Lever CAPTCHAs.
+
+## Next
+- Look at the Shadow retries that parked again (answered_by shadow, NEEDS YOU): which questions, and whether presets
+  or Fact Bank entries would settle them truthfully.
+- Desk: ~8 Lever CAPTCHA jobs from tonight (6 employers) are filled and wait for the user's click. Shadow never touches CAPTCHAs (hard rule).
+
 # Handoff: 11-06 ~00:30. Stack is STOPPED cleanly (gear N, inbox + claimed drained, `compose stop`, volumes kept).
 # On start: shift to gear 2. Local commits on main -> reposync PR.
 
