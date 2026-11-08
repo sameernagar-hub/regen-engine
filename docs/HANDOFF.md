@@ -8,6 +8,22 @@
 # from the lowest unfinished section. First item: §1.1 Role Keywords line vs README claim (user decides a/b).
 # v2.0 ALIVE (docs/ALIVE_PLAN.md) is ON HOLD; do not start Phase 0. Stop cleanly at 80% of the 5-hour limit.
 
+## Prep for docs/NEXT_STEPS.md (read 11-07, so the next session starts without re-reading code)
+- §1.1 Role Keywords: engine/tailoring/keywords.py (flag `REGEN_JD_KEYWORDS`, default **on**, line 73); printed in
+  engine/tailoring/resume.py:168 from `spec["jd_keywords"]`. `validate()` (resume.py:112) checks skill_text, roles,
+  facts, fact_pick, projects, skills, **not jd_keywords** -> the README "Never bluffs" row (README.md:31) is untrue
+  today. Ask the user (a) default off or (b) reword README + wiki Tailoring / Truthfulness-and-Safety + CODING_STANDARDS
+  §1.1; recommend (a). Guard test: validate() covers every PDF text block, or README wording matches the flag default.
+- §1.2: README stats row is README.md:40 ("applications sent with proof"); wiki page Metrics.md.
+- §2 funnel: `report` is an inline function in engine/__main__.py (cmd at line 171); `feedback` = engine/feedback/
+  rejections.py; inbox/learn = engine/feedback/inbox.py; outcome events in engine/feedback/events.py. No Wilson helper
+  in engine/ yet (fit-gate learner has the "not significant" wording to reuse). Outcome data stays out of git.
+- §4: `outreach` = engine/outreach.py (MCP tool `outreach_drafts`). §5: engine/shadow.py MODES line 24, mode is
+  `autopilot` now; never-answer list lives in shadow_brain.py:379 (+ override.blocked): extend + test in
+  tests/test_shadow_brain.py. Mode change needs the user's yes.
+- §7 sizes: runner.py 1,886 lines; 98 `except Exception` in engine/. §8 needs user decisions (HANDOFF location,
+  CHANGELOG trim, old author email in history: tell, never rewrite).
+
 ## Done 11-07 night
 - Restarted after the Docker shutdown; reposync recreated; gear 2; supervisor scaled 1 -> 3 appliers on demand.
 - Run 22:42-23:42: 1 submitted, 13 NEEDS YOU (11 answered_by shadow, parked again), 27 skipped (fit gate).
