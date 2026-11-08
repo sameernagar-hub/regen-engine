@@ -1,13 +1,15 @@
-# Handoff: 11-07 ~23:30. Stack is UP in gear 2 (started 22:42), Shadow on autopilot, applying.
-# NEXT SESSION, in this order: (1) start/verify the engine (START command below if down, `docker port deploy-api-1`,
-# gear 2, `fleet_status`; the "Gmail tab" warning right after start is a race, IMAP codes run in the supervisor).
+# Handoff: 11-07 ~23:45. Stack is STOPPED cleanly (gear N, inbox + claimed 0, `compose stop`, volumes kept).
+# Verified after stop: no temp files, events.jsonl ends on a full line, queue/gear/answers/presets JSON whole.
+# NEXT SESSION, in this order: (1) START command below, `docker port deploy-api-1`, shift to gear 2, `fleet_status`
+# (a "Gmail tab" warning right after start is a race; IMAP codes run in the supervisor). Close bot PR 31 if empty.
 # (2) Begin v2.0 ALIVE, **Phase 0 only** (docs/ALIVE_PLAN.md §5, wiki Revamp-v2): typed events + useEngine() +
-# replay recorder + scripts/bench_alive.py. Record V-benchmarks in docs/bench/alive.md. One phase per session;
-# stop rules in §2. Watch the Claude 5-hour limit (stop cleanly at 80%).
+# replay recorder + scripts/bench_alive.py; record V-benchmarks in docs/bench/alive.md. One phase per session;
+# triage the Idea inbox (§8) first. Watch the Claude 5-hour limit (stop cleanly at 80%).
 
 ## Done 11-07 night
 - Restarted after the Docker shutdown; reposync recreated; gear 2; supervisor scaled 1 -> 3 appliers on demand.
-- Pass 1 (22:42-23:01): 14 jobs, 1 submitted; parked: a lending employer (location / familiarity), a robotics role
+- Run 22:42-23:42: 1 submitted, 13 NEEDS YOU (11 answered_by shadow, parked again), 27 skipped (fit gate).
+  Supply-limited: later passes found nothing selectable. Pass 1: parked: a lending employer (location / familiarity), a robotics role
   (robotics "2+ yrs controls", honest no), one human verification (yours).
 - v2.0 ALIVE plan written (docs/ALIVE_PLAN.md + wiki Revamp-v2); README cut to essentials pointing at the wiki.
 
