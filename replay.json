@@ -1,5 +1,5 @@
 {
-"generated": "2026-11-07 22:42",
+"generated": "2026-11-07 22:43",
 "days": 7,
 "verified": 418,
 "verified_roles": [
@@ -1682,18 +1682,6 @@
 {
 "stage": "listen",
 "tone": "calm",
-"text": "Spotted a company: Embedded Hardware Engineer - Electro Optical Systems.",
-"ts": "2026-11-07T12:05"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: AI Engineer, RL & Evals.",
-"ts": "2026-11-07T12:05"
-},
-{
-"stage": "listen",
-"tone": "calm",
 "text": "Spotted a company: Backend Infrastructure Engineer.",
 "ts": "2026-11-07T12:05"
 },
@@ -2638,6 +2626,18 @@
 "tone": "quiet",
 "text": "Let a company go: not a fit.",
 "ts": "2026-11-07T12:56"
+},
+{
+"stage": "hear",
+"tone": "calm",
+"text": "A company confirmed they have the application.",
+"ts": "2026-11-07T22:42"
+},
+{
+"stage": "hear",
+"tone": "calm",
+"text": "A company passed this time.",
+"ts": "2026-11-07T22:42"
 }
 ],
 "graph": {
@@ -12298,6 +12298,18 @@
 "id": "n1456",
 "type": "Outcome",
 "label": "confirmation",
+"data": {}
+},
+{
+"id": "n1457",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n1458",
+"type": "Outcome",
+"label": "rejection",
 "data": {}
 }
 ],
@@ -23735,6 +23747,16 @@
 {
 "source": "n468",
 "target": "n1456",
+"type": "RESULTED_IN"
+},
+{
+"source": "n159",
+"target": "n1457",
+"type": "RESULTED_IN"
+},
+{
+"source": "n453",
+"target": "n1458",
 "type": "RESULTED_IN"
 }
 ]
