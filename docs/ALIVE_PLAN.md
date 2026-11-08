@@ -9,23 +9,41 @@ One phase per session, at most. Every phase ends with a local commit (reposync o
 The site *is* the engine: each part on screen is a real container, each motion is a real event, and each control
 drives the real backend. You watch REGEN run instead of reading a dashboard.
 
-## 2. Scope fence
+## 2. Scope: fixed per phase, growing between phases
 
-### In scope (only these)
-- Home `/` rebuilt as the living engine (Phases 1-3).
-- Shadow on the engine: drive selector, handover, captions (Phase 2).
+The plan is a living roadmap; each phase is a closed contract. **Scope can grow, but only between phases, through
+the feedback model below.** A phase that has started never takes on new work.
+
+### Track A: v2.0 core (ships v2.0 when Phase 5 passes)
 - Typed live events + nightly replay recorder (Phase 0).
-- Nav cut from 15 pills to 4 rooms, opened as drawers (Phase 5). Old routes stay as deep links, unchanged inside.
-- `/docs` page: two tracks, sourced from the wiki (Phase 5).
-- Tab title / favicon live (Phase 6).
+- Home `/` rebuilt as the living engine (Phase 1), Shadow co-driver (Phase 2), exhaust trail (Phase 3).
+- Nav cut from 15 pills to 4 rooms as drawers + `/docs` (Phase 5). Old routes stay as deep links.
+- "While you were away" replay (Phase 4) and live tab title/favicon (Phase 6).
 
-### Out of scope (say no, write it in "Later" at the bottom instead)
-- Redesigning the insides of existing pages (control, facts, graph, evals, gearbox, oilchange, reach...). They
-  only get wrapped in a drawer.
-- New engine features, new ATS adapters, Shadow brain changes, ladder thresholds.
-- Sound beyond one optional idle hum. 3D/WebGL. New npm dependencies (SVG + CSS + one rAF loop only).
-- Phone push notifications (Phase 6 is the tab only; push is "Later").
-- Restyling colors/fonts globally. The current palette, radial look and tones stay.
+### Track B: v2.x extensions (accepted 11-07, built after v2.0, each one a phase with the same rules)
+| Phase | Idea | One-line scope | Depends on |
+|---|---|---|---|
+| 7 | Phone push for your-turn items | push only for CAPTCHA / abstained questions / outcomes needing action; never routine progress; reuse the engine's existing alert path, no third-party tracking | Phase 0 events (`human.check`, `shadow.abstain`, `outcome`) |
+| 8 | Inner pages redesigned | one page at a time, in the order Your turn → Results → Garage; each page reads from `useEngine()` and goes live (no fetch-once pages left) | Phase 5 drawers |
+| 9 | Shadow L2+ visuals | the seat grows with the ladder (L2 job agents, L3 supervisor balance...); each rung's visual unlocks only when the backend reports it earned | Phase 2, Shadow ladder |
+| 10 | Engine sound pack | optional, off by default, muted on load: idle hum by gear, piston tick on fire, exhaust puff on submit; Web Audio, no files over 200 KB total | Phase 1 |
+| 11 | Weekly replay highlights | a 60-second week in review from the recorded replays (best day, first interviews, Shadow's handovers); public version scrubbed | Phase 4 |
+| 12 | 3D engine | the same 5-cylinder engine in 3D (one dependency allowed, chosen in the phase's design note); 2D stays as the fallback for low power and reduced motion | Phases 1-3 stable, V2/V3 budgets held |
+
+### Feedback model: how new ideas enter (so nothing is lost and nothing derails)
+1. **Capture:** any new idea goes into §8 "Idea inbox" with the date and one line. No code.
+2. **Triage at phase boundaries only** (start of a session, before the next phase): each inbox idea becomes one of
+   - **merge**: it fits an *unstarted* phase. Add it to that phase's file list + acceptance checks + V-bench.
+   - **new phase**: added to Track B with scope, dependencies and its own checks.
+   - **park**: stays in the inbox with the reason.
+3. **Learning loop:** after each phase, its benchmark row and what went wrong (docs/bench/alive.md) feed the triage.
+   A phase that missed a V target gets a fix-up phase before anything new.
+4. The user makes the call on every merge/new phase. Claude proposes, and the wiki page is updated with the plan.
+
+### Never (hard limits, not ideas)
+- Fake activity, invented numbers, or motion without an event.
+- Shadow touching CAPTCHAs; lowering ladder thresholds to unlock a visual.
+- Engine behavior changes smuggled in as UI work (engine changes get their own commit and changelog entry).
 
 ### Stop rules (anti-wander)
 - If a phase needs a file not listed under it, stop and write why in this doc before touching it.
@@ -148,7 +166,7 @@ Files: `apps/web/app/alive/TabPulse.tsx`, `layout.tsx`.
 Accept:
 - [ ] Title updates from events within 2 s; no update when nothing changed.
 
-## 6a. Quality bar: airtight (applies to every phase, no exceptions)
+## 6. Quality bar: airtight (applies to every phase, no exceptions)
 
 ### Benchmarks (V-series, alongside the engine's B1-B10)
 Harness: `scripts/bench_alive.py` (new in Phase 0, server side) + browser numbers taken in the preview with the
@@ -183,8 +201,9 @@ V-number from the previous row does not ship.
 - Event text is rendered as text, never `innerHTML` (job/company strings come from the internet).
 - Resource leaks: every `subscribe`, listener, timer and rAF is cleaned up on unmount (checked by V5).
 
-## 6. Order, checks, rollback
-Order: 0 → 1 → 2 → 3 → 5 → 4 → 6 (about 7-9 sessions total). After every phase:
+## 7. Order, checks, rollback
+Order: Track A 0 → 1 → 2 → 3 → 5 → 4 → 6 (about 7-9 sessions; v2.0 ships after 5), then Track B 7 → 12 in
+the order the user picks at triage. After every phase:
 1. `pytest` + `npm run typecheck` in apps/web.
 2. `docker compose -f deploy/bank.compose.yml build web api`, then recreate **web + api only** (never the desk with
    filled tabs; appliers only at claimed 0).
@@ -192,6 +211,7 @@ Order: 0 → 1 → 2 → 3 → 5 → 4 → 6 (about 7-9 sessions total). After e
 4. Privacy scan passes; local commit; HANDOFF.md + wiki page "Alive engine" updated.
 Rollback: `NEXT_PUBLIC_ALIVE=0` (until Phase 5) or `git revert` the phase commit.
 
-## 7. Later (parked ideas, not this plan)
-Phone push for your-turn items · engine sound pack · 3D engine · redesigning inner pages · Shadow L2+ visuals ·
-weekly replay highlights.
+## 8. Idea inbox (feedback model, step 1)
+| Date | Idea | Triage |
+|---|---|---|
+| 11-07 | Phone push, sound pack, 3D engine, inner pages, Shadow L2+ visuals, weekly highlights | accepted as Track B phases 7-12 (user, 11-07) |
