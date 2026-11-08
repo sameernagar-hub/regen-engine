@@ -25,6 +25,19 @@ alongside every other metric.
   answer, raising Shadow's mode or level, sending anything, deleting data, force-pushing, rewriting history.
 - When a step below says "user decides", set out the options with evidence and stop. Don't pick for them.
 
+## Decisions made by the user (11-07): don't ask these again
+
+- **Scope rule:** "next steps" means resolving existing issues, **never deleting features**. Turn things off by
+  default, gate them, or measure them; don't remove code, modes, pages or the Shadow brain.
+- **§1.1: option (a).** `REGEN_JD_KEYWORDS` defaults to off (keywords.py line 73 default "1" -> "0"); the feature
+  and the flag stay, so it can be switched on per run or for the §3 experiment. README "Never bluffs" claim stays.
+  Add the guard test (README wording matches the flag default, and validate() covers every PDF text block when
+  the flag is off).
+- **§5: default mode `calls`.** Make `calls` the default (shadow.py settings fallback, now "off", and the live
+  setting in the volume, now `autopilot`). **Keep `autopilot`** as a mode the user can engage on demand. **Keep the
+  Shadow brain** (shadow_brain.py, ladder, training): it will be enhanced as we go. The never-answer list (work
+  authorization, sponsorship, attestation, criminal history, salary) applies in every mode, with a test.
+
 ## 1. Make the public claims true (first session, small)
 
 1. The README says every resume line comes from the Fact Bank and a validator rejects anything else. Since 11-05,

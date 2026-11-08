@@ -5,7 +5,8 @@
 # (1) START command below, `docker port deploy-api-1`, shift to gear 2, `fleet_status`
 # (a "Gmail tab" warning right after start is a race; IMAP codes run in the supervisor). Close bot PR 31 if empty.
 # (2) NEXT_STEPS session routine: funnel numbers since last session, outreach drafts + Needs you, then ONE item
-# from the lowest unfinished section. First item: §1.1 Role Keywords line vs README claim (user decides a/b).
+# from the lowest unfinished section. First item: §1.1, user chose (a): flag default off + guard test. Then §5 (decided:
+# default `calls`, autopilot kept on demand, brain kept). See NEXT_STEPS "Decisions". Never delete features.
 # v2.0 ALIVE (docs/ALIVE_PLAN.md) is ON HOLD; do not start Phase 0. Stop cleanly at 80% of the 5-hour limit.
 
 ## Prep for docs/NEXT_STEPS.md (read 11-07, so the next session starts without re-reading code)
