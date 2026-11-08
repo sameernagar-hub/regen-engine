@@ -12,6 +12,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - **README**: minimal (what it does, numbers, quick start, guardrails). Detail lives in the wiki, and the v2.0 plan is
   linked at the top. Why: the README had grown into a second wiki.
 - Verify: README links resolve; the wiki sidebar and Roadmap list "v2.0 revamp".
+- **CI green again** (`scripts/privacy_scan.py`, `.privacy/denylist.json`): CI failed since 11-06 because the private-term
+  fingerprint list was built before "engine"/"remote" became common words. Regenerated, and the local pre-push scan now
+  also runs CI's fingerprint check, so a stale list blocks the push locally instead of failing CI after it.
+  Verify: restore an old denylist and run the scan; it reports "stale denylist fingerprint".
 
 ## [Unreleased] - 2026-11-06 · Shadow: two calls, then your AI delegate picks up
 - **Policy** (`engine/override.py`): Shadow is the user's AI delegate; the gates treat Shadow and the user as the same

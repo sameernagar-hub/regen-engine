@@ -222,6 +222,15 @@ def main(argv):
             print("no private profile on this machine: only generic checks ran")
         problems += [(f, f"private term: {mask(g)}") for f, g in check_terms(texts, lambda g: g in terms)]
         problems += commit_emails(None)
+        # Run CI's fingerprint check here too, so a push that passes locally also passes CI. The denylist goes stale
+        # when collect_terms() changes (e.g. a new common word) and was only caught after the push (11-06/11-07).
+        if os.path.exists(KEYFILE) and os.path.exists(DENYLIST):
+            k = bytes.fromhex(open(KEYFILE).read().strip())
+            deny = set(json.load(open(DENYLIST))["fingerprints"])
+            fhits = check_terms(texts, lambda g: fp(k, g) in deny)
+            problems += [(f, "matches a stale denylist fingerprint (CI would fail): run "
+                             "`python scripts/privacy_scan.py --update-denylist` and commit .privacy/denylist.json")
+                         for f, _ in fhits]
         if "--history" in argv and terms:
             seen, legacy = set(), accepted_history()  # legacy: pre-gate objects the owner chose to keep public
             for line in git("rev-list", "--all", "--objects").splitlines():
