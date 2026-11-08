@@ -1,8 +1,9 @@
 # REGEN v2.0 "ALIVE": one living engine (revamp plan)
 
-Status: PLAN, not started (written 2026-11-07). v1.x stays the released line; v2.0 ships when Phase 5 passes.
+Status: **ON HOLD** (11-07): docs/NEXT_STEPS.md comes first; Phase 0 starts only when its §9 exit criteria are
+all met. PLAN, not started (written 2026-11-07). v1.x stays the released line; v2.0 ships when Phase 5 passes.
 Wiki: [v2.0 Revamp](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2). This file is the build checklist.
-Owner: the user decides; Claude builds phase by phase. Next session: start the engine, then Phase 0.
+Owner: the user decides; Claude builds phase by phase. Next session: start the engine, then follow docs/NEXT_STEPS.md.
 One phase per session, at most. Every phase ends with a local commit (reposync opens the PR) and a stop.
 
 ## 1. Goal (one sentence)

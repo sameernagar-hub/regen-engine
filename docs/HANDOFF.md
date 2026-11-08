@@ -1,10 +1,12 @@
 # Handoff: 11-07 ~23:45. Stack is STOPPED cleanly (gear N, inbox + claimed 0, `compose stop`, volumes kept).
 # Verified after stop: no temp files, events.jsonl ends on a full line, queue/gear/answers/presets JSON whole.
-# NEXT SESSION, in this order: (1) START command below, `docker port deploy-api-1`, shift to gear 2, `fleet_status`
+# NEXT SESSION, in this order (changed 11-07 by the user; follow strictly):
+# (0) Read docs/NEXT_STEPS.md FIRST. It overrides this order until its §9 exit criteria are all met.
+# (1) START command below, `docker port deploy-api-1`, shift to gear 2, `fleet_status`
 # (a "Gmail tab" warning right after start is a race; IMAP codes run in the supervisor). Close bot PR 31 if empty.
-# (2) Begin v2.0 ALIVE, **Phase 0 only** (docs/ALIVE_PLAN.md §5, wiki Revamp-v2): typed events + useEngine() +
-# replay recorder + scripts/bench_alive.py; record V-benchmarks in docs/bench/alive.md. One phase per session;
-# triage the Idea inbox (§8) first. Watch the Claude 5-hour limit (stop cleanly at 80%).
+# (2) NEXT_STEPS session routine: funnel numbers since last session, outreach drafts + Needs you, then ONE item
+# from the lowest unfinished section. First item: §1.1 Role Keywords line vs README claim (user decides a/b).
+# v2.0 ALIVE (docs/ALIVE_PLAN.md) is ON HOLD; do not start Phase 0. Stop cleanly at 80% of the 5-hour limit.
 
 ## Done 11-07 night
 - Restarted after the Docker shutdown; reposync recreated; gear 2; supervisor scaled 1 -> 3 appliers on demand.
