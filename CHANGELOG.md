@@ -4,6 +4,15 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-07 · v2.0 "ALIVE" planned; README trimmed to the essentials
+- **Plan** (`docs/ALIVE_PLAN.md`, wiki [Revamp-v2](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2)):
+  the control room becomes the running engine. Each part maps to a real container, each motion to a typed event,
+  Shadow gets a drive selector and on-screen handover, and 15 pages become 4 rooms plus `/docs`. Seven phases, each
+  with a fixed file list, acceptance checks, benchmarks V1-V10 and a security checklist. No code changed yet.
+- **README**: minimal (what it does, numbers, quick start, guardrails). Detail lives in the wiki, and the v2.0 plan is
+  linked at the top. Why: the README had grown into a second wiki.
+- Verify: README links resolve; the wiki sidebar and Roadmap list "v2.0 revamp".
+
 ## [Unreleased] - 2026-11-06 · Shadow: two calls, then your AI delegate picks up
 - **Policy** (`engine/override.py`): Shadow is the user's AI delegate; the gates treat Shadow and the user as the same
   person. `answers.save(..., by="shadow"|"user")` accepts legal / sponsorship answers on that one job (as the /needs
