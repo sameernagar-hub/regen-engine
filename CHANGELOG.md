@@ -15,6 +15,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   when off; the feature works when on; `build()` reads only spec keys something vouches for; `validate()` rejects each
   bank-backed key when it points outside the bank).
 
+- **Funnel** (NEXT_STEPS §2, `python -m engine report funnel`): sent -> reply -> OA -> interview -> offer over all
+  verified applications, split by lane, ATS, employer tier, posting age, Role Keywords, answered_by and outreach, a
+  Wilson interval on every rate; a group is marked only when its interval clears the rest, and the report says how
+  many groups were compared. Values the ledger lacks print as "not recorded", never guessed. The resume event now
+  logs `ats`, `posted` and `keywords_on`, so the posting-age and keywords splits fill from 11-09 on.
+  Verify: `pytest tests/test_funnel.py`.
 - **Interview rate** (NEXT_STEPS §1.2; `engine/feedback/funnel.py`): `python -m engine report rate` prints interviews
   and OAs per 100 verified applications with a 95% Wilson interval, and says when the data cannot tell rates apart.
   The README stats row and wiki Metrics now show it beside "applications sent" (1.2 per 100 on 11-09: 5 OAs, no

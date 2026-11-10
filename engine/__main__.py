@@ -33,6 +33,7 @@ alerts  <file>                   job-alert emails (gmail_alerts.js output) resol
   site    [days]                   build the public face (site/): the live view replaying anonymized recent activity
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
   report  rate                     interviews and OAs per 100 verified applications, with a 95% interval
+  report  funnel                   sent -> reply -> OA -> interview -> offer, split by lane, ATS, tier, posting age, keywords, ...
   clean   [--dry]                  delete logged, regenerable files (old proofs, resumes, logs, browser caches)
   oilchange [--now|--dry|--slow]   oil life + the deep clean (workspace, old code/alert mail, Docker cache, stale queue)
   relay   [port]                   local code relay: a Gmail tab POSTs codes (engine/discovery/gmail_relay.js)
@@ -67,9 +68,9 @@ def status(_argv):
 
 def report(argv):
     """Count only what can be proven: each job's latest status is SUBMITTED and its proof screenshot exists."""
-    if argv and argv[0] == "rate":  # interviews and OAs per 100 verified applications (engine/feedback/funnel.py)
+    if argv and argv[0] in ("rate", "funnel"):  # engine/feedback/funnel.py: the interview rate / the split funnel
         from engine.feedback.funnel import main as rate_main
-        return rate_main(argv[1:])
+        return rate_main(argv if argv[0] == "funnel" else argv[1:])
     from engine.feedback.funnel import verified as _verified
     day = argv[0] if argv else None
     verified, rows = _verified(day)

@@ -22,8 +22,13 @@
   in workspace/outreach/drafts.json: nothing sent, the user sends.
 - Bot PR 31 is merged. Local commits f4a4359 and earlier + today's two -> reposync PR.
 
+## Done 11-09 (later)
+- §2 report (`engine report funnel`): all 5 OAs from tier-2 employers (8.1 per 100) vs 0 of 359 untiered; the
+  only split that clears the rest. The resume event now logs ats / posted / keywords_on. Tests 312 pass.
+
 ## Next
-- §2: `engine report funnel` on top of funnel.py: sent -> any reply -> OA -> interview -> offer, split by lane, ATS,
+- §2 remainder: the labeler hand-check (see NEXT_STEPS Progress). Then §3: show the user the tier evidence.
+- (done) §2: `engine report funnel` on top of funnel.py: sent -> any reply -> OA -> interview -> offer, split by lane, ATS,
   employer tier, hours from posting to submit, Role Keywords on/off (resume event `jd_keywords`), answered_by,
   outreach; Wilson interval on every rate, "not significant" said plainly. Then the labeler hand-check (30 random
   labeled mails + every unlabeled reply of the last 30 days) with precision / recall in wiki Metrics.

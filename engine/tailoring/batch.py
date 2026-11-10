@@ -12,7 +12,7 @@ import os, re, sys, time
 from engine.config import WORKSPACE, in_workspace, profile_file
 from engine.discovery.ats import job_description
 from engine.feedback.events import record
-from engine.tailoring import compose, resume
+from engine.tailoring import compose, keywords, resume
 from engine.tailoring.tailor import tailor, fit
 from engine.tailoring.salary import parse_range
 
@@ -161,7 +161,9 @@ def build(name, ids, force=False):
             # transparency: the exact Fact Bank entries this resume used, so every claim is traceable
             record("resume", job=label, url=j["url"], lane=ln, file=spec["file"], facts=spec["roles"],
                    projects=spec.get("projects", []), skills=spec["skills"], coverage=cov, note=note,
-                   qa=spec.get("_qa"), jd_keywords=spec.get("jd_keywords", []))
+                   qa=spec.get("_qa"), jd_keywords=spec.get("jd_keywords", []),
+                   # 11-09 funnel (NEXT_STEPS §2): ATS + posting time, so outcomes can be split by them later
+                   ats=j.get("ats"), posted=j.get("posted"), keywords_on=keywords.enabled())
             batch.append({"name": label, "url": j["url"], "ats": j["ats"], "resume": os.path.relpath(pdf, WORKSPACE),
                           "lane": ln, "extra": {}, "salary_range": parse_range(jd), "jd_match": _match(cov), "note": note})
         # after reading every description: highest JD match first (stable, so ties keep queue priority)

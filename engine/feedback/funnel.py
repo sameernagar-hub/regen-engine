@@ -73,7 +73,127 @@ def line(r):
             f"{r['per_100']} per 100 reached an OA or interview (95% interval {lo} to {hi})")
 
 
+STAGES = ("verified", "replied", "oa", "interview", "offer")
+DIMENSIONS = ("lane", "ats", "tier", "posting age", "role keywords", "answered by", "outreach")
+
+
+def _company(job):
+    return (job or "").split(" - ")[0].strip()
+
+
+def _hours(posted, ts):
+    import datetime
+    try:
+        p = datetime.datetime.fromisoformat(str(posted).replace("Z", "+00:00"))
+        t = datetime.datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+        if (p.tzinfo is None) != (t.tzinfo is None):  # ledger ts is local naive, boards give UTC: compare as naive UTC-ish
+            p, t = p.replace(tzinfo=None), t.replace(tzinfo=None)
+        return max(0.0, (t - p).total_seconds() / 3600)
+    except (TypeError, ValueError):
+        return None
+
+
+def label(dim, app, res, tiers, drafted):
+    """The group one verified application falls in for one dimension. "not recorded" when the ledger lacks it:
+    a missing value is never guessed (posting time and the keywords switch were first logged on 11-09)."""
+    if dim == "lane":
+        return res.get("lane") or "not recorded"
+    if dim == "ats":
+        if res.get("ats"):
+            return res["ats"]
+        from engine.pipeline import ats_of
+        return ats_of(app.get("url"))
+    if dim == "tier":
+        co = _company(app["job"])
+        return next((t for t in ("tier1", "tier2", "sponsors") if t in tiers and tiers[t].search(co)), "other")
+    if dim == "posting age":
+        h = _hours(res.get("posted"), app.get("ts"))
+        return "not recorded" if h is None else "<6h" if h < 6 else "6-48h" if h <= 48 else ">48h"
+    if dim == "role keywords":
+        if "keywords_on" in res:
+            return "on" if res["keywords_on"] else "off"
+        if "jd_keywords" in res:
+            return "on" if res["jd_keywords"] else "off"
+        return "not recorded"
+    if dim == "answered by":
+        return app.get("answered_by") or "not recorded"
+    if dim == "outreach":
+        return "drafted" if _company(app["job"]).lower() in drafted else "none"
+    raise ValueError(dim)
+
+
+def _counts(apps, outs):
+    got = [outs.get(a["job"], set()) for a in apps]
+    return {"verified": len(apps), "replied": sum(1 for s in got if s - {"confirmation"}),
+            "oa": sum(1 for s in got if "oa" in s), "interview": sum(1 for s in got if "interview" in s),
+            "offer": sum(1 for s in got if "offer" in s), "positive": sum(1 for s in got if s & set(POSITIVE))}
+
+
+def _overlap(a, b):
+    return a[0] <= b[1] and b[0] <= a[1]
+
+
+def funnel(apps=None, outs=None, resumes=None, tiers=None, drafted=None):
+    """{"overall": counts, "splits": {dim: [(group, counts, interval, significant)]}}. A group is "significant" only
+    when its 95% interval for OA-or-interview does not overlap the interval of all other applications (conservative:
+    with this few positives that is rare, and the report says so instead of reading noise as a finding)."""
+    if apps is None:
+        apps = verified()[0]
+    outs = outcomes() if outs is None else outs
+    if resumes is None:
+        resumes = {}
+        for r in read("resume"):
+            resumes[r.get("url") or r["job"]] = r
+    if tiers is None:
+        from engine.discovery.priority import tiers as _t
+        tiers = _t()
+    if drafted is None:
+        drafted = {(o.get("company") or "").lower() for o in read("outreach")} - {""}
+    res_of = lambda a: resumes.get(a.get("url")) or resumes.get(a["job"]) or {}
+    out = {"overall": _counts(apps, outs), "splits": {}}
+    for dim in DIMENSIONS:
+        groups = {}
+        for a in apps:
+            groups.setdefault(label(dim, a, res_of(a), tiers, drafted), []).append(a)
+        rows = []
+        for g, members in sorted(groups.items(), key=lambda kv: -len(kv[1])):
+            c = _counts(members, outs)
+            rest = _counts([a for a in apps if a not in members], outs)
+            ci, ci_rest = wilson(c["positive"], c["verified"]), wilson(rest["positive"], rest["verified"])
+            rows.append((g, c, ci, bool(rest["verified"]) and not _overlap(ci, ci_rest)))
+        out["splits"][dim] = rows
+    return out
+
+
+def _pct(k, n):
+    return f"{100 * k / n:.1f}" if n else "-"
+
+
+def print_funnel(f):
+    o = f["overall"]
+    n = o["verified"]
+    print("Funnel over all verified applications (outcomes from the mail classifier)")
+    print("  " + " -> ".join(f"{s} {o[s]}" + ("" if s == "verified" else f" ({_pct(o[s], n)}%)") for s in STAGES))
+    lo, hi = wilson(o["positive"], n)
+    print(f"  OA or interview: {_pct(o['positive'], n)} per 100 (95% interval {100 * lo:.1f} to {100 * hi:.1f})")
+    found = False
+    for dim, rows in f["splits"].items():
+        print(f"\nBy {dim}")
+        print(f"  {'group':<16}{'sent':>6}{'reply':>7}{'OA':>5}{'intv':>6}{'per 100':>9}   95% interval")
+        for g, c, (lo, hi), sig in rows:
+            found |= sig
+            print(f"  {str(g)[:16]:<16}{c['verified']:>6}{c['replied']:>7}{c['oa']:>5}{c['interview']:>6}"
+                  f"{_pct(c['positive'], c['verified']):>9}   {100 * lo:.1f} to {100 * hi:.1f}" + ("   significant" if sig else ""))
+    groups = sum(len(r) for r in f["splits"].values())
+    print("\n" + (f"Some groups differ from the rest (marked). {groups} groups were compared, so one chance hit is "
+                  "expected now and then: read the counts, and treat a mark as a lead to test (NEXT_STEPS §3), not proof." if found else
+                  "No group differs significantly from the rest: these splits are counts, not findings. More outcomes "
+                  "are needed before any setting can be credited or blamed."))
+
+
 def main(argv):
+    if argv and argv[0] == "funnel":
+        return print_funnel(funnel())
     r = rate()
     print(line(r))
     print(f"  rejections {r['rejection']}, no reply yet {r['no_reply']}")

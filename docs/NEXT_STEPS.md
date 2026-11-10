@@ -47,8 +47,11 @@ alongside every other metric.
 - 11-09: **§1.1 done** (default off, per-run switch, guard test `tests/test_truth_claims.py`, README note).
 - 11-09: **§1.2 done** (`python -m engine report rate`, Wilson interval, README stats row + wiki Metrics, guard test
   `tests/test_funnel.py`). First reading: 426 verified, 5 OAs, 0 interviews = 1.2 per 100 (0.5 to 2.7).
-- Next: §2, the full funnel (`report funnel` with the splits, built on `engine/feedback/funnel.py`), then the
-  labeler hand-check.
+- 11-09: **§2 report built** (`python -m engine report funnel`). First reading (443 verified): all 5 OAs came from
+  tier-2 employers (5/62 = 8.1 per 100, 95% 3.5 to 17.5) vs 0/359 untiered (0 to 1.1); the only marked split of 20
+  groups. A lead for §3, not proof. Posting age + keywords splits fill from 11-09 (new resume-event fields).
+- Next: §2 remainder, the labeler hand-check (30 random labeled mails + every unlabeled reply of the last 30 days,
+  precision / recall into wiki Metrics). Then §3 (propose targeting to the user with the tier evidence).
 
 ## 1. Make the public claims true (first session, small)
 

@@ -46,3 +46,36 @@ def test_readme_shows_the_rate_beside_applications_sent():
     row = next(l for l in readme.splitlines() if "applications sent with proof" in l)
     assert re.search(r"per 100", row), "the stats row must carry the interview / OA rate"
     assert "python -m engine report rate" in readme
+
+
+def test_funnel_splits_and_unrecorded_values():
+    import re as _re
+    apps = [{"job": f"Big{i} - Engineer", "url": f"u{i}", "ts": "2026-11-09T12:00:00"} for i in range(4)] + \
+           [{"job": f"Small{i} - Engineer", "url": f"s{i}", "ts": "2026-11-09T12:00:00", "answered_by": "shadow"}
+            for i in range(6)]
+    outs = {"Big0 - Engineer": {"oa"}, "Big1 - Engineer": {"interview", "oa"}, "Small0 - Engineer": {"rejection"}}
+    resumes = {"u0": {"lane": "backend", "ats": "greenhouse", "posted": "2026-11-09T09:00:00", "keywords_on": True},
+               "u1": {"lane": "backend", "posted": "2026-11-08T00:00:00", "jd_keywords": []},
+               "s0": {"lane": "ai", "posted": "2026-11-01T00:00:00Z"}}
+    f = funnel.funnel(apps, outs, resumes, tiers={"tier1": _re.compile("big", _re.I)}, drafted={"small1"})
+    o = f["overall"]
+    assert (o["verified"], o["replied"], o["oa"], o["interview"], o["positive"]) == (10, 3, 2, 1, 2)
+    rows = {dim: {g: c for g, c, _, _ in r} for dim, r in f["splits"].items()}
+    assert set(rows) == set(funnel.DIMENSIONS)
+    assert rows["tier"]["tier1"]["positive"] == 2 and rows["tier"]["other"]["verified"] == 6
+    assert rows["posting age"]["<6h"]["verified"] == 1 and rows["posting age"]["6-48h"]["verified"] == 1
+    assert rows["posting age"][">48h"]["verified"] == 1 and rows["posting age"]["not recorded"]["verified"] == 7
+    assert rows["role keywords"]["on"]["verified"] == 1 and rows["role keywords"]["off"]["verified"] == 1
+    assert rows["answered by"]["shadow"]["verified"] == 6 and rows["answered by"]["not recorded"]["verified"] == 4
+    assert rows["outreach"]["drafted"]["verified"] == 1
+    assert rows["ats"]["greenhouse"]["verified"] == 1 and rows["ats"]["other"]["verified"] == 9
+
+
+def test_funnel_says_not_significant_when_it_is_not(capsys):
+    apps = [{"job": f"Co{i} - E", "url": f"u{i}"} for i in range(40)]
+    outs = {"Co0 - E": {"oa"}, "Co20 - E": {"oa"}}
+    resumes = {f"u{i}": {"lane": "a" if i < 20 else "b"} for i in range(40)}
+    f = funnel.funnel(apps, outs, resumes, tiers={}, drafted=set())
+    assert not any(sig for rows in f["splits"].values() for *_, sig in rows)
+    funnel.print_funnel(f)
+    assert "counts, not findings" in capsys.readouterr().out
