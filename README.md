@@ -35,11 +35,12 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 | **Learns from no** | Every rejection is read back and turned into the fit gate's next rule. [Feedback →](https://github.com/sameernagar-hub/regen-engine/wiki/Rejection-Feedback) |
 | **Costs nothing to think** | No model keys: Claude, Cursor or any MCP client operates it. [Zero cost →](https://github.com/sameernagar-hub/regen-engine/wiki/Zero-Cost-and-MCP) |
 
-| 424 | ~6,400 | 43 | 0 |
-|:-:|:-:|:-:|:-:|
-| applications sent with proof | employer boards watched | MCP tools | model API keys |
+| 426 | 1.2 per 100 | ~6,400 | 43 | 0 |
+|:-:|:-:|:-:|:-:|:-:|
+| applications sent with proof | reached an OA or interview: 1.2 per 100 (5 OAs, 0 interviews; 95% interval 0.5 to 2.7) | employer boards watched | MCP tools | model API keys |
 
-From the engine's own ledger as of 2026-11-06. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
+From the engine's own ledger as of 2026-11-09. The second number is the one that matters, and it is low: no
+interview yet. Reproduce both with `python -m engine report` and `python -m engine report rate`. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
 
 ## Quick start
 

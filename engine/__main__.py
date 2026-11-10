@@ -32,6 +32,7 @@ alerts  <file>                   job-alert emails (gmail_alerts.js output) resol
   live    [port]                   the engine, watched live (localhost page; read-only)
   site    [days]                   build the public face (site/): the live view replaying anonymized recent activity
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
+  report  rate                     interviews and OAs per 100 verified applications, with a 95% interval
   clean   [--dry]                  delete logged, regenerable files (old proofs, resumes, logs, browser caches)
   oilchange [--now|--dry|--slow]   oil life + the deep clean (workspace, old code/alert mail, Docker cache, stale queue)
   relay   [port]                   local code relay: a Gmail tab POSTs codes (engine/discovery/gmail_relay.js)
@@ -66,16 +67,12 @@ def status(_argv):
 
 def report(argv):
     """Count only what can be proven: each job's latest status is SUBMITTED and its proof screenshot exists."""
-    import os
-    from engine.config import WORKSPACE
-    from engine.feedback.events import read
+    if argv and argv[0] == "rate":  # interviews and OAs per 100 verified applications (engine/feedback/funnel.py)
+        from engine.feedback.funnel import main as rate_main
+        return rate_main(argv[1:])
+    from engine.feedback.funnel import verified as _verified
     day = argv[0] if argv else None
-    latest = {}
-    for e in read("application"):
-        if not e.get("dry"):
-            latest[e.get("url") or e["job"]] = e
-    rows = [e for e in latest.values() if e["status"] == "SUBMITTED" and (not day or e["ts"].startswith(day))]
-    verified = [e for e in rows if e.get("proof") and os.path.exists(os.path.join(WORKSPACE, e["proof"]))]
+    verified, rows = _verified(day)
     backfilled = [e for e in rows if e.get("backfilled")]
     print(f"{len(verified)} verified submissions" + (f" on {day}" if day else "") +
           f" (proof on disk){'; ' + str(len(backfilled)) + ' backfilled from the tracker without a stored proof path' if backfilled else ''}")

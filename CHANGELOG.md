@@ -15,6 +15,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   when off; the feature works when on; `build()` reads only spec keys something vouches for; `validate()` rejects each
   bank-backed key when it points outside the bank).
 
+- **Interview rate** (NEXT_STEPS §1.2; `engine/feedback/funnel.py`): `python -m engine report rate` prints interviews
+  and OAs per 100 verified applications with a 95% Wilson interval, and says when the data cannot tell rates apart.
+  The README stats row and wiki Metrics now show it beside "applications sent" (1.2 per 100 on 11-09: 5 OAs, no
+  interview). `report` shares the same `verified()` rule. Verify: `pytest tests/test_funnel.py`.
+
 ## [Unreleased] - 2026-11-07 · v2.0 "ALIVE" planned; README trimmed to the essentials
 - **Plan** (`docs/ALIVE_PLAN.md`, wiki [Revamp-v2](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2)):
   the control room becomes the running engine. Each part maps to a real container, each motion to a typed event,

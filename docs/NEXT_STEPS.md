@@ -44,8 +44,11 @@ alongside every other metric.
 
 ## Progress
 
-- 11-09: **§1.1 done** (default off, per-run switch, guard test `tests/test_truth_claims.py`, README note). Next: §1.2
-  (interview rate in the README stats row and wiki Metrics, with its reproduce command), then §2.
+- 11-09: **§1.1 done** (default off, per-run switch, guard test `tests/test_truth_claims.py`, README note).
+- 11-09: **§1.2 done** (`python -m engine report rate`, Wilson interval, README stats row + wiki Metrics, guard test
+  `tests/test_funnel.py`). First reading: 426 verified, 5 OAs, 0 interviews = 1.2 per 100 (0.5 to 2.7).
+- Next: §2, the full funnel (`report funnel` with the splits, built on `engine/feedback/funnel.py`), then the
+  labeler hand-check.
 
 ## 1. Make the public claims true (first session, small)
 
@@ -146,7 +149,7 @@ stay.
 
 All of these, checked and written in the session's handoff:
 
-- [ ] README and wiki claims match the code (§1), with a test guarding it.
+- [x] README and wiki claims match the code (§1), with a test guarding it. (11-09)
 - [ ] Funnel report exists and the interview rate is in the README (§2).
 - [ ] The user has agreed the targeting settings and the experiment is running (§3).
 - [ ] Outreach drafts are part of the daily run and sent notes are logged (§4).
