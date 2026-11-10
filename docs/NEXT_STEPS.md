@@ -44,9 +44,6 @@ alongside every other metric.
 
 ## Progress
 
-- **Rule (user, 11-09):** every item here also ships a front-end row in docs/ALIVE_PLAN.md §5a (engine command, API
-  route, event, phase that puts it on screen), in the same commit that builds it. Nothing stays CLI-only after v2.0.
-
 - 11-09: **§1.1 done** (default off, per-run switch, guard test `tests/test_truth_claims.py`, README note).
 - 11-09: **§1.2 done** (`python -m engine report rate`, Wilson interval, README stats row + wiki Metrics, guard test
   `tests/test_funnel.py`).

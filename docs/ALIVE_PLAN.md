@@ -170,12 +170,12 @@ Files: `apps/web/app/alive/TabPulse.tsx`, `layout.tsx`.
 Accept:
 - [ ] Title updates from events within 2 s; no update when nothing changed.
 
-## 5a. NEXT_STEPS on the front end (merged 11-09 by the user: every next step is part of the revamp)
+## 5a. NEXT_STEPS work on the front end (merged 11-09 by the user)
 
-Everything built under docs/NEXT_STEPS.md is an engine behavior first and a front-end control second. The revamp
-must show and drive all of it; none of it may stay CLI-only once v2.0 ships. **Standing rule: every NEXT_STEPS item
-(done or future) gets a row here in the same commit that builds it**, with its event, API route and the phase that
-puts it on screen. The backend stays the truth: a control posts, and the UI changes only when the event comes back.
+The revamp starts once docs/NEXT_STEPS.md is finished, and it brings everything those steps built onto the screen:
+nothing stays CLI-only after v2.0. The backend stays the truth: a control posts, and the UI changes only when the
+event comes back. This table lists the work so far; when NEXT_STEPS closes, its remaining items are added here at
+the Phase 0 triage.
 
 | NEXT_STEPS item | Engine (built) | API (add if missing) | Event (Phase 0 kinds) | On screen (phase) |
 |---|---|---|---|---|
