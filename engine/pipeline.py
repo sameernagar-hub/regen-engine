@@ -191,7 +191,7 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
     cfg, busy = targeting.load(), in_flight()
     room = targeting.room_today() - len(busy)  # daily cap (profile/targeting.json): jobs already in batches count
     if room <= 0:
-        print(f"select: daily cap {cfg['daily_cap']} reached (submitted + in flight); nothing new queued today")
+        print(f"select: daily cap {targeting.cap(cfg)} (level {cfg['cap_level']}) reached (submitted + in flight); nothing new queued today")
         return []
     max_jobs = min(max_jobs, room)
     rates, t = lane_rates(), (tiers() if cfg["tier_first"] else {})

@@ -1,3 +1,5 @@
+# CAP SWITCH (user 11-09): `python -m engine cap [0|1|2|3|4|up|down]` = 15 / 25 / 50 / 100 / 150 per day, stored as
+# cap_level in profile/targeting.json and read live. Every start begins at level 0; a clean stop runs `engine cap 0`.
 # Handoff: 11-09 ~22:40 STOP POINT. Stack STOPPED cleanly at ~75% of the Claude 5-hour limit (gear N, inbox +
 # claimed 0, Role Keywords OFF, Shadow back to `calls`, `compose stop`, volumes kept; events end on a full line, no
 # tmp files). Images ALREADY rebuilt with c7c2a36: the next START runs the targeting cap.
@@ -46,7 +48,7 @@
 # (2) ASK THE USER: "Role Keywords on or off for this run?" then
 #     `MSYS_NO_PATHCONV=1 docker exec -u 10001 deploy-pipeline-1 python -m engine keywords on|off`. Never on unasked.
 # (3) `python -m engine report rate` (the interview rate), outreach drafts + Needs you, then the next NEXT_STEPS item.
-# CLEAN STOP: gear N, wait for inbox + claimed 0, `engine keywords off`, `compose stop`, verify, write this file.
+# CLEAN STOP: gear N, wait for inbox + claimed 0, `engine keywords off`, `engine cap 0`, `compose stop`, verify, write this file.
 # v2.0 ALIVE stays ON HOLD until NEXT_STEPS §9 is all ticked. The user wants the next steps finished first.
 
 ## Done 11-09

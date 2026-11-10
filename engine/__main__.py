@@ -3,6 +3,7 @@
   scan    [days] [--ats a,b]       Greenhouse + Ashby + Lever boards -> workspace/queue.json
   newgrad [days]                   newgrad-jobs.com leads, resolved to the employer's ATS -> queue.json / leads.json
   vc      [days] [--only a,b] [--dry] YC / Getro / Consider / Next.js fund portals -> employer ATS -> queue.json
+  cap [0|1|..|up|down]             daily submit cap switch: level 0 = 15/day, then 25, 50, 100, 150
   try resume.pdf|.txt              quick start: 10 best-fitting fresh roles + reasons (no database, nothing applied)
   outreach [days]                  recruiter / founder notes for recent submissions (Fact Bank only; nothing sent)
   outreach sent [company [role]]   mark a note YOU sent (event outreach_sent) or list them; feeds `report funnel`
@@ -161,6 +162,8 @@ def main():
         from engine.apply.runner import main as m
     elif cmd == "run":
         from engine.pipeline import main as m
+    elif cmd == "cap":
+        from engine.targeting import main as m
     elif cmd == "try":
         from engine.try_it import main as m
     elif cmd == "outreach":

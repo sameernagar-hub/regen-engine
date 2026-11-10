@@ -36,3 +36,19 @@ def test_select_stops_at_the_daily_cap(monkeypatch):
     monkeypatch.setattr(pipeline, "history", lambda: (set(), set()))
     monkeypatch.setattr(pipeline, "capped", lambda: set())
     assert pipeline.select([{"company": "A", "title": "Software Engineer", "url": "u"}], 5) == []
+
+
+def test_cap_switch_levels_start_at_zero_and_clamp(tmp_path, monkeypatch, capsys):
+    import pytest
+    monkeypatch.setattr(targeting, "PROFILE", str(tmp_path))
+    monkeypatch.setattr(targeting, "submitted_today", lambda events=None: 3)
+    targeting._C.update(mtime=None)
+    assert targeting.cap() == 15
+    assert targeting.set_level("up") == (1, 25) and targeting.cap() == 25
+    assert targeting.set_level("4") == (4, 150) and targeting.set_level("up") == (4, 150)
+    assert targeting.set_level("0") == (0, 15) and targeting.set_level("down") == (0, 15)
+    with pytest.raises(ValueError):
+        targeting.set_level("9")
+    targeting.main(["2"])
+    assert "level 2 = 50" in capsys.readouterr().out
+    assert json.loads((tmp_path / "targeting.json").read_text())["cap_level"] == 2
