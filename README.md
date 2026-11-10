@@ -18,6 +18,11 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 
 </div>
 
+> [!TIP]
+> **Try it in a minute, nothing to set up:** `git clone` this repo, then `python -m engine try resume.txt` (a PDF
+> needs `pip install pypdf`). It scans a sample of public boards and shows the 10 best-fitting fresh roles with the
+> reason each passed. No database, no Docker, nothing applied, nothing saved.
+
 > [!NOTE]
 > **v2.0 "ALIVE" is next.** The control room becomes the running engine: every part is a real container, every
 > motion a real event, Shadow takes the wheel on screen, and 15 pages become 4 rooms. Built one benchmarked phase

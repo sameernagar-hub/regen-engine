@@ -3,6 +3,7 @@
   scan    [days] [--ats a,b]       Greenhouse + Ashby + Lever boards -> workspace/queue.json
   newgrad [days]                   newgrad-jobs.com leads, resolved to the employer's ATS -> queue.json / leads.json
   vc      [days] [--only a,b] [--dry] YC / Getro / Consider / Next.js fund portals -> employer ATS -> queue.json
+  try resume.pdf|.txt              quick start: 10 best-fitting fresh roles + reasons (no database, nothing applied)
   outreach [days]                  recruiter / founder notes for recent submissions (Fact Bank only; nothing sent)
   outreach sent [company [role]]   mark a note YOU sent (event outreach_sent) or list them; feeds `report funnel`
   bigtech [days]                   Amazon + NVIDIA careers APIs -> fit-gated roles with tailored resumes (workspace/bigtech.md)
@@ -160,6 +161,8 @@ def main():
         from engine.apply.runner import main as m
     elif cmd == "run":
         from engine.pipeline import main as m
+    elif cmd == "try":
+        from engine.try_it import main as m
     elif cmd == "outreach":
         from engine.outreach import main as m
     elif cmd == "codes":

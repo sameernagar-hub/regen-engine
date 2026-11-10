@@ -58,7 +58,11 @@ alongside every other metric.
 - 11-09 night: **§4 done** (code): the supervisor's daily run now writes `outreach 7` (tier1 / sponsor / startup notes,
   nothing sent); `python -m engine outreach sent <company> [role]` logs a note the user sent (event `outreach_sent`);
   `report funnel` splits outreach into sent / drafted / none. Referral list still to propose to the user.
-- Next: §3 (user decides the targeting numbers), §6 (quick start).
+- 11-09 night: **§6 built**: `python -m engine try resume.pdf|.txt` (engine/try_it.py, stdlib + optional pypdf): reads
+  the resume, scans 40 sample Greenhouse boards, runs the default fit gate, prints the top 10 with reasons and the
+  blocked counts; read-only. 25 boards / 6,135 postings in ~2 s on the dev machine. README tip at the top. Clean machine (python:3.12-slim,
+  nothing installed): 2 s to the first result; written in wiki Running.
+- Next: §3 (user decides the targeting numbers), then the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
 
 ## 1. Make the public claims true (first session, small)
 
@@ -164,7 +168,7 @@ All of these, checked and written in the session's handoff:
 - [ ] The user has agreed the targeting settings and the experiment is running (§3).
 - [x] Outreach drafts are part of the daily run and sent notes are logged (§4).
 - [x] Shadow mode and the never-answer list are settled with the user (§5). (11-09)
-- [ ] The 5-minute quick start works on a clean machine (§6).
+- [x] The 5-minute quick start works on a clean machine (§6).
 
 Then start ALIVE Phase 0 as written in docs/ALIVE_PLAN.md, and add "interviews per 100 applications" as a metric
 the new interface shows prominently, not just applications sent.
