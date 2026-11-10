@@ -1,3 +1,36 @@
+# Handoff: 11-09 ~16:30. Stack is UP (started 16:02), gear 3 at the user's request ("apply as much as possible"),
+# Role Keywords ON for this run (user's choice). Shut down cleanly at 80% of the Claude 5-hour limit.
+# NEXT SESSION, in this order:
+# (0) Read docs/NEXT_STEPS.md FIRST (its "Progress" block says where we are: §1 done, next is §2).
+# (1) START command below, `docker port deploy-api-1`, shift to gear 2 (3 if the user asks), `fleet`.
+# (2) ASK THE USER: "Role Keywords on or off for this run?" then
+#     `MSYS_NO_PATHCONV=1 docker exec -u 10001 deploy-pipeline-1 python -m engine keywords on|off`. Never on unasked.
+# (3) `python -m engine report rate` (the interview rate), outreach drafts + Needs you, then the next NEXT_STEPS item.
+# CLEAN STOP: gear N, wait for inbox + claimed 0, `engine keywords off`, `compose stop`, verify, write this file.
+# v2.0 ALIVE stays ON HOLD until NEXT_STEPS §9 is all ticked. The user wants the next steps finished first.
+
+## Done 11-09
+- NEXT_STEPS §1.1 (38af39a): Role Keywords off by default; per-run switch `engine keywords on|off`
+  (workspace/keywords.json, read live by every container; REGEN_JD_KEYWORDS=0/1 wins); build() prints the line only
+  while on; guard tests tests/test_truth_claims.py. README "Never bluffs" row carries a one-clause note.
+- NEXT_STEPS §1.2 (a1df575): `engine report rate` (engine/feedback/funnel.py: wilson(), verified(), outcomes(),
+  rate()). First reading: 426 verified, 5 OAs, 0 interviews = 1.2 per 100 (95% interval 0.5 to 2.7). README stats row
+  + wiki Metrics show it. Wiki Metrics edit is committed locally in ../regen-engine.wiki, NOT pushed (ask the user).
+- Tests 310 pass. Image rebuilt with a1df575; the running pipeline still runs the older image (Role Keywords on by
+  default there, the same as the switch being on). The next `up -d` recreates the containers on the new image.
+- Mail since 11-07: 14 rejections, 4 confirmations, no OA / interview. 9 outreach drafts ready (2 tier 1, 7 tier 2)
+  in workspace/outreach/drafts.json: nothing sent, the user sends.
+- Bot PR 31 is merged. Local commits f4a4359 and earlier + today's two -> reposync PR.
+
+## Next
+- §2: `engine report funnel` on top of funnel.py: sent -> any reply -> OA -> interview -> offer, split by lane, ATS,
+  employer tier, hours from posting to submit, Role Keywords on/off (resume event `jd_keywords`), answered_by,
+  outreach; Wilson interval on every rate, "not significant" said plainly. Then the labeler hand-check (30 random
+  labeled mails + every unlabeled reply of the last 30 days) with precision / recall in wiki Metrics.
+- `engine learn` "By ats" table groups by URL substring and puts almost everything under one ATS: use the job's
+  `ats` field in the funnel instead.
+- Shadow is still in `autopilot` in the volume; §5 (decided: default `calls`) is not done yet.
+
 # Handoff: 11-07 ~23:45. Stack is STOPPED cleanly (gear N, inbox + claimed 0, `compose stop`, volumes kept).
 # Verified after stop: no temp files, events.jsonl ends on a full line, queue/gear/answers/presets JSON whole.
 # NEXT SESSION, in this order (changed 11-07 by the user; follow strictly):
