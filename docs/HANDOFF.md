@@ -1,3 +1,14 @@
+# Handoff: 11-09 ~22:40 STOP POINT. Stack STOPPED cleanly at ~75% of the Claude 5-hour limit (gear N, inbox +
+# claimed 0, Role Keywords OFF, Shadow back to `calls`, `compose stop`, volumes kept; events end on a full line, no
+# tmp files). Images ALREADY rebuilt with c7c2a36: the next START runs the targeting cap.
+# §3 DECIDED by the user ("use the defaults"): engine/targeting.py + profile/targeting.json (file optional; defaults
+#   daily_cap 15, tier_first on, skip_unsure on, keywords_ab off, ab_per_arm 150). select() stops at the cap
+#   (submitted + in flight) and orders tier1 / sponsors first, then freshest. REGEN_MAX_PER_DAY stays the runner backstop.
+#   STILL TO BUILD: skip_unsure in the fit gate; Role Keywords A/B by URL hash (log the arm in the resume event, then
+#   keywords_ab on; read only after 150 per arm). Expect ~15 submits/day now: that is the decision, not a fault.
+# Then the leftovers: §4 referral list proposal, §2 unlabeled-reply recall, §5 weekly Shadow precision in wiki Metrics.
+# Local, not pushed: regen-engine 9c02261, 5b960ed, 1765547, c7c2a36 + this (reposync PR); wiki ba32158.
+
 # Handoff: 11-09 ~21:55. Stack is UP (started ~21:33 after `compose build`), gear 2, Role Keywords ON and Shadow
 # AUTOPILOT for this run (both by the user's choice; the §5 never-answer list still parks work authorization,
 # sponsorship, attestation, criminal history and salary questions for the user). Images rebuilt with 9c02261;
