@@ -1,5 +1,5 @@
 {
-"generated": "2026-11-09 21:30",
+"generated": "2026-11-09 21:31",
 "days": 7,
 "verified": 439,
 "verified_roles": [
@@ -1766,12 +1766,6 @@
 {
 "stage": "write",
 "tone": "calm",
-"text": "Wrote a resume for a company from 23 facts in the Fact Bank, fullstack lane.",
-"ts": "2026-11-09T16:08"
-},
-{
-"stage": "write",
-"tone": "calm",
 "text": "Wrote a resume for a company from 24 facts in the Fact Bank, backend lane.",
 "ts": "2026-11-09T16:08"
 },
@@ -2724,6 +2718,13 @@
 "tone": "win",
 "text": "Applied to a company, Forward Deployed Engineer, Production. Proof saved.",
 "ts": "2026-11-09T16:45"
+},
+{
+"stage": "hear",
+"tone": "calm",
+"text": "3 companies confirmed they have the application.",
+"ts": "2026-11-09T21:30",
+"n": 3
 }
 ],
 "graph": {
@@ -12832,6 +12833,24 @@
 },
 {
 "id": "n1524",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n1525",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n1526",
+"type": "Outcome",
+"label": "confirmation",
+"data": {}
+},
+{
+"id": "n1527",
 "type": "Outcome",
 "label": "confirmation",
 "data": {}
@@ -24716,6 +24735,21 @@
 {
 "source": "n265",
 "target": "n1524",
+"type": "RESULTED_IN"
+},
+{
+"source": "n488",
+"target": "n1525",
+"type": "RESULTED_IN"
+},
+{
+"source": "n489",
+"target": "n1526",
+"type": "RESULTED_IN"
+},
+{
+"source": "n467",
+"target": "n1527",
 "type": "RESULTED_IN"
 }
 ]
