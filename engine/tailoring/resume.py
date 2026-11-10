@@ -164,7 +164,10 @@ def build(spec):
     section(st, "TECHNICAL SKILLS")
     st += [Paragraph(f"<b>{SKILLS[k][0]}:</b> {spec.get('skill_text', {}).get(k, SKILLS[k][1])}", BUL, bulletText="•")
            for k in spec["skills"]]
-    if spec.get("jd_keywords"):  # 11-05: the posting's remaining keywords (keywords.py; user-approved, logged per job)
+    # 11-05: the posting's remaining keywords (keywords.py; logged per job). 11-09: printed only while the flag is on,
+    # so a spec saved with the line (a retry rebuilding its PDF) cannot put unvalidated text on the page when it is off.
+    from engine.tailoring import keywords
+    if spec.get("jd_keywords") and keywords.enabled():
         st.append(Paragraph("<b>Role Keywords:</b> " + ", ".join(spec["jd_keywords"]), BUL, bulletText="•"))
     section(st, "EDUCATION")
     st += [row(e, d) for e, d in EDU]

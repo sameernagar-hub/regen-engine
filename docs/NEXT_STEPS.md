@@ -38,6 +38,15 @@ alongside every other metric.
   Shadow brain** (shadow_brain.py, ladder, training): it will be enhanced as we go. The never-answer list (work
   authorization, sponsorship, attestation, criminal history, salary) applies in every mode, with a test.
 
+- **§1.1 follow-up (11-09): the line is the user's choice at every engine start.** Each start, ask the user "Role
+  Keywords on or off for this run?" and run `python -m engine keywords on|off` (in the pipeline container, uid 10001).
+  Never switch it on unasked; a clean stop switches it off again.
+
+## Progress
+
+- 11-09: **§1.1 done** (default off, per-run switch, guard test `tests/test_truth_claims.py`, README note). Next: §1.2
+  (interview rate in the README stats row and wiki Metrics, with its reproduce command), then §2.
+
 ## 1. Make the public claims true (first session, small)
 
 1. The README says every resume line comes from the Fact Bank and a validator rejects anything else. Since 11-05,

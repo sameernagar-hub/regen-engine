@@ -3,14 +3,23 @@
 The user asked that all the posting's keywords appear on the page and said they will defend each one. Terms the
 Fact Bank already shows are left to the normal skills lines; the rest go on one "Role Keywords" line. The line is
 recorded in the spec (spec["jd_keywords"]) and in the resume event, so it is always visible which words came from
-the JD rather than from the Fact Bank. Off with REGEN_JD_KEYWORDS=0.
+the JD rather than from the Fact Bank.
+
+Off by default since 11-09 (user decision, docs/NEXT_STEPS.md §1.1): the terms are not Fact Bank entries and
+resume.validate() cannot check them, so the README's "every resume line comes from your Fact Bank" holds only with the
+line off. It is the user's choice at every engine start (11-09): `python -m engine keywords on|off` (or
+REGEN_JD_KEYWORDS=1/0, which wins); a clean stop switches it back off. tests/test_truth_claims.py keeps the docs and
+this default in step.
 
   extract(jd)            known technical terms the JD mentions, in the JD's order of first mention
   missing(jd, page_text) the ones the rest of the page does not show yet
 """
+import json
 import os
 import re
+import time
 
+from engine.config import WORKSPACE
 from engine.tailoring.compose import plain
 
 # Canonical spelling -> extra patterns that count as a mention. Technical terms only: no soft skills, no titles.
@@ -69,8 +78,42 @@ for name, extra in TECH.items():
     _RX[name] = re.compile("|".join(f"(?:{p})" for p in pats))
 
 
+DEFAULT = "0"  # off unless the user switches it on for a run (see the module note)
+PATH = os.path.join(WORKSPACE, "keywords.json")
+
+
 def enabled():
-    return os.environ.get("REGEN_JD_KEYWORDS", "1") != "0"
+    """The per-run switch. REGEN_JD_KEYWORDS (0/1) wins when set; else workspace/keywords.json, which every container
+    reads live (pipeline, answers, appliers), so one `engine keywords on|off` covers the whole stack; else off."""
+    env = os.environ.get("REGEN_JD_KEYWORDS")
+    if env in ("0", "1"):
+        return env == "1"
+    try:
+        return json.load(open(PATH, encoding="utf-8")).get("on") is True
+    except (OSError, ValueError, AttributeError):  # no file or a broken one: the safe answer is the default, off
+        return DEFAULT == "1"
+
+
+def switch(on, by="operator"):
+    """Write the choice atomically and record a `keywords` event, so the ledger shows which runs had the line."""
+    state = {"on": bool(on), "set_at": time.strftime("%Y-%m-%d %H:%M:%S"), "by": by}
+    tmp = PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=1)
+    os.replace(tmp, PATH)
+    from engine.feedback.events import record
+    record("keywords", on=state["on"], by=by)
+    return state
+
+
+def main(argv):
+    """python -m engine keywords [on|off]: the user's choice at each engine start; no argument shows it."""
+    if argv:
+        if argv[0] not in ("on", "off"):
+            raise SystemExit("usage: python -m engine keywords [on|off]")
+        switch(argv[0] == "on")
+    src = "REGEN_JD_KEYWORDS" if os.environ.get("REGEN_JD_KEYWORDS") in ("0", "1") else "workspace/keywords.json"
+    print(f"Role Keywords line: {'ON' if enabled() else 'off'} ({src}; off is the default, chosen by the user per run)")
 
 
 def extract(jd):

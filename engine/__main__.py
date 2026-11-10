@@ -23,6 +23,7 @@ alerts  <file>                   job-alert emails (gmail_alerts.js output) resol
   inbox   <msgs.json> | --imap [d] classify recruiting email -> outcome events (OA / interview / rejection / offer / scam)
   learn                            response rates by lane and ATS -> workspace/learnings.md
   gear    [N|1|2|3|4] [--clutch on|off]  the gearbox: applier range + scan interval; clutch couples learned rules
+  keywords [on|off]                the "Role Keywords" resume line for this run (off by default; the user chooses at each start)
   feedback [--watch m] [--no-imap] read rejections, compare their JDs, teach the fit gate (workspace/learned_gate.json)
            --off "<phrase>"        stop a learned phrase from blocking
   sos-test                         send a test SOS alert (engine/notify.py; .env SMTP app password)
@@ -178,6 +179,8 @@ def main():
         from engine.feedback.inbox import main as m
     elif cmd == "gear":
         from engine.gearbox import main as m
+    elif cmd == "keywords":
+        from engine.tailoring.keywords import main as m
     elif cmd == "feedback":
         from engine.feedback.rejections import main as m
     elif cmd == "learn":

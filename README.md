@@ -28,7 +28,7 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 | | |
 |---|---|
 | **Gets there first** | Polls ~6,400 employer boards directly, minutes after a role goes live. [Discovery →](https://github.com/sameernagar-hub/regen-engine/wiki/Discovery) |
-| **Never bluffs** | Every resume line comes from your Fact Bank; a validator rejects anything else. [Tailoring →](https://github.com/sameernagar-hub/regen-engine/wiki/Tailoring) |
+| **Never bluffs** | Every resume line comes from your Fact Bank; a validator rejects anything else. (One optional line of the posting's own keywords is off unless you switch it on for a run.) [Tailoring →](https://github.com/sameernagar-hub/regen-engine/wiki/Tailoring) |
 | **Skips what you'd lose** | Reads the whole job description first: sponsorship, years, clearance, stack. [Fit gate →](https://github.com/sameernagar-hub/regen-engine/wiki/Fit-Gate) |
 | **Never stalls** | Stuck on a question? Shadow, your AI delegate, answers as you, truthfully, or leaves it for you. [Shadow →](https://github.com/sameernagar-hub/regen-engine/wiki/Shadow) |
 | **Proves it** | A submit counts only when the confirmation page is saved. [Evidence →](https://github.com/sameernagar-hub/regen-engine/wiki/Evidence) |

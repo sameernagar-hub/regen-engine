@@ -4,6 +4,17 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-09 · Role Keywords: off by default, the user's choice at each start (NEXT_STEPS §1.1)
+- **What** (`engine/tailoring/keywords.py`, `resume.py`): the "Role Keywords" resume line is off unless the user
+  switches it on for a run: `python -m engine keywords on|off` (stored in `workspace/keywords.json`, read live by every
+  container; `REGEN_JD_KEYWORDS=1/0` still wins). `resume.build()` prints the line only while the switch is on, so a
+  saved spec cannot bring it back. Each switch is a `keywords` event. Nothing was removed.
+- **Why**: the line lists posting terms that are not Fact Bank entries and `validate()` cannot check them, so the
+  README's "every resume line comes from your Fact Bank" was untrue with the line on by default.
+- **Verify**: `pytest tests/test_truth_claims.py` (README wording matches the default; no posting term reaches the page
+  when off; the feature works when on; `build()` reads only spec keys something vouches for; `validate()` rejects each
+  bank-backed key when it points outside the bank).
+
 ## [Unreleased] - 2026-11-07 · v2.0 "ALIVE" planned; README trimmed to the essentials
 - **Plan** (`docs/ALIVE_PLAN.md`, wiki [Revamp-v2](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2)):
   the control room becomes the running engine. Each part maps to a real container, each motion to a typed event,
