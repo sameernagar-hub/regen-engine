@@ -32,7 +32,8 @@ def test_how_heard_picks_nearest_true_source():
 
 
 def test_certify_address_and_start_quarter():
-    assert O.answer("I hereby certify that all information in my application is true and complete", P) == "__ACK__"
+    # NEXT_STEPS §5 (user 11-07): attestation is on the never-answer list; it parks for the user in every mode
+    assert O.answer("I hereby certify that all information in my application is true and complete", P) is None
     assert O.answer("What is your current permanent address?", P).startswith("1 Example St")
     d = datetime.date.today() + datetime.timedelta(weeks=2)
     assert O.answer("In which quarter would you be available to begin?", P) == f"Q{(d.month - 1) // 3 + 1}"
@@ -171,3 +172,57 @@ def test_your_answer_overrides_shadow_memory_and_learning_counts(board, tmp_path
     S.learn()
     e = list(json.load(open(S.MEMORY)).values())[0]
     assert e["submitted"] == 1 and e["moved_forward"] == 1
+
+
+# ---- NEXT_STEPS §5 (user decision 11-07): the never-answer list holds in every mode ----
+import pytest as _pytest
+
+NEVER = [
+    "Will you now or in the future require sponsorship for employment visa status?",
+    "Are you legally authorized to work in the United States?",
+    "Do you have work authorization for the US?",
+    "I certify that the information provided in this application is true and complete.",
+    "Please attest that you have read the policy",
+    "Have you ever been convicted of a felony?",
+    "Do you have a criminal history?",
+    "What are your salary expectations?",
+    "What is your desired hourly rate?",
+    "Please share your compensation expectations for this role",
+]
+ALLOWED = ["What excites you about this role?", "Do you have experience with Kafka?",
+           "Voluntary self-identification: affirmative action", "How did you hear about us?"]
+
+
+@_pytest.mark.parametrize("q", NEVER)
+def test_shadow_never_answers_the_list(q):
+    from engine import override, shadow_brain
+    assert override.blocked(q) in ("user", "human")
+    assert shadow_brain.candidates(q) == []           # no strategy answers it
+    assert override.answer(q, {"needs_sponsorship_now_or_future": "Yes", "work_auth_status": "Status X"}) is None
+
+
+@_pytest.mark.parametrize("q", ALLOWED)
+def test_never_list_does_not_overblock(q):
+    from engine import override
+    assert override.blocked(q) is None
+
+
+@_pytest.mark.parametrize("mode", ["calls", "autopilot", "always"])
+def test_never_list_in_every_mode(mode, monkeypatch, tmp_path):
+    """Pickup path: a recommendation for a never-list question is not saved as Shadow's answer, whatever the mode."""
+    from engine import shadow
+    from engine.feedback import answers as A
+    saved = []
+    monkeypatch.setattr(A, "save", lambda job, q, a, **k: saved.append(q))
+    monkeypatch.setattr(shadow, "remember", lambda *a, **k: None)
+    monkeypatch.setattr(shadow, "settings", lambda: {"mode": mode, "ring_min": 5.0})
+    shadow._use_recommendations({"job": "Acme - Engineer", "recommend": [
+        {"q": NEVER[0], "a": "No"}, {"q": NEVER[7], "a": "100000"}, {"q": ALLOWED[0], "a": "The team"}]})
+    assert saved == [ALLOWED[0]]
+
+
+def test_default_mode_is_calls(monkeypatch):
+    from engine import override, shadow
+    monkeypatch.setattr(override, "state", lambda: {})
+    assert shadow.DEFAULT_MODE == "calls" and shadow.settings()["mode"] == "calls"
+    assert "autopilot" in shadow.MODES   # kept, on demand (never delete features)

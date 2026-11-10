@@ -72,11 +72,25 @@ def set_state(draft, note=""):
     return s
 
 
+# NEXT_STEPS §5 (user decision 11-07): in EVERY Shadow mode these park for the user. The engine's preset rules still
+# answer them with the user's own preset values (runner rules run before Shadow); Shadow itself never does.
+SHADOW_NEVER = re.compile(
+    r"sponsor|authori[sz]ed to work|work authori[sz]ation|(eligib\w*|legally (able|permitted)|right) to work|visa status|"
+    r"immigration|type of visa|which visa|\b(certify|certification that|attest|affirm)\b|true,? (and )?(correct|complete|accurate)|"
+    r"convict|felony|misdemeanor|criminal (record|history|offen[cs]e|charge)|\barrested|"
+    r"salary|compensation|pay (expectation|range|requirement)|desired pay|"
+    r"hourly rate|expected (pay|comp|rate)|base pay", re.I)
+NEVER_TOPICS = ("work authorization", "sponsorship", "attestation", "criminal history", "salary")
+
+
 def blocked(label):
-    """'fact' / 'human' when even the override must leave this question to the user, else None. A fact the user
-    has put in presets (criminal record, vaccination, credit, immigration case: 10-18) is answered, not blocked."""
+    """'human' / 'user' / 'fact' when even Shadow must leave this question to the user, else None. 'user' is the §5
+    never-answer list (work authorization, sponsorship, attestation, criminal history, salary), in every mode. A fact
+    the user has put in presets (vaccination, credit: 10-18) is answered, not blocked."""
     if HUMAN_CHECK.search(label or ""):
         return "human"
+    if SHADOW_NEVER.search(" ".join((label or "").split())):
+        return "user"
     if FACT_ONLY.search(label or ""):
         from engine.apply.runner import P  # lazy: runner imports this module
         key = next((k for rx, k in PRESET_FACTS if re.search(rx, label or "", re.I)), None)

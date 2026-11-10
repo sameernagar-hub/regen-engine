@@ -21,6 +21,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   many groups were compared. Values the ledger lacks print as "not recorded", never guessed. The resume event now
   logs `ats`, `posted` and `keywords_on`, so the posting-age and keywords splits fill from 11-09 on.
   Verify: `pytest tests/test_funnel.py`.
+- **Shadow back to `calls` by default; never-answer list in every mode** (NEXT_STEPS §5, user decision 11-07;
+  `engine/shadow.py` DEFAULT_MODE, `engine/override.py` SHADOW_NEVER). Work authorization, sponsorship / visa type,
+  attestation ("I certify"), criminal history and salary park for the user whatever the mode; preset rules still
+  answer them with the user's own preset values. `autopilot` and the Shadow brain are kept. Two older tests that
+  expected Shadow to accept "I certify" and give the visa type were changed to the new rule. Verify:
+  `pytest tests/test_shadow.py tests/test_override.py`.
 - **Fix, same day: positives counted once per employer** (`funnel.outcomes`). The mail matcher ties an employer's mail
   to every role applied to there; one employer's assessment request was tied to 6 roles and read as "5 OAs", which
   also made the tier-2 split look significant. A positive now credits one role (a verified one when there is one).

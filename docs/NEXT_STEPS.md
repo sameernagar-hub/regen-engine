@@ -53,8 +53,9 @@ alongside every other metric.
   assessment mails BUT all from one employer and tied to 6 roles, which had inflated the rate to "5 OAs / 1.2 per
   100" and faked a tier-2 signal. Fixed (one positive per employer). True reading: 443 verified, **1 OA, 0 interviews
   = 0.2 per 100 (0.0 to 1.3)**; no split differs. Unlabeled-reply recall not measured yet (needs an IMAP pass).
-- Next: §5 (Shadow default `calls` + never-answer test), §4 (daily outreach + "sent" logging), §3 (user decides the
-  targeting numbers), §6 (quick start).
+- 11-09: **§5 done**: default mode `calls` (code + live volume), never-answer list in every mode with tests
+  (tests/test_shadow.py). Weekly Shadow precision in wiki Metrics still to add.
+- Next: §4 (daily outreach in the run + "sent" logging), §3 (user decides the targeting numbers), §6 (quick start).
 
 ## 1. Make the public claims true (first session, small)
 
@@ -159,7 +160,7 @@ All of these, checked and written in the session's handoff:
 - [x] Funnel report exists and the interview rate is in the README (§2). (11-09)
 - [ ] The user has agreed the targeting settings and the experiment is running (§3).
 - [ ] Outreach drafts are part of the daily run and sent notes are logged (§4).
-- [ ] Shadow mode and the never-answer list are settled with the user (§5).
+- [x] Shadow mode and the never-answer list are settled with the user (§5). (11-09)
 - [ ] The 5-minute quick start works on a clean machine (§6).
 
 Then start ALIVE Phase 0 as written in docs/ALIVE_PLAN.md, and add "interviews per 100 applications" as a metric

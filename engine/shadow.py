@@ -22,6 +22,7 @@ from engine.config import WORKSPACE
 
 CALLS = os.path.join(WORKSPACE, "shadow_calls.json")
 MODES = ("calls", "autopilot", "always", "off")  # autopilot (11-07): inline answers + parked jobs picked up at once
+DEFAULT_MODE = "calls"  # NEXT_STEPS §5 (user 11-07): calls by default; autopilot stays, engaged on demand
 RING_MIN = 5          # minutes between parking, call 1, call 2 and Shadow's pickup
 WINDOW_H = 48         # jobs parked longer ago than this never ring (the old backlog stays on Needs you)
 MAX_PICKUPS = 15
@@ -44,8 +45,8 @@ def settings():
     """{"mode", "ring_min"}. An older override.json with only {"draft": true} reads as "always"."""
     from engine import override
     s = override.state()
-    mode = s.get("mode") or ("always" if s.get("draft") else "off")
-    return {"mode": mode if mode in MODES else "off", "ring_min": float(s.get("ring_min") or RING_MIN)}
+    mode = s.get("mode") or ("always" if s.get("draft") else DEFAULT_MODE)
+    return {"mode": mode if mode in MODES else DEFAULT_MODE, "ring_min": float(s.get("ring_min") or RING_MIN)}
 
 
 def configure(mode=None, ring_min=None, note=""):
@@ -296,6 +297,9 @@ def _use_recommendations(c):
     from engine.feedback import answers as A
     for r in c.get("recommend") or []:
         if not r.get("a"):
+            continue
+        from engine import override
+        if override.blocked(r["q"]) in ("user", "human"):  # §5 never-answer list / human checks: never Shadow's, any mode
             continue
         try:
             A.save(c["job"], r["q"], r["a"], requeue_job=False, by="shadow")

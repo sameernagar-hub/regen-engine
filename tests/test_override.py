@@ -37,7 +37,7 @@ def test_answers_from_presets_and_consent(switch):
              "list any countries of which you are a citizen or legal permanent resident", P) == "India"
     assert a("What are your preferred personal pronouns?", P) == "__DECLINE__"
     assert a("Current Legal Address", P) == "1 Example St, Springfield, IL, 00000"
-    assert a("If yes, please confirm which type of Visa would be required", P) == "Status X; will need H-1B sponsorship in the future"
+    assert a("If yes, please confirm which type of Visa would be required", P) is None  # §5: sponsorship parks for the user
     assert a("As part of the hiring process, we ask all candidates to undergo a criminal background check. Are you willing?", P) == "Yes"
 
 
@@ -46,7 +46,7 @@ def test_never_invents_facts_or_passes_human_checks(switch):
               "We're always curious - have you used Globex before?", "Do you currently have an active immigration case?",
               "Please include a copy of your college or university transcript.",
               "If you attended an on-campus or virtual event, which did you attend?"):
-        assert O.blocked(q) == "fact" and O.answer(q, P) is None, q
+        assert O.blocked(q) in ("fact", "user") and O.answer(q, P) is None, q  # "user": the §5 never-answer list
     for q in ("To confirm you carefully read instructions, please select the SECOND option below",
               "We include this question to ensure each application is completed by a person."):
         assert O.blocked(q) == "human" and O.answer(q, P) is None, q
