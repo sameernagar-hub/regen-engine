@@ -1,5 +1,5 @@
 {
-"generated": "2026-11-07 23:32",
+"generated": "2026-11-09 16:01",
 "days": 7,
 "verified": 419,
 "verified_roles": [
@@ -1686,48 +1686,6 @@
 {
 "stage": "listen",
 "tone": "calm",
-"text": "Spotted a company: Infrastructure Engineer.",
-"ts": "2026-11-07T22:46"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Lead Platform Engineer.",
-"ts": "2026-11-07T22:46"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Lead Software Engineer.",
-"ts": "2026-11-07T22:46"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Machine Learning Engineer.",
-"ts": "2026-11-07T22:46"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Platform Engineer.",
-"ts": "2026-11-07T22:46"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Platform Infrastructure Engineer.",
-"ts": "2026-11-07T22:46"
-},
-{
-"stage": "listen",
-"tone": "calm",
-"text": "Spotted a company: Software Engineer.",
-"ts": "2026-11-07T22:46"
-},
-{
-"stage": "listen",
-"tone": "calm",
 "text": "Spotted a company: Technical Lead, Cleanroom Certification.",
 "ts": "2026-11-07T22:46"
 },
@@ -2642,6 +2600,48 @@
 "tone": "calm",
 "text": "Wrote a resume for a company from 25 facts in the Fact Bank, embedded lane.",
 "ts": "2026-11-07T23:26"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: not a fit.",
+"ts": "2026-11-07T23:35"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 25 facts in the Fact Bank, embedded lane.",
+"ts": "2026-11-07T23:35"
+},
+{
+"stage": "write",
+"tone": "calm",
+"text": "Wrote a resume for a company from 23 facts in the Fact Bank, backend lane.",
+"ts": "2026-11-07T23:35"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-11-07T23:35"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-11-07T23:35"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: not a fit.",
+"ts": "2026-11-07T23:35"
+},
+{
+"stage": "judge",
+"tone": "quiet",
+"text": "Let a company go: seniority.",
+"ts": "2026-11-07T23:35"
 }
 ],
 "graph": {
