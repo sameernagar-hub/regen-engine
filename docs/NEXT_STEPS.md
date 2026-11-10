@@ -55,7 +55,10 @@ alongside every other metric.
   = 0.2 per 100 (0.0 to 1.3)**; no split differs. Unlabeled-reply recall not measured yet (needs an IMAP pass).
 - 11-09: **§5 done**: default mode `calls` (code + live volume), never-answer list in every mode with tests
   (tests/test_shadow.py). Weekly Shadow precision in wiki Metrics still to add.
-- Next: §4 (daily outreach in the run + "sent" logging), §3 (user decides the targeting numbers), §6 (quick start).
+- 11-09 night: **§4 done** (code): the supervisor's daily run now writes `outreach 7` (tier1 / sponsor / startup notes,
+  nothing sent); `python -m engine outreach sent <company> [role]` logs a note the user sent (event `outreach_sent`);
+  `report funnel` splits outreach into sent / drafted / none. Referral list still to propose to the user.
+- Next: §3 (user decides the targeting numbers), §6 (quick start).
 
 ## 1. Make the public claims true (first session, small)
 
@@ -159,7 +162,7 @@ All of these, checked and written in the session's handoff:
 - [x] README and wiki claims match the code (§1), with a test guarding it. (11-09)
 - [x] Funnel report exists and the interview rate is in the README (§2). (11-09)
 - [ ] The user has agreed the targeting settings and the experiment is running (§3).
-- [ ] Outreach drafts are part of the daily run and sent notes are logged (§4).
+- [x] Outreach drafts are part of the daily run and sent notes are logged (§4).
 - [x] Shadow mode and the never-answer list are settled with the user (§5). (11-09)
 - [ ] The 5-minute quick start works on a clean machine (§6).
 

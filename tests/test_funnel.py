@@ -100,3 +100,24 @@ def test_positive_is_credited_to_a_verified_role_when_there_is_one():
     outs = funnel.outcomes(ev, prefer={"Acme - Verified", "Acme - Other"})
     assert outs["Acme - Verified"] == {"oa"} and "Acme - Other" not in outs
     assert funnel.rate([{"job": "Acme - Verified"}, {"job": "Acme - Other"}], outs)["oa"] == 1
+
+
+def test_funnel_outreach_sent_beats_drafted():
+    apps = [{"job": f"Co{i} - E", "url": f"u{i}"} for i in range(5)]
+    f = funnel.funnel(apps, {"Co0 - E": {"oa"}}, {}, tiers={}, drafted={"co0", "co1"}, sent={"co0"})
+    rows = {g: c for g, c, _, _ in f["splits"]["outreach"]}
+    assert rows["sent"]["verified"] == 1 and rows["sent"]["positive"] == 1
+    assert rows["drafted"]["verified"] == 1 and rows["none"]["verified"] == 3
+
+
+def test_outreach_mark_sent_logs_event(tmp_path, monkeypatch, capsys):
+    import pytest
+    from engine import outreach
+    from engine.feedback import events
+    monkeypatch.setattr(events, "WORKSPACE", str(tmp_path))
+    outreach.main(["sent", "Acme", "Backend", "Engineer"])
+    assert [(e["company"], e["role"]) for e in outreach.sent()] == [("Acme", "Backend Engineer")]
+    outreach.main(["sent"])
+    assert "1 notes marked sent" in capsys.readouterr().out
+    with pytest.raises(ValueError):
+        outreach.mark_sent("  ")

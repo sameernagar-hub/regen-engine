@@ -759,11 +759,11 @@ def test_daily_hn_outreach_once_a_day(tmp_path, monkeypatch):
     at = lambda h, d=12: time.struct_time((2026, 10, d, h, 0, 0, 0, 285, 1))
     assert not S.daily(True, at(6), fake)  # before DAILY_HOUR
     assert S.daily(True, at(8), fake) and not S.daily(True, at(20), fake)
-    assert ran == [["hn", "2"], ["outreach", "hn", "20", "--gmail", "--new"]]
+    assert ran == [["hn", "2"], ["outreach", "7"], ["outreach", "hn", "20", "--gmail", "--new"]]
     (tmp_path / "KILL").write_text("x")
     assert not S.daily(True, at(8, 13), fake)  # killed: nothing runs
     (tmp_path / "KILL").unlink()
-    assert S.daily(False, at(8, 13), fake) and ran[-1] == ["hn", "2"]  # no IMAP: no Gmail drafts
+    assert S.daily(False, at(8, 13), fake) and ran[-2:] == [["hn", "2"], ["outreach", "7"]]  # no IMAP: no Gmail drafts
 
 
 def test_outreach_drafted_backfills_and_dedupes(tmp_path, monkeypatch):

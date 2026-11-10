@@ -801,7 +801,8 @@ OUTREACH_PER_DAY = int(os.environ.get("REGEN_OUTREACH_PER_DAY", "20"))
 
 
 def daily(imap, now=None, run=None):
-    """Once a day after DAILY_HOUR: refresh HN "Who is hiring" boards + contacts, then save Gmail drafts for at most
+    """Once a day after DAILY_HOUR: refresh HN "Who is hiring" boards + contacts, write `outreach 7` notes for the
+    week's tier1 / sponsor / startup submissions, then save Gmail drafts for at most
     OUTREACH_PER_DAY contacts that never got one (nothing is sent; the user reviews Drafts). Runs in a thread so
     scaling never waits on it; skipped while killed. Returns True when it started today's run."""
     import subprocess, sys, threading
@@ -816,7 +817,8 @@ def daily(imap, now=None, run=None):
         return False
     os.makedirs(FLEET, exist_ok=True)
     open(mark, "w", encoding="utf-8").write(today)
-    steps = [["hn", "2"]] + ([["outreach", "hn", str(OUTREACH_PER_DAY), "--gmail", "--new"]] if imap else [])
+    # `outreach 7`: notes for the week's tier1 / sponsor / startup submissions (drafts.json + .md; nothing sent)
+    steps = [["hn", "2"], ["outreach", "7"]] + ([["outreach", "hn", str(OUTREACH_PER_DAY), "--gmail", "--new"]] if imap else [])
 
     def go():
         for s in steps:

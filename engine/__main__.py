@@ -4,6 +4,7 @@
   newgrad [days]                   newgrad-jobs.com leads, resolved to the employer's ATS -> queue.json / leads.json
   vc      [days] [--only a,b] [--dry] YC / Getro / Consider / Next.js fund portals -> employer ATS -> queue.json
   outreach [days]                  recruiter / founder notes for recent submissions (Fact Bank only; nothing sent)
+  outreach sent [company [role]]   mark a note YOU sent (event outreach_sent) or list them; feeds `report funnel`
   bigtech [days]                   Amazon + NVIDIA careers APIs -> fit-gated roles with tailored resumes (workspace/bigtech.md)
   reach   [max]                    Workday / iCIMS / SmartRecruiters jobs -> fit-gated, tailored, you submit (workspace/reach.md)
   desk    [--fill url]             the desk: a visible browser you sign in to (noVNC :6080); fills Workday forms there

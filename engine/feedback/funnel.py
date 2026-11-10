@@ -107,7 +107,7 @@ def _hours(posted, ts):
         return None
 
 
-def label(dim, app, res, tiers, drafted):
+def label(dim, app, res, tiers, drafted, sent=frozenset()):
     """The group one verified application falls in for one dimension. "not recorded" when the ledger lacks it:
     a missing value is never guessed (posting time and the keywords switch were first logged on 11-09)."""
     if dim == "lane":
@@ -132,7 +132,8 @@ def label(dim, app, res, tiers, drafted):
     if dim == "answered by":
         return app.get("answered_by") or "not recorded"
     if dim == "outreach":
-        return "drafted" if _company(app["job"]).lower() in drafted else "none"
+        co = _company(app["job"]).lower()
+        return "sent" if co in sent else "drafted" if co in drafted else "none"
     raise ValueError(dim)
 
 
@@ -147,7 +148,7 @@ def _overlap(a, b):
     return a[0] <= b[1] and b[0] <= a[1]
 
 
-def funnel(apps=None, outs=None, resumes=None, tiers=None, drafted=None):
+def funnel(apps=None, outs=None, resumes=None, tiers=None, drafted=None, sent=None):
     """{"overall": counts, "splits": {dim: [(group, counts, interval, significant)]}}. A group is "significant" only
     when its 95% interval for OA-or-interview does not overlap the interval of all other applications (conservative:
     with this few positives that is rare, and the report says so instead of reading noise as a finding)."""
@@ -163,12 +164,14 @@ def funnel(apps=None, outs=None, resumes=None, tiers=None, drafted=None):
         tiers = _t()
     if drafted is None:
         drafted = {(o.get("company") or "").lower() for o in read("outreach")} - {""}
+    if sent is None:  # notes the user marked sent (`engine outreach sent <company>`): "applied + outreach"
+        sent = {(o.get("company") or "").lower() for o in read("outreach_sent")} - {""}
     res_of = lambda a: resumes.get(a.get("url")) or resumes.get(a["job"]) or {}
     out = {"overall": _counts(apps, outs), "splits": {}}
     for dim in DIMENSIONS:
         groups = {}
         for a in apps:
-            groups.setdefault(label(dim, a, res_of(a), tiers, drafted), []).append(a)
+            groups.setdefault(label(dim, a, res_of(a), tiers, drafted, sent), []).append(a)
         rows = []
         for g, members in sorted(groups.items(), key=lambda kv: -len(kv[1])):
             c = _counts(members, outs)

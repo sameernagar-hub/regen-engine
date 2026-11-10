@@ -1,6 +1,8 @@
 """Outreach drafts: a short, truthful note to a recruiter or founder after an application went in.
 
     python -m engine outreach [days]        -> workspace/outreach/drafts.json (+ .md), newest first
+    python -m engine outreach sent <company> [role]   the user sent a note: log it (event `outreach_sent`)
+    python -m engine outreach sent                    list the notes marked sent
 
 Targets are verified submissions from the last `days` days at employers on the user's tier lists
 (profile/priority.json: big tech, AI labs, sponsors) and at startups (Ashby / YC boards). Every sentence is either a
@@ -229,8 +231,33 @@ def gmail_drafts(drafts, blocked=None):
     return n
 
 
+def mark_sent(company, role="", channel="email"):
+    """The USER sent a note (the engine never sends): log it so `report funnel` can compare applied + outreach with
+    applied only. Matched to applications by company (case-insensitive). Returns the event."""
+    from engine.feedback.events import record
+    company = (company or "").strip()
+    if not company:
+        raise ValueError("company is required")
+    return record("outreach_sent", company=company, role=(role or "").strip(), channel=channel)
+
+
+def sent():
+    from engine.feedback.events import read
+    return read("outreach_sent")
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "sent":
+        if len(argv) == 1:
+            evs = sent()
+            for e in evs:
+                print(f"  {e['ts'][:10]}  {e.get('company', '')[:30]:<30} {e.get('role', '')[:40]}")
+            print(f"{len(evs)} notes marked sent")
+            return
+        e = mark_sent(argv[1], " ".join(argv[2:]))
+        print(f"marked sent: {e['company']}" + (f" ({e['role']})" if e["role"] else "") + " -> event outreach_sent")
+        return
     if argv and argv[0] == "hn":  # python -m engine outreach hn [limit] [--gmail] [--new]
         bank = _bank()
         limit = int(argv[1]) if len(argv) > 1 and argv[1].isdigit() else 60
