@@ -19,6 +19,8 @@ the feedback model below.** A phase that has started never takes on new work.
 - Typed live events + nightly replay recorder (Phase 0).
 - Home `/` rebuilt as the living engine (Phase 1), Shadow co-driver (Phase 2), exhaust trail (Phase 3).
 - Nav cut from 15 pills to 4 rooms as drawers + `/docs` (Phase 5). Old routes stay as deep links.
+- Every NEXT_STEPS control and report on screen: Role Keywords, cap dial, targeting, funnel + rate, outreach
+  "Mark sent", Shadow never-answer list, quick-start paste box (§5a; merged 11-09).
 - "While you were away" replay (Phase 4) and live tab title/favicon (Phase 6).
 
 ### Track B: v2.x extensions (accepted 11-07, built after v2.0, each one a phase with the same rules)
@@ -79,7 +81,8 @@ backend health is visible as engine health, with no separate status page.
 Extend `Narration` (apps/api/models.py) with optional fields. Existing fields are unchanged, so old clients keep working:
 ```
 kind:   "discovered"|"gate.pass"|"gate.skip"|"resume"|"apply.start"|"submitted"|"parked"|
-        "shadow.answer"|"shadow.abstain"|"shadow.mode"|"human.check"|"gear"|"outcome"|"problem"|"problem.clear"
+        "shadow.answer"|"shadow.abstain"|"shadow.mode"|"human.check"|"gear"|"outcome"|"problem"|"problem.clear"|
+        "keywords"|"cap"|"targeting"|"outreach.sent"          # NEXT_STEPS controls (§5a)
 job:    str | null      # job id, so one chip can be followed across stages
 company:str | null      # null on the public site (privacy: role + lane only)
 by:     "engine"|"shadow"|"desk"|"you" | null
@@ -167,6 +170,27 @@ Files: `apps/web/app/alive/TabPulse.tsx`, `layout.tsx`.
 Accept:
 - [ ] Title updates from events within 2 s; no update when nothing changed.
 
+## 5a. NEXT_STEPS on the front end (merged 11-09 by the user: every next step is part of the revamp)
+
+Everything built under docs/NEXT_STEPS.md is an engine behavior first and a front-end control second. The revamp
+must show and drive all of it; none of it may stay CLI-only once v2.0 ships. **Standing rule: every NEXT_STEPS item
+(done or future) gets a row here in the same commit that builds it**, with its event, API route and the phase that
+puts it on screen. The backend stays the truth: a control posts, and the UI changes only when the event comes back.
+
+| NEXT_STEPS item | Engine (built) | API (add if missing) | Event (Phase 0 kinds) | On screen (phase) |
+|---|---|---|---|---|
+| §1.1 Role Keywords per run | `engine keywords on\|off`, workspace/keywords.json | `GET/POST /control/keywords` | `keywords` {on} | Drive panel toggle beside the gear lever, asked at ignition, "off" after a clean stop (Phase 1) |
+| §1.2 + §2 interview rate + funnel | `engine report rate\|funnel` (Wilson intervals) | `GET /report/rate`, `GET /report/funnel` | `outcome` (exists) | Rate beside every volume number ("446 sent · 0.2 per 100"); Results drawer funnel with splits and "not significant" said plainly (Phase 3 + 5) |
+| §3 daily cap switch | `engine cap 0..4\|up\|down` = 15/25/50/100/150, profile/targeting.json | `GET/POST /control/cap` | `cap` {level, cap, today} | Cap dial next to the gearbox: level 0 at every start, "12 / 15 today" gauge, cap-reached state drawn as the engine idling, not as an error (Phase 1) |
+| §3 targeting order | tier1 / sponsors first, then freshest; skip unsure fits (planned) | `GET/POST /control/targeting` | `gate.skip` detail "unsure fit" | Chips from tier1 / sponsors marked at intake; Garage > Targeting shows the settings (Phase 1 + 5) |
+| §3 Role Keywords A/B (planned) | arm by URL hash, logged in the resume event, 150 per arm | `GET /report/funnel` (arm split) | `resume` {arm} | Results: two progress bars to 150, result hidden until both arms are full (Phase 5) |
+| §4 outreach | `outreach 7` in the daily run, `outreach sent <company>` | `GET /outreach` (exists), `POST /outreach/sent` | `outreach.sent` | Results > Outreach: drafts best first, Gmail compose link, a **Mark sent** button; funnel "applied + outreach" row (Phase 5) |
+| §5 Shadow mode + never-answer list | `engine shadow calls\|autopilot\|off`, default calls | `/shadow` (exists) | `shadow.mode`, `shadow.abstain` | Phase 2 seat selector; never-answer questions drawn going to the tray with "left for you: work authorization" etc.; weekly precision on the seat badge |
+| §6 quick start | `engine try resume` (no DB, nothing applied) | `POST /try` (public, rate-limited, nothing stored) | none | Public demo paste box: resume text in, top 10 roles + reasons out; /docs "Try it first" (Phase 5) |
+
+Acceptance (added to the phases above): each control round-trips (UI → API → engine CLI reports the same value)
+within one heartbeat; public build shows rates and arm counts but no company names; a V-bench row per control.
+
 ## 6. Quality bar: airtight (applies to every phase, no exceptions)
 
 ### Benchmarks (V-series, alongside the engine's B1-B10)
@@ -216,3 +240,4 @@ Rollback: `NEXT_PUBLIC_ALIVE=0` (until Phase 5) or `git revert` the phase commit
 | Date | Idea | Triage |
 |---|---|---|
 | 11-07 | Phone push, sound pack, 3D engine, inner pages, Shadow L2+ visuals, weekly highlights | accepted as Track B phases 7-12 (user, 11-07) |
+| 11-09 | Cap switch on the front end; all NEXT_STEPS changes part of the revamp | merged into Track A as §5a (user, 11-09) |
