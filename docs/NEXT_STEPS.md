@@ -62,7 +62,12 @@ alongside every other metric.
   the resume, scans 40 sample Greenhouse boards, runs the default fit gate, prints the top 10 with reasons and the
   blocked counts; read-only. 25 boards / 6,135 postings in ~2 s on the dev machine. README tip at the top. Clean machine (python:3.12-slim,
   nothing installed): 2 s to the first result; written in wiki Running.
-- Next: §3 (user decides the targeting numbers), then the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
+- 11-09 night: **§3 decided** (user: "use the defaults") and partly built: engine/targeting.py reads
+  profile/targeting.json (defaults daily_cap 15, tier_first on, skip_unsure on, keywords_ab off, ab_per_arm 150);
+  select() stops at the cap (submitted + in flight) and puts tier1 / sponsors first, then freshest. Still to build:
+  skip_unsure in the fit gate, and the Role Keywords A/B by URL hash (then switch keywords_ab on; 150 per arm before
+  reading).
+- Next: finish §3 (skip_unsure, keywords A/B), then the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
 
 ## 1. Make the public claims true (first session, small)
 

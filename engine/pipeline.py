@@ -186,18 +186,26 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
     blocked |= capped()  # an employer's own per-candidate limit: more applications there are closed unread
     if walled:
         print(f"select: skipping {', '.join(sorted(walled))} (captcha walls on most recent attempts; see the assist list)")
-    from engine.discovery.priority import band, lane_rates, score
-    rates = lane_rates()
-    # freshness bands first (past hour > day > week > older), score inside a band. Lazy heap: O(Q) heapify, then
-    # O(log Q) per job popped; only as many pops as needed to fill max_jobs (skips are cheap), not a full sort.
-    heap = [(band(j), -score(j, rates)[0], i) for i, j in enumerate(queue)]
+    from engine.discovery.priority import band, lane_rates, score, tiers
+    from engine import targeting
+    cfg, busy = targeting.load(), in_flight()
+    room = targeting.room_today() - len(busy)  # daily cap (profile/targeting.json): jobs already in batches count
+    if room <= 0:
+        print(f"select: daily cap {cfg['daily_cap']} reached (submitted + in flight); nothing new queued today")
+        return []
+    max_jobs = min(max_jobs, room)
+    rates, t = lane_rates(), (tiers() if cfg["tier_first"] else {})
+    # tier1 / sponsors first (targeting), then freshness bands (past hour > day > week > older), score inside a band.
+    # Lazy heap: O(Q) heapify, then O(log Q) per job popped; only as many pops as needed to fill max_jobs.
+    heap = [(targeting.tier_rank(j, t) if cfg["tier_first"] else 0, band(j), -score(j, rates)[0], i)
+            for i, j in enumerate(queue)]
     heapq.heapify(heap)
     per, picked = collections.Counter(), []
     seen = {role_key(e.get("job")) for e in read("application")
             if not e.get("dry") and (e.get("status") or "").startswith("SUBMITTED")}
-    seen |= in_flight()  # a job already in a worker's batch: two attempts share one email code (10-11: a code bounced)
+    seen |= busy  # a job already in a worker's batch: two attempts share one email code (10-11: a code bounced)
     while heap:
-        j = queue[heapq.heappop(heap)[2]]
+        j = queue[heapq.heappop(heap)[-1]]
         key = role_key(j["company"], j["title"])
         if key in seen:
             continue  # one posting listed under several URLs (locations, sources): 10-11 batch held the same role 3 times
