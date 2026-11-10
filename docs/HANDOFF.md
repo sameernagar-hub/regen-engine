@@ -1,3 +1,18 @@
+# Handoff: 11-09 ~16:50 STOP POINT. Stack STOPPED cleanly at ~77% of the Claude 5-hour limit (gear N, inbox +
+# claimed 0, Role Keywords switched OFF, `compose stop`, volumes kept; events end on a full line). Shadow mode = calls.
+# Image regen-applier:local is NOT rebuilt with 93a13d9/58600ff: run `docker compose -f deploy/bank.compose.yml build`
+# before START, or the containers lack `engine keywords`, `report rate/funnel` and the §5 never-answer list.
+# The user wants ALL NEXT_STEPS §9 items done so v2.0 ALIVE can start; still open, in this order:
+#  §4 outreach: add `outreach 7` to the daily run (supervisor already runs HN outreach daily) + a way for the user to
+#     mark a note SENT (event `outreach_sent`), and show "applied + outreach" in `report funnel`.
+#  §3 targeting: USER DECIDES. Evidence: 443 verified, 1 OA, 0 interviews (0.2 per 100); no split differs. Propose a
+#     daily cap (10-15), tier1/sponsors first then freshest, skip unsure fits, and the Role Keywords on/off experiment
+#     by URL hash (state the per-arm sample size up front). Settings go in presets/config, not code.
+#  §6 quick start: `python -m engine try resume.pdf` (no DB, no applying): read resume, scan sample boards, fit gate,
+#     top 10 roles with reasons; stdlib + one optional dep; time it on a clean machine, write it in wiki Running.
+#  Small leftovers: §2 recall on unlabeled replies (IMAP pass); §5 weekly Shadow precision row in wiki Metrics.
+# Run 11-09 16:02-16:48 (gear 3, Role Keywords ON by the user's choice): 479 submitted total (+20 this run).
+
 # Handoff: 11-09 ~16:30. Stack is UP (started 16:02), gear 3 at the user's request ("apply as much as possible"),
 # Role Keywords ON for this run (user's choice). Shut down cleanly at 80% of the Claude 5-hour limit.
 # NEXT SESSION, in this order:
