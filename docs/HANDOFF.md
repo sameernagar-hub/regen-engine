@@ -1,3 +1,17 @@
+# Handoff: 11-09 ~21:55. Stack is UP (started ~21:33 after `compose build`), gear 2, Role Keywords ON and Shadow
+# AUTOPILOT for this run (both by the user's choice; the §5 never-answer list still parks work authorization,
+# sponsorship, attestation, criminal history and salary questions for the user). Images rebuilt with 9c02261;
+# supervisor/pipeline/applier recreated on it. CLEAN STOP: gear N, wait for inbox + claimed 0, `engine keywords off`,
+# `engine shadow calls 5` (the default), `compose stop`, verify, write this block.
+# Done tonight: §4 (9c02261): daily run writes `outreach 7`; `engine outreach sent <company> [role]` logs a note the
+#   user sent (event outreach_sent); `report funnel` splits outreach sent / drafted / none. 13 drafts in
+#   workspace/outreach/drafts.json (3 tier 1, 9 tier 2, 1 startup), nothing sent.
+#   §6 (5b960ed): `python -m engine try resume.pdf|.txt` (engine/try_it.py): 2 s on a clean python:3.12-slim; README
+#   tip; wiki Running ba32158 committed locally, NOT pushed.
+# Left before ALIVE: §3 (USER DECIDES: daily cap, tier1/sponsors first then freshest, skip unsure fits, Role Keywords
+#   A/B by URL hash), §4 referral list proposal, §2 unlabeled-reply recall, §5 weekly Shadow precision in wiki Metrics.
+# Rate: 446 verified, 1 OA, 0 interviews (0.2 per 100). Tests 337 pass.
+
 # Handoff: 11-09 ~16:50 STOP POINT. Stack STOPPED cleanly at ~77% of the Claude 5-hour limit (gear N, inbox +
 # claimed 0, Role Keywords switched OFF, `compose stop`, volumes kept; events end on a full line). Shadow mode = calls.
 # Image regen-applier:local is NOT rebuilt with 93a13d9/58600ff: run `docker compose -f deploy/bank.compose.yml build`
