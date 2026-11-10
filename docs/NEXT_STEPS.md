@@ -46,12 +46,15 @@ alongside every other metric.
 
 - 11-09: **§1.1 done** (default off, per-run switch, guard test `tests/test_truth_claims.py`, README note).
 - 11-09: **§1.2 done** (`python -m engine report rate`, Wilson interval, README stats row + wiki Metrics, guard test
-  `tests/test_funnel.py`). First reading: 426 verified, 5 OAs, 0 interviews = 1.2 per 100 (0.5 to 2.7).
-- 11-09: **§2 report built** (`python -m engine report funnel`). First reading (443 verified): all 5 OAs came from
-  tier-2 employers (5/62 = 8.1 per 100, 95% 3.5 to 17.5) vs 0/359 untiered (0 to 1.1); the only marked split of 20
-  groups. A lead for §3, not proof. Posting age + keywords splits fill from 11-09 (new resume-event fields).
-- Next: §2 remainder, the labeler hand-check (30 random labeled mails + every unlabeled reply of the last 30 days,
-  precision / recall into wiki Metrics). Then §3 (propose targeting to the user with the tier evidence).
+  `tests/test_funnel.py`).
+- 11-09: **§2 done** (`python -m engine report funnel`, splits + intervals; resume event now logs ats / posted /
+  keywords_on). Labeler hand-check: 30 random labeled mails + every positive label. Confirmations 16/16 right by
+  subject; rejections (14) carry neutral subjects, so precision needs bodies (not checked); OA labels 6/6 are real
+  assessment mails BUT all from one employer and tied to 6 roles, which had inflated the rate to "5 OAs / 1.2 per
+  100" and faked a tier-2 signal. Fixed (one positive per employer). True reading: 443 verified, **1 OA, 0 interviews
+  = 0.2 per 100 (0.0 to 1.3)**; no split differs. Unlabeled-reply recall not measured yet (needs an IMAP pass).
+- Next: §5 (Shadow default `calls` + never-answer test), §4 (daily outreach + "sent" logging), §3 (user decides the
+  targeting numbers), §6 (quick start).
 
 ## 1. Make the public claims true (first session, small)
 
@@ -153,7 +156,7 @@ stay.
 All of these, checked and written in the session's handoff:
 
 - [x] README and wiki claims match the code (§1), with a test guarding it. (11-09)
-- [ ] Funnel report exists and the interview rate is in the README (§2).
+- [x] Funnel report exists and the interview rate is in the README (§2). (11-09)
 - [ ] The user has agreed the targeting settings and the experiment is running (§3).
 - [ ] Outreach drafts are part of the daily run and sent notes are logged (§4).
 - [ ] Shadow mode and the never-answer list are settled with the user (§5).

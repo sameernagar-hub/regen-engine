@@ -38,12 +38,26 @@ def verified(day=None):
     return [e for e in rows if e.get("proof") and os.path.exists(os.path.join(WORKSPACE, e["proof"]))], rows
 
 
-def outcomes():
-    """job -> set of outcome labels the inbox classifier recorded for it."""
-    outs = {}
-    for o in read("outcome"):
-        for j in o.get("jobs", []):
+def outcomes(events=None, prefer=None):
+    """job -> set of outcome labels the inbox classifier recorded for it.
+
+    11-09 hand-check: the classifier attaches an employer's mail to EVERY role applied to there (one employer's
+    assessment request was tied to 6 roles, which read as "5 OAs"). A rejection or confirmation may apply to all of
+    them, but a positive (OA / interview / offer) at one employer is credited to ONE role: the first verified role
+    (`prefer`) among those its mails named, else the first role named. The rate counts what happened, not how many
+    roles a mail was matched to."""
+    prefer = prefer or set()
+    outs, positive = {}, {}
+    for o in (read("outcome") if events is None else events):
+        jobs = o.get("jobs", [])
+        if o["outcome"] in POSITIVE and jobs:
+            seen = positive.setdefault((o["outcome"], _company(jobs[0]).lower()), [])
+            seen += [j for j in jobs if j not in seen]
+            continue
+        for j in jobs:
             outs.setdefault(j, set()).add(o["outcome"])
+    for (label, _), jobs in positive.items():
+        outs.setdefault(next((j for j in jobs if j in prefer), jobs[0]), set()).add(label)
     return outs
 
 
@@ -51,7 +65,7 @@ def rate(apps=None, outs=None):
     """Counts and per-100 rates over verified applications. A job with both an OA and an interview counts once in
     `positive` (the headline: applications that reached a person or a test)."""
     apps = verified()[0] if apps is None else apps
-    outs = outcomes() if outs is None else outs
+    outs = outcomes(prefer={a["job"] for a in apps}) if outs is None else outs
     n = len(apps)
     got = [outs.get(e["job"], set()) for e in apps]
     out = {"verified": n}
@@ -139,7 +153,7 @@ def funnel(apps=None, outs=None, resumes=None, tiers=None, drafted=None):
     with this few positives that is rare, and the report says so instead of reading noise as a finding)."""
     if apps is None:
         apps = verified()[0]
-    outs = outcomes() if outs is None else outs
+    outs = outcomes(prefer={a["job"] for a in apps}) if outs is None else outs
     if resumes is None:
         resumes = {}
         for r in read("resume"):

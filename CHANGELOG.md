@@ -21,6 +21,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
   many groups were compared. Values the ledger lacks print as "not recorded", never guessed. The resume event now
   logs `ats`, `posted` and `keywords_on`, so the posting-age and keywords splits fill from 11-09 on.
   Verify: `pytest tests/test_funnel.py`.
+- **Fix, same day: positives counted once per employer** (`funnel.outcomes`). The mail matcher ties an employer's mail
+  to every role applied to there; one employer's assessment request was tied to 6 roles and read as "5 OAs", which
+  also made the tier-2 split look significant. A positive now credits one role (a verified one when there is one).
+  Corrected reading: 443 verified, 1 OA, 0 interviews = 0.2 per 100 (0.0 to 1.3); no split stands out. README and
+  wiki corrected. Found by the NEXT_STEPS §2 labeler hand-check.
 - **Interview rate** (NEXT_STEPS §1.2; `engine/feedback/funnel.py`): `python -m engine report rate` prints interviews
   and OAs per 100 verified applications with a 95% Wilson interval, and says when the data cannot tell rates apart.
   The README stats row and wiki Metrics now show it beside "applications sent" (1.2 per 100 on 11-09: 5 OAs, no

@@ -79,3 +79,24 @@ def test_funnel_says_not_significant_when_it_is_not(capsys):
     assert not any(sig for rows in f["splits"].values() for *_, sig in rows)
     funnel.print_funnel(f)
     assert "counts, not findings" in capsys.readouterr().out
+
+
+def test_one_positive_mail_matched_to_many_roles_counts_once():
+    """11-09 hand-check: one employer's assessment mail tied to 6 roles was read as 5 OAs."""
+    ev = [{"outcome": "oa", "jobs": ["Acme - Role A"]},
+          {"outcome": "oa", "jobs": ["Acme - Role A", "Acme - Role B", "Acme - Role C"]},
+          {"outcome": "oa", "jobs": ["Acme - Role B", "Acme - Role C"]},   # later mail names another role first
+          {"outcome": "rejection", "jobs": ["Acme - Role B", "Acme - Role C"]}]
+    outs = funnel.outcomes(ev)
+    assert outs["Acme - Role A"] == {"oa"}
+    assert outs["Acme - Role B"] == {"rejection"} and outs["Acme - Role C"] == {"rejection"}
+    r = funnel.rate([{"job": f"Acme - Role {c}"} for c in "ABC"], outs)
+    assert r["oa"] == 1 and r["positive"] == 1
+
+
+def test_positive_is_credited_to_a_verified_role_when_there_is_one():
+    ev = [{"outcome": "oa", "jobs": ["Acme - Unverified"]},
+          {"outcome": "oa", "jobs": ["Acme - Unverified", "Acme - Verified", "Acme - Other"]}]
+    outs = funnel.outcomes(ev, prefer={"Acme - Verified", "Acme - Other"})
+    assert outs["Acme - Verified"] == {"oa"} and "Acme - Other" not in outs
+    assert funnel.rate([{"job": "Acme - Verified"}, {"job": "Acme - Other"}], outs)["oa"] == 1

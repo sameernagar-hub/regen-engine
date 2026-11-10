@@ -23,8 +23,8 @@
 - Bot PR 31 is merged. Local commits f4a4359 and earlier + today's two -> reposync PR.
 
 ## Done 11-09 (later)
-- §2 report (`engine report funnel`): all 5 OAs from tier-2 employers (8.1 per 100) vs 0 of 359 untiered; the
-  only split that clears the rest. The resume event now logs ats / posted / keywords_on. Tests 312 pass.
+- §2 report (`engine report funnel`). Hand-check found the "5 OAs" were ONE employer's mail tied to 6 roles; fixed:
+  1 OA in 443 = 0.2 per 100, no split stands out. README + wiki corrected. The resume event now logs ats / posted / keywords_on. Tests 312 pass.
 
 ## Next
 - §2 remainder: the labeler hand-check (see NEXT_STEPS Progress). Then §3: show the user the tier evidence.
