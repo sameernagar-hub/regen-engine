@@ -354,7 +354,7 @@ def clone(cid, rows):
 # is bounded, labeled, counted and audited, and a container of this project that compose did not declare is stopped.
 SCALABLE = {"applier", "eval"}  # the only services the supervisor may create containers for
 DECLARED = {"seed", "applier", "pipeline", "relay", "supervisor", "postgres", "ledger", "mcp", "answers", "api", "web",
-            "reposync", "eval", "desk", "feedback"}  # deploy/bank.compose.yml services (tests/test_v014.py keeps the two in step)
+            "web-alive", "reposync", "eval", "desk", "feedback"}  # deploy/bank.compose.yml services (tests/test_v014.py keeps the two in step)
 CAPS = {"applier": {"NanoCpus": int(float(os.environ.get("REGEN_APPLIER_CPUS", "1.5")) * 1e9),
                     "Memory": int(os.environ.get("REGEN_APPLIER_MEM_MB", "2048")) * 2 ** 20,
                     "PidsLimit": int(os.environ.get("REGEN_APPLIER_PIDS", "1024"))},

@@ -133,6 +133,7 @@ services:
       REGEN_MCP_WRITE: "${REGEN_MCP_WRITE:-0}"  # display only: whether the bank MCP accepts writes (same var as the mcp service)
       REGEN_ANSWER_QUEUE: "1"
       REGEN_API_TRUST_PORT: "1"  # published on 127.0.0.1 only: the bridge gateway is this machine
+      REGEN_WEB_ORIGINS: "http://127.0.0.1:3000,http://localhost:3000,http://127.0.0.1:3001,http://localhost:3001"  # web + web-alive
     secrets: [pg_password]
     depends_on: [ledger]
 
@@ -140,10 +141,21 @@ services:
     build:
       context: ../apps/web
       dockerfile: ../../deploy/web.Dockerfile
-      args: { NEXT_PUBLIC_REGEN_API: "http://127.0.0.1:8787", NEXT_PUBLIC_ALIVE: "1" }  # ALIVE=0 rolls the home back  # no proxy: the browser talks to the api container
+      args: { NEXT_PUBLIC_REGEN_API: "http://127.0.0.1:8787", NEXT_PUBLIC_ALIVE: "0" }  # the released v1.x home; no proxy: the browser talks to the api container
     image: regen-web:local
     restart: unless-stopped
     ports: ["127.0.0.1:3000:3000"]
+    depends_on: [api]
+    deploy: { resources: { limits: { memory: 384m } } }
+
+  web-alive:  # the v2.0 ALIVE revamp under construction (docs/ALIVE_PLAN.md): http://127.0.0.1:3001, beside the old UI until Phase 5 ships
+    build:
+      context: ../apps/web
+      dockerfile: ../../deploy/web.Dockerfile
+      args: { NEXT_PUBLIC_REGEN_API: "http://127.0.0.1:8787", NEXT_PUBLIC_ALIVE: "1" }
+    image: regen-web-alive:local
+    restart: unless-stopped
+    ports: ["127.0.0.1:3001:3000"]
     depends_on: [api]
     deploy: { resources: { limits: { memory: 384m } } }
 
