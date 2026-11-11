@@ -139,7 +139,7 @@ def build(name, ids, force=False):
                     record("application", job=label, url=j["url"], status="SKIPPED", detail="JD: " + ", ".join(blockers), dry=False)
                     continue
             ln = route(cfg, j["title"], jd)
-            spec = tailor(cfg["lanes"][ln], jd, title=j["title"], lanes=cfg["lanes"])
+            spec = tailor(cfg["lanes"][ln], jd, title=j["title"], lanes=cfg["lanes"], url=j["url"])
             cov = spec.pop("_coverage")
             from engine import targeting  # NEXT_STEPS §3 skip_unsure: no blocker, but too little overlap to call it a fit
             why_unsure = targeting.unsure(jd, cov["jd_terms_you_have"])
@@ -169,7 +169,8 @@ def build(name, ids, force=False):
                    projects=spec.get("projects", []), skills=spec["skills"], coverage=cov, note=note,
                    qa=spec.get("_qa"), jd_keywords=spec.get("jd_keywords", []),
                    # 11-09 funnel (NEXT_STEPS §2): ATS + posting time, so outcomes can be split by them later
-                   ats=j.get("ats"), posted=j.get("posted"), keywords_on=keywords.enabled())
+                   ats=j.get("ats"), posted=j.get("posted"), keywords_on=keywords.enabled(j["url"]),
+                   ab_arm=keywords.arm(j["url"]) if keywords.ab_active() else None)  # §3 A/B: the arm, logged
             batch.append({"name": label, "url": j["url"], "ats": j["ats"], "resume": os.path.relpath(pdf, WORKSPACE),
                           "lane": ln, "extra": {}, "salary_range": parse_range(jd), "jd_match": _match(cov), "note": note})
         # after reading every description: highest JD match first (stable, so ties keep queue priority)

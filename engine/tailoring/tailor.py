@@ -86,7 +86,7 @@ def distinct(ranked, n):
     return out
 
 
-def tailor(spec, jd, title=None, lanes=None):
+def tailor(spec, jd, title=None, lanes=None, url=None):
     resume.load_bank()
     terms = vocabulary()
     want = _hits(jd, terms)
@@ -169,7 +169,9 @@ def tailor(spec, jd, title=None, lanes=None):
     for k in ("headline", "summary"):
         covered |= hits(out[k]) if isinstance(out.get(k), str) else set()
     from engine.tailoring import keywords
-    if keywords.enabled():  # 11-05 (user): every JD keyword on the page; the ones from the JD are listed apart
+    if url:
+        out["url"] = url  # the A/B arm (keywords.enabled(url)) is read from it again when the PDF is rebuilt
+    if keywords.enabled(url):  # 11-05 (user): every JD keyword on the page; the ones from the JD are listed apart
         page = " ".join([out.get("headline", ""), out.get("summary", "")] + [resume.texts(f)[fact_pick[f][0]] for _, fids in roles for f in fids]
                         + [skill_text.get(k, resume.SKILLS[k][1]) for k in skills]
                         + [" ".join([resume.PROJECTS[p][0]] + resume.PROJECTS[p][2]) for p in projects])

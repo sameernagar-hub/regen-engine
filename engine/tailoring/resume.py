@@ -167,7 +167,7 @@ def build(spec):
     # 11-05: the posting's remaining keywords (keywords.py; logged per job). 11-09: printed only while the flag is on,
     # so a spec saved with the line (a retry rebuilding its PDF) cannot put unvalidated text on the page when it is off.
     from engine.tailoring import keywords
-    if spec.get("jd_keywords") and keywords.enabled():
+    if spec.get("jd_keywords") and keywords.enabled(spec.get("url")):  # 11-10: the A/B arm, when it is on
         st.append(Paragraph("<b>Role Keywords:</b> " + ", ".join(spec["jd_keywords"]), BUL, bulletText="•"))
     section(st, "EDUCATION")
     st += [row(e, d) for e, d in EDU]

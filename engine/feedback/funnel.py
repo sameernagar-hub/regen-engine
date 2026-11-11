@@ -208,9 +208,52 @@ def print_funnel(f):
                   "are needed before any setting can be credited or blamed."))
 
 
+def ab(apps=None, outs=None, resumes=None, per_arm=None):
+    """Role Keywords A/B (NEXT_STEPS §3): verified applications whose resume event logged an arm. Rates are returned
+    only once BOTH arms reach per_arm (profile/targeting.json ab_per_arm, fixed before the start) - no peeking, no
+    early stop because one arm looks ahead. {"per_arm", "n": {arm: count}, "ready", "rows": [(arm, counts, ci)]}."""
+    from engine import targeting
+    per_arm = int(targeting.load()["ab_per_arm"]) if per_arm is None else per_arm
+    if apps is None:
+        apps = verified()[0]
+    if resumes is None:
+        resumes = {}
+        for r in read("resume"):
+            resumes[r.get("url") or r["job"]] = r
+    arm_of = lambda a: (resumes.get(a.get("url")) or resumes.get(a["job"]) or {}).get("ab_arm")
+    groups = {"on": [], "off": []}
+    for a in apps:
+        if arm_of(a) in groups:
+            groups[arm_of(a)].append(a)
+    n = {k: len(v) for k, v in groups.items()}
+    ready = min(n.values()) >= per_arm
+    rows = []
+    if ready:
+        outs = outcomes(prefer={a["job"] for a in apps}) if outs is None else outs
+        for k, members in groups.items():
+            c = _counts(members, outs)
+            rows.append((k, c, wilson(c["positive"], c["verified"])))
+    return {"per_arm": per_arm, "n": n, "ready": ready, "rows": rows}
+
+
+def print_ab(r):
+    print(f"Role Keywords A/B: {r['n']['on']} verified with the line, {r['n']['off']} without (target {r['per_arm']} per arm)")
+    if not r["ready"]:
+        print("  Not read yet: rates stay hidden until both arms reach the target, so nobody stops early on noise.")
+        return
+    for k, c, (lo, hi) in r["rows"]:
+        print(f"  {k:<4} sent {c['verified']:>4}  reply {c['replied']:>4}  OA {c['oa']:>3}  interview {c['interview']:>3}"
+              f"  OA or interview {_pct(c['positive'], c['verified'])} per 100 (95% interval {100 * lo:.1f} to {100 * hi:.1f})")
+    (_, _, a), (_, _, b) = r["rows"]
+    print("  " + ("The intervals do not overlap: the arms differ." if not _overlap(a, b) else
+                  "The intervals overlap: no difference shown at this sample size."))
+
+
 def main(argv):
     if argv and argv[0] == "funnel":
         return print_funnel(funnel())
+    if argv and argv[0] == "ab":
+        return print_ab(ab())
     r = rate()
     print(line(r))
     print(f"  rejections {r['rejection']}, no reply yet {r['no_reply']}")

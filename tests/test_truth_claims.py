@@ -23,7 +23,7 @@ SENTINEL = "Zzqxsentinel"
 VALIDATED = {"roles", "projects", "skills", "skill_text", "fact_pick"}   # checked against the bank by validate()
 COMPOSED = {"headline", "summary", "projects_title"}                     # written by compose.py (tests/test_compose.py)
 FLAGGED = {"jd_keywords"}                                                # printed only with REGEN_JD_KEYWORDS=1
-PLUMBING = {"file"}
+PLUMBING = {"file", "url"}  # url: never printed, only picks the Role Keywords A/B arm (keywords.enabled(url))
 
 
 def _lane():

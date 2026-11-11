@@ -73,7 +73,12 @@ alongside every other metric.
   skip is SKIPPED "JD: unsure fit: ..." so the funnel counts it. On the 93 past submissions with a stored JD it
   would have skipped 4 (~4%); 1 of those 4 vs 16 of the other 89 were rejected: far too few to read, so the numbers
   are a judgment call, not a learned rule. Tests 344 pass.
-- Next: finish §3 (keywords A/B), then the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
+- 11-10: **§3 Role Keywords A/B built** (switched off until the user turns it on): keywords.arm(url) = sha256 of the
+  posting URL (query dropped) -> on/off ~50/50, the same arm on every rebuild; while profile/targeting.json
+  keywords_ab is true the arm overrides the per-run switch (REGEN_JD_KEYWORDS still wins). The resume event logs
+  ab_arm; `engine report ab` shows only arm counts until BOTH arms reach ab_per_arm (150) verified, then the rates
+  with 95% intervals. No early stop. Tests 346 pass.
+- Next: switch keywords_ab on (user), then the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
 
 ## 1. Make the public claims true (first session, small)
 

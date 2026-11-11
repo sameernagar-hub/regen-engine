@@ -1,6 +1,7 @@
 # Handoff: 11-10. Stack UP (gear 2, Role Keywords ON and cap level 2 = 50/day, both by the user's choice for this run).
 # §3 skip_unsure built (targeting.unsure() called from batch.build(); thresholds unsure_min_terms 5 / unsure_min_share
-#   0.4 in profile/targeting.json). Left in §3: the Role Keywords A/B by URL hash. CLEAN STOP also runs `engine cap 0`.
+#   0.4 in profile/targeting.json). §3 A/B built: keywords_ab (targeting.json, off) -> URL hash picks the arm, logged as
+#   ab_arm; `engine report ab` hides rates until 150 per arm. CLEAN STOP also runs `engine cap 0`.
 
 # CAP SWITCH (user 11-09): `python -m engine cap [0|1|2|3|4|up|down]` = 15 / 25 / 50 / 100 / 150 per day, stored as
 # cap_level in profile/targeting.json and read live. Every start begins at level 0; a clean stop runs `engine cap 0`.

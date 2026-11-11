@@ -68,3 +68,31 @@ def test_unsure_off_and_thresholds_from_settings():
     assert targeting.unsure("jd", [], cfg, lacking=["x"] * 50) is None
     cfg = dict(targeting.DEFAULTS, unsure_min_terms=1, unsure_min_share=0.1)
     assert targeting.unsure("jd", ["python"], cfg, lacking=["x"] * 5) is None
+
+
+def test_keywords_ab_arm_is_stable_and_overrides_the_switch(monkeypatch):
+    from engine.tailoring import keywords
+    monkeypatch.delenv("REGEN_JD_KEYWORDS", raising=False)
+    urls = [f"https://boards.example.com/acme/jobs/{i}" for i in range(400)]
+    arms = [keywords.arm(u) for u in urls]
+    assert 150 < arms.count("on") < 250  # ~50/50
+    assert keywords.arm(urls[0] + "?gh_src=x") == arms[0] and keywords.arm(urls[0].upper()) == arms[0]
+    monkeypatch.setattr(targeting, "load", lambda: dict(targeting.DEFAULTS, keywords_ab=True))
+    on, off = urls[arms.index("on")], urls[arms.index("off")]
+    assert keywords.enabled(on) is True and keywords.enabled(off) is False
+    monkeypatch.setenv("REGEN_JD_KEYWORDS", "0")
+    assert keywords.enabled(on) is False  # the env override still wins
+    monkeypatch.delenv("REGEN_JD_KEYWORDS")
+    monkeypatch.setattr(targeting, "load", lambda: dict(targeting.DEFAULTS, keywords_ab=False))
+    monkeypatch.setattr(keywords, "PATH", "/nonexistent/keywords.json")
+    assert keywords.enabled(on) is False  # A/B off: the per-run switch (default off) decides
+
+
+def test_report_ab_hides_rates_until_both_arms_are_full():
+    from engine.feedback import funnel
+    apps = [{"job": f"j{i}", "url": f"u{i}"} for i in range(10)]
+    res = {f"u{i}": {"ab_arm": "on" if i < 6 else "off"} for i in range(10)}
+    r = funnel.ab(apps, outs={}, resumes=res, per_arm=5)
+    assert r["n"] == {"on": 6, "off": 4} and not r["ready"] and r["rows"] == []
+    r = funnel.ab(apps, outs={"j0": {"oa"}}, resumes=res, per_arm=4)
+    assert r["ready"] and [k for k, _, _ in r["rows"]] == ["on", "off"] and r["rows"][0][1]["oa"] == 1

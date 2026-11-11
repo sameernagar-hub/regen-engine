@@ -82,12 +82,29 @@ DEFAULT = "0"  # off unless the user switches it on for a run (see the module no
 PATH = os.path.join(WORKSPACE, "keywords.json")
 
 
-def enabled():
-    """The per-run switch. REGEN_JD_KEYWORDS (0/1) wins when set; else workspace/keywords.json, which every container
-    reads live (pipeline, answers, appliers), so one `engine keywords on|off` covers the whole stack; else off."""
+def arm(url):
+    """The A/B arm of one posting (NEXT_STEPS §3): "on" or "off" from a hash of its URL without the query string, so
+    the same posting always lands in the same arm (a retry rebuilding its PDF too) and arms are ~50/50. O(len(url))."""
+    import hashlib
+    key = (url or "").split("?")[0].split("#")[0].rstrip("/").lower()
+    return "on" if hashlib.sha256(key.encode()).digest()[0] % 2 else "off"
+
+
+def ab_active():
+    from engine import targeting
+    return bool(targeting.load().get("keywords_ab")) and os.environ.get("REGEN_JD_KEYWORDS") not in ("0", "1")
+
+
+def enabled(url=None):
+    """Whether this resume gets the line. REGEN_JD_KEYWORDS (0/1) wins when set; else, while the A/B is on
+    (profile/targeting.json keywords_ab) and the posting URL is known, its arm decides; else the per-run switch
+    workspace/keywords.json, which every container reads live (pipeline, answers, appliers), so one
+    `engine keywords on|off` covers the whole stack; else off."""
     env = os.environ.get("REGEN_JD_KEYWORDS")
     if env in ("0", "1"):
         return env == "1"
+    if url and ab_active():
+        return arm(url) == "on"
     try:
         return json.load(open(PATH, encoding="utf-8")).get("on") is True
     except (OSError, ValueError, AttributeError):  # no file or a broken one: the safe answer is the default, off
@@ -114,6 +131,8 @@ def main(argv):
         switch(argv[0] == "on")
     src = "REGEN_JD_KEYWORDS" if os.environ.get("REGEN_JD_KEYWORDS") in ("0", "1") else "workspace/keywords.json"
     print(f"Role Keywords line: {'ON' if enabled() else 'off'} ({src}; off is the default, chosen by the user per run)")
+    if ab_active():
+        print("  A/B is ON (profile/targeting.json keywords_ab): each posting's URL hash picks on/off, overriding the switch above")
 
 
 def extract(jd):

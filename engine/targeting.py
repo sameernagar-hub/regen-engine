@@ -13,8 +13,9 @@ Settings live in profile/targeting.json (any key may be left out; DEFAULTS fill 
                 covers fewer than `unsure_min_terms` of the posting's terms, or under `unsure_min_share` of them
                 (covered / (covered + JD tech terms the Fact Bank lacks)). Recorded as SKIPPED "unsure fit: ..."
                 so the funnel can count it; set skip_unsure false to send them again
-  keywords_ab   (planned) Role Keywords on/off by a hash of the posting URL; `ab_per_arm` submissions per arm
-                before anyone reads the result, and no early stop because one arm looks ahead
+  keywords_ab   Role Keywords on/off by a hash of the posting URL (keywords.arm), overriding the per-run switch while
+                on (REGEN_JD_KEYWORDS still wins); the arm is logged in the resume event (ab_arm). `report ab`
+                shows rates only once both arms reach `ab_per_arm` verified submissions: no early stop
 O(1) per call after the first read (re-read when the file changes).
 """
 import datetime, json, os
