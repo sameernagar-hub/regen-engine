@@ -105,9 +105,23 @@ fields), `engine/apply/worker.py` (emit apply.start), `engine/shadow.py` (emit a
 `useEngine()` returns `{ chips: Map<job, {stage, company, by}>, tray, trail, gear, shadow, parts: {name: up|cold} }`
 built only from `subscribe()` events + one `/control/fleet` read at mount.
 Accept:
-- [ ] pytest green (299+ tests), new tests cover every `kind` mapping and that public replays contain no company/answer.
-- [ ] Feeding tonight's events.jsonl through the hook (node test script) ends with the same submitted count as the ledger.
-- [ ] `curl -N /api/stream` shows typed events during a live run.
+- [x] pytest green (354), tests/test_replay.py covers every `kind` mapping and that public replays contain no company/answer. (11-10)
+- [x] Feeding the whole events.jsonl (47,835 events) through the page's fold in node ends with the ledger's submitted
+      count: 495/495 (`scripts/bench_alive.py`, row in docs/bench/alive.md). (11-10)
+- [x] `curl -N /api/stream` showed a typed `signal` (gear) during the live run. (11-10, commit 5328097)
+
+**As built (11-10), where it differs from the text above:**
+- Control-plane kinds (gear, keywords, cap, targeting, shadow.mode, human.check, problem, problem.clear,
+  outreach.sent) have no pipeline stage, and `Narration.stage` is required, so they are a separate `Signal` model and
+  SSE event type `signal` instead of extra Narration kinds. Old clients ignore the unknown event type; nothing they
+  read changed. `apply.fail` was added for ERROR/RESET rows (not parked, not submitted); `gate.pass` is not emitted
+  (a chip reaching `resume` has passed). `flag` events stay internal: the FLAGGED application row carries the stop.
+- `job` is the posting URL. The replay replaces it with a day-salted opaque id.
+- `GET /api/signals` (read-only) was added so the page can show gear / cap / Shadow at mount from the ledger.
+- The fold is a pure module `apps/web/lib/spine.ts` (so node can test it); `useEngine()` returns it as `alive`
+  next to its existing fields (the current home keeps working until Phase 1 rebuilds it).
+- The scrubbing helpers (`company_names`, `masker`, `leaked`) moved into functions in engine/live/export.py so the
+  site export and the replay share one implementation.
 
 ### Phase 1: the living engine (home). Budget: 1-2 sessions
 Files: `apps/web/app/page.tsx` (rewrite engine block), `apps/web/app/engine.css`, new

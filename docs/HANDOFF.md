@@ -1,3 +1,7 @@
+# 11-10 ~21:10: ALIVE PHASE 0 DONE (5328097): typed events + Signal SSE + /api/signals, emitters (apply_start, shadow
+#   abstain + conf, problem lights), engine/live/replay.py (`engine replay`), apps/web/lib/spine.ts folded in
+#   useEngine().alive, scripts/bench_alive.py (V6/V7/V8/S1 pass; docs/bench/alive.md row). All containers on the new
+#   image. NEXT: ALIVE Phase 1 (the living engine home), docs/ALIVE_PLAN.md §5.
 # Handoff: 11-10. Stack UP (gear 2, Role Keywords ON and cap level 2 = 50/day, both by the user's choice for this run).
 # §3 skip_unsure built (targeting.unsure() called from batch.build(); thresholds unsure_min_terms 5 / unsure_min_share
 #   0.4 in profile/targeting.json). §3 A/B built: keywords_ab (targeting.json, off) -> URL hash picks the arm, logged as

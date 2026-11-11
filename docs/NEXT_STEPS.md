@@ -81,7 +81,7 @@ alongside every other metric.
 - 11-10: revamp prep: every §5a API route exists and is tested (ALIVE_PLAN §5a "API status"); API types
   regenerated; typecheck clean. Only §9's §3 box is open: it ticks when the user switches keywords_ab on.
 - 11-10 ~21:00: user switched keywords_ab ON. **§9 is all ticked: v2.0 ALIVE Phase 0 may start.**
-- Next: ALIVE Phase 0, and in passing the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
+- 11-10 ~21:10: ALIVE Phase 0 done (5328097). Next: ALIVE Phase 1; in passing the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
 
 ## 1. Make the public claims true (first session, small)
 
