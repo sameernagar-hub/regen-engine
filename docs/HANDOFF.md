@@ -2,6 +2,12 @@
 # §3 skip_unsure built (targeting.unsure() called from batch.build(); thresholds unsure_min_terms 5 / unsure_min_share
 #   0.4 in profile/targeting.json). §3 A/B built: keywords_ab (targeting.json, off) -> URL hash picks the arm, logged as
 #   ab_arm; `engine report ab` hides rates until 150 per arm. CLEAN STOP also runs `engine cap 0`.
+# REVAMP READINESS (11-10): §5a API routes built + tested (61663ec): /control/keywords|cap|targeting, /report/rate|
+#   funnel|ab, POST /outreach/sent (only public POST /try left, for Phase 5). openapi.json (56 paths) + api.d.ts
+#   regenerated, `npm run typecheck` clean, 348 tests pass. All images rebuilt; api, pipeline and appliers recreated.
+#   The ONE open §9 box: §3 "experiment is running" = the user switches keywords_ab on
+#   (`curl -X POST .../api/control/targeting -d '{"key":"keywords_ab","value":true}'` or edit profile/targeting.json).
+#   While on, the URL hash overrides the per-run Role Keywords switch. Then ALIVE Phase 0 (docs/ALIVE_PLAN.md §5).
 
 # CAP SWITCH (user 11-09): `python -m engine cap [0|1|2|3|4|up|down]` = 15 / 25 / 50 / 100 / 150 per day, stored as
 # cap_level in profile/targeting.json and read live. Every start begins at level 0; a clean stop runs `engine cap 0`.
