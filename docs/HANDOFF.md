@@ -1,3 +1,16 @@
+# Handoff: 11-10 ~22:30 STOP POINT (user, near 80% of the Claude 5-hour limit). Stack STOPPED cleanly: gear N,
+# inbox + claimed 0, Role Keywords off, cap level 0, Shadow calls 5, `compose stop`, volumes kept; events end on a full
+# line. The Role Keywords A/B (keywords_ab) stays ON across runs by design. 7 verified submissions today.
+# UI SPLIT (3e61434): `web` (:3000) is back on the released v1.x home (NEXT_PUBLIC_ALIVE=0); the ALIVE revamp runs in
+#   its own `web-alive` container on http://127.0.0.1:3001 (regen-web-alive:local, ALIVE=1). API CORS allows both;
+#   supervisor DECLARED has web-alive. All images are built with today's commits.
+# START: the START command below brings up web-alive too; then `docker port deploy-api-1`, gear 2, and (A/B on) tell
+#   the user the per-run Role Keywords question is decided per posting by the A/B.
+# NEXT: ALIVE Phase 1's open check (10 min live flow + DevTools CPU < 15%, in a tab the user keeps visible: the
+#   app's Browser pane hides when Claude's turn ends), then Phase 2 (Shadow co-driver). Build revamp work into
+#   web-alive only: `compose build web-alive` + `up -d --no-deps --force-recreate web-alive`.
+# Local commits since the last push: 6cd1ab6..3e61434 + this handoff -> reposync PR.
+
 # 11-10 ~21:35: ALIVE PHASE 1 BUILT (5683029): the living engine home at http://127.0.0.1:3000/ (NEXT_PUBLIC_ALIVE=1 in
 #   bank.compose.yml; set "0" + rebuild web to roll back). V9 pass (cold 18 s / warm 4 s), 375 px pass, reduced
 #   motion rules loaded. Open: the 10-min live-flow/CPU check row in docs/bench/alive.md; then Phase 2 (Shadow
