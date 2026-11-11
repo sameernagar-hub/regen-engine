@@ -13,7 +13,7 @@ Stop: create workspace/batches/STOP (every worker exits after its current batch)
 Retire: the supervisor writes workspace/fleet/drain_<host>; the worker checks it before every claim and beats
 "draining", and only then is the container stopped (engine/supervisor.py scale()).
 """
-import os, socket, subprocess, sys, time
+import json, os, socket, subprocess, sys, time
 
 from engine.config import ROOT, WORKSPACE
 from engine.supervisor import beat, drain_path
@@ -55,6 +55,13 @@ def apply_one(name):
     log = open(os.path.join(WORKSPACE, "logs", name[:-5] + ".log"), "a", encoding="utf-8")
     log.write(f"worker {socket.gethostname()} claimed {name}\n")
     log.flush()
+    try:  # ALIVE Phase 0: the live view moves these jobs into the Apply cylinder now (kind "apply.start")
+        from engine.feedback.events import record
+        jobs = json.load(open(os.path.join(DIRS["claimed"], name), encoding="utf-8"))
+        record("apply_start", batch=name, host=socket.gethostname(),
+               jobs=[{"job": j.get("name"), "url": j.get("url")} for j in jobs if isinstance(j, dict)])
+    except (OSError, ValueError) as e:  # the batch still runs; the live view just misses its start
+        log.write(f"apply_start event skipped: {e}\n")
     p = subprocess.Popen([sys.executable, "-m", "engine", "apply", f"batches/claimed/{name}"], cwd=ROOT,
                          env=dict(os.environ, PYTHONUNBUFFERED="1"), stdout=log, stderr=subprocess.STDOUT)
     while True:  # heartbeat every 30 s so the control room can tell a long batch from a dead container

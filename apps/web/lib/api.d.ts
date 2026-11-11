@@ -1050,6 +1050,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/signals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Signals
+         * @description Control-plane events (gear, cap, Role Keywords, targeting, Shadow mode, warning lights...). latest=true: the
+         *     newest of each kind (problems: every one still lit), which is what a page needs at mount. Read-only. O(E).
+         */
+        get: operations["signals_api_signals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stream": {
         parameters: {
             query?: never;
@@ -1059,7 +1080,8 @@ export interface paths {
         };
         /**
          * Stream
-         * @description SSE: `narration` for each new event, `snapshot` when anything changes (and every 15 s as a keep-alive).
+         * @description SSE: `narration` for each new pipeline event, `signal` for each control-plane event (gear, cap, keywords,
+         *     targeting, Shadow mode, problems: ALIVE Phase 0), `snapshot` when anything changes (and every 15 s as a keep-alive).
          */
         get: operations["stream_api_stream_get"];
         put?: never;
@@ -1270,7 +1292,10 @@ export interface components {
         };
         /**
          * Narration
-         * @description An event as one plain-English sentence (engine.live.server.narrate).
+         * @description An event as one plain-English sentence (engine.live.server.narrate). ALIVE Phase 0 adds the typed fields
+         *     (all optional, so older clients keep working): kind, job (the posting URL: one chip followed across stages),
+         *     company (never sent on the public site), by, detail (skip reason / parked question, shortened), conf (Shadow's
+         *     confidence on shadow.answer), jobs (the postings an apply.start batch or an outcome covers).
          */
         Narration: {
             /** Id */
@@ -1291,6 +1316,20 @@ export interface components {
             text: string;
             /** Verified */
             verified?: boolean | null;
+            /** Kind */
+            kind?: ("discovered" | "gate.skip" | "resume" | "apply.start" | "submitted" | "parked" | "apply.fail" | "shadow.answer" | "shadow.abstain" | "outcome") | null;
+            /** Job */
+            job?: string | null;
+            /** Company */
+            company?: string | null;
+            /** By */
+            by?: string | null;
+            /** Detail */
+            detail?: string | null;
+            /** Conf */
+            conf?: number | null;
+            /** Jobs */
+            jobs?: string[] | null;
         };
         /** Outcome */
         Outcome: {
@@ -1304,6 +1343,28 @@ export interface components {
             subject?: string | null;
             /** Jobs */
             jobs?: string[];
+        };
+        /**
+         * Signal
+         * @description A control-plane event with no pipeline stage (engine.live.server.signal): gear, cap dial, Role Keywords,
+         *     targeting, Shadow mode, desk checks, warning lights, outreach marked sent. SSE event type `signal`.
+         */
+        Signal: {
+            /** Id */
+            id: number;
+            /** Ts */
+            ts?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "gear" | "keywords" | "cap" | "targeting" | "shadow.mode" | "human.check" | "problem" | "problem.clear" | "outreach.sent";
+            /** Text */
+            text: string;
+            /** By */
+            by?: string | null;
+            /** Detail */
+            detail?: string | null;
         };
         /** Snapshot */
         Snapshot: {
@@ -2867,6 +2928,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    signals_api_signals_get: {
+        parameters: {
+            query?: {
+                latest?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Signal"][];
                 };
             };
             /** @description Validation Error */

@@ -3,7 +3,8 @@
 // requests. Subscribers share this connection; it opens with the first and closes with the last.
 import { api } from "./types";
 
-type Handler = (type: "narration" | "snapshot", data: any) => void;
+// ALIVE Phase 0: "signal" carries control-plane events (gear, cap, Shadow mode, warning lights); see lib/spine.ts.
+type Handler = (type: "narration" | "snapshot" | "signal", data: any) => void;
 const subs = new Set<Handler>();
 let es: EventSource | null = null;
 
@@ -12,7 +13,7 @@ export function subscribe(h: Handler): () => void {
   subs.add(h);
   if (!es) {
     es = new EventSource(api("/api/stream?after=999999999"));
-    for (const t of ["narration", "snapshot"] as const)
+    for (const t of ["narration", "snapshot", "signal"] as const)
       es.addEventListener(t, (m) => { const d = JSON.parse((m as MessageEvent).data); subs.forEach((s) => s(t, d)); });
   }
   return () => {

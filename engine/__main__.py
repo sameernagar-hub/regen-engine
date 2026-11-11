@@ -33,6 +33,7 @@ alerts  <file>                   job-alert emails (gmail_alerts.js output) resol
   mcp                              the engine as an MCP server (stdio; read-only memory tools)
   graph   [term]                   the knowledge graph (counts, or one node and its neighbors)
   live    [port]                   the engine, watched live (localhost page; read-only)
+  replay  [YYYY-MM-DD]             write workspace/replays/<date>.jsonl: the day's live events, privacy-scrubbed
   site    [days]                   build the public face (site/): the live view replaying anonymized recent activity
   report  [YYYY-MM-DD]             verified submissions only: latest status SUBMITTED + a proof screenshot on disk
   report  rate                     interviews and OAs per 100 verified applications, with a 95% interval
@@ -181,6 +182,8 @@ def main():
         from engine.live.server import main as m
     elif cmd == "site":
         from engine.live.export import main as m
+    elif cmd == "replay":
+        from engine.live.replay import main as m
     elif cmd == "inbox":
         from engine.feedback.inbox import main as m
     elif cmd == "gear":

@@ -18,14 +18,42 @@ class Event(BaseModel):
     data: dict = Field(default_factory=dict, description="The full original event")
 
 
+LiveKind = Literal["discovered", "gate.skip", "resume", "apply.start", "submitted", "parked", "apply.fail",
+                   "shadow.answer", "shadow.abstain", "outcome"]
+SignalKind = Literal["gear", "keywords", "cap", "targeting", "shadow.mode", "human.check", "problem", "problem.clear",
+                     "outreach.sent"]
+By = Literal["engine", "shadow", "desk", "you", "user", "operator", "api"]
+
+
 class Narration(BaseModel):
-    """An event as one plain-English sentence (engine.live.server.narrate)."""
+    """An event as one plain-English sentence (engine.live.server.narrate). ALIVE Phase 0 adds the typed fields
+    (all optional, so older clients keep working): kind, job (the posting URL: one chip followed across stages),
+    company (never sent on the public site), by, detail (skip reason / parked question, shortened), conf (Shadow's
+    confidence on shadow.answer), jobs (the postings an apply.start batch or an outcome covers)."""
     id: int
     ts: Optional[str] = None
     stage: Stage
     tone: Tone
     text: str
     verified: Optional[bool] = None
+    kind: Optional[LiveKind] = None
+    job: Optional[str] = None
+    company: Optional[str] = None
+    by: Optional[str] = None
+    detail: Optional[str] = None
+    conf: Optional[float] = None
+    jobs: Optional[list[str]] = None
+
+
+class Signal(BaseModel):
+    """A control-plane event with no pipeline stage (engine.live.server.signal): gear, cap dial, Role Keywords,
+    targeting, Shadow mode, desk checks, warning lights, outreach marked sent. SSE event type `signal`."""
+    id: int
+    ts: Optional[str] = None
+    kind: SignalKind
+    text: str
+    by: Optional[str] = None
+    detail: Optional[str] = None
 
 
 class Application(BaseModel):

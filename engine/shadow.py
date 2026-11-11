@@ -138,8 +138,9 @@ def tick(now=None):
             counts["call2"] += 1
         elif c.get("call2") and now - c["call2"] >= ring and st["mode"] in ("calls", "autopilot", "always") and len(pickups) < MAX_PICKUPS:
             c.update(by="shadow", done=True, picked=now)
-            _use_recommendations(c)
-            record("shadow", action="pickup", by="shadow", job=job, url=u, used=len([r for r in c.get("recommend") or [] if r.get("a")]))
+            _use_recommendations(c, u)
+            record("shadow", action="pickup", by="shadow", job=job, url=u, conf=_conf(c),
+                   used=len([r for r in c.get("recommend") or [] if r.get("a")]))
             pickups.append(job)
             counts["shadow"] += 1
     _save(CALLS, calls)
@@ -292,20 +293,38 @@ def memory(limit=40):
                          "answer": SHOW.get(e.get("answer"), e.get("answer")), "used": len(e.get("jobs") or [])} for e in mem[:limit]]}
 
 
-def _use_recommendations(c):
-    """Shadow picks up: its recommendations become answers (job-scoped for legal ones) and memories."""
+def _use_recommendations(c, url=None):
+    """Shadow picks up: its recommendations become answers (job-scoped for legal ones) and memories. Every question
+    it leaves (nothing on file, never-answer list, human check, refused by the bank) is recorded once as a
+    `shadow` abstain event (ALIVE Phase 0: the live view sends it to your tray). Returns the left questions."""
     from engine.feedback import answers as A
+    from engine import override
+    left = []
     for r in c.get("recommend") or []:
         if not r.get("a"):
+            left.append((r.get("q", ""), "nothing on file"))
             continue
-        from engine import override
-        if override.blocked(r["q"]) in ("user", "human"):  # §5 never-answer list / human checks: never Shadow's, any mode
+        why = override.blocked(r["q"])
+        if why in ("user", "human"):  # §5 never-answer list / human checks: never Shadow's, any mode
+            left.append((r["q"], "left for you" if why == "user" else "human check"))
             continue
         try:
             A.save(c["job"], r["q"], r["a"], requeue_job=False, by="shadow")
         except (ValueError, OSError):
+            left.append((r["q"], "declined by the form rules"))
             continue  # EEO and the like: never saved, the form's own rules decline them
         remember(r["q"], r["a"], "shadow", c["job"], r.get("strategy"))
+    if left:
+        from engine.feedback.events import record
+        record("shadow", action="abstain", job=c["job"], url=url,
+               left=[{"q": " ".join(q.split())[:120], "why": w} for q, w in left[:8]])
+    return left
+
+
+def _conf(c):
+    """Mean confidence of the answers Shadow used (None when the brain gave none)."""
+    xs = [r["conf"] for r in c.get("recommend") or [] if r.get("a") and isinstance(r.get("conf"), (int, float))]
+    return round(sum(xs) / len(xs), 2) if xs else None
 
 
 def pickup(url, who="you"):
@@ -317,9 +336,9 @@ def pickup(url, who="you"):
         raise KeyError("no call is ringing for that job")
     c.update(by=who, done=True, picked=time.time())
     _save(CALLS, calls)
-    record("shadow", action="pickup", by=who, job=c["job"], url=url)
+    record("shadow", action="pickup", by=who, job=c["job"], url=url, conf=_conf(c) if who == "shadow" else None)
     if who == "shadow":
-        _use_recommendations(c)
+        _use_recommendations(c, url)
         _retry_as_shadow([c["job"]])
     return c
 

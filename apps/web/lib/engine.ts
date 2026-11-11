@@ -7,6 +7,7 @@ import { subscribe } from "./stream";
 // NEXT_PUBLIC_REGEN_MODE=public is set at build time for the hosted site.
 import { useEffect, useRef, useState } from "react";
 import { get, type Application, type Narration, type Snapshot } from "./types";
+import { empty, foldNarration, foldSignal, partsFromFleet, type Signal, type Spine } from "./spine";
 
 export const PUBLIC = process.env.NEXT_PUBLIC_REGEN_MODE === "public";
 
@@ -23,6 +24,10 @@ export function useEngine() {
   const [lines, setLines] = useState<Narration[]>([]);
   const [pulse, setPulse] = useState<{ stage: string; id: number; tone: string } | null>(null);
   const [replaying, setReplaying] = useState(false);
+  // ALIVE Phase 0: the event spine (lib/spine.ts), folded from typed stream events; `alive` re-renders on each fold.
+  const spine = useRef<Spine>(empty());
+  const [alive, setAlive] = useState<Spine>(() => spine.current);
+  const publish = () => setAlive({ ...spine.current });
   const seen = useRef(new Set<string>());
   const seq = useRef(0);
   const queue = useRef<Narration[]>([]);     // new real events, played first
@@ -75,16 +80,25 @@ export function useEngine() {
     refresh();
     get<Narration[]>("/api/narration?limit=40").then((r) => { recent.current = r; }).catch(() => {});
     get<Snapshot>("/api/snapshot").then(setSnap).catch(() => {});
+    // one read each at mount: the current control state from the ledger, and which containers are warm
+    get<Signal[]>("/api/signals").then((r) => { r.forEach((g) => foldSignal(spine.current, g)); publish(); })
+      .catch((e) => console.warn("signals unavailable: gear / cap / Shadow wait for their next event", e));
+    get<{ members: { role?: string; up?: boolean }[] }>("/api/control/fleet")
+      .then((f) => { spine.current.parts = partsFromFleet(f.members); publish(); })
+      .catch((e) => console.warn("fleet unavailable: every part is drawn cold", e));
     return subscribe((type, data) => {
       if (type === "snapshot") return setSnap(data);
+      if (type === "signal") { foldSignal(spine.current, data as Signal); return publish(); }
       const n: Narration = data;
+      foldNarration(spine.current, n);
+      publish();
       queue.current.push(n);
       recent.current = [...recent.current.slice(-39), n];
       if (n.stage === "apply" && n.tone === "win") refresh();
     });
   }, []);
 
-  return { snap, apps, lines, pulse, replaying };
+  return { snap, apps, lines, pulse, replaying, alive };
 }
 
 export async function loadGraph(): Promise<{ nodes: any[]; edges: any[] }> {

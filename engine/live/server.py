@@ -28,17 +28,83 @@ def who(job):
     return co.strip(), short(role.strip(), 60)
 
 
+# ALIVE Phase 0 event contract (docs/ALIVE_PLAN.md §4). Every ledger kind maps to a contract kind or to INTERNAL
+# (plumbing the live view never draws); bench V6 fails on any kind missing from this table.
+STAGE_KINDS = ("discovered", "gate.skip", "resume", "apply.start", "submitted", "parked", "apply.fail",
+               "shadow.answer", "shadow.abstain", "outcome")
+SIGNAL_KINDS = ("gear", "keywords", "cap", "targeting", "shadow.mode", "human.check", "problem", "problem.clear",
+                "outreach.sent")
+SIGNAL_OF = {"gear": "gear", "keywords": "keywords", "cap": "cap", "targeting": "targeting", "problem": "problem",
+             "problem_clear": "problem.clear", "outreach_sent": "outreach.sent", "reach_mark": "human.check"}
+INTERNAL = {"pipeline", "supervisor", "schedule", "answer", "code", "reposync", "source", "feedback", "eval_ping", "eval",
+            "alerts", "outreach", "answer_queued", "answer_applied", "flag", "answer_retry", "oilchange", "override",
+            "published", "company_limit"}
+SHOWN = {"discovered", "resume", "application", "outcome", "apply_start", "shadow"}  # kinds narrate() reads
+
+
+def _common(e, kind, co):
+    """The typed fields every live event carries: job = the posting URL (one chip followed across stages)."""
+    return {"kind": kind, "job": e.get("url") or e.get("job"), "company": co or None, "by": e.get("by")}
+
+
 def narrate(e):
-    """One event -> {stage, tone, text}. Plain words, no jargon, nothing invented. None = not worth showing."""
+    """One event -> {stage, tone, text, kind, job, company, by, detail, conf, jobs} (None fields left out). Plain
+    words, no jargon, nothing invented. None = not worth showing (internal, a dry run, or a control signal)."""
+    n = _narrate(e)
+    return {k: v for k, v in n.items() if v is not None} if n else None
+
+
+def signal(e):
+    """A control-plane event with no pipeline stage (gear shifts, the cap dial, problems...) -> {kind, text, by,
+    detail}, or None. Streamed as its own SSE event type, so clients that only know narrations ignore it."""
+    k = e.get("kind")
+    if k == "shadow" and e.get("action") == "configure":
+        return {"kind": "shadow.mode", "by": e.get("by"), "detail": e.get("mode"),
+                "text": f"Shadow switched to {e.get('mode')}."}
+    kind = SIGNAL_OF.get(k)
+    if not kind:
+        return None
+    if kind == "gear":
+        detail, text = str(e.get("gear")), f"Shifted to gear {e.get('gear')}" + (f", clutch {e['clutch']}." if e.get("clutch") else ".")
+    elif kind == "keywords":
+        detail = "on" if e.get("on") else "off"
+        text = f"Role Keywords line {detail}."
+    elif kind == "cap":
+        detail, text = f"{e.get('level')}:{e.get('cap')}", f"Daily cap set to level {e.get('level')} ({e.get('cap')} a day)."
+    elif kind == "targeting":
+        detail, text = f"{e.get('key')}={e.get('value')}", f"Targeting: {e.get('key')} set to {e.get('value')}."
+    elif kind == "problem":
+        detail, text = short(e.get("text"), 120), f"Warning: {short(e.get('text'), 100)}."
+    elif kind == "problem.clear":
+        detail, text = short(e.get("text"), 120), f"Cleared: {short(e.get('text'), 100)}."
+    elif kind == "outreach.sent":
+        detail, text = None, f"You sent a note to {e.get('company') or 'a company'}."
+    else:  # human.check
+        detail, text = e.get("mark"), "You handled a job on the desk."
+    out = {"kind": kind, "by": e.get("by"), "detail": detail, "text": text}
+    return {k: v for k, v in out.items() if v is not None}
+
+
+def kind_of(e):
+    """The contract kind one ledger event becomes, "internal", or "unknown" (bench V6 counts the unknowns)."""
+    n = narrate(e) or signal(e)
+    if n:
+        return n["kind"]
+    k = e.get("kind")
+    return "internal" if k in INTERNAL or k in SIGNAL_OF or k in SHOWN else "unknown"
+
+
+def _narrate(e):
     k, st = e.get("kind"), (e.get("status") or "")
     co, role = who(e.get("job"))
     if k == "discovered":
         lag = e.get("lag_min")
-        return dict(stage="listen", tone="calm",
+        return dict(stage="listen", tone="calm", **_common(e, "discovered", co),
                     text=f"Spotted {co}: {role}" + (f", {lag} min after it went live." if lag is not None else "."))
     if k == "resume":
         n = sum(len(f) for _, f in e.get("facts") or [])
-        return dict(stage="write", tone="calm",
+        return dict(stage="write", tone="calm", **_common(e, "resume", co),
+                    detail=f"arm {e['ab_arm']}" if e.get("ab_arm") else None,
                     text=f"Wrote a resume for {co}" + (f" from {n} facts in your Fact Bank" if n else "")
                          + (f", {e['lane']} lane." if e.get("lane") else "."))
     if k == "application":
@@ -46,20 +112,39 @@ def narrate(e):
             return None
         d = e.get("detail") or ""
         if st == "SKIPPED":
-            return dict(stage="judge", tone="quiet", text=f"Let {co} go: {short(d.replace('JD: ', ''), 60)}.")
+            return dict(stage="judge", tone="quiet", **_common(e, "gate.skip", co), detail=short(d.replace("JD: ", ""), 120),
+                        text=f"Let {co} go: {short(d.replace('JD: ', ''), 60)}.")
         if st == "SUBMITTED":
             proof = e.get("proof") and os.path.exists(os.path.join(WORKSPACE, e["proof"]))
-            return dict(stage="apply", tone="win", text=f"Applied to {co}, {role}." + (" Proof saved." if proof else ""), verified=bool(proof))
+            return dict(stage="apply", tone="win", **_common(e, "submitted", co),
+                        text=f"Applied to {co}, {role}." + (" Proof saved." if proof else ""), verified=bool(proof))
         if e.get("correction"):
-            return dict(stage="apply", tone="alarm", text=f"Corrected the record for {co}: {short(d, 80)}")
+            return dict(stage="apply", tone="alarm", **_common(e, "apply.fail", co),
+                        text=f"Corrected the record for {co}: {short(d, 80)}")
         if st.startswith("FLAG"):
-            return dict(stage="apply", tone="alarm", text=f"Stopped before submitting {co}: {short(d, 80)}")
+            return dict(stage="apply", tone="alarm", **_common(e, "parked", co), detail=short(d, 120),
+                        text=f"Stopped before submitting {co}: {short(d, 80)}")
         if st == "NEEDS YOU" or "BOT-CHECK" in d:
             why = "Ashby wants a human click" if "BOT-CHECK" in d or "cooldown" in d else short(re.sub(r"^(NEEDS YOU|FAILED):\s*", "", d), 60)
-            return dict(stage="apply", tone="you", text=f"{co} needs you: {why}.")
-        return dict(stage="apply", tone="quiet", text=f"{co} didn't go through yet: {short(d.split(':', 1)[-1], 60)}.")
-    if k == "flag":
-        return dict(stage="apply", tone="alarm", text=f"Airbag: stopped {co}. {short(e.get('detail'), 80)}")
+            return dict(stage="apply", tone="you", **_common(e, "parked", co), detail=why, text=f"{co} needs you: {why}.")
+        return dict(stage="apply", tone="quiet", **_common(e, "apply.fail", co), detail=short(d, 120),
+                    text=f"{co} didn't go through yet: {short(d.split(':', 1)[-1], 60)}.")
+    if k == "apply_start":
+        jobs = [j.get("url") or j.get("job") for j in e.get("jobs") or [] if isinstance(j, dict)]
+        plural = "" if len(jobs) == 1 else "s"
+        return dict(stage="apply", tone="calm", kind="apply.start", jobs=jobs, detail=e.get("host"),
+                    text=f"An applier took {len(jobs)} job{plural}.")
+    if k == "shadow" and e.get("action") == "pickup" and e.get("by") == "shadow":
+        used = f" ({e['used']} answers)." if e.get("used") else "."
+        return dict(stage="apply", tone="calm", **_common(e, "shadow.answer", co), conf=e.get("conf"),
+                    text=f"Shadow answered for {co}{used}")
+    if k == "shadow" and e.get("action") == "abstain":
+        left = [x for x in e.get("left") or [] if isinstance(x, dict)]
+        why = ", ".join(sorted({x.get("why") for x in left if x.get("why")})) or None
+        plural = "" if len(left) == 1 else "s"
+        return dict(stage="apply", tone="you", **_common(e, "shadow.abstain", co), detail=why,
+                    text=f"Shadow left {len(left)} question{plural} at {co} for you.")
+    # "flag" (airbag) events are internal: the FLAGGED application event that follows each one carries the stop
     if k == "outcome":
         c, o = e.get("company") or "Someone", e.get("outcome")
         text = {"confirmation": f"{c} confirmed they have your application.",
@@ -70,7 +155,8 @@ def narrate(e):
                 "action": f"{c} is asking for something.",
                 "scam": f"Something from {c} looks like a scam. Ignored and flagged."}.get(o)
         tone = {"interview": "win", "oa": "win", "offer": "win", "scam": "alarm", "action": "you"}.get(o, "calm")
-        return dict(stage="hear", tone=tone, text=text) if text else None
+        return dict(stage="hear", tone=tone, text=text, kind="outcome", company=e.get("company"), detail=o,
+                    jobs=list(e.get("jobs") or [])) if text else None
     return None
 
 

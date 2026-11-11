@@ -102,6 +102,21 @@ def fleet(now=None):
             "verdict": "ok" if not problems else "attention"}
 
 
+def problems_changed(seen, problems=None):
+    """Record `problem` for each new fleet problem and `problem_clear` for each one that went away, then update
+    `seen` in place. Nothing is written while the list is unchanged. Returns (new, cleared). O(problems)."""
+    from engine.feedback.events import record
+    now = set(fleet()["problems"] if problems is None else problems)
+    new, gone = sorted(now - seen), sorted(seen - now)
+    for p in new:
+        record("problem", text=p[:200])
+    for p in gone:
+        record("problem_clear", text=p[:200])
+    seen.clear()
+    seen.update(now)
+    return new, gone
+
+
 # ---------------- supervisor container ----------------
 SOCK = "/var/run/docker.sock"
 
@@ -1018,7 +1033,7 @@ def supervise(argv=None):
         threading.Thread(target=codes_forever, daemon=True).start()
         print("supervisor: IMAP code watcher on", flush=True)
     print(f"supervisor: appliers {lo}..{hi}", flush=True)
-    n, svc = 0, {}
+    n, svc, seen_problems = 0, {}, set()
     while True:
         try:
             if os.path.exists(os.path.join(WORKSPACE, "KILL")):
@@ -1053,6 +1068,8 @@ def supervise(argv=None):
                     shadow_seen = oversight()
                 except Exception as e:
                     shadow_seen = {"error": str(e)[:120]}
+            if n % 4 == 1:  # every minute: warning lights (ALIVE Phase 0), recorded only when the list changes
+                problems_changed(seen_problems)
             beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap, services=svc,
                  shadow=locals().get("shadow_seen"))
         except Exception as ex:  # never die: a supervisor that crashes leaves the fleet at its last size

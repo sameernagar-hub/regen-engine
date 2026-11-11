@@ -15,10 +15,10 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 
 from apps.api import store
 from apps.api import control
-from apps.api.models import AnswerIn, AnswerOut, Application, Drafted, Event, HumanItem, Narration, Outcome, Snapshot
+from apps.api.models import AnswerIn, AnswerOut, Application, Drafted, Event, HumanItem, Narration, Outcome, Signal, Snapshot
 from engine.config import WORKSPACE
 from engine.feedback import answers as A
-from engine.live.server import narrate, who
+from engine.live.server import narrate, signal, who
 
 from engine.notify import _env as _local_env
 WRITE = _local_env().get("REGEN_API_WRITE") == "1"  # env var, or REGEN_API_WRITE=1 in the git-ignored .env
@@ -225,9 +225,39 @@ def proof(name: str):
     return FileResponse(p, media_type="image/png")
 
 
+@app.get("/api/signals", response_model=list[Signal])
+def signals(latest: bool = True, limit: int = Query(50, le=500)):
+    """Control-plane events (gear, cap, Role Keywords, targeting, Shadow mode, warning lights...). latest=true: the
+    newest of each kind (problems: every one still lit), which is what a page needs at mount. Read-only. O(E)."""
+    rows = [Signal(id=i, ts=e.get("ts"), **s) for i, e in store.read() for s in [signal(e)] if s]
+    if not latest:
+        return rows[-limit:]
+    last, lit = {}, {}
+    for r in rows:
+        if r.kind == "problem":
+            lit[r.detail] = r
+        elif r.kind == "problem.clear":
+            lit.pop(r.detail, None)
+        else:
+            last[r.kind] = r
+    return sorted(list(last.values()) + list(lit.values()), key=lambda r: r.id)
+
+
+def _sse(i, e):
+    """One ledger event -> its SSE frames: `narration` (a pipeline stage) or `signal` (control plane), or none."""
+    n = narrate(e)
+    if n:
+        return [f"event: narration\ndata: {Narration(id=i, ts=e.get('ts'), **n).model_dump_json(exclude_none=True)}\n\n"]
+    s = signal(e)
+    if s:
+        return [f"event: signal\ndata: {Signal(id=i, ts=e.get('ts'), **s).model_dump_json(exclude_none=True)}\n\n"]
+    return []
+
+
 @app.get("/api/stream")
 async def stream(after: int = 0):
-    """SSE: `narration` for each new event, `snapshot` when anything changes (and every 15 s as a keep-alive)."""
+    """SSE: `narration` for each new pipeline event, `signal` for each control-plane event (gear, cap, keywords,
+    targeting, Shadow mode, problems: ALIVE Phase 0), `snapshot` when anything changes (and every 15 s as a keep-alive)."""
     if store.backend() == "postgres":
         return StreamingResponse(_bus(after), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
@@ -239,9 +269,8 @@ async def stream(after: int = 0):
                 marker = m
                 for i, e in store.read(last):
                     last = i
-                    n = narrate(e)
-                    if n:
-                        yield f"event: narration\ndata: {Narration(id=i, ts=e.get('ts'), **n).model_dump_json()}\n\n"
+                    for frame in _sse(i, e):
+                        yield frame
                 yield f"event: snapshot\ndata: {snapshot().model_dump_json()}\n\n"; beat = time.time()
             elif time.time() - beat > 15:
                 yield f"event: snapshot\ndata: {snapshot().model_dump_json()}\n\n"; beat = time.time()
@@ -260,9 +289,7 @@ async def _bus(after):
         out = []
         for i, e in rows:
             last = i
-            n = narrate(e)
-            if n:
-                out.append(f"event: narration\ndata: {Narration(id=i, ts=e.get('ts'), **n).model_dump_json()}\n\n")
+            out += _sse(i, e)
         return out
     while True:
         try:

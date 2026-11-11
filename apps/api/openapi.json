@@ -1695,10 +1695,66 @@
     }
    }
   },
+  "/api/signals": {
+   "get": {
+    "summary": "Signals",
+    "description": "Control-plane events (gear, cap, Role Keywords, targeting, Shadow mode, warning lights...). latest=true: the\nnewest of each kind (problems: every one still lit), which is what a page needs at mount. Read-only. O(E).",
+    "operationId": "signals_api_signals_get",
+    "parameters": [
+     {
+      "name": "latest",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": true,
+       "title": "Latest"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "default": 50,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Signal"
+         },
+         "title": "Response Signals Api Signals Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/stream": {
    "get": {
     "summary": "Stream",
-    "description": "SSE: `narration` for each new event, `snapshot` when anything changes (and every 15 s as a keep-alive).",
+    "description": "SSE: `narration` for each new pipeline event, `signal` for each control-plane event (gear, cap, keywords,\ntargeting, Shadow mode, problems: ALIVE Phase 0), `snapshot` when anything changes (and every 15 s as a keep-alive).",
     "operationId": "stream_api_stream_get",
     "parameters": [
      {
@@ -2247,6 +2303,98 @@
        }
       ],
       "title": "Verified"
+     },
+     "kind": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "discovered",
+         "gate.skip",
+         "resume",
+         "apply.start",
+         "submitted",
+         "parked",
+         "apply.fail",
+         "shadow.answer",
+         "shadow.abstain",
+         "outcome"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Kind"
+     },
+     "job": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Job"
+     },
+     "company": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Company"
+     },
+     "by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "By"
+     },
+     "detail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Detail"
+     },
+     "conf": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Conf"
+     },
+     "jobs": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Jobs"
      }
     },
     "type": "object",
@@ -2257,7 +2405,7 @@
      "text"
     ],
     "title": "Narration",
-    "description": "An event as one plain-English sentence (engine.live.server.narrate)."
+    "description": "An event as one plain-English sentence (engine.live.server.narrate). ALIVE Phase 0 adds the typed fields\n(all optional, so older clients keep working): kind, job (the posting URL: one chip followed across stages),\ncompany (never sent on the public site), by, detail (skip reason / parked question, shortened), conf (Shadow's\nconfidence on shadow.answer), jobs (the postings an apply.start batch or an outcome covers)."
    },
    "Outcome": {
     "properties": {
@@ -2305,6 +2453,74 @@
      "outcome"
     ],
     "title": "Outcome"
+   },
+   "Signal": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "ts": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ts"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "gear",
+       "keywords",
+       "cap",
+       "targeting",
+       "shadow.mode",
+       "human.check",
+       "problem",
+       "problem.clear",
+       "outreach.sent"
+      ],
+      "title": "Kind"
+     },
+     "text": {
+      "type": "string",
+      "title": "Text"
+     },
+     "by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "By"
+     },
+     "detail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "kind",
+     "text"
+    ],
+    "title": "Signal",
+    "description": "A control-plane event with no pipeline stage (engine.live.server.signal): gear, cap dial, Role Keywords,\ntargeting, Shadow mode, desk checks, warning lights, outreach marked sent. SSE event type `signal`."
    },
    "Snapshot": {
     "properties": {
