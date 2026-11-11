@@ -140,7 +140,7 @@ services:
     build:
       context: ../apps/web
       dockerfile: ../../deploy/web.Dockerfile
-      args: { NEXT_PUBLIC_REGEN_API: "http://127.0.0.1:8787" }  # no proxy: the browser talks to the api container
+      args: { NEXT_PUBLIC_REGEN_API: "http://127.0.0.1:8787", NEXT_PUBLIC_ALIVE: "1" }  # ALIVE=0 rolls the home back  # no proxy: the browser talks to the api container
     image: regen-web:local
     restart: unless-stopped
     ports: ["127.0.0.1:3000:3000"]

@@ -6,6 +6,9 @@ COPY . .
 # the browser calls the API directly: its address is baked into the client bundle at build time
 ARG NEXT_PUBLIC_REGEN_API=http://127.0.0.1:8787
 ENV NEXT_PUBLIC_REGEN_API=$NEXT_PUBLIC_REGEN_API
+# ALIVE (docs/ALIVE_PLAN.md): 1 = the living engine home; 0 restores the door engine (the rollback switch)
+ARG NEXT_PUBLIC_ALIVE=0
+ENV NEXT_PUBLIC_ALIVE=$NEXT_PUBLIC_ALIVE
 RUN npm run build
 
 FROM node:24-alpine
