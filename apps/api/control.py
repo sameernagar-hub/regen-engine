@@ -641,6 +641,103 @@ def resume(name: str, download: int = 0):
         "Content-Disposition": f'inline; filename="{name}"', "Content-Security-Policy": f"frame-ancestors {origins}"})
 
 
+# ---- NEXT_STEPS controls (docs/ALIVE_PLAN.md §5a): the revamp UI posts here; the engine stays the truth ----
+@router.get("/control/keywords")
+def keywords_get():
+    """Role Keywords: the per-run switch and whether the A/B (which overrides it per posting) is on."""
+    from engine.tailoring import keywords as K
+    return {"on": K.enabled(), "ab": K.ab_active(), "env": os.environ.get("REGEN_JD_KEYWORDS") in ("0", "1")}
+
+
+@router.post("/control/keywords")
+def keywords_set(body: dict, request: Request):
+    """{"on": true|false}: the same as `engine keywords on|off` (records a `keywords` event)."""
+    _local_write(request)
+    if not isinstance(body.get("on"), bool):
+        raise HTTPException(400, "on must be true or false")
+    from engine.tailoring import keywords as K
+    K.switch(body["on"], by="api")
+    return keywords_get()
+
+
+@router.get("/control/cap")
+def cap_get():
+    """Daily cap switch: levels, current level, today's cap and verified-or-not submissions so far."""
+    from engine import targeting as T
+    s = T.status()
+    return {k: s[k] for k in ("cap_levels", "cap_level", "cap", "today")}
+
+
+@router.post("/control/cap")
+def cap_set(body: dict, request: Request):
+    """{"level": 0..4 | "up" | "down"}: the same as `engine cap ...` (records a `cap` event)."""
+    _local_write(request)
+    from engine import targeting as T
+    try:
+        T.set_level(body.get("level") if body.get("level") in ("up", "down") else int(body.get("level")))
+    except (TypeError, ValueError) as e:
+        raise HTTPException(400, f"level must be a level number, up or down ({e})")
+    return cap_get()
+
+
+@router.get("/control/targeting")
+def targeting_get():
+    from engine import targeting as T
+    return {**T.status(), "settable": sorted(T.SETTABLE)}
+
+
+@router.post("/control/targeting")
+def targeting_set(body: dict, request: Request):
+    """{"key": one of SETTABLE, "value": ...}: one targeting setting (records a `targeting` event)."""
+    _local_write(request)
+    from engine import targeting as T
+    try:
+        T.set_option(str(body.get("key") or ""), body.get("value"))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return targeting_get()
+
+
+@router.get("/report/rate")
+def report_rate():
+    """OA-or-interview per 100 verified applications with a 95% Wilson interval (`engine report rate`)."""
+    from engine.feedback import funnel as F
+    r = F.rate()
+    lo, hi = F.wilson(r["positive"], r["verified"])
+    return {**r, "per_100": round(100 * r["positive"] / r["verified"], 2) if r["verified"] else None,
+            "interval": [round(100 * lo, 2), round(100 * hi, 2)]}
+
+
+@router.get("/report/funnel")
+def report_funnel():
+    """`engine report funnel` as data: overall counts and every split with its interval and significance."""
+    from engine.feedback import funnel as F
+    f = F.funnel()
+    return {"overall": f["overall"], "splits": {d: [{"group": str(g), **c, "interval": list(ci), "significant": s}
+                                                    for g, c, ci, s in rows] for d, rows in f["splits"].items()}}
+
+
+@router.get("/report/ab")
+def report_ab():
+    """Role Keywords A/B: arm counts always; rates only once both arms reach ab_per_arm (no peeking)."""
+    from engine.feedback import funnel as F
+    r = F.ab()
+    return {"per_arm": r["per_arm"], "n": r["n"], "ready": r["ready"],
+            "rows": [{"arm": k, **c, "interval": list(ci)} for k, c, ci in r["rows"]]}
+
+
+@router.post("/outreach/sent")
+def outreach_sent(body: dict, request: Request):
+    """{"company", "role"?}: the USER sent a note (the engine never sends). Same as `engine outreach sent`."""
+    _local_write(request)
+    from engine import outreach as O
+    try:
+        ev = O.mark_sent(str(body.get("company") or ""), str(body.get("role") or ""))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True, "company": ev.get("company") if isinstance(ev, dict) else body.get("company")}
+
+
 @router.get("/outreach")
 def outreach():
     """Outreach drafts built by `engine outreach` (workspace/outreach/drafts.json). Nothing here sends mail."""

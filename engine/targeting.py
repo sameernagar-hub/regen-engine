@@ -73,7 +73,52 @@ def set_level(arg):
     json.dump(raw, open(tmp, "w", encoding="utf-8"), indent=1)
     os.replace(tmp, p)
     _C.update(mtime=None)
+    from engine.feedback.events import record  # the revamp's `cap` event (docs/ALIVE_PLAN.md §5a), CLI or API alike
+    record("cap", level=new, cap=int(levels[new]))
     return new, int(levels[new])
+
+
+SETTABLE = {"tier_first": bool, "skip_unsure": bool, "keywords_ab": bool, "unsure_min_terms": int, "unsure_min_share": float}
+
+
+def set_option(key, value):
+    """Change one targeting setting (API / CLI), typed and range-checked; writes profile/targeting.json keeping the
+    other keys and records a `targeting` event. cap_level goes through set_level; ab_per_arm is fixed before the A/B
+    starts, so it is not settable here (no moving the goalposts). Returns the new settings."""
+    if key not in SETTABLE:
+        raise ValueError(f"{key} is not settable (one of {', '.join(SETTABLE)})")
+    t = SETTABLE[key]
+    if t is bool:
+        if not isinstance(value, bool):
+            raise ValueError(f"{key} must be true or false")
+    else:
+        try:
+            value = t(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"{key} must be a number")
+        if (key == "unsure_min_share" and not 0 <= value <= 1) or (key == "unsure_min_terms" and not 0 <= value <= 50):
+            raise ValueError(f"{key} out of range")
+    p = os.path.join(PROFILE, "targeting.json")
+    try:
+        raw = json.load(open(p, encoding="utf-8"))
+    except (OSError, ValueError):
+        raw = {}
+    raw[key] = value
+    tmp = p + ".tmp"
+    json.dump(raw, open(tmp, "w", encoding="utf-8"), indent=1)
+    os.replace(tmp, p)
+    _C.update(mtime=None)
+    from engine.feedback.events import record
+    record("targeting", key=key, value=value)
+    return load()
+
+
+def status(events=None):
+    """Everything the cap dial and the targeting panel show: settings, level, today's cap and count."""
+    cfg = load()
+    levels = cfg.get("cap_levels") or [int(cfg["daily_cap"])]
+    return {**cfg, "cap_level": max(0, min(int(cfg.get("cap_level") or 0), len(levels) - 1)), "cap": cap(cfg),
+            "today": submitted_today(events)}
 
 
 def main(argv=None):

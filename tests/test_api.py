@@ -273,3 +273,42 @@ def test_conditional_get_returns_304(seeded):
     events.record("application", job="Hooli - SRE", url="https://jobs.lever.co/hooli/3", status="SUBMITTED", dry=False)
     r2 = client.get("/api/applications", headers={"If-None-Match": tag})
     assert r2.status_code == 200 and r2.headers["etag"] != tag and any(a["job"] == "Hooli - SRE" for a in r2.json())
+
+
+def test_next_steps_controls_round_trip(tmp_path, monkeypatch):
+    """docs/ALIVE_PLAN.md §5a: each control posts, the engine stores it, the GET reports the same value."""
+    from apps.api import control
+    from engine import targeting
+    from engine.tailoring import keywords
+    monkeypatch.setattr(control, "REACH_WRITE", True)
+    monkeypatch.setattr(targeting, "PROFILE", str(tmp_path))
+    monkeypatch.setattr(keywords, "PATH", str(tmp_path / "keywords.json"))
+    monkeypatch.delenv("REGEN_JD_KEYWORDS", raising=False)
+    targeting._C.update(mtime=None)
+    assert client.get("/api/control/keywords").json()["on"] is False
+    assert client.post("/api/control/keywords", json={"on": True}).json()["on"] is True
+    assert client.post("/api/control/keywords", json={"on": "yes"}).status_code == 400
+    assert client.post("/api/control/cap", json={"level": 2}).json()["cap"] == 50
+    assert client.post("/api/control/cap", json={"level": "up"}).json()["cap_level"] == 3
+    assert client.post("/api/control/cap", json={"level": 9}).status_code == 400
+    assert client.post("/api/control/targeting", json={"key": "keywords_ab", "value": True}).json()["keywords_ab"] is True
+    assert client.post("/api/control/targeting", json={"key": "ab_per_arm", "value": 10}).status_code == 400
+    assert client.post("/api/control/targeting", json={"key": "unsure_min_share", "value": 2}).status_code == 400
+    assert client.get("/api/control/keywords").json()["ab"] is True
+    kinds = [e["kind"] for e in events.read() if e["kind"] in ("keywords", "cap", "targeting")]
+    assert kinds == ["keywords", "cap", "cap", "targeting"]
+    assert client.post("/api/outreach/sent", json={"company": "Initech"}).json()["ok"]
+    assert client.post("/api/outreach/sent", json={}).status_code == 400
+    r = client.get("/api/report/rate").json()
+    assert r["verified"] >= 0 and len(r["interval"]) == 2
+    assert "splits" in client.get("/api/report/funnel").json()
+    ab = client.get("/api/report/ab").json()
+    assert ab["ready"] is False and ab["rows"] == [] and ab["per_arm"] == 150
+
+
+def test_next_steps_controls_refuse_when_writes_are_off(monkeypatch):
+    from apps.api import control
+    monkeypatch.setattr(control, "REACH_WRITE", False)
+    for path, body in (("/api/control/keywords", {"on": True}), ("/api/control/cap", {"level": 1}),
+                       ("/api/control/targeting", {"key": "skip_unsure", "value": False}), ("/api/outreach/sent", {"company": "x"})):
+        assert client.post(path, json=body).status_code == 403

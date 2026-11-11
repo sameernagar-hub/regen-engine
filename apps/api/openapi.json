@@ -3,9 +3,1308 @@
  "info": {
   "title": "REGEN API",
   "description": "API over the REGEN job engine's append-only event log (read-only, plus POST /api/answers when enabled).",
-  "version": "0.8.0"
+  "version": "1.0.0"
  },
  "paths": {
+  "/api/control/state": {
+   "get": {
+    "summary": "State",
+    "description": "The run (if one was started from the UI), every applier active in the last 15 minutes, queue, limits.",
+    "operationId": "state_api_control_state_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/fleet": {
+   "get": {
+    "summary": "Fleet",
+    "description": "Container health from heartbeats in the shared workspace (engine/supervisor.py): pipeline, appliers, relay,\nsupervisor (+ the services it probes), batch queue, lost claims, codes waiting, kill switch, applier limits, the\nsupervisor's last audit records and which ledger backend the API reads.",
+    "operationId": "fleet_api_control_fleet_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/containers": {
+   "get": {
+    "summary": "Containers",
+    "description": "The supervisor's container inventory (service, state, uptime, CPU, memory), refreshed every minute; null\nwhen the supervisor is not running (only it holds the Docker socket).",
+    "operationId": "containers_api_control_containers_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/reach": {
+   "get": {
+    "summary": "Reach",
+    "description": "Reach list (engine/discovery/reach.py): Workday / iCIMS / SmartRecruiters jobs with a tailored resume, newest\nfirst, for the user to submit; each row carries the user's own mark (todo / submitted / skipped).",
+    "operationId": "reach_api_control_reach_get",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "default": 100,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/bigtech": {
+   "get": {
+    "summary": "Bigtech",
+    "description": "Big-tech portals (engine/discovery/bigtech.py): roles that passed the title filter and fit gate, each with a\ntailored resume, read from workspace/bigtech.md (newest first). Applying happens on the company's own portal.",
+    "operationId": "bigtech_api_control_bigtech_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/discover": {
+   "get": {
+    "summary": "Discover",
+    "description": "What the Discover station is looking at: boards watched per ATS, the six big-tech portals, and `n` orbs, one\nper company with the newest postings in the queue (company, ATS, a role). O(queue).",
+    "operationId": "discover_api_control_discover_get",
+    "parameters": [
+     {
+      "name": "n",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "default": 36,
+       "title": "N"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/reach/kit": {
+   "get": {
+    "summary": "Reach Kit",
+    "description": "Copy-ready answers for filling a Workday / iCIMS application by hand (presets + Fact Bank). Personal data:\nonly for this computer (127.0.0.1-published port in the bank, localhost otherwise).",
+    "operationId": "reach_kit_api_reach_kit_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/reach/fill": {
+   "post": {
+    "summary": "Reach Fill",
+    "description": "Queue one reach-list Workday job for the desk (engine/apply/workday.py): the desk opens it in the browser you\nsigned in to and fills it. Same switch and same this-computer rule as /reach/mark.",
+    "operationId": "reach_fill_api_reach_fill_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/reach/signins": {
+   "get": {
+    "summary": "Reach Signins",
+    "description": "Workday employers to sign in to in the desk, most open reach jobs first (one account per employer host).",
+    "operationId": "reach_signins_api_reach_signins_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/reach/open": {
+   "post": {
+    "summary": "Reach Open",
+    "description": "Open one Workday employer's site in the desk and press its Sign In button, so the user signs in there.\nOnly URLs of employers on the sign-in list are accepted (the desk never opens arbitrary pages from the API).",
+    "operationId": "reach_open_api_reach_open_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/reach/desk": {
+   "get": {
+    "summary": "Reach Desk",
+    "description": "The desk's heartbeat (ready / filling, queue length, last result) and its latest results per reach URL.",
+    "operationId": "reach_desk_api_reach_desk_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/reach/mark": {
+   "post": {
+    "summary": "Reach Mark",
+    "description": "The user marks a reach job submitted / skipped / back to to-do. Recorded as a `reach_mark` event; \"submitted\"\nalso records an application event (status SUBMITTED, detail \"by you on <ats>\") so the engine never re-lists or\nre-applies to that role. Needs REGEN_API_REACH=1 (or REGEN_API_WRITE=1) and a request from this computer.",
+    "operationId": "reach_mark_api_reach_mark_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/human/mark": {
+   "post": {
+    "summary": "Human Mark",
+    "description": "The user finished (or dropped) a parked job by hand on the /desk page: a hCaptcha ticked in the desk, a Lever\nCAPTCHA or an Ashby human click on the employer's page. The desk never sees that Submit, so the user's mark is\nthe record: an application event SUBMITTED / SKIPPED \"by you\". Only for jobs waiting on the user right now; same\nguard as /reach/mark (REGEN_API_REACH=1 and a request from this computer).",
+    "operationId": "human_mark_api_human_mark_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/shadow": {
+   "get": {
+    "summary": "Shadow Get",
+    "description": "Shadow's switchboard (engine/shadow.py): mode (calls / always / off), minutes between calls, and every line:\nringing (call 1 / call 2, seconds to the next step) or picked up (by you or by Shadow).",
+    "operationId": "shadow_get_api_shadow_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "summary": "Shadow Set",
+    "description": "Set Shadow's mode and ring interval: {\"mode\": \"calls\"|\"autopilot\"|\"always\"|\"off\", \"ring_min\": 0.5-240}.",
+    "operationId": "shadow_set_api_shadow_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/shadow/pickup": {
+   "post": {
+    "summary": "Shadow Pickup",
+    "description": "Answer a ringing line: {\"url\", \"who\": \"you\"|\"shadow\"}. you = the job waits for you; shadow = Shadow now.",
+    "operationId": "shadow_pickup_api_shadow_pickup_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/shadow/brain": {
+   "get": {
+    "summary": "Shadow Brain Get",
+    "description": "Shadow's brain (engine/shadow_brain.py): tuned thresholds, reliability per strategy, the latest train/test run,\nthe test-precision history, and the ownership ladder with what each locked rung still needs.",
+    "operationId": "shadow_brain_get_api_shadow_brain_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/shadow/train": {
+   "post": {
+    "summary": "Shadow Train",
+    "description": "Retrain now: tune on your answers (train split), score on the held-out split. Local only. ~2 s.",
+    "operationId": "shadow_train_api_shadow_train_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/shadow/agents": {
+   "get": {
+    "summary": "Shadow Agents",
+    "description": "The agent graph (engine/agents.py): Shadow -> applier / parked-job / service agents -> job agents -> question\nagents, each with its owner today, plus the actions Shadow would take now (allowed or locked by the ladder).",
+    "operationId": "shadow_agents_api_shadow_agents_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/bench": {
+   "get": {
+    "summary": "Bench",
+    "description": "Latest benchmark run B1-B7 (engine/bench.py; the supervisor saves one every REGEN_BENCH_HOURS).",
+    "operationId": "bench_api_control_bench_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/evals": {
+   "get": {
+    "summary": "Evals",
+    "description": "Eval history (B1-B10 summaries, oldest first) plus the eval containers the supervisor runs right now.",
+    "operationId": "evals_api_control_evals_get",
+    "parameters": [
+     {
+      "name": "n",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "default": 30,
+       "title": "N"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/run": {
+   "post": {
+    "summary": "Run",
+    "operationId": "run_api_control_run_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/retry": {
+   "post": {
+    "summary": "Retry",
+    "description": "Apply again to jobs that are answerable now (pipeline.answerable_now). If appliers are already working, the\nrunning loop picks them up on its next pass instead (two appliers must not share a browser profile).",
+    "operationId": "retry_api_control_retry_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/stop": {
+   "post": {
+    "summary": "Stop",
+    "operationId": "stop_api_control_stop_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/filters": {
+   "get": {
+    "summary": "Filters",
+    "operationId": "filters_api_control_filters_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "summary": "Set Filters",
+    "description": "Replace title/company filters (regex alternations). Each must compile; the old file is kept as .bak.",
+    "operationId": "set_filters_api_control_filters_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/rules": {
+   "get": {
+    "summary": "Rules",
+    "description": "Every rule that drives the engine, grouped by the stage it runs in, with firing counts (engine/rules.py).",
+    "operationId": "rules_api_rules_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/factbank": {
+   "get": {
+    "summary": "Factbank",
+    "description": "The Fact Bank as the UI draws it: every entry, which resumes used it, in which lanes.",
+    "operationId": "factbank_api_factbank_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/resume/{name}": {
+   "get": {
+    "summary": "Resume",
+    "description": "A resume PDF the engine built, by file name only, from workspace/out.",
+    "operationId": "resume_api_resume__name__get",
+    "parameters": [
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Name"
+      }
+     },
+     {
+      "name": "download",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "default": 0,
+       "title": "Download"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/keywords": {
+   "get": {
+    "summary": "Keywords Get",
+    "description": "Role Keywords: the per-run switch and whether the A/B (which overrides it per posting) is on.",
+    "operationId": "keywords_get_api_control_keywords_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "summary": "Keywords Set",
+    "description": "{\"on\": true|false}: the same as `engine keywords on|off` (records a `keywords` event).",
+    "operationId": "keywords_set_api_control_keywords_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/cap": {
+   "get": {
+    "summary": "Cap Get",
+    "description": "Daily cap switch: levels, current level, today's cap and verified-or-not submissions so far.",
+    "operationId": "cap_get_api_control_cap_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "summary": "Cap Set",
+    "description": "{\"level\": 0..4 | \"up\" | \"down\"}: the same as `engine cap ...` (records a `cap` event).",
+    "operationId": "cap_set_api_control_cap_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/targeting": {
+   "get": {
+    "summary": "Targeting Get",
+    "operationId": "targeting_get_api_control_targeting_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "summary": "Targeting Set",
+    "description": "{\"key\": one of SETTABLE, \"value\": ...}: one targeting setting (records a `targeting` event).",
+    "operationId": "targeting_set_api_control_targeting_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/report/rate": {
+   "get": {
+    "summary": "Report Rate",
+    "description": "OA-or-interview per 100 verified applications with a 95% Wilson interval (`engine report rate`).",
+    "operationId": "report_rate_api_report_rate_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/report/funnel": {
+   "get": {
+    "summary": "Report Funnel",
+    "description": "`engine report funnel` as data: overall counts and every split with its interval and significance.",
+    "operationId": "report_funnel_api_report_funnel_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/report/ab": {
+   "get": {
+    "summary": "Report Ab",
+    "description": "Role Keywords A/B: arm counts always; rates only once both arms reach ab_per_arm (no peeking).",
+    "operationId": "report_ab_api_report_ab_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/outreach/sent": {
+   "post": {
+    "summary": "Outreach Sent",
+    "description": "{\"company\", \"role\"?}: the USER sent a note (the engine never sends). Same as `engine outreach sent`.",
+    "operationId": "outreach_sent_api_outreach_sent_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/outreach": {
+   "get": {
+    "summary": "Outreach",
+    "description": "Outreach drafts built by `engine outreach` (workspace/outreach/drafts.json). Nothing here sends mail.",
+    "operationId": "outreach_api_outreach_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/outreach/build": {
+   "post": {
+    "summary": "Outreach Build",
+    "description": "Rebuild drafts for submissions in the last `days` days (1-30).",
+    "operationId": "outreach_build_api_outreach_build_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/gearbox": {
+   "get": {
+    "summary": "Gearbox",
+    "description": "Gear, clutch, what they set, the feedback loop's learned rules, and the engine's live speed (submissions/hour).",
+    "operationId": "gearbox_api_control_gearbox_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "summary": "Shift",
+    "description": "Shift gear (N, 1-4) and/or set the clutch (on/off). Needs REGEN_API_GEAR=1 (bank) or REGEN_API_WRITE=1.",
+    "operationId": "shift_api_control_gearbox_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Body"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/oilchange": {
+   "get": {
+    "summary": "Oilchange",
+    "description": "Oil life, what is contaminating it, the change running now (stage by stage) and the last 20 changes. Reads\nworkspace/oilchange.json, which the supervisor rewrites every 5 minutes and after every stage. O(1).",
+    "operationId": "oilchange_api_control_oilchange_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "summary": "Oilchange Now",
+    "description": "Ask the supervisor to change the oil now (it starts within 15 s). Same write gate as the gearbox.",
+    "operationId": "oilchange_now_api_control_oilchange_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/control/mcp": {
+   "get": {
+    "summary": "Mcp Servers",
+    "description": "Both MCP servers (stdio on your machine, HTTP in the bank), each tool with its level and whether it writes,\nand a live initialize probe of the bank's HTTP endpoint. O(tools).",
+    "operationId": "mcp_servers_api_control_mcp_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/track": {
+   "get": {
+    "summary": "Track View",
+    "operationId": "track_view_api_track_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/db/tables": {
+   "get": {
+    "summary": "Tables",
+    "operationId": "tables_api_db_tables_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/db/rows/{name}": {
+   "get": {
+    "summary": "Rows",
+    "operationId": "rows_api_db_rows__name__get",
+    "parameters": [
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Name"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "default": "",
+       "title": "Q"
+      }
+     },
+     {
+      "name": "col",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "default": "",
+       "title": "Col"
+      }
+     },
+     {
+      "name": "val",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "default": "",
+       "title": "Val"
+      }
+     },
+     {
+      "name": "after_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "default": 0,
+       "title": "After Id"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 1000,
+       "default": 200,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "default": "json",
+       "title": "Format"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/health": {
    "get": {
     "summary": "Health",
@@ -449,6 +1748,85 @@
        "type": "boolean",
        "default": true,
        "title": "Questions"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/stations": {
+   "get": {
+    "summary": "Stations",
+    "description": "Per-station totals, today's count and the latest lines, from one pass over the log: O(E).",
+    "operationId": "stations_api_stations_get",
+    "parameters": [
+     {
+      "name": "recent",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 50,
+       "default": 8,
+       "title": "Recent"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/job": {
+   "get": {
+    "summary": "Job",
+    "description": "Everything the engine did for one posting, in order: resume (facts, coverage, ATS score), attempts, outcome.",
+    "operationId": "job_api_job_get",
+    "parameters": [
+     {
+      "name": "url",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "maxLength": 500,
+       "title": "Url"
       }
      }
     ],

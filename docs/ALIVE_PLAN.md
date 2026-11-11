@@ -179,14 +179,18 @@ the Phase 0 triage.
 
 | NEXT_STEPS item | Engine (built) | API (add if missing) | Event (Phase 0 kinds) | On screen (phase) |
 |---|---|---|---|---|
-| §1.1 Role Keywords per run | `engine keywords on\|off`, workspace/keywords.json | `GET/POST /control/keywords` | `keywords` {on} | Drive panel toggle beside the gear lever, asked at ignition, "off" after a clean stop (Phase 1) |
-| §1.2 + §2 interview rate + funnel | `engine report rate\|funnel` (Wilson intervals) | `GET /report/rate`, `GET /report/funnel` | `outcome` (exists) | Rate beside every volume number ("446 sent · 0.2 per 100"); Results drawer funnel with splits and "not significant" said plainly (Phase 3 + 5) |
-| §3 daily cap switch | `engine cap 0..4\|up\|down` = 15/25/50/100/150, profile/targeting.json | `GET/POST /control/cap` | `cap` {level, cap, today} | Cap dial next to the gearbox: level 0 at every start, "12 / 15 today" gauge, cap-reached state drawn as the engine idling, not as an error (Phase 1) |
-| §3 targeting order | tier1 / sponsors first, then freshest; skip unsure fits (planned) | `GET/POST /control/targeting` | `gate.skip` detail "unsure fit" | Chips from tier1 / sponsors marked at intake; Garage > Targeting shows the settings (Phase 1 + 5) |
-| §3 Role Keywords A/B (planned) | arm by URL hash, logged in the resume event, 150 per arm | `GET /report/funnel` (arm split) | `resume` {arm} | Results: two progress bars to 150, result hidden until both arms are full (Phase 5) |
-| §4 outreach | `outreach 7` in the daily run, `outreach sent <company>` | `GET /outreach` (exists), `POST /outreach/sent` | `outreach.sent` | Results > Outreach: drafts best first, Gmail compose link, a **Mark sent** button; funnel "applied + outreach" row (Phase 5) |
+| §1.1 Role Keywords per run | `engine keywords on\|off`, workspace/keywords.json | `GET/POST /control/keywords` (built 11-10) | `keywords` {on} | Drive panel toggle beside the gear lever, asked at ignition, "off" after a clean stop (Phase 1) |
+| §1.2 + §2 interview rate + funnel | `engine report rate\|funnel` (Wilson intervals) | `GET /report/rate`, `GET /report/funnel` (built 11-10) | `outcome` (exists) | Rate beside every volume number ("446 sent · 0.2 per 100"); Results drawer funnel with splits and "not significant" said plainly (Phase 3 + 5) |
+| §3 daily cap switch | `engine cap 0..4\|up\|down` = 15/25/50/100/150, profile/targeting.json | `GET/POST /control/cap` (built 11-10; CLI and API both emit `cap`) | `cap` {level, cap, today} | Cap dial next to the gearbox: level 0 at every start, "12 / 15 today" gauge, cap-reached state drawn as the engine idling, not as an error (Phase 1) |
+| §3 targeting order | tier1 / sponsors first, then freshest; skip unsure fits (built 11-10: <5 covered terms or <40%) | `GET/POST /control/targeting` (built 11-10; emits `targeting`) | `gate.skip` detail "unsure fit" | Chips from tier1 / sponsors marked at intake; Garage > Targeting shows the settings (Phase 1 + 5) |
+| §3 Role Keywords A/B | arm by URL hash (keywords.arm), `ab_arm` in the resume event, 150 per arm (built 11-10) | `GET /report/ab` (built 11-10: counts only until both arms are full) | `resume` {arm} | Results: two progress bars to 150, result hidden until both arms are full (Phase 5) |
+| §4 outreach | `outreach 7` in the daily run, `outreach sent <company>` | `GET /outreach` (exists), `POST /outreach/sent` (built 11-10) | `outreach.sent` | Results > Outreach: drafts best first, Gmail compose link, a **Mark sent** button; funnel "applied + outreach" row (Phase 5) |
 | §5 Shadow mode + never-answer list | `engine shadow calls\|autopilot\|off`, default calls | `/shadow` (exists) | `shadow.mode`, `shadow.abstain` | Phase 2 seat selector; never-answer questions drawn going to the tray with "left for you: work authorization" etc.; weekly precision on the seat badge |
 | §6 quick start | `engine try resume` (no DB, nothing applied) | `POST /try` (public, rate-limited, nothing stored) | none | Public demo paste box: resume text in, top 10 roles + reasons out; /docs "Try it first" (Phase 5) |
+
+API status 11-10: every row's route exists and is tested (tests/test_api.py round-trip + writes-off 403) except
+`POST /try`, which is public and belongs to Phase 5 with its rate limit. openapi.json + apps/web/lib/api.d.ts
+regenerated (56 paths); `npm run typecheck` clean. Phase 0 starts from this baseline.
 
 Acceptance (added to the phases above): each control round-trips (UI → API → engine CLI reports the same value)
 within one heartbeat; public build shows rates and arm counts but no company names; a V-bench row per control.
