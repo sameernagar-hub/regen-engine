@@ -5,9 +5,9 @@
 # REVAMP READINESS (11-10): §5a API routes built + tested (61663ec): /control/keywords|cap|targeting, /report/rate|
 #   funnel|ab, POST /outreach/sent (only public POST /try left, for Phase 5). openapi.json (56 paths) + api.d.ts
 #   regenerated, `npm run typecheck` clean, 348 tests pass. All images rebuilt; api, pipeline and appliers recreated.
-#   The ONE open §9 box: §3 "experiment is running" = the user switches keywords_ab on
-#   (`curl -X POST .../api/control/targeting -d '{"key":"keywords_ab","value":true}'` or edit profile/targeting.json).
-#   While on, the URL hash overrides the per-run Role Keywords switch. Then ALIVE Phase 0 (docs/ALIVE_PLAN.md §5).
+#   ~21:00 the user switched keywords_ab ON: NEXT_STEPS §9 is ALL TICKED -> next session starts ALIVE Phase 0
+#   (docs/ALIVE_PLAN.md §5). The A/B stays on across runs (a clean stop does NOT turn it off; the per-run keywords
+#   question no longer decides while it is on). `engine report ab` shows only counts until 150 per arm.
 
 # CAP SWITCH (user 11-09): `python -m engine cap [0|1|2|3|4|up|down]` = 15 / 25 / 50 / 100 / 150 per day, stored as
 # cap_level in profile/targeting.json and read live. Every start begins at level 0; a clean stop runs `engine cap 0`.

@@ -80,7 +80,8 @@ alongside every other metric.
   with 95% intervals. No early stop. Tests 346 pass.
 - 11-10: revamp prep: every §5a API route exists and is tested (ALIVE_PLAN §5a "API status"); API types
   regenerated; typecheck clean. Only §9's §3 box is open: it ticks when the user switches keywords_ab on.
-- Next: switch keywords_ab on (user), then the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
+- 11-10 ~21:00: user switched keywords_ab ON. **§9 is all ticked: v2.0 ALIVE Phase 0 may start.**
+- Next: ALIVE Phase 0, and in passing the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
 
 ## 1. Make the public claims true (first session, small)
 
@@ -183,7 +184,7 @@ All of these, checked and written in the session's handoff:
 
 - [x] README and wiki claims match the code (§1), with a test guarding it. (11-09)
 - [x] Funnel report exists and the interview rate is in the README (§2). (11-09)
-- [ ] The user has agreed the targeting settings and the experiment is running (§3).
+- [x] The user has agreed the targeting settings and the experiment is running (§3). (11-10: keywords_ab on)
 - [x] Outreach drafts are part of the daily run and sent notes are logged (§4).
 - [x] Shadow mode and the never-answer list are settled with the user (§5). (11-09)
 - [x] The 5-minute quick start works on a clean machine (§6).
