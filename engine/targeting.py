@@ -8,7 +8,11 @@ Settings live in profile/targeting.json (any key may be left out; DEFAULTS fill 
   daily_cap     cap used only when cap_levels is empty. select() queues nothing once the cap is reached
                 (REGEN_MAX_PER_DAY stays the runner's hard backstop)
   tier_first    tier1 and visa-sponsor employers (profile/priority.json) go before every other job, then freshest
-  skip_unsure   (planned) skip roles where the fit gate is unsure instead of submitting and hoping
+  skip_unsure   skip roles where the fit gate is unsure instead of submitting and hoping. The gate only knows hard
+                blockers; a posting with none can still be one the Fact Bank barely touches. "Unsure" = the Fact Bank
+                covers fewer than `unsure_min_terms` of the posting's terms, or under `unsure_min_share` of them
+                (covered / (covered + JD tech terms the Fact Bank lacks)). Recorded as SKIPPED "unsure fit: ..."
+                so the funnel can count it; set skip_unsure false to send them again
   keywords_ab   (planned) Role Keywords on/off by a hash of the posting URL; `ab_per_arm` submissions per arm
                 before anyone reads the result, and no early stop because one arm looks ahead
 O(1) per call after the first read (re-read when the file changes).
@@ -17,7 +21,8 @@ import datetime, json, os
 
 from engine.config import PROFILE
 
-DEFAULTS = {"cap_levels": [15, 25, 50, 100, 150], "cap_level": 0, "daily_cap": 15, "tier_first": True, "skip_unsure": True, "keywords_ab": False, "ab_per_arm": 150}
+DEFAULTS = {"cap_levels": [15, 25, 50, 100, 150], "cap_level": 0, "daily_cap": 15, "tier_first": True, "skip_unsure": True, "keywords_ab": False, "ab_per_arm": 150,
+            "unsure_min_terms": 5, "unsure_min_share": 0.4}
 _C = {"mtime": None, "cfg": dict(DEFAULTS)}
 
 
@@ -100,3 +105,38 @@ def tier_rank(job, tiers):
     if any(tiers.get(k) and tiers[k].search(co) for k in ("tier1", "sponsors")) or job.get("h1b") is True:
         return 0
     return 1
+
+
+_BANK = {"key": None, "text": ""}
+
+
+def _bank_text():
+    """Every wording in the Fact Bank (facts, variants, skills, projects) as one string; built once per loaded bank."""
+    from engine.tailoring import resume
+    resume.load_bank()
+    if _BANK["key"] is not resume.FACTS:
+        parts = [t for f in resume.FACTS for t in resume.texts(f)]
+        parts += [v[1] for v in resume.SKILLS.values()]
+        parts += [" ".join([p[0]] + list(p[2])) for p in resume.PROJECTS.values()]
+        _BANK.update(key=resume.FACTS, text=" ".join(parts))
+    return _BANK["text"]
+
+
+def unsure(jd, covered, cfg=None, lacking=None):
+    """Why the fit is unsure (a short reason), or None when the posting is a clear fit or skip_unsure is off.
+    covered = the posting's terms the Fact Bank has (tailor()'s jd_terms_you_have); lacking = JD tech terms the bank
+    lacks (computed from the bank when not given). O(JD + bank) per posting."""
+    cfg = cfg or load()
+    if not cfg.get("skip_unsure"):
+        return None
+    have = len(covered)
+    if have < int(cfg["unsure_min_terms"]):
+        return f"unsure fit: Fact Bank covers {have} of the posting's terms (min {cfg['unsure_min_terms']})"
+    if lacking is None:
+        from engine.tailoring import keywords
+        lacking = keywords.missing(jd, _bank_text())
+    share = have / (have + len(lacking))
+    if share < float(cfg["unsure_min_share"]):
+        return (f"unsure fit: Fact Bank covers {share:.0%} of the posting's terms (min {float(cfg['unsure_min_share']):.0%};"
+                f" lacks {', '.join(lacking[:5])})")
+    return None

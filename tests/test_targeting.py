@@ -52,3 +52,19 @@ def test_cap_switch_levels_start_at_zero_and_clamp(tmp_path, monkeypatch, capsys
     targeting.main(["2"])
     assert "level 2 = 50" in capsys.readouterr().out
     assert json.loads((tmp_path / "targeting.json").read_text())["cap_level"] == 2
+
+
+def test_unsure_flags_thin_or_low_share_overlap():
+    cfg = dict(targeting.DEFAULTS)
+    assert targeting.unsure("jd", ["python", "sql"], cfg, lacking=[]).startswith("unsure fit: Fact Bank covers 2 ")
+    five = ["python", "sql", "aws", "docker", "react"]
+    assert targeting.unsure("jd", five, cfg, lacking=["a"] * 4) is None  # 5 / 9 = 56%
+    why = targeting.unsure("jd", five, cfg, lacking=["kotlin", "swift", "objc", "xcode", "gradle", "ios", "android", "jetpack"])
+    assert why.startswith("unsure fit: Fact Bank covers 38%") and "kotlin" in why
+
+
+def test_unsure_off_and_thresholds_from_settings():
+    cfg = dict(targeting.DEFAULTS, skip_unsure=False)
+    assert targeting.unsure("jd", [], cfg, lacking=["x"] * 50) is None
+    cfg = dict(targeting.DEFAULTS, unsure_min_terms=1, unsure_min_share=0.1)
+    assert targeting.unsure("jd", ["python"], cfg, lacking=["x"] * 5) is None

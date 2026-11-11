@@ -67,7 +67,13 @@ alongside every other metric.
   select() stops at the cap (submitted + in flight) and puts tier1 / sponsors first, then freshest. Still to build:
   skip_unsure in the fit gate, and the Role Keywords A/B by URL hash (then switch keywords_ab on; 150 per arm before
   reading).
-- Next: finish §3 (skip_unsure, keywords A/B), then the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
+- 11-10: **§3 skip_unsure built.** The fit gate knows hard blockers only; batch.build() now also skips a blocker-free
+  posting when the Fact Bank covers fewer than 5 of its terms or under 40% of them (covered / (covered + JD tech
+  terms the bank lacks)). Both thresholds live in profile/targeting.json (unsure_min_terms, unsure_min_share); the
+  skip is SKIPPED "JD: unsure fit: ..." so the funnel counts it. On the 93 past submissions with a stored JD it
+  would have skipped 4 (~4%); 1 of those 4 vs 16 of the other 89 were rejected: far too few to read, so the numbers
+  are a judgment call, not a learned rule. Tests 344 pass.
+- Next: finish §3 (keywords A/B), then the small leftovers (§2 recall, §5 weekly precision, §4 referral list).
 
 ## 1. Make the public claims true (first session, small)
 

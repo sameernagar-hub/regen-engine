@@ -141,6 +141,12 @@ def build(name, ids, force=False):
             ln = route(cfg, j["title"], jd)
             spec = tailor(cfg["lanes"][ln], jd, title=j["title"], lanes=cfg["lanes"])
             cov = spec.pop("_coverage")
+            from engine import targeting  # NEXT_STEPS §3 skip_unsure: no blocker, but too little overlap to call it a fit
+            why_unsure = targeting.unsure(jd, cov["jd_terms_you_have"])
+            if why_unsure and not force:
+                print(f"  x {label}: {why_unsure}"); skipped.append(label)
+                record("application", job=label, url=j["url"], status="SKIPPED", detail="JD: " + why_unsure, dry=False)
+                continue
             note = compose.cover_note(j["title"], j["company"], jd, spec, cov["jd_terms_you_have"], resume.FACTS,
                                       resume.ROLES, resume.SKILLS, lambda t: set(cov["jd_terms_you_have"]) & _terms_in(t))
             spec["file"] = f"Resume_{co}_{short}.pdf"
