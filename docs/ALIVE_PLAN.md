@@ -134,8 +134,27 @@ Files: `apps/web/app/page.tsx` (rewrite engine block), `apps/web/app/engine.css`
 - Reduced motion: chips jump between stations, no pistons, no breath.
 Accept:
 - [ ] Live run in the preview: chips flow with no reload for 10 min, CPU of the tab < 15% (DevTools perf sample).
-- [ ] Stop `deploy-applier-1` → Apply cylinder goes cold + warning light within 30 s; start → warm again.
-- [ ] 375 px: engine fits, no horizontal scroll; dark/light both readable; reduced-motion verified.
+      (11-10 partial: 132 s live, 0 long tasks, heap 6 MB; the full 10 min + a DevTools sample is still to do in a visible tab.)
+- [x] Stop `deploy-applier-1` → Apply cylinder goes cold + warning light within 30 s; start → warm again. (11-10:
+      `docker stop` was undone by the supervisor in ~7 s, faster than any heartbeat, so the test used `docker pause`
+      at claimed 0: cold + light in 18 s, warm again 4 s after unpause. A flat 35 s limit measured 37 s first.)
+- [x] 375 px: engine fits, no horizontal scroll (scrollWidth 375); SVG text scaled up under 600 px; light preference
+      keeps the app's one dark theme with an explicit background, readable; reduced-motion rules verified loaded in
+      the page (the pane cannot emulate the preference). (11-10)
+
+**As built (11-10):**
+- Files outside the list, and why: `deploy/web.Dockerfile` + `deploy/bank.compose.yml` (the `NEXT_PUBLIC_ALIVE` build
+  arg: Next inlines it at build time, so the switch must be a build arg; default 0 = rollback).
+- The home folds its own spine (lib/spine.ts functions) instead of `useEngine().alive`: it seeds from the last 300
+  events (so it never opens empty) and needs each raw event for one-off effects (puff, drop, skip reason), which the
+  hook does not expose. `useEngine()` is unchanged.
+- Parts: fleet polled every 5 s while visible (not once at mount), and appliers count as cold after 15 s of silence
+  while watching / 40 s while applying (they beat every 5 s / 30 s). UI-side only; the engine's 120 s restart
+  threshold is untouched.
+- Every class is `al-` prefixed: the door engine's global `.crank` / `.piston` rules rotated and stroked the new parts.
+- The pages stay reachable as the plain link row under the engine until Phase 5's drawers.
+- Not on screen yet (§5a Phase 1 rows): tier1 / sponsor marks on intake chips need a tier field in the events (Phase 0
+  contract has none); left for the Phase 5 targeting panel.
 
 ### Phase 2: Shadow co-driver. Budget: 1 session
 Files: `apps/web/app/alive/{Seat.tsx,Captions.tsx}`, `engine.css`, `page.tsx`; backend only `/shadow` POST (exists).

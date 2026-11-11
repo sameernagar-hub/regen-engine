@@ -1,3 +1,7 @@
+# 11-10 ~21:35: ALIVE PHASE 1 BUILT (5683029): the living engine home at http://127.0.0.1:3000/ (NEXT_PUBLIC_ALIVE=1 in
+#   bank.compose.yml; set "0" + rebuild web to roll back). V9 pass (cold 18 s / warm 4 s), 375 px pass, reduced
+#   motion rules loaded. Open: the 10-min live-flow/CPU check row in docs/bench/alive.md; then Phase 2 (Shadow
+#   co-driver). Gotcha: CSS class names are global; the old home's .crank/.piston animate anything with those names.
 # 11-10 ~21:10: ALIVE PHASE 0 DONE (5328097): typed events + Signal SSE + /api/signals, emitters (apply_start, shadow
 #   abstain + conf, problem lights), engine/live/replay.py (`engine replay`), apps/web/lib/spine.ts folded in
 #   useEngine().alive, scripts/bench_alive.py (V6/V7/V8/S1 pass; docs/bench/alive.md row). All containers on the new
