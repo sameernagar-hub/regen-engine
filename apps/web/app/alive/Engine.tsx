@@ -250,7 +250,7 @@ export function Engine() {
           </fieldset>
           <fieldset className="al-cap-dial">
             <legend>Daily cap{cap ? `: ${cap.today} / ${cap.cap} today` : ""}</legend>
-            {cap && <meter min={0} max={cap.cap} value={Math.min(cap.today, cap.cap)} aria-label={`${cap.today} of ${cap.cap} today`} />}
+            {cap && <progress max={cap.cap} value={Math.min(cap.today, cap.cap)} aria-label={`${cap.today} of ${cap.cap} today`} />}
             {(cap?.cap_levels ?? []).map((c, i) => (
               <button key={c} type="button" aria-pressed={cap?.cap_level === i} disabled={!!pending && !pending.error}
                       className={pending?.control === "cap" && pending.want === String(i) && !pending.error ? "al-waiting" : ""}
