@@ -12,6 +12,8 @@ import { empty, foldNarration, foldSignal, type Narration, type Signal, type Spi
 import { Bundle, Chip } from "./Chip";
 import { Cylinder, at, slot, CX, CY, R_IN } from "./Cylinder";
 import { reducedMotion, schedule, watchVisibility } from "./loop";
+import { Seat, SEAT, hasWheel, type Brain } from "./Seat";
+import { Captions, caption, type Caption } from "./Captions";
 
 const STATIONS: { stage: Stage; label: string; verb: string; deg: number; role: string }[] = [
   { stage: "listen", label: "Listen", verb: "heard (1 h)", deg: 198, role: "pipeline" },
@@ -33,12 +35,15 @@ const LISTEN_WINDOW_MS = 60 * 60 * 1000;
 const WARM_S: Record<string, (state: string) => number> = { applier: (st) => (st === "applying" ? 40 : 15) };
 const BREATH: Record<string, string> = { "1": "4s", "2": "2.5s", "3": "1.5s", "4": "1s" };
 const GEARS = ["N", "1", "2", "3", "4"];
+const MODES: [string, string][] = [["off", "Off"], ["calls", "Calls"], ["autopilot", "Autopilot"]];
+// Parks Shadow may never take: a human check (CAPTCHA / Ashby click) goes straight to your tray, never to the seat.
+const HUMAN_CHECK = /captcha|human click|bot.?check|hcaptcha/i;
 
 type Member = { role?: string; up?: boolean; age?: number; state?: string };
 type Fleet = { members: Member[]; problems: string[] };
 type Cap = { cap_levels: number[]; cap_level: number; cap: number; today: number };
-type Ghost = { id: number; kind: "sent" | "parked" | "skip" | "fail"; from: [number, number]; to: [number, number]; text?: string };
-type Pending = { control: "gear" | "cap" | "keywords"; want: string; since: number; error?: string };
+type Ghost = { id: number; kind: "sent" | "parked" | "skip" | "fail" | "seat" | "answer"; from: [number, number]; to: [number, number]; text?: string };
+type Pending = { control: "gear" | "cap" | "keywords" | "shadow.mode"; want: string; since: number; error?: string };
 
 /** Parse a ledger ts ("2026-11-10T21:03:05", local time) to epoch ms; NaN when missing. */
 const ms = (ts: string | null | undefined) => (ts ? new Date(ts).getTime() : NaN);
@@ -70,6 +75,8 @@ export function Engine() {
   const [born, setBorn] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Pending | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [brain, setBrain] = useState<Brain | null>(null);
+  const [captions, setCaptions] = useState<Caption[]>([]);
   const pos = useRef(new Map<string, [number, number]>());
   const gid = useRef(0);
   const still = useRef(false);
@@ -84,10 +91,13 @@ export function Engine() {
       for (const g of gs) foldSignal(spine.current, g);
       for (const n of ns) foldNarration(spine.current, n);
       setSkips(ns.filter((n) => n.kind === "gate.skip").length);
+      setCaptions(ns.map(caption).filter((c): c is Caption => !!c).slice(-4).reverse());
       render();
     }).catch(fail("history unavailable"));
     get<Cap>("/api/control/cap").then(setCap).catch(fail("cap unavailable"));
     get<{ ab: boolean }>("/api/control/keywords").then((k) => setAb(k.ab)).catch(fail("keywords unavailable"));
+    const pullBrain = () => get<Brain>("/api/shadow/brain").then((b) => { if (alive) setBrain(b); }).catch(fail("Shadow's brain unavailable"));
+    pullBrain();
     get<{ verified: number }>("/api/snapshot").then((s) => setVerified(s.verified)).catch(fail("snapshot unavailable"));
     const pollFleet = () => get<Fleet>("/api/control/fleet").then((f) => {
       if (!alive) return;
@@ -103,6 +113,7 @@ export function Engine() {
         foldSignal(spine.current, g);
         setPending((p) => (p && p.control === g.kind ? null : p));
         if (g.kind === "cap") get<Cap>("/api/control/cap").then(setCap).catch(fail("cap unavailable"));
+        if (g.kind === "shadow.mode") pullBrain();
         if (g.kind === "targeting") get<{ ab: boolean }>("/api/control/keywords").then((k) => setAb(k.ab)).catch(fail("keywords unavailable"));
         render();
         return;
@@ -115,7 +126,15 @@ export function Engine() {
         const ghost = (kind: Ghost["kind"], to: [number, number], text?: string) =>
           setGhosts((g) => [...g.slice(-11), { id: ++gid.current, kind, from, to, text }]);
         if (n.kind === "submitted") { ghost("sent", EXHAUST); setCap((c) => (c ? { ...c, today: c.today + 1 } : c)); }
-        else if (n.kind === "parked" || n.kind === "shadow.abstain") ghost("parked", TRAY);
+        else if (n.kind === "parked") {
+          // Shadow's seat takes parked questions while it is on; human checks always go straight to you
+          const toSeat = !!spine.current.shadow && spine.current.shadow !== "off" && !HUMAN_CHECK.test(n.detail ?? "");
+          ghost(toSeat ? "seat" : "parked", toSeat ? SEAT : TRAY);
+        }
+        else if (n.kind === "shadow.abstain") setGhosts((g) => [...g.slice(-11), { id: ++gid.current, kind: "parked", from: SEAT, to: TRAY }]);
+        else if (n.kind === "shadow.answer") setGhosts((g) => [...g.slice(-11), { id: ++gid.current, kind: "answer", from: SEAT, to: at(DEG.apply, 170) }]);
+        const cp = caption(n);
+        if (cp) setCaptions((cs) => [cp, ...cs.filter((c) => c.id !== cp.id)].slice(0, 4));
         else if (n.kind === "gate.skip") { ghost("skip", [from[0], from[1] + 90], n.detail ?? undefined); setSkips((s) => s + 1); }
         else if (n.kind === "apply.fail") ghost("fail", from);
         if (n.kind === "discovered" && job) setBorn((b) => new Set(b).add(job));
@@ -191,7 +210,7 @@ export function Engine() {
   };
 
   return (
-    <section className={`alive${capped ? " al-idling" : ""}`} aria-label="The engine, live">
+    <section className={`alive${capped ? " al-idling" : ""}${hasWheel(s.shadow) ? " al-shadow-wheel" : ""}`} aria-label="The engine, live">
       <svg className="alive-svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" role="group"
            aria-label={`Engine in gear ${gear}. ${coldParts.length ? `Cold: ${coldParts.join(", ")}.` : "All parts warm."}`}>
         <path className="al-intake" d={`M${INTAKE[0] - 30} ${INTAKE[1]} L${at(198, 250)[0] - 10} ${at(198, 250)[1]}`} />
@@ -222,6 +241,7 @@ export function Engine() {
             {g.text && <text y={-16}>{g.text.length > 40 ? g.text.slice(0, 39) + "…" : g.text}</text>}
           </g>
         ))}
+        <Seat mode={s.shadow} brain={brain} />
         <g className="al-tray" transform={`translate(${TRAY[0]} ${TRAY[1]})`}>
           <rect x={-170} y={-22} width={340} height={44} rx={22} />
           <text y={5}>{s.tray.size ? `Your turn: ${s.tray.size} waiting` : "Nothing waiting on you"}</text>
@@ -235,6 +255,7 @@ export function Engine() {
             {lights.map((p) => <li key={p}>{p}</li>)}
           </ul>
         )}
+        <Captions mode={s.shadow} items={captions} />
         {trayItems.length > 0 && (
           <p className="al-tray-list"><Link href="/needs">Your turn</Link>: {trayItems.map((t) => t.company ?? "a posting").join(", ")}
             {s.tray.size > 3 ? ` and ${s.tray.size - 3} more` : ""}</p>
@@ -265,6 +286,17 @@ export function Engine() {
                       onClick={() => s.keywords !== v && act("keywords", v, "/api/control/keywords", { on: v === "on" })}>{v}</button>
             ))}
             {ab && <small>A/B test on: each posting's URL decides, this switch waits</small>}
+          </fieldset>
+          <fieldset className="al-shadow-sel">
+            <legend>Shadow</legend>
+            {MODES.map(([m, label]) => {
+              const on = s.shadow === m || (m === "autopilot" && s.shadow === "always");
+              return (
+                <button key={m} type="button" aria-pressed={on} disabled={!!pending && !pending.error}
+                        className={pending?.control === "shadow.mode" && pending.want === m && !pending.error ? "al-waiting" : ""}
+                        onClick={() => !on && act("shadow.mode", m, "/api/shadow", { mode: m })}>{label}</button>
+              );
+            })}
           </fieldset>
         </div>
         {pending?.error && <p className="alive-error" role="status">{pending.control}: {pending.error}</p>}

@@ -166,8 +166,22 @@ Files: `apps/web/app/alive/{Seat.tsx,Captions.tsx}`, `engine.css`, `page.tsx`; b
   caption "Left this for you: <short reason>". CAPTCHA chips never go to the seat (drawn going straight to the tray).
 - Seat badge: "level N · X% right on test" from `/shadow/brain` at mount + `shadow` train events.
 Accept:
-- [ ] Toggle in UI → `python -m engine shadow` in the pipeline container reports the same mode.
-- [ ] 10 captions checked against ledger rows: same job, same by, same outcome.
+- [x] Toggle in UI → `python -m engine shadow` in the pipeline container reports the same mode. (11-11 on web-alive
+      :3001: Calls → Off → engine "Shadow mode off"; Off → Calls → engine "Shadow mode calls". Autopilot not clicked:
+      the mode is the user's choice.)
+- [ ] 10 captions checked against ledger rows: same job, same by, same outcome. (11-11 partial: the 4 Shadow
+      captions in the last 300 events match events.jsonl: 22:09 EDU abstain + pickup, 22:17 HLS abstain + pickup;
+      6 more need Shadow activity during a run.)
+
+**As built (11-11):**
+- `alive/Seat.tsx` (seat in the SVG at bottom left, badge "level N · X% right on test" from `/api/shadow/brain`,
+  re-read on each shadow.mode signal; no train signal exists yet) and `alive/Captions.tsx` (standing wheel line +
+  the last 4 Shadow captions, seeded from the same 300 events as the chips). The selector sits with the Drive
+  controls (Off / Calls / Autopilot; "always" shows as Autopilot) and waits for the signal like gear and cap.
+- Parked chips curve to the seat while Shadow is not off; a park whose reason reads as a human check (CAPTCHA,
+  hCaptcha, Ashby click, bot check) goes straight to the tray. shadow.answer flies seat → Apply in violet;
+  shadow.abstain flies seat → tray. The crankcase rim turns violet (`--shadow`) while Shadow has the wheel.
+- Built and shipped only in `web-alive` (:3001); `web` (:3000) was not rebuilt or recreated.
 
 ### Phase 3: exhaust trail (receipts). Budget: 1 session
 Files: `apps/web/app/alive/{Trail.tsx,ProofDrawer.tsx}`, `engine.css`.
