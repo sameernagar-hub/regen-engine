@@ -70,3 +70,14 @@ def test_a_readme_becomes_a_feed_only_with_enough_boards(ws, monkeypatch):
     assert S.lists(s) == {"repos": 2, "boards_added": 20}
     assert added == ["https://raw.githubusercontent.com/a/rich/main/README.md"]
     assert S.lists(s)["repos"] == 0  # both repos remembered: never fetched again
+
+
+def test_a_round_runs_without_the_optional_profile_file(ws, monkeypatch, tmp_path):
+    """11-11: profile_file() exited on the missing optional profile/scout.json and the container crash-looped."""
+    import engine.config as C
+    monkeypatch.setattr(C, "PROFILE", str(tmp_path / "no-profile"))
+    monkeypatch.setattr(S, "lists", lambda s: {"repos": 0, "boards_added": 0})
+    monkeypatch.setattr(S, "apis", lambda s, extra=None: ({}, []))
+    monkeypatch.setattr(S, "names", lambda s, c: {"probed": 0, "boards_added": 0})
+    r = S.round_once()
+    assert r["boards_after"] == r["boards_before"]

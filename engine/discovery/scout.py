@@ -189,9 +189,10 @@ def round_once():
     t0 = time.time()
     s = _load()
     extra = {}
-    try:  # optional: more APIs the user (or an AI client) adds, same shape as APIS
-        from engine.config import profile_file
-        for k, v in (json.load(open(profile_file("scout.json"), encoding="utf-8")).get("apis") or {}).items():
+    try:  # optional: more APIs the user (or an AI client) adds, same shape as APIS. profile_file() exits when a file
+        # is missing (11-11: that crash-looped the container), so the optional file is opened directly
+        from engine.config import PROFILE
+        for k, v in (json.load(open(os.path.join(PROFILE, "scout.json"), encoding="utf-8")).get("apis") or {}).items():
             extra[k] = (v["url"], v.get("path", ""), v.get("company", "company"), tuple(v.get("links", ["url"])))
     except (OSError, ValueError, KeyError, TypeError):
         pass
