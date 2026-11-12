@@ -283,6 +283,77 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
 @keyframes alive-bump { 0% { transform: scale(1); border-color: var(--gold); } 30% { transform: scale(1.06); } 100% { transform: scale(1); } }
 @keyframes alive-in { from { transform: translateY(-8px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes alive-spin { to { transform: rotate(360deg); } }
+/* 11-11 electric drivetrain (concept A). Copper wires; current (flowing dashes) only on warm, powered wires; pulses
+   = real events; rotor spins at gear speed (--speed = the breath period); flywheel kicks on each submission. */
+.dt text { font-family: var(--sans); }
+.dt .dt-label { fill: var(--ink); font-size: 16px; font-weight: 650; text-anchor: middle; letter-spacing: .02em; }
+.dt .dt-sub { fill: var(--dim); font-size: 11px; text-anchor: middle; letter-spacing: .1em; text-transform: uppercase; }
+.dt .dt-count { fill: var(--dim); font-size: 12px; text-anchor: middle; font-family: var(--mono); }
+.dt .dt-left { text-anchor: start; } .dt .dt-right { text-anchor: end; }
+.dt .dt-gold { fill: var(--gold); } .dt .dt-amber { fill: var(--amber); }
+.dt-copper { fill: none; stroke: #3a2f22; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.dt-current { fill: none; stroke: #f2c14e; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 3 13; opacity: 0; }
+.dt-wire.dt-live .dt-current { opacity: .9; animation: dt-flow calc(var(--speed, 2.5s) / 3) linear infinite; filter: url(#dt-glow); }
+.dt-wire.dt-cold .dt-copper { stroke: #23262c; }
+.dt.dt-engaged .dt-wire:nth-child(n) .dt-current { stroke: #f2c14e; }
+.dt-cells rect:first-child { fill: #141a23; stroke: #3a4352; stroke-width: 1.5; }
+.dt-cells .dt-charge { fill: #3ddc84; opacity: .75; transition: width .8s; }
+.dt-cells .dt-nub { fill: #3a4352; }
+.dt-cells.dt-cold .dt-charge { fill: #3a3f47; }
+.dt-inverter rect { fill: #161d28; stroke: #6fb7ff; stroke-width: 1.8; }
+.dt-inverter .dt-sine { fill: none; stroke: #6fb7ff; stroke-width: 2.5; }
+.dt-running .dt-inverter .dt-sine { animation: dt-hum .9s ease-in-out infinite alternate; }
+.dt-inverter { animation: dt-flash .45s ease-out; }
+.dt-inverter.dt-cold rect, .dt-inverter.dt-cold .dt-sine { stroke: #3a3f47; }
+.dt-ground path { stroke: #5b6370; stroke-width: 3; stroke-linecap: round; }
+.dt-motor .dt-stator { fill: #10151d; stroke: #3a4352; stroke-width: 3; }
+.dt-motor .dt-aura { opacity: 0; transition: opacity .8s; }
+.dt-running .dt-motor:not(.dt-cold) .dt-aura { opacity: 1; animation: dt-breathe var(--speed, 2.5s) ease-in-out infinite; }
+.dt-tooth { fill: #b87333; opacity: .55; }
+.dt-tooth.dt-hot { fill: #ffd27a; opacity: 1; animation: dt-flash .5s ease-out; filter: url(#dt-glow); }
+.dt-rotor circle:first-child { fill: #1b2230; stroke: #f2c14e; stroke-width: 2; }
+.dt-rotor rect { fill: #2c3646; }
+.dt-hub { fill: #f2c14e; }
+.dt-rotor, .dt-rotor-s { transform-box: view-box; transform-origin: 560px 300px; }
+.dt-rotor-s { transform-origin: 560px 500px; }
+.dt-rotor.dt-spin { animation: dt-spin calc(var(--speed, 2.5s) * 1.6) linear infinite; }
+.dt-rotor-s.dt-spin { animation: dt-spin 1.6s linear infinite; }
+.dt-motor .dt-gear { fill: #10151d; font: 700 20px var(--mono); text-anchor: middle; paint-order: stroke; stroke: #f2c14e; stroke-width: 0; }
+.dt-motor.dt-cold .dt-rotor circle:first-child { stroke: #5b6370; } .dt-motor.dt-cold .dt-hub { fill: #5b6370; }
+.dt-station circle { fill: #1b2230; stroke: #f2c14e; stroke-width: 2.5; animation: dt-flash .45s ease-out; }
+.dt-shaft { fill: #3a4352; } .dt-shaft.dt-turning { fill: url(#dt-core); stroke: #f2c14e; stroke-dasharray: 4 6; animation: dt-flow .5s linear infinite; }
+.dt-fly circle:first-child { fill: #17130b; stroke: #f2c14e; stroke-width: 3; }
+.dt-fly line { stroke: #6b5524; stroke-width: 4; }
+.dt-fly { transform-box: view-box; transform-origin: 880px 300px; animation: dt-kick 1.4s cubic-bezier(.2, .7, .2, 1); }
+.dt-clutch rect { fill: #5b6370; transition: y .5s; }
+.dt.dt-engaged .dt-clutch rect { fill: #a78bfa; }
+.dt-shadow-motor circle { fill: #15121d; stroke: #3b3550; stroke-width: 2.5; transition: stroke .6s; }
+.dt-shadow-motor rect { fill: #3b3550; }
+.dt-shadow-motor.dt-on circle { stroke: #a78bfa; filter: url(#dt-glow); } .dt-shadow-motor.dt-on rect { fill: #a78bfa; }
+.dt-shadow-motor.dt-off { opacity: .45; }
+.dt-seat.dt-on .dt-label { fill: #a78bfa; }
+.dt-cap rect { fill: #3a4352; } .dt-cap.dt-charged rect { fill: var(--amber); animation: dt-breathe 2s ease-in-out infinite; }
+.dt-pulse circle { fill: #ffd27a; filter: url(#dt-glow); }
+.dt-pulse.dt-out circle { fill: #f2c14e; }
+.dt-pulse.dt-dump circle { fill: #5b6370; }
+.dt-pulse.dt-seat circle, .dt-pulse.dt-back circle, .dt-pulse.dt-shadowtray circle { fill: #a78bfa; }
+.dt-pulse.dt-tray circle { fill: var(--amber); }
+.dt-pulse.dt-return circle { fill: #3ddc84; }
+.dt-pulse.dt-fail circle { fill: var(--alarm); }
+.dt-dump-text { fill: var(--dim); font-size: 12px; animation: alive-fade 2.4s ease-in forwards; }
+/* tactile controls: they press in, glow on hover, and a waiting control shimmers until the engine answers */
+.al-drive button, .al-rooms button, .al-trail button { transition: transform .12s, box-shadow .2s, border-color .2s, background .2s; box-shadow: 0 2px 0 #06080c, inset 0 1px 0 #ffffff10; }
+.al-drive button:hover, .al-rooms button:hover { border-color: var(--gold); box-shadow: 0 2px 0 #06080c, 0 0 14px #f2c14e33; transform: translateY(-1px); }
+.al-drive button:active, .al-rooms button:active, .al-trail button:active { transform: translateY(2px) scale(.97); box-shadow: inset 0 2px 6px #000a; }
+.al-drive button[aria-pressed="true"], .al-rooms button[aria-pressed="true"] { background: linear-gradient(180deg, #2a2312, #171208); }
+.al-drive button.al-waiting { background: linear-gradient(90deg, #121821 0%, #24324a 50%, #121821 100%); background-size: 200% 100%; animation: dt-wait 1s linear infinite; }
+@keyframes dt-flow { to { stroke-dashoffset: -16; } }
+@keyframes dt-spin { to { transform: rotate(360deg); } }
+@keyframes dt-hum { from { transform: translateY(-2px); } to { transform: translateY(2px); } }
+@keyframes dt-breathe { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes dt-flash { 0% { filter: brightness(2.2); } 100% { filter: none; } }
+@keyframes dt-kick { 0% { transform: rotate(0); } 100% { transform: rotate(180deg); } }
+@keyframes dt-wait { to { background-position: -200% 0; } }
 @keyframes alive-stroke { 0% { transform: translateX(0); } 40% { transform: translateX(-26px); } 100% { transform: translateX(0); } }
 @keyframes alive-flash { 0% { opacity: .35; } 100% { opacity: 0; } }
 @keyframes alive-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
@@ -305,6 +376,7 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
   .alive-svg .al-part-label { font-size: 26px; }
   .al-crank .al-hub-sub { font-size: 20px; }
   .al-tray text { font-size: 26px; }
+  .dt .dt-label { font-size: 30px; } .dt .dt-count, .dt .dt-sub { font-size: 22px; }
   .al-seat .al-seat-name { font-size: 28px; }
   .al-seat .al-seat-mode, .al-seat .al-seat-badge { font-size: 20px; }
 }
@@ -312,6 +384,7 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
   .alive-chip { transition: none; }
   .alive-home::before, .alive-home .engine-title h1 em, .al-live-dot, .al-gauge[data-bump], .al-ticker li.al-new, .al-crank .al-ring { animation: none; }
   .alive-home { scroll-behavior: auto; }
+  .dt-wire.dt-live .dt-current, .dt-rotor.dt-spin, .dt-rotor-s.dt-spin, .dt-fly, .dt-tooth.dt-hot, .dt-station circle, .dt-inverter, .dt-running .dt-inverter .dt-sine, .dt-cap.dt-charged rect, .dt-running .dt-motor:not(.dt-cold) .dt-aura, .al-drive button.al-waiting { animation: none; }
   .al-trail li.al-fresh .al-puff, .al-drawer, .al-room { animation: none; }
   .al-trail ol { scroll-behavior: auto; }
   .al-seat rect, .al-captions, .alive .al-crank .al-case { transition: none; }

@@ -12,7 +12,8 @@ import { empty, foldNarration, foldSignal, type Narration, type Signal, type Spi
 import { Bundle, Chip } from "./Chip";
 import { Cylinder, at, slot, CX, CY, R_IN } from "./Cylinder";
 import { reducedMotion, schedule, watchVisibility } from "./loop";
-import { Seat, SEAT, hasWheel, type Brain } from "./Seat";
+import { badge, hasWheel, type Brain } from "./Seat";
+import { Drivetrain, type Pulse, type Route } from "./Drivetrain";
 import { Captions, caption, type Caption } from "./Captions";
 
 const STATIONS: { stage: Stage; label: string; verb: string; deg: number; role: string }[] = [
@@ -71,7 +72,7 @@ export function Engine() {
   const [verified, setVerified] = useState<number | null>(null);
   const [skips, setSkips] = useState(0);
   const [fire, setFire] = useState<Record<string, number>>({});
-  const [ghosts, setGhosts] = useState<Ghost[]>([]);
+  const [pulses, setPulses] = useState<Pulse[]>([]);
   const [born, setBorn] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Pending | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -123,20 +124,23 @@ export function Engine() {
       const from = pos.current.get(job) ?? at(DEG[n.stage] ?? 270, 170);
       schedule(() => {
         foldNarration(spine.current, n);
-        const ghost = (kind: Ghost["kind"], to: [number, number], text?: string) =>
-          setGhosts((g) => [...g.slice(-11), { id: ++gid.current, kind, from, to, text }]);
-        if (n.kind === "submitted") { ghost("sent", EXHAUST); setCap((c) => (c ? { ...c, today: c.today + 1 } : c)); }
+        const pulse = (route: Route, text?: string) => setPulses((p) => [...p.slice(-23), { id: ++gid.current, route, text }]);
+        if (n.kind === "discovered") pulse("in");
+        else if (n.kind === "gate.skip") { pulse("dump", n.detail ?? undefined); setSkips((s) => s + 1); }
+        else if (n.kind === "resume") pulse("write");
+        else if (n.kind === "apply.start") pulse("apply");
+        else if (n.kind === "submitted") { pulse("out"); setCap((c) => (c ? { ...c, today: c.today + 1 } : c)); }
         else if (n.kind === "parked") {
-          // Shadow's seat takes parked questions while it is on; human checks always go straight to you
+          // Shadow's motor takes parked questions while it is on; human checks always go straight to you
           const toSeat = !!spine.current.shadow && spine.current.shadow !== "off" && !HUMAN_CHECK.test(n.detail ?? "");
-          ghost(toSeat ? "seat" : "parked", toSeat ? SEAT : TRAY);
+          pulse(toSeat ? "seat" : "tray");
         }
-        else if (n.kind === "shadow.abstain") setGhosts((g) => [...g.slice(-11), { id: ++gid.current, kind: "parked", from: SEAT, to: TRAY }]);
-        else if (n.kind === "shadow.answer") setGhosts((g) => [...g.slice(-11), { id: ++gid.current, kind: "answer", from: SEAT, to: at(DEG.apply, 170) }]);
+        else if (n.kind === "shadow.abstain") pulse("shadowtray");
+        else if (n.kind === "shadow.answer") pulse("back");
+        else if (n.kind === "outcome") pulse("return");
+        else if (n.kind === "apply.fail") pulse("fail");
         const cp = caption(n);
         if (cp) setCaptions((cs) => [cp, ...cs.filter((c) => c.id !== cp.id)].slice(0, 4));
-        else if (n.kind === "gate.skip") { ghost("skip", [from[0], from[1] + 90], n.detail ?? undefined); setSkips((s) => s + 1); }
-        else if (n.kind === "apply.fail") ghost("fail", from);
         if (n.kind === "discovered" && job) setBorn((b) => new Set(b).add(job));
         if (["discovered", "resume", "apply.start", "shadow.answer", "outcome", "gate.skip"].includes(n.kind ?? "")) {
           const st = n.kind === "gate.skip" ? "judge" : n.stage;
@@ -154,12 +158,12 @@ export function Engine() {
     const t = requestAnimationFrame(() => requestAnimationFrame(() => setBorn(new Set())));
     return () => cancelAnimationFrame(t);
   }, [born]);
-  // ghosts live 2.2 s (the skip reason fades over 2 s), then leave
+  // a pulse runs its wire once (<= 2.4 s), then leaves
   useEffect(() => {
-    if (!ghosts.length) return;
-    const t = setTimeout(() => setGhosts((g) => g.slice(1)), still.current ? 900 : 2200);
+    if (!pulses.length) return;
+    const t = setTimeout(() => setPulses((p) => p.slice(1)), still.current ? 600 : 2600);
     return () => clearTimeout(t);
-  }, [ghosts]);
+  }, [pulses]);
   // a control that never hears back from the engine says so instead of spinning forever
   useEffect(() => {
     if (!pending || pending.error) return;
@@ -211,43 +215,14 @@ export function Engine() {
 
   return (
     <section className={`alive${capped ? " al-idling" : ""}${hasWheel(s.shadow) ? " al-shadow-wheel" : ""}`} aria-label="The engine, live">
-      <svg className="alive-svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" role="group"
-           aria-label={`Engine in gear ${gear}. ${coldParts.length ? `Cold: ${coldParts.join(", ")}.` : "All parts warm."}`}>
-        <path className="al-intake" d={`M${INTAKE[0] - 30} ${INTAKE[1]} L${at(198, 250)[0] - 10} ${at(198, 250)[1]}`} />
-        <text className="al-part-label" x={INTAKE[0] - 8} y={INTAKE[1] - 14}>intake</text>
-        <path className="al-exhaust" d={`M${at(54, 250)[0]} ${at(54, 250)[1]} Q ${EXHAUST[0] - 60} ${at(54, 250)[1] + 20} ${EXHAUST[0]} ${EXHAUST[1]}`} />
-        <text className="al-part-label al-right" x={EXHAUST[0] + 10} y={EXHAUST[1] + 64}>{verified !== null ? `${verified} sent with proof` : "exhaust"}</text>
-        {STATIONS.map((st) => (
-          <Cylinder key={st.stage} deg={st.deg} label={st.label} verb={st.verb} count={counts[st.stage]}
-                    cold={cold(st.role)} why={`${st.role} container down`} fire={still.current ? 0 : fire[st.stage] ?? 0} />
-        ))}
-        <g className={`al-crank${warm !== null && !Object.values(warm).some(Boolean) ? " al-cold" : ""}`}
-           style={breath ? { ["--breath" as string]: breath } : undefined}>
-          <circle className="al-case" cx={CX} cy={CY} r={86} />
-          {breath && <circle className="al-ring" cx={CX} cy={CY} r={100} />}
-          <circle className={`al-hub${breath ? " al-breathing" : ""}`} cx={CX} cy={CY} r={56} />
-          <text className="al-hub-gear" x={CX} y={CY + 4}>{gear}</text>
-          <text className="al-hub-sub" x={CX} y={CY + 26}>{capped ? "cap reached · idling" : gear === "N" ? "neutral" : "gear"}</text>
-        </g>
-        {STATIONS.map((st) => {
-          const [bx, by] = at(st.deg, R_IN + 12);  // at the barrel's root, clear of the label
-          return <Bundle key={`b${st.stage}`} x={bx} y={by} n={layout.extra[st.stage] ?? 0} />;
-        })}
-        {layout.chips.map((c) => <Chip key={c.id} {...c} />)}
-        {ghosts.map((g) => (
-          <g key={g.id} className={`al-ghost al-${g.kind}`}
-             style={{ ["--x0" as string]: `${g.from[0]}px`, ["--y0" as string]: `${g.from[1]}px`,
-                      ["--x1" as string]: `${g.to[0]}px`, ["--y1" as string]: `${g.to[1]}px` }}>
-            <circle r={g.kind === "sent" ? 14 : 10} />
-            {g.text && <text y={-16}>{g.text.length > 40 ? g.text.slice(0, 39) + "…" : g.text}</text>}
-          </g>
-        ))}
-        <Seat mode={s.shadow} brain={brain} />
-        <g className="al-tray" transform={`translate(${TRAY[0]} ${TRAY[1]})`}>
-          <rect x={-170} y={-22} width={340} height={44} rx={22} />
-          <text y={5}>{s.tray.size ? `Your turn: ${s.tray.size} waiting` : "Nothing waiting on you"}</text>
-        </g>
-      </svg>
+      <Drivetrain gear={gear} speed={breath} warm={(r) => !cold(r)} capped={capped} shadow={s.shadow} pulses={still.current ? [] : pulses}
+                  fired={fire} label={`Engine in gear ${gear}. ${coldParts.length ? `Cold: ${coldParts.join(", ")}.` : "All parts warm."}`}
+                  counts={{ heard: counts.listen, letGo: skips, write: counts.write, apply: counts.apply, sent: verified, replies: heard, tray: s.tray.size }}
+                  seat={<g className={`dt-seat${hasWheel(s.shadow) ? " dt-on" : ""}`}>
+                    <text className="dt-label dt-right" y={0}>Shadow</text>
+                    <text className="dt-count dt-right" y={18}>{s.shadow === "always" ? "autopilot" : s.shadow ?? "mode unknown"}{hasWheel(s.shadow) ? " · engaged" : ""}</text>
+                    {badge(brain) && <text className="dt-count dt-right" y={34}>{badge(brain)![0]}</text>}
+                  </g>} />
 
       <div className="alive-side">
         {(lights.length > 0 || coldParts.length > 0) && (

@@ -6,6 +6,32 @@ Wiki: [v2.0 Revamp](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-
 Owner: the user decides; Claude builds phase by phase. Next session: start the engine, then follow docs/NEXT_STEPS.md.
 One phase per session, at most. Every phase ends with a local commit (reposync opens the PR) and a stop.
 
+
+## 0. North star (user, 11-11) -- read before every phase; NEXT SESSION STARTS WITH A FULL PROOFREAD OF THIS PLAN
+"Something more alive and responsive than the OG; something people want to use; so simple it communicates through
+animation and rendered tech; spectacular, eye-catching and engaging to watch; as integrated front end + back end as
+possible." And: "read-proof the plan so it does not build on top: look at all of it as one integrated system on
+each level."
+Rules that follow from it:
+1. One system, not layers. Every phase reworks what it touches into the drivetrain (§0a), not a widget stacked on top.
+   Before a phase starts: re-read §0-§5 end to end, delete or merge anything the drivetrain made obsolete (cylinder
+   wording, piston chips, ghost paths), and list what changed.
+2. Animation is the language. A first-time visitor understands "jobs flow in, get judged, get written and applied,
+   come out as proof, replies flow back" without reading a word. Text is a caption, never the explanation.
+3. Every motion is a backend fact (event, heartbeat, signal) and every control round-trips through the backend.
+4. Not the OG: no radial, no piston chips, no pill grids. Rendered depth (glow, light, layered SVG/canvas, later WebGL).
+5. Spectacle with discipline: 60 fps, one animation loop, reduced-motion still frames, CPU < 15% (bench V2).
+
+## 0a. The engine is an electric drivetrain (user's pick "A", 11-11; replaces the piston radial of Phase 1)
+Source cells (boards; scout grows them) -> inverter = Judge (rejects fall to ground with the reason) -> motor coils
+Write + Apply (rotor spins at gear speed while powered) -> output shaft -> Sent flywheel (kicks per submission) ->
+return line = Hear (replies flow back to the cells: the circuit closes). Shadow = second motor on a clutch (violet,
+engages on autopilot); parked jobs charge the "Your turn" capacitor. Wires carry current only when their container is
+warm and the engine is in gear; each pulse = one event. Built 11-11: apps/web/app/alive/Drivetrain.tsx (web-alive).
+Open for the next session: re-map Phases 3-6 + Track B onto this circuit (trail leaves the flywheel; replay = the
+circuit at speed; rooms = panels that open from their part of the circuit), mobile layout of the circuit, and the
+cold-container check (V9) on the new wires.
+
 ## 1. Goal (one sentence)
 The site *is* the engine: each part on screen is a real container, each motion is a real event, and each control
 drives the real backend. You watch REGEN run instead of reading a dashboard.
