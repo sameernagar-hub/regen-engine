@@ -311,8 +311,25 @@ the order the user picks at triage. After every phase:
 4. Privacy scan passes; local commit; HANDOFF.md + wiki page "Alive engine" updated.
 Rollback: `NEXT_PUBLIC_ALIVE=0` (until Phase 5) or `git revert` the phase commit.
 
+## 7a. Look & feel bar (user, 11-11): "it looks stationary, like a template; the other phases must pop this up"
+
+Every remaining phase (5 part 2, 4, 6 and all of Track B) now carries a second acceptance line besides its function:
+- **Moves with the engine.** At least one new visible motion tied to a real event or state (no decorative loops that
+  run when nothing happens; reduced motion gets a still equivalent).
+- **Depth, not boxes.** No new plain bordered card grids: use light, layering, scale and type contrast (hero-sized
+  numbers, gradients on live values, glow on warm parts, violet for Shadow, gold for sent).
+- **Screenshot review.** Desktop + 375 px screenshots attached to the phase's bench row; the phase is not accepted if
+  it reads as a dashboard template.
+Concretely, per phase: 5 part 2 = drawers slide with the engine dimming and blurring behind, /docs with an animated
+engine diagram; 4 = the replay scrubs the whole engine at speed (chips stream, the trail fills, gauges roll); 6 = tab
+title + favicon puff; Track B 10 (sound) and 12 (3D engine) move up right after v2.0 ships.
+Built 11-11 as the first step: the home scrolls (its own layer), a pulse strip (rolling gauges from /api/snapshot +
+SSE, a live ticker of real narrations, "quiet" note after 10 min), a ring that spins at gear speed (violet while
+Shadow drives), a drifting aurora behind the hero, warm glow on live cylinders.
+
 ## 8. Idea inbox (feedback model, step 1)
 | Date | Idea | Triage |
 |---|---|---|
 | 11-07 | Phone push, sound pack, 3D engine, inner pages, Shadow L2+ visuals, weekly highlights | accepted as Track B phases 7-12 (user, 11-07) |
 | 11-09 | Cap switch on the front end; all NEXT_STEPS changes part of the revamp | merged into Track A as §5a (user, 11-09) |
+| 11-11 | Site looks stationary / template-like; scroll broken; every phase must raise the look | §7a look & feel bar on all remaining phases; scroll + pulse strip built (user, 11-11) |

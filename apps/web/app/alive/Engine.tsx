@@ -224,6 +224,7 @@ export function Engine() {
         <g className={`al-crank${warm !== null && !Object.values(warm).some(Boolean) ? " al-cold" : ""}`}
            style={breath ? { ["--breath" as string]: breath } : undefined}>
           <circle className="al-case" cx={CX} cy={CY} r={86} />
+          {breath && <circle className="al-ring" cx={CX} cy={CY} r={100} />}
           <circle className={`al-hub${breath ? " al-breathing" : ""}`} cx={CX} cy={CY} r={56} />
           <text className="al-hub-gear" x={CX} y={CY + 4}>{gear}</text>
           <text className="al-hub-sub" x={CX} y={CY + 26}>{capped ? "cap reached · idling" : gear === "N" ? "neutral" : "gear"}</text>
