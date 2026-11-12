@@ -347,6 +347,8 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
 .al-drive button:active, .al-rooms button:active, .al-trail button:active { transform: translateY(2px) scale(.97); box-shadow: inset 0 2px 6px #000a; }
 .al-drive button[aria-pressed="true"], .al-rooms button[aria-pressed="true"] { background: linear-gradient(180deg, #2a2312, #171208); }
 .al-drive button.al-waiting { background: linear-gradient(90deg, #121821 0%, #24324a 50%, #121821 100%); background-size: 200% 100%; animation: dt-wait 1s linear infinite; }
+.dt [role="button"] { cursor: pointer; outline: none; }
+.dt [role="button"]:hover, .dt [role="button"]:focus-visible { filter: brightness(1.35) drop-shadow(0 0 8px #f2c14e88); }
 @keyframes dt-flow { to { stroke-dashoffset: -16; } }
 @keyframes dt-spin { to { transform: rotate(360deg); } }
 @keyframes dt-hum { from { transform: translateY(-2px); } to { transform: translateY(2px); } }

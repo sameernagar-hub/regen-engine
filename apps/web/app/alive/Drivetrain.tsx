@@ -7,7 +7,14 @@
 // Every wire is connected end to end. A wire carries animated current only while the container behind it is warm and
 // the engine is in gear; every pulse that runs along it is one real event (discovered, gate.skip, resume, apply.start,
 // submitted, parked, shadow.*, outcome). Nothing moves without the engine moving.
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
+
+/** A drivetrain part as a door to its room (Phase 1b): click, Enter or Space opens the drawer (alive/Rooms.tsx). */
+const door = (room: string, tab: string | undefined, name: string) => ({
+  role: "button", tabIndex: 0, "aria-label": `${name}: open`,
+  onClick: () => window.dispatchEvent(new CustomEvent("alive:open", { detail: { room, tab } })),
+  onKeyDown: (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.dispatchEvent(new CustomEvent("alive:open", { detail: { room, tab } })); } },
+});
 
 export type Route = "in" | "dump" | "write" | "apply" | "out" | "seat" | "tray" | "back" | "shadowtray" | "return" | "fail";
 export type Pulse = { id: number; route: Route; text?: string };
@@ -75,7 +82,7 @@ export function Drivetrain({ gear, speed, warm, capped, counts, shadow, pulses, 
       ))}
 
       {/* source cells: the boards the scan reads; current starts here */}
-      <g className={`dt-cells${warm("pipeline") ? "" : " dt-cold"}`}>
+      <g className={`dt-cells${warm("pipeline") ? "" : " dt-cold"}`} {...door("garage", "gearbox", "Sources")}>
         {[0, 1, 2, 3].map((i) => (
           <g key={i} transform={`translate(40 ${186 + i * 58})`}>
             <rect width={110} height={48} rx={8} />
@@ -98,7 +105,7 @@ export function Drivetrain({ gear, speed, warm, capped, counts, shadow, pulses, 
       <text x={344} y={470} className="dt-count dt-left">{counts.letGo} let go</text>
 
       {/* the motor: stator ring with 12 coil teeth, a rotor spinning at gear speed while it is powered */}
-      <g className={`dt-motor${warm("applier") ? "" : " dt-cold"}`}>
+      <g className={`dt-motor${warm("applier") ? "" : " dt-cold"}`} {...door("garage", "gearbox", "Motor and gearbox")}>
         <circle cx={M.x} cy={M.y} r={150} fill="url(#dt-core)" className="dt-aura" />
         <circle cx={M.x} cy={M.y} r={128} className="dt-stator" />
         {teeth.map((a) => {
@@ -119,11 +126,11 @@ export function Drivetrain({ gear, speed, warm, capped, counts, shadow, pulses, 
 
       {/* output shaft and the flywheel: each submission gives it a turn */}
       <rect x={722} y={292} width={110} height={16} rx={6} className={`dt-shaft${live("applier") ? " dt-turning" : ""}`} />
-      <g className="dt-fly" key={`s${counts.sent ?? 0}`}>
+      <g key={`s${counts.sent ?? 0}`} {...door("results", "applications", "Sent")}><g className="dt-fly">
         <circle cx={880} cy={300} r={52} />
         {[0, 45, 90, 135].map((a) => <line key={a} x1={880} y1={252} x2={880} y2={348} transform={`rotate(${a} 880 300)`} />)}
         <circle cx={880} cy={300} r={14} className="dt-hub" />
-      </g>
+      </g></g>
       <text x={880} y={226} className="dt-label">Sent</text>
       <text x={880} y={378} className="dt-count dt-gold">{counts.sent ?? "–"} with proof</text>
 
@@ -132,14 +139,14 @@ export function Drivetrain({ gear, speed, warm, capped, counts, shadow, pulses, 
 
       {/* Shadow: a second motor on a clutch under the main one */}
       <g className="dt-clutch"><rect x={540} y={432} width={40} height={6} rx={2} /><rect x={540} y={engaged ? 442 : 450} width={40} height={6} rx={2} /></g>
-      <g className={`dt-shadow-motor${engaged ? " dt-on" : ""}${shadow === "off" ? " dt-off" : ""}`}>
+      <g className={`dt-shadow-motor${engaged ? " dt-on" : ""}${shadow === "off" ? " dt-off" : ""}`} {...door("garage", "shadow", "Shadow brain")}>
         <circle cx={560} cy={500} r={44} />
         <g className={engaged ? "dt-spin dt-rotor-s" : "dt-rotor-s"}>{[0, 90].map((a) => <rect key={a} x={556} y={466} width={8} height={68} rx={4} transform={`rotate(${a} 560 500)`} />)}</g>
       </g>
       <g transform="translate(500 492)">{seat}</g>
 
       {/* the "Your turn" capacitor: charges with every parked job */}
-      <g className={`dt-cap${counts.tray ? " dt-charged" : ""}`}>
+      <g className={`dt-cap${counts.tray ? " dt-charged" : ""}`} {...door("turn", "needs", "Your turn")}>
         <rect x={736} y={466} width={52} height={8} rx={2} /><rect x={736} y={486} width={52} height={8} rx={2} />
         <text x={810} y={486} className="dt-count dt-left dt-amber">{counts.tray ? `Your turn: ${counts.tray}` : "nothing waiting"}</text>
       </g>

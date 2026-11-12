@@ -40,6 +40,18 @@ export function Rooms() {
   const t = r ? r.tabs.find((x) => x.key === tab[r.key]) ?? r.tabs[0] : null;
 
   const close = () => { setRoom(null); opener.current?.focus(); };
+  // Phase 1b: drivetrain parts are doors. Drivetrain.tsx dispatches `alive:open` {room, tab}; the part keeps focus.
+  useEffect(() => {
+    const open = (e: Event) => {
+      const d = (e as CustomEvent<{ room: string; tab?: string }>).detail;
+      if (!ROOMS.some((x) => x.key === d?.room)) return;
+      opener.current = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null;
+      if (d.tab) setTab((s) => ({ ...s, [d.room]: d.tab! }));
+      setRoom(d.room);
+    };
+    window.addEventListener("alive:open", open);
+    return () => window.removeEventListener("alive:open", open);
+  }, []);
   useEffect(() => {
     if (!room) return;
     box.current?.querySelector<HTMLElement>("[role=tab][aria-selected=true]")?.focus();
