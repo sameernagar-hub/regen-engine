@@ -216,6 +216,16 @@ Files: `apps/web/app/nav.tsx`, `layout.tsx`, new `apps/web/app/alive/Drawer.tsx`
 - Remove `NEXT_PUBLIC_ALIVE` flag; the old home is deleted only after this phase passes.
 Accept:
 - [ ] Every old route still loads directly; each drawer opens/closes with keyboard (Esc), focus trapped.
+      (11-11 partial, web-alive :3001: Results drawer showed Applications live; Garage showed Gearbox live with 7
+      tabs; Esc closed it and focus went back to the room button. Old routes untouched. Still to check: every tab of
+      every room, Tab-key cycling with a real keyboard, and 375 px.)
+**As built so far (11-11, part 1 of 2):**
+- `alive/Rooms.tsx`: Drive (scrolls to the engine, closes drawers) · Your turn (Needs you, Desk) · Results
+  (Applications, Reach, Outreach) · Garage (Gearbox, Fact Bank, Memory graph, Shadow brain, Evals, Maintenance, MCP).
+  Each tab is the existing page component loaded on demand (next/dynamic), with an "open on its own page" link; the
+  pages' own dock is hidden inside a drawer. The old pill row stays under a "Every page on its own" disclosure.
+- NOT done yet: `/docs` (Use REGEN / Build on REGEN), the Docs tab in Garage, and removing `NEXT_PUBLIC_ALIVE`.
+  The flag stays for now on purpose: the user keeps `web` (:3000) on the old v1.x home until v2.0 ships.
 - [ ] A non-technical read-through of /docs "Use REGEN" needs no other page to start a run.
 
 ### Phase 4: "While you were away" replay. Budget: 1 session

@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PUBLIC } from "@/lib/engine";
 import { Engine } from "./alive/Engine";
 import { Trail } from "./alive/Trail";
+import { Rooms } from "./alive/Rooms";
 
 // ALIVE Phase 1 (docs/ALIVE_PLAN.md §5): the living engine replaces the door engine when NEXT_PUBLIC_ALIVE=1 (local
 // builds only: the public demo has no live stream). Off restores this page exactly as it was.
@@ -55,11 +56,15 @@ function AliveHome() {
         <h1>Your job engine, <em>running.</em></h1>
         <p>Every disc is a real posting moving through the engine; every part is a real container. Grey means it is down.</p>
       </header>
+      <Rooms />
       <Engine />
       <Trail />
-      <nav className="engine-list" aria-label="Engine parts">
-        {ALL.map((p) => <a key={p.key} href={p.href} style={{ ["--tone" as any]: p.tone }}>{p.label}</a>)}
-      </nav>
+      <details className="al-all-pages">
+        <summary>Every page on its own</summary>
+        <nav className="engine-list" aria-label="Engine parts">
+          {ALL.map((p) => <a key={p.key} href={p.href} style={{ ["--tone" as any]: p.tone }}>{p.label}</a>)}
+        </nav>
+      </details>
     </main>
   );
 }

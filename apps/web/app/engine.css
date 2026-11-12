@@ -229,6 +229,26 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
 .al-drawer dd { margin: 2px 0 0; color: var(--ink); overflow-wrap: anywhere; }
 @keyframes alive-arrive { 0% { transform: translateY(18px) scale(1.6); opacity: 0; } 100% { transform: none; opacity: 1; } }
 @keyframes alive-slide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* ALIVE Phase 5: the four rooms (Drive · Your turn · Results · Garage) as drawers over the running engine. */
+.al-rooms { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 24px; }
+.al-rooms button { min-height: 44px; padding: 6px 18px; border-radius: 22px; border: 1px solid var(--line); background: #121821; color: var(--ink); font: 600 14px inherit; cursor: pointer; }
+.al-rooms button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.al-rooms button:focus-visible, .al-room-tabs button:focus-visible { outline: 2px solid var(--calm); outline-offset: 2px; }
+.al-room-back { position: fixed; inset: 0; background: #0009; z-index: 40; display: flex; justify-content: flex-end; }
+.al-room { width: min(1100px, 100%); height: 100%; display: flex; flex-direction: column; background: var(--bg); border-left: 1px solid var(--line); box-sizing: border-box; animation: alive-slide .25s ease-out; }
+.al-room header { display: flex; justify-content: space-between; gap: 12px; padding: 14px 20px 6px; }
+.al-room h2 { margin: 0; font-size: 20px; color: var(--gold); }
+.al-room header p { margin: 4px 0 0; color: var(--dim); font-size: 13px; }
+.al-room-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 20px 10px; border-bottom: 1px solid var(--faint); }
+.al-room-tabs button { min-height: 38px; padding: 4px 14px; border-radius: 8px; border: 1px solid var(--line); background: #121821; color: var(--ink); font: 13px inherit; cursor: pointer; }
+.al-room-tabs button[aria-selected="true"] { border-color: var(--gold); color: var(--gold); }
+.al-room-own { margin-left: auto; font-size: 12px; color: var(--calm); }
+.al-room-page { flex: 1; overflow: auto; min-width: 0; position: relative; z-index: 1; isolation: isolate; contain: paint; }
+.al-room header, .al-room-tabs { position: relative; z-index: 2; background: var(--bg); }
+.al-room-page .dock { display: none; }
+.al-room-loading { padding: 20px; color: var(--dim); }
+.al-all-pages { padding: 0 24px; }
+.al-all-pages summary { color: var(--dim); font-size: 13px; cursor: pointer; min-height: 32px; }
 @keyframes alive-stroke { 0% { transform: translateX(0); } 40% { transform: translateX(-26px); } 100% { transform: translateX(0); } }
 @keyframes alive-flash { 0% { opacity: .35; } 100% { opacity: 0; } }
 @keyframes alive-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
@@ -239,6 +259,8 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
   .alive { grid-template-columns: minmax(0, 1fr); padding: 0 16px; }
   .alive-home .engine-title { padding: 18px 16px 0; }
   .al-trail { padding: 0 16px; }
+  .al-rooms, .al-all-pages { padding: 0 16px; }
+  .al-room-own { margin-left: 0; flex-basis: 100%; }
   .alive-svg { max-height: none; }
 }
 @media (max-width: 600px) {  /* the SVG shrinks to ~35%: its text is scaled up so it stays ~11-12 px on screen */
@@ -252,7 +274,7 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .alive-chip { transition: none; }
-  .al-trail li.al-fresh .al-puff, .al-drawer { animation: none; }
+  .al-trail li.al-fresh .al-puff, .al-drawer, .al-room { animation: none; }
   .al-trail ol { scroll-behavior: auto; }
   .al-seat rect, .al-captions, .alive .al-crank .al-case { transition: none; }
   .alive-cyl .al-piston.al-fire, .alive-cyl .al-flash.al-on, .al-crank .al-hub.al-breathing { animation: none; }
