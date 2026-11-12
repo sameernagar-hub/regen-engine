@@ -107,6 +107,12 @@ services:
     ports: ["127.0.0.1:8790:8790"]
     deploy: { resources: { limits: { cpus: "0.5", memory: 384m } } }
 
+  scout:  # 11-11 discovery scout: new GitHub job lists, public job APIs' ATS boards, new employer names probed; every 3 h
+    <<: *engine
+    entrypoint: ["python", "-m", "engine"]
+    command: ["scout", "--loop", "${REGEN_SCOUT_EVERY_H:-3}"]
+    deploy: { resources: { limits: { cpus: "0.25", memory: 256m } } }
+
   answers:  # the answer queue: /needs answers -> profile/answers.json -> one retry batch in batches/inbox
     <<: *engine
     entrypoint: ["python", "-m", "engine"]

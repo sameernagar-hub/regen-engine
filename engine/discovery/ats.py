@@ -417,8 +417,10 @@ def load_boards():
 
 def save_boards(b):
     os.makedirs(WORKSPACE, exist_ok=True)
+    tmp = boards_path() + f".{os.getpid()}.tmp"  # 11-11: atomic, since the scout and the pipeline both write it
     json.dump({a: sorted(set(b.get(a, [])), key=str.lower) for a in ATS} | {k: v for k, v in b.items() if k not in ATS},
-              open(boards_path(), "w"), indent=1)
+              open(tmp, "w"), indent=1)
+    os.replace(tmp, boards_path())
 
 
 def fetch_all(boards, workers=24, keep=None, keys=None, activity=None, only=None):

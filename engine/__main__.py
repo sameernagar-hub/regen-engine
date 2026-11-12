@@ -140,6 +140,8 @@ def main():
         from engine.discovery.bigtech import main as m
     elif cmd == "vc":
         from engine.discovery.vc import main as m
+    elif cmd == "scout":  # 11-11: finds new job lists, public job APIs' boards, and probes new employer names
+        from engine.discovery.scout import main as m
     elif cmd == "desk":
         from engine.apply.workday import main as m
     elif cmd == "reach":
