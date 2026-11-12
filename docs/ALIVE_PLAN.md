@@ -1,9 +1,10 @@
 # REGEN v2.0 "ALIVE": one living engine (revamp plan)
 
-Status: **ON HOLD** (11-07): docs/NEXT_STEPS.md comes first; Phase 0 starts only when its §9 exit criteria are
-all met. PLAN, not started (written 2026-11-07). v1.x stays the released line; v2.0 ships when Phase 5 passes.
+Status (proofread 11-11): IN BUILD. NEXT_STEPS §9 met 11-10. Done: Phase 0, Phase 1 (superseded by the drivetrain,
+§0a), Phase 2, Phase 3, Phase 5 part 1. Next: Phase 1b (drivetrain integration), then 5 part 2 -> 4 -> 6.
+v1.x stays the released line on `web` (:3000, never touched); all v2.0 work ships in `web-alive` (:3001).
 Wiki: [v2.0 Revamp](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2). This file is the build checklist.
-Owner: the user decides; Claude builds phase by phase. Next session: start the engine, then follow docs/NEXT_STEPS.md.
+Owner: the user decides; Claude builds phase by phase. Each session: start/verify the engine, re-read §0-§5, build.
 One phase per session, at most. Every phase ends with a local commit (reposync opens the PR) and a stop.
 
 
@@ -43,7 +44,7 @@ the feedback model below.** A phase that has started never takes on new work.
 
 ### Track A: v2.0 core (ships v2.0 when Phase 5 passes)
 - Typed live events + nightly replay recorder (Phase 0).
-- Home `/` rebuilt as the living engine (Phase 1), Shadow co-driver (Phase 2), exhaust trail (Phase 3).
+- Home `/` rebuilt as the electric drivetrain (§0a; Phase 1 then 1b), Shadow motor (Phase 2), receipt trail (Phase 3).
 - Nav cut from 15 pills to 4 rooms as drawers + `/docs` (Phase 5). Old routes stay as deep links.
 - Every NEXT_STEPS control and report on screen: Role Keywords, cap dial, targeting, funnel + rate, outreach
   "Mark sent", Shadow never-answer list, quick-start paste box (§5a; merged 11-09).
@@ -55,9 +56,9 @@ the feedback model below.** A phase that has started never takes on new work.
 | 7 | Phone push for your-turn items | push only for CAPTCHA / abstained questions / outcomes needing action; never routine progress; reuse the engine's existing alert path, no third-party tracking | Phase 0 events (`human.check`, `shadow.abstain`, `outcome`) |
 | 8 | Inner pages redesigned | one page at a time, in the order Your turn → Results → Garage; each page reads from `useEngine()` and goes live (no fetch-once pages left) | Phase 5 drawers |
 | 9 | Shadow L2+ visuals | the seat grows with the ladder (L2 job agents, L3 supervisor balance...); each rung's visual unlocks only when the backend reports it earned | Phase 2, Shadow ladder |
-| 10 | Engine sound pack | optional, off by default, muted on load: idle hum by gear, piston tick on fire, exhaust puff on submit; Web Audio, no files over 200 KB total | Phase 1 |
+| 10 | Engine sound pack | optional, off by default, muted on load: motor whine pitched by gear, coil tick per pulse, flywheel thunk on submit, clutch clunk on Shadow handover; Web Audio, synthesized (no files) | Phase 1b |
 | 11 | Weekly replay highlights | a 60-second week in review from the recorded replays (best day, first interviews, Shadow's handovers); public version scrubbed | Phase 4 |
-| 12 | 3D engine | the same 5-cylinder engine in 3D (one dependency allowed, chosen in the phase's design note); 2D stays as the fallback for low power and reduced motion | Phases 1-3 stable, V2/V3 budgets held |
+| 12 | 3D drivetrain | the same circuit in 3D (cells, inverter, motor, shaft, flywheel, return line; one dependency allowed); 2D stays as the fallback for low power and reduced motion | Phase 1b stable, V2/V3 budgets held |
 
 ### Feedback model: how new ideas enter (so nothing is lost and nothing derails)
 1. **Capture:** any new idea goes into §8 "Idea inbox" with the date and one line. No code.
@@ -77,33 +78,33 @@ the feedback model below.** A phase that has started never takes on new work.
 ### Stop rules (anti-wander)
 - If a phase needs a file not listed under it, stop and write why in this doc before touching it.
 - If a phase's acceptance checks don't pass after 2 attempts, revert to the last commit and report.
-- Each phase is behind `NEXT_PUBLIC_ALIVE=1` until Phase 5 ships. Turning it off restores today's home.
+- All v2.0 work is built only into the `web-alive` container (:3001, `NEXT_PUBLIC_ALIVE=1`); `web` (:3000) keeps
+  the v1.x home until the user ships v2.0. Never rebuild or recreate `web` for revamp work.
 - 80% of the Claude 5-hour limit → stop, commit WIP on a branch, update HANDOFF.md.
 
-## 3. One entity: every part on screen is a real container
+## 3. One entity: every part on screen is a real container (drivetrain map, proofread 11-11)
 
-| Engine part (screen) | Container / source | Live signal it shows | Control it drives |
+| Drivetrain part (screen) | Container / source | Live signal it shows | Control / where it opens |
 |---|---|---|---|
-| Intake (top) | `pipeline` (discover stage) | `discovered` events → chips enter | — |
-| Cylinder 1 **Listen** | `pipeline` | narration stage `listen` | — |
-| Cylinder 2 **Judge** | `pipeline` fit gate | stage `judge` (skip falls out w/ reason) | — |
-| Cylinder 3 **Write** | `pipeline` compose | stage `write` (`resume` events) | — |
-| Cylinder 4 **Apply** | `applier-N` (one piston per live applier) | stage `apply`, fleet heartbeats | — |
-| Cylinder 5 **Hear** | `feedback` + `supervisor` IMAP | stage `hear` (`outcome`) | — |
-| Gearbox | `pipeline` gear.json | `gear` events | `/control/gearbox` (shift) |
-| Co-driver seat | `answers` (Shadow tick) | `shadow` events, `application.by=shadow` | `/shadow` POST (mode) |
-| Fuel tank | Fact Bank + queue supply | selectable jobs left | opens Facts drawer |
-| Your-turn tray | `/api/human` + `desk` | `NEEDS YOU`, `human.check` | opens Your turn drawer |
-| Exhaust trail | ledger (`postgres`/`ledger`) | `SUBMITTED` w/ proof | opens proof drawer |
-| Warning lights | `supervisor` problems | `/control/fleet` problems | opens the matching drawer |
-| Plug (MCP cord) | `mcp` :8790 | heartbeat up/down | opens MCP drawer |
+| Source cells | `pipeline` scan + `scout` (boards) | `discovered` pulses leave the cells; charge = heard in the last hour | Garage (scout yield, Phase 1b) |
+| Inverter = **Judge** | `pipeline` fit gate | `gate.skip` pulses fall to ground with the reason | Garage > Targeting (Phase 5) |
+| Motor coil **Write** | `pipeline` compose | `resume` pulses, coil teeth flash | - |
+| Motor coil **Apply** + rotor | `applier-N` (heartbeats) | `apply.start`; rotor spins at gear speed while warm | Gear lever, cap dial (Drive panel) |
+| Output shaft + **Sent** flywheel | ledger (`postgres`/`ledger`) | `submitted` pulses, flywheel kick, receipt trail | Results / proof drawer |
+| Return line = **Hear** | `feedback` + `supervisor` IMAP | `outcome` pulses flow back to the cells | Results (funnel + rate) |
+| Shadow motor + clutch | `answers` (Shadow tick) | `shadow.*` pulses; clutch engaged on autopilot | Shadow selector; Garage > Shadow brain |
+| "Your turn" capacitor | `/api/human` + `desk` | `parked` pulses charge it; `human.check` | Your turn drawer |
+| Wires (current) | the container behind each wire | current flows only while that container is warm and in gear | - |
+| Warning lights | `supervisor` problems | `/control/fleet` problems | the matching drawer |
 
-The 5 narration stages already exist (`Stage = listen|judge|write|apply|hear`, apps/api/models.py:7). A 5-cylinder
-radial is a real engine layout (radials use odd counts), so the engine gets *more* honest, not less.
-A part whose container is down is drawn **cold** (grey, still) and its warning light comes on. That's the one-entity idea:
-backend health is visible as engine health, with no separate status page.
+The 5 narration stages (`listen|judge|write|apply|hear`) map onto cells / inverter / coils / shaft / return line. A
+part whose container is down is drawn cold (dark copper, no current) and its warning light comes on: backend health
+is visible as engine health, with no separate status page.
 
 ## 4. Event contract (Phase 0 output, everything else depends on it)
+As built (Phase 0): pipeline kinds travel as `Narration` (SSE `narration`); control kinds (gear, keywords, cap,
+targeting, shadow.mode, human.check, problem, problem.clear, outreach.sent) as `Signal` (SSE `signal`). The
+original design below is kept for reference.
 Extend `Narration` (apps/api/models.py) with optional fields. Existing fields are unchanged, so old clients keep working:
 ```
 kind:   "discovered"|"gate.pass"|"gate.skip"|"resume"|"apply.start"|"submitted"|"parked"|
@@ -149,7 +150,7 @@ Accept:
 - The scrubbing helpers (`company_names`, `masker`, `leaked`) moved into functions in engine/live/export.py so the
   site export and the replay share one implementation.
 
-### Phase 1: the living engine (home). Budget: 1-2 sessions
+### Phase 1: the living engine (home). Budget: 1-2 sessions. SUPERSEDED 11-11 by §0a (radial rejected; history only)
 Files: `apps/web/app/page.tsx` (rewrite engine block), `apps/web/app/engine.css`, new
 `apps/web/app/alive/{Engine.tsx,Chip.tsx,Cylinder.tsx,loop.ts}`. `backdrop.tsx` keeps its stream (shared).
 - 5 cylinders by stage. A chip (company initial + name on hover) travels intake → cylinders in order. The cylinder
@@ -209,7 +210,7 @@ Accept:
   shadow.abstain flies seat → tray. The crankcase rim turns violet (`--shadow`) while Shadow has the wheel.
 - Built and shipped only in `web-alive` (:3001); `web` (:3000) was not rebuilt or recreated.
 
-### Phase 3: exhaust trail (receipts). Budget: 1 session
+### Phase 3: receipt trail (leaves the Sent flywheel). Budget: 1 session
 Files: `apps/web/app/alive/{Trail.tsx,ProofDrawer.tsx}`, `engine.css`.
 - Each submit puff drifts up into a trail row (newest right). The trail is rebuilt from `/api/applications?today` on load.
 - Click → drawer with resume, answers, proof screenshot (`/api/proof/{name}`, `/resume/{name}`). Public: role+lane only.
@@ -229,6 +230,18 @@ Accept:
 - `alive/ProofDrawer.tsx`: modal drawer (Esc, focus trap, focus back to the receipt), proof `<img>` from
   `/api/proof/{name}`, resume link to `/api/resume/{name}`, the answers given (collapsed), the posting link.
   Public mode: role + lane only. Built and shipped only in `web-alive`.
+
+### Phase 1b: drivetrain integration (proofread 11-11; before 5 part 2). Budget: 1 session
+Files: `apps/web/app/alive/{Drivetrain.tsx,Engine.tsx,Rooms.tsx,Trail.tsx}`, `engine.css`; remove dead piston code
+(`Cylinder.tsx`, `Chip.tsx`, ghost/layout code in Engine.tsx) once nothing imports it.
+- Parts are doors: Sent flywheel -> Results, capacitor -> Your turn, motor -> Garage > Gearbox, Shadow motor ->
+  Garage > Shadow brain, cells -> Garage. Keyboard reachable (role=button, Enter/Space).
+- Jobs in a stage ride their coil as beads (count + up to 8 beads, employer initial on hover).
+- The receipt trail docks under the flywheel; a submit pulse ends at the flywheel and the receipt appears.
+- Mobile: the circuit stacks vertically under 600 px, no horizontal scroll.
+Accept:
+- [ ] V9 on the wires: pause an idle applier -> Apply wires go dark <= 30 s; unpause -> current back.
+- [ ] Every part opens its room; 375 px screenshot reads as a circuit; console clean; 10-min CPU < 15% (V2).
 
 ### Phase 5: four rooms as drawers + /docs. Budget: 1-2 sessions
 Files: `apps/web/app/nav.tsx`, `layout.tsx`, new `apps/web/app/alive/Drawer.tsx`, new `apps/web/app/docs/page.tsx`
@@ -256,14 +269,15 @@ Accept:
 
 ### Phase 4: "While you were away" replay. Budget: 1 session
 Files: `apps/web/app/alive/Replay.tsx`, `lib/engine.ts`, `apps/api/main.py` (`GET /api/replay?since=`).
-- On open after > 30 min away (localStorage last-seen), play the gap compressed to ~30 s, then switch to live.
+- On open after > 30 min away (localStorage last-seen), play the gap compressed to ~30 s through the drivetrain
+  (pulses at speed, flywheel spinning up, trail filling, gauges rolling), then switch to live.
   A scrubber (play/pause, 1x/10x/60x) appears only during replay. Public site loops last night's scrubbed replay.
 Accept:
 - [ ] A 3 h run replays in 25-40 s and ends in the same state as live; skip button works.
 
 ### Phase 6: alive in the tab. Budget: ½ session
 Files: `apps/web/app/alive/TabPulse.tsx`, `layout.tsx`.
-- `document.title` = "REGEN · 3 sent · 2 yours" (only when changed); the favicon puffs 600 ms on submit.
+- `document.title` = "REGEN · 3 sent · 2 yours" (only when changed); the favicon is a tiny flywheel that turns on submit.
 Accept:
 - [ ] Title updates from events within 2 s; no update when nothing changed.
 
@@ -328,14 +342,15 @@ V-number from the previous row does not ship.
 - Resource leaks: every `subscribe`, listener, timer and rAF is cleaned up on unmount (checked by V5).
 
 ## 7. Order, checks, rollback
-Order: Track A 0 → 1 → 2 → 3 → 5 → 4 → 6 (about 7-9 sessions; v2.0 ships after 5), then Track B 7 → 12 in
+Order: Track A 0 → 1 → 2 → 3 → 5 (part 1) → **1b** → 5 (part 2) → 4 → 6 (v2.0 ships after 5), then Track B 7 → 12 in
 the order the user picks at triage. After every phase:
 1. `pytest` + `npm run typecheck` in apps/web.
-2. `docker compose -f deploy/bank.compose.yml build web api`, then recreate **web + api only** (never the desk with
-   filled tabs; appliers only at claimed 0).
+2. `docker compose -f deploy/bank.compose.yml build web-alive` (+ the applier image if engine code changed), then
+   recreate **web-alive** (and api if its code changed). Never `web`; never the desk with filled tabs; appliers
+   only at claimed 0.
 3. Preview check: desktop, 375 px, dark, reduced motion; console clean; screenshot to the user.
 4. Privacy scan passes; local commit; HANDOFF.md + wiki page "Alive engine" updated.
-Rollback: `NEXT_PUBLIC_ALIVE=0` (until Phase 5) or `git revert` the phase commit.
+Rollback: `git revert` the phase commit and rebuild web-alive (web on :3000 is never affected).
 
 ## 7a. Look & feel bar (user, 11-11): "it looks stationary, like a template; the other phases must pop this up"
 
