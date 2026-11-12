@@ -189,6 +189,20 @@ Files: `apps/web/app/alive/{Trail.tsx,ProofDrawer.tsx}`, `engine.css`.
 - Click → drawer with resume, answers, proof screenshot (`/api/proof/{name}`, `/resume/{name}`). Public: role+lane only.
 Accept:
 - [ ] Every puff tonight opens the right proof; reload keeps the trail; public build shows no company names.
+      (11-11 on web-alive :3001: 6 receipts = the ledger's 6 SUBMITTED today, each drawer showed its own proof file
+      + resume (SharkNinja proof rendered 1300x900); reload rebuilt the same 6; Esc closes and focus returns to the
+      receipt; 375 px: no page scroll, the trail scrolls in its own strip. Open: a live submit landing as a new
+      receipt while watched, and a public-build check (code path shows role + lane only, not built here).)
+
+**As built (11-11):**
+- `alive/Trail.tsx` under the engine (HTML strip, not SVG: receipts need to be buttons with focus and labels).
+  It reads `/api/applications?status=SUBMITTED&limit=300` and keeps today's rows (no `today` query param exists; the
+  filter is the browser's local date, which is the ledger's). A `submitted` narration triggers one re-read 1.2 s
+  later (bursts share it), and the new receipt pops in. Engine puffs and receipts are separate: the puff is the
+  event, the receipt is the ledger row.
+- `alive/ProofDrawer.tsx`: modal drawer (Esc, focus trap, focus back to the receipt), proof `<img>` from
+  `/api/proof/{name}`, resume link to `/api/resume/{name}`, the answers given (collapsed), the posting link.
+  Public mode: role + lane only. Built and shipped only in `web-alive`.
 
 ### Phase 5: four rooms as drawers + /docs. Budget: 1-2 sessions
 Files: `apps/web/app/nav.tsx`, `layout.tsx`, new `apps/web/app/alive/Drawer.tsx`, new `apps/web/app/docs/page.tsx`
