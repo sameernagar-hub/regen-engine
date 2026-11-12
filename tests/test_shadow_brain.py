@@ -112,3 +112,12 @@ def test_autopilot_mode_answers_inline(tmp_path, monkeypatch):
     monkeypatch.setattr("engine.feedback.events.record", lambda *a, **k: None)
     s = shadow.configure("autopilot")
     assert s["mode"] == "autopilot" and override.on()
+
+
+def test_decide_abstains_on_form_helper_text(monkeypatch):
+    """11-11: a Greenhouse helper string came back as Shadow's answer to a select question; it must abstain."""
+    from engine import shadow_brain as B
+    monkeypatch.setattr(B, "candidates", lambda q, job="", k=None: [])
+    monkeypatch.setattr(B, "choose", lambda c, pol=None, question=None: ("Draft an ideal answer with this", 0.9, "engine"))
+    r = B.decide("How would you describe your experience with Acme? (Select one)")
+    assert r["a"] is None and r["conf"] == 0.0

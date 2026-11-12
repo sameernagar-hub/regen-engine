@@ -286,7 +286,10 @@ def choose(cands, pol=None, question=None):
 def decide(question, job="", k=None):
     """What Shadow answers: {"q", "a", "conf", "strategy", "from"}. a is None when it abstains."""
     a, conf, s = choose(candidates(question, job, k), question=question)
-    label = {"bank": "your answer bank", "memory": "Shadow's memory", "neighbor": "your answer to a similar question",
+    if a is not None and NOT_AN_ANSWER.search(str(a)):
+        # 11-11: a form's helper text ("Draft an ideal answer with this") came back as an answer: abstain instead
+        a, conf, s = None, 0.0, None
+    label ={"bank": "your answer bank", "memory": "Shadow's memory", "neighbor": "your answer to a similar question",
              "engine": "Fact Bank draft", "yesno": "yes/no policy"}.get(s, "nothing confident: it will not guess")
     return {"q": question, "a": a, "conf": conf, "strategy": s, "from": label}
 
