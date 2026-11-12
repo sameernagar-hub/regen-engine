@@ -1,3 +1,10 @@
+# Handoff: 11-12 ~00:10 STOP POINT (80% of the Claude 5-hour limit). Stack STOPPED cleanly: gear N, inbox + claimed 0,
+# cap 0, Role Keywords off, Shadow calls 5, `compose stop`, volumes kept. 6 submitted 11-11. Scout added +70 boards.
+# ALIVE: plan proofread as one system (565e148); Phase 1b started: drivetrain parts open their rooms (65919be).
+# NEXT: START -> gear 2 -> (A/B on: keywords decided per posting) -> CLEANUP pass (memory cleanup-every-session: dead
+# piston code Cylinder/Chip/ghost layout, old proofs/resumes/logs/.bak files, Gmail clutter; confirm each new
+# category) -> rest of Phase 1b (beads on coils, trail under flywheel, mobile circuit, V9 on wires, CPU check).
+
 # Handoff: 11-11 ~23:58. Stack UP: gear 2, cap level 2 (50/day, user), Shadow AUTOPILOT + Role Keywords ON (user;
 # the keywords A/B is still on and decides per posting). New container `scout` (engine/discovery/scout.py, every 3 h:
 # GitHub job lists, public job APIs, new employer names probed; `engine scout --report`); round 1 = +70 boards.
