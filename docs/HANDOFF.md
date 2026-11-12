@@ -1,3 +1,14 @@
+# Handoff: 11-11 ~23:58. Stack UP: gear 2, cap level 2 (50/day, user), Shadow AUTOPILOT + Role Keywords ON (user;
+# the keywords A/B is still on and decides per posting). New container `scout` (engine/discovery/scout.py, every 3 h:
+# GitHub job lists, public job APIs, new employer names probed; `engine scout --report`); round 1 = +70 boards.
+# Shadow fix 89fd49d (abstains on form helper text); bad answers.json entry removed (bak-20261111).
+# ALIVE (web-alive :3001 ONLY; web :3000 untouched): Phase 2 seat/captions a9bb909, Phase 3 trail+proof a3b696f,
+# Phase 5 part 1 rooms b8341a1, scroll fix + pulse strip 6c676b3, ELECTRIC DRIVETRAIN 83a61b3 (user rejected the
+# piston radial; picked concept A). NEXT SESSION FIRST: full proofread of docs/ALIVE_PLAN.md as one integrated system
+# (§0 north star, §0a drivetrain), re-map Phases 3-6 + Track B onto the circuit, then continue. CLEAN STOP also: cap 0,
+# keywords off, shadow calls 5.
+# Supply note: queue is mostly Workday (yours) + Ashby (cooldown after a bot check); fillable = Greenhouse/Rippling.
+
 # Handoff: 11-10 ~22:30 STOP POINT (user, near 80% of the Claude 5-hour limit). Stack STOPPED cleanly: gear N,
 # inbox + claimed 0, Role Keywords off, cap level 0, Shadow calls 5, `compose stop`, volumes kept; events end on a full
 # line. The Role Keywords A/B (keywords_ab) stays ON across runs by design. 7 verified submissions today.
