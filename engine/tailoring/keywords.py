@@ -147,7 +147,18 @@ _TOOLISH = re.compile(r"(?<![\w.])(?:[A-Z]{2,6}\d?|[A-Z][a-z]+[A-Z][A-Za-z]+|[A-
 _NOT_TECH = {"US", "USA", "EEO", "EOE", "PTO", "HR", "CEO", "CTO", "VP", "OPT", "CPT", "FAQ", "LLC", "INC", "NYC", "SF", "LA",
              "UTC", "PST", "EST", "PT", "ET", "MS", "BS", "BA", "PHD", "GPA", "AND", "OR", "THE", "OUR", "YOU", "WE", "ADA",
              "DEI", "LGBTQ", "LinkedIn", "YouTube", "TikTok", "COVID", "IRS", "TBD", "ASAP", "FTE", "OTE", "RSU", "RSUs",
-             "ESPP", "SVP", "EVP", "II", "III", "IV", "NA", "EU", "UK", "APAC", "EMEA", "AM", "PM", "W2", "H1B"}
+             "ESPP", "SVP", "EVP", "II", "III", "IV", "NA", "EU", "UK", "APAC", "EMEA", "AM", "PM", "W2", "H1B",
+             # 11-12: legal / benefits / EEO boilerplate seen on the Role Keywords line
+             "SDE", "CCPA", "GDPR", "AD", "EAP", "USD", "VEVRAA", "EAD", "EEOC", "OFCCP", "FMLA", "HSA", "FSA", "PPO", "HMO",
+             "SMS", "QA", "IT", "AI", "ML", "UI", "UX", "IDE", "YOUR", "SWE", "SDET", "TBA", "DOE", "LLNL", "CFR", "ITAR",
+             "EAR", "HIPAA", "PII", "PHI", "SOX", "ADEA", "GINA", "USERRA", "DUTIES", "KEY", "DAY"}
+
+
+# 11-12: state codes and all-caps section headings ("KEY DUTIES", "DAY IN THE LIFE") were landing on the Role Keywords
+# line and counting as skills the bank lacks (MN, WI, DUTIES, KEY, DAY seen on real postings)
+_STATES = set("AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK "
+              "OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC".split())
+_HEADING = re.compile(r"(?<![A-Za-z])[A-Z]{2,}[\s&/:-]+[A-Z]{2,}(?![A-Za-z])")  # whole caps words, no comma lists
 
 
 def _toolish(jd):
@@ -155,8 +166,13 @@ def _toolish(jd):
     out = []
     for m in _TOOLISH.finditer(text):
         w = m.group(0)
-        if w not in _NOT_TECH and w.upper() not in _NOT_TECH and w not in out:
-            out.append(w)
+        if w in _NOT_TECH or w.upper() in _NOT_TECH or w in _STATES or w in out:
+            continue
+        if w.isupper() and not any(c.isdigit() for c in w):
+            ctx = text[max(0, m.start() - 12):m.end() + 12]
+            if _HEADING.search(ctx) and w.lower() not in {t.lower() for t in TECH}:  # part of an all-caps heading
+                continue
+        out.append(w)
     return out
 
 

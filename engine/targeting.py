@@ -168,6 +168,12 @@ def _bank_text():
     return _BANK["text"]
 
 
+SOFT = {"Security", "Scalability", "Networking", "Agile", "Observability", "Performance Optimization", "Caching",
+        "Concurrency", "High Availability", "Data Structures", "Algorithms", "Code Review", "Debugging", "Unit Testing",
+        "Integration Testing", "TDD", "Object-Oriented Design", "System Design", "API Design", "Statistics",
+        "Incident Response", "Load Balancing", "A/B Testing", "Data Pipelines", "Data Modeling", "Git", "Linux"}
+
+
 def unsure(jd, covered, cfg=None, lacking=None):
     """Why the fit is unsure (a short reason), or None when the posting is a clear fit or skip_unsure is off.
     covered = the posting's terms the Fact Bank has (tailor()'s jd_terms_you_have); lacking = JD tech terms the bank
@@ -181,6 +187,9 @@ def unsure(jd, covered, cfg=None, lacking=None):
     if lacking is None:
         from engine.tailoring import keywords
         lacking = keywords.missing(jd, _bank_text())
+    # 11-12: practices every engineer claims (security, scalability, agile...) are not a stack the bank lacks; they
+    # pushed the share under the bar on plain SWE postings once the vocabulary stopped counting generic words
+    lacking = [t for t in lacking if t.split(" (")[0] not in SOFT]
     share = have / (have + len(lacking))
     if share < float(cfg["unsure_min_share"]):
         return (f"unsure fit: Fact Bank covers {share:.0%} of the posting's terms (min {float(cfg['unsure_min_share']):.0%};"

@@ -30,9 +30,12 @@ def load_bank():
         OVERLAPS = fb.get("_overlaps", [])
         VARIANTS = fb.get("variants", {})
         ROLE_PREFIX = fb.get("role_prefix", {})
+        AWARDS[:] = fb.get("awards", [])
+        PUBS[:] = fb.get("publications", [])
 
 
 ROLE_PREFIX = {}
+AWARDS, PUBS = [], []
 
 
 def texts(fid):
@@ -169,8 +172,13 @@ def build(spec):
     from engine.tailoring import keywords
     if spec.get("jd_keywords") and keywords.enabled(spec.get("url")):  # 11-10: the A/B arm, when it is on
         st.append(Paragraph("<b>Role Keywords:</b> " + ", ".join(spec["jd_keywords"]), BUL, bulletText="•"))
-    section(st, "EDUCATION")
+    section(st, "EDUCATION & HONORS" if (AWARDS or PUBS) else "EDUCATION")
     st += [row(e, d) for e, d in EDU]
+    # 11-12: the bank always held awards + publications, but no resume printed them (the hand-written ones did)
+    if AWARDS:
+        st.append(Paragraph("<b>Awards:</b> " + "; ".join(AWARDS), BUL, bulletText="•"))
+    if PUBS:
+        st.append(Paragraph(f"<b>Publications ({len(PUBS)}):</b> " + "; ".join(PUBS), BUL, bulletText="•"))
     SimpleDocTemplate(out, pagesize=letter, leftMargin=0.45 * inch, rightMargin=0.45 * inch,
                       topMargin=0.35 * inch, bottomMargin=0.3 * inch,
                       title=CONTACT["name"].title() + " Resume", author=CONTACT["name"].title()).build(st)
@@ -188,19 +196,29 @@ def _grow(spec):
     """Next spec with one more Fact Bank entry from the ranked reserve (spec["_more"]): roles round-robin, then a
     project. None when the reserve is empty. Only bank ids are added, so validate() still holds."""
     more = spec.get("_more") or {}
+    jd_score = spec.get("_score") or {}
     roles = [[rk, list(f)] for rk, f in spec["roles"]]
     used = {f for _, fids in roles for f in fids}
-    best = None
-    for i, (rk, fids) in enumerate(roles):
-        nxt = next((f for f in more.get(rk, []) if f not in used), None)
-        if nxt and (best is None or len(fids) < len(roles[best[0]][1])):
-            best = (i, nxt)
-    if best:
-        roles[best[0]][1].append(best[1])
-        return dict(spec, roles=roles)
     projs = list(spec.get("projects") or [])
+
+    def add_fact(relevant_only):
+        best = None
+        for i, (rk, fids) in enumerate(roles):
+            nxt = next((f for f in more.get(rk, []) if f not in used and (not relevant_only or jd_score.get(f, 1) > 0)), None)
+            if nxt and (best is None or len(fids) < len(roles[best[0]][1])):
+                best = (i, nxt)
+        if best:
+            roles[best[0]][1].append(best[1])
+            return dict(spec, roles=roles)
+    # 11-12: bullets that answer the JD first, then projects, and only then bullets with no JD term (a firmware
+    # bullet on a backend posting was filling the page ahead of the thesis)
+    grown = add_fact(True)
+    if grown:
+        return grown
     nxt = next((p for p in more.get("_projects", []) if p not in projs), None)
-    return dict(spec, projects=projs + [nxt]) if nxt else None
+    if nxt:
+        return dict(spec, projects=projs + [nxt])
+    return add_fact(False)
 
 
 def fit(spec):

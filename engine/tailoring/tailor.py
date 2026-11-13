@@ -27,10 +27,28 @@ import re
 from engine.tailoring import compose, resume
 
 STOP = {"and", "or", "the", "a", "of", "with", "for", "in", "to", "on", "development", "ui", "design", "systems",
-        "data", "cloud", "testing", "linux", "git", "html/css", "monitoring", "alerting", "responsive"}
+        "data", "cloud", "testing", "linux", "git", "html/css", "monitoring", "alerting", "responsive", "cd", "hw",
+        "sw integration", "automation"}
 
 
 _VOCAB = {"key": None, "terms": frozenset()}
+NOT_VOCAB = {"cert"}  # skills lines whose items are credential names, not technologies
+# words that count alone even though keywords.TECH spells them inside a longer name
+TECH_WORDS = {"spring", "msk", "eks", "s3", "lambda", "cognito", "aurora", "embeddings", "agents", "agentic", "firmware",
+              "microcontroller", "kafka", "aws", "gemini", "openai", "rest", "pgvector", "pinecone", "apex", "lwc",
+              "visualforce", "salesforce", "agentforce", "mcp", "rag", "llms", "nosql", "html", "css", "oscilloscopes"}
+
+
+def _tech_word(w):
+    """Is one word a technology on its own (keywords.TECH name or pattern covering the whole word, or TECH_WORDS)?"""
+    if w in TECH_WORDS:
+        return True
+    from engine.tailoring import keywords
+    for rx in keywords._RX.values():
+        m = rx.search(w)
+        if m and m.start() == 0 and m.end() == len(w):
+            return True
+    return False
 _PAT = {}
 
 
@@ -47,15 +65,20 @@ def vocabulary():
     if _VOCAB["key"] is resume.SKILLS:
         return _VOCAB["terms"]
     terms = set()
-    for _, line in resume.SKILLS.values():
-        for t in re.split(r",|/|\(|\)|--", line):
+    for key, (_, line) in resume.SKILLS.items():
+        if key in NOT_VOCAB:  # certification titles ("Advanced Administrator") are not technologies
+            continue
+        for t in re.split(r",|/|\(|\)|--|;", line):
             t = t.strip().lower()
             if 2 <= len(t) <= 40 and t not in STOP:
                 terms.add(t)
-    # useful single-word aliases from multi-word skills ("aws (eks" -> "aws", "eks")
+    # single-word aliases from multi-word skills ("aws msk" -> "msk", "spring boot 3" -> "spring"), but only words that
+    # are technologies themselves. 11-12: every word used to count, so "service" (from Field Service Lightning),
+    # "code", "review", "power", "process", "field"... matched nearly every JD: coverage read 98% while the real
+    # match was far lower, and generic-word hits picked Salesforce / lab-equipment bullets and headline items.
     for t in list(terms):
         for w in t.split():
-            if len(w) >= 3 and w not in STOP and re.fullmatch(r"[a-z0-9+#.\-]+", w):
+            if len(w) >= 2 and w not in STOP and _tech_word(w):
                 terms.add(w)
     for canon, alts in resume.ALIASES.items():
         if canon.lower() in terms:
@@ -105,6 +128,7 @@ def tailor(spec, jd, title=None, lanes=None, url=None):
     won = learn.weights()  # outcome-learned weight per "fid#variant" (learn.py), small next to JD matching
     jd_hits = lambda f, i: score(resume.texts(f)[i])
     best = lambda f: max(jd_hits(f, i) + won.get(f"{f}#{i}", 0.0) for i in range(len(resume.texts(f))))
+    best_fact = best  # 11-12: kept for resume._grow (the name "best" is reused below)
     fact_pick = {}
     # 11-05: every role in the bank gets a place (more real experience on the page); lane roles keep their order
     lane_roles = [[rk, list(f)] for rk, f in spec["roles"]]
@@ -131,7 +155,9 @@ def tailor(spec, jd, title=None, lanes=None, url=None):
                 if not (p == "os_teach" and any(r == "csuf" for r, _ in roles))]  # the role already says it
         ptxt = lambda p: " ".join([resume.PROJECTS[p][0]] + resume.PROJECTS[p][2])
         ppos = {p: i for i, p in enumerate(allp)}
-        rankp = sorted(allp, key=lambda p: (-score(ptxt(p)), ppos[p]))
+        # 11-12: a project with a measured result or award (thesis 0.886 -> 0.023, 1st place) outranks one without
+        proof = lambda p: 1 if re.search(r"\d|1st place|award", ptxt(p), re.I) else 0
+        rankp = sorted(allp, key=lambda p: (-(score(ptxt(p)) + proof(p)), ppos[p]))
         projects, more["_projects"] = rankp[:len(projects)], rankp[len(projects):]
     spos = {k: i for i, k in enumerate(spec["skills"])}
     skills = sorted(spec["skills"], key=lambda k: (-score(resume.SKILLS[k][1]), spos[k]))
@@ -152,7 +178,8 @@ def tailor(spec, jd, title=None, lanes=None, url=None):
     # v0.9 JD-first composition: each skills line leads with the posting's terms, in the posting's spelling
     skill_text = {k: t for k in skills
                   if (t := resume.jd_spelling(compose.order_skill_line(resume.SKILLS[k][1], want), jd)) != resume.SKILLS[k][1]}
-    out = dict(spec, roles=roles, projects=projects, skills=skills, skill_text=skill_text, _more=more, fact_pick=fact_pick)
+    out = dict(spec, roles=roles, projects=projects, skills=skills, skill_text=skill_text, _more=more, fact_pick=fact_pick,
+               _score={f: best_fact(f) for f in fact_pick})
     if title is not None:  # headline names the role + the posting's top terms; summary leads with what answers it
         out["headline"] = compose.headline(title, jd, want, resume.SKILLS, spec["headline"])
         out["summary"] = compose.summary(jd, spec, lanes or {}, hits, max_sentences=2, max_chars=290)  # 11-05: two lines
