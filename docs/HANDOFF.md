@@ -1,3 +1,15 @@
+# Handoff: 11-12 ~20:00 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
+# off, Shadow calls 5, `compose stop`, volumes kept; events end on a full line, no tmp. All images built with cfdc07a.
+# Run 18:40-20:00 (gear 3, cap 150, keywords on, keywords_ab now OFF, Shadow autopilot): 44 submitted. Confirmation
+# mails go to a Gmail label by the user's own filter (not the inbox): check there, not the inbox.
+# DONE: resume vocabulary noise fix + awards/publications + JD-relevant page fill (8bd4750); forward-deployed solutions
+#   title (e2d01c2); rejection reason + level-aware selection (0de82a8); sponsorship NOW-only answers from the derived
+#   preset + regression test (db27c54, 31728cc); text proofs, no screenshots, proof_file() accepts .txt for old .png
+#   paths (2520be3, e00f11e); proof/ 450 MB -> 2.3 MB (non-submission screenshots deleted, submission ones converted to
+#   .txt); inbox catches AI-led / video interview invites and short punctuated employer names (cfdc07a).
+#   Volume: Fact Bank contact + teaching dates, domains.json widened then tightened (bak-20261112), unsure 3 / 0.3.
+# NEXT: START -> gear 2/3 -> ask keywords on/off -> backfill reasons for old rejections via IMAP -> ALIVE Phase 1b.
+
 # Handoff: 11-12 ~00:10 STOP POINT (80% of the Claude 5-hour limit). Stack STOPPED cleanly: gear N, inbox + claimed 0,
 # cap 0, Role Keywords off, Shadow calls 5, `compose stop`, volumes kept. 6 submitted 11-11. Scout added +70 boards.
 # ALIVE: plan proofread as one system (565e148); Phase 1b started: drivetrain parts open their rooms (65919be).
