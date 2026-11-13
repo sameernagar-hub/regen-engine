@@ -17,3 +17,14 @@ def test_headings_and_states_are_not_toolish():
     got = keywords._toolish(jd)
     assert not {"KEY", "DUTIES", "DAY", "MN"} & set(got)
     assert "SQS" in got and "OpenSearch" in got
+
+
+def test_reject_reason_and_level_rank():
+    from engine.feedback.inbox import reject_reason
+    from engine import targeting
+    assert reject_reason("we are unable to sponsor a visa for this role") == "sponsorship"
+    assert reject_reason("the position has been filled") == "position closed"
+    assert reject_reason("we decided to move forward with other candidates") == "volume / other candidates"
+    assert reject_reason("thanks for applying") == "unstated"
+    assert targeting.level_rank({"title": "Software Engineer II"}) == 1
+    assert targeting.level_rank({"title": "Software Engineer, New Grad"}) == 0

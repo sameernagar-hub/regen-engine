@@ -18,7 +18,7 @@ Settings live in profile/targeting.json (any key may be left out; DEFAULTS fill 
                 shows rates only once both arms reach `ab_per_arm` verified submissions: no early stop
 O(1) per call after the first read (re-read when the file changes).
 """
-import datetime, json, os
+import datetime, json, os, re
 
 from engine.config import PROFILE
 
@@ -151,6 +151,16 @@ def tier_rank(job, tiers):
     if any(tiers.get(k) and tiers[k].search(co) for k in ("tier1", "sponsors")) or job.get("h1b") is True:
         return 0
     return 1
+
+
+
+
+_LEVEL_HARD = re.compile(r"\b(ii|2|mid[- ]level|lead|senior|staff)\b", re.I)
+
+
+def level_rank(job):
+    """0 = entry / new grad / unlevelled title, 1 = II / mid / lead (higher measured rejection rate)."""
+    return 1 if _LEVEL_HARD.search(job.get("title") or "") else 0
 
 
 _BANK = {"key": None, "text": ""}

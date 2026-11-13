@@ -197,7 +197,9 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
     rates, t = lane_rates(), (tiers() if cfg["tier_first"] else {})
     # tier1 / sponsors first (targeting), then freshness bands (past hour > day > week > older), score inside a band.
     # Lazy heap: O(Q) heapify, then O(log Q) per job popped; only as many pops as needed to fill max_jobs.
-    heap = [(targeting.tier_rank(j, t) if cfg["tier_first"] else 0, band(j), -score(j, rates)[0], i)
+    # 11-12: within a tier, entry / unlevelled titles before II / lead (499 submits: II 48% and lead 50% rejected vs
+    # 30-34% for new grad and unlevelled), so the daily cap is spent where rejections are fewer
+    heap = [(targeting.tier_rank(j, t) if cfg["tier_first"] else 0, targeting.level_rank(j), band(j), -score(j, rates)[0], i)
             for i, j in enumerate(queue)]
     heapq.heapify(heap)
     per, picked = collections.Counter(), []

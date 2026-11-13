@@ -56,6 +56,23 @@ URGENT = {"offer", "interview", "oa", "scam"}
 CONDITIONAL = re.compile(r"\b(if|should|in the event|may|will reach out|will be in touch|will contact|we.ll contact)\b", re.I)
 
 
+# 11-12: rejections kept only the subject, so no run could learn WHY. The reason is read from the mail's own words.
+REASONS = [("sponsorship", r"sponsor|visa|work authori[sz]ation|authorized to work"),
+           ("position closed", r"(position|role|req\w*) (has been|was|is) (filled|closed|cancel+ed|put on hold)|no longer (open|available|hiring)"),
+           ("experience / level", r"(more|additional|deeper|direct) experience|level of experience|years of experience|more senior|seniority"),
+           ("skills match", r"skill ?set|qualifications (more )?closely|requirements (of|for) (the|this) role|closely (match|align)"),
+           ("location", r"location|relocat|on-?site|in[- ]office"),
+           ("volume / other candidates", r"(other|another) candidates?|high volume|many (qualified )?applicants|move forward with")]
+
+
+def reject_reason(text):
+    import re as _re
+    for name, pat in REASONS:
+        if _re.search(pat, text or "", _re.I):
+            return name
+    return "unstated"
+
+
 def classify(subject, snippet=""):
     text = f"{subject} {snippet}".lower()
     # "If there is a fit, we'll reach out to schedule an interview" is a confirmation, not an invite
@@ -183,7 +200,8 @@ def ingest(messages):
             record("company_limit", company=co, max=cap[0], days=cap[1], msg_id=mid)
         ev = record("outcome", msg_id=mid, outcome=cls, company=co, subject=m.get("subject", "")[:200],
                     sender=m.get("from", "")[:120], date=m.get("date", ""), jobs=[a["job"] for a in apps],
-                    lanes=[a.get("lane") for a in apps])
+                    lanes=[a.get("lane") for a in apps],
+                    **({"reason": reject_reason(text), "snippet": (m.get("snippet") or "")[:300]} if cls == "rejection" else {}))
         new.append(ev)
         if cls in URGENT:
             try:
