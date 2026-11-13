@@ -1,3 +1,16 @@
+# Handoff: 11-13 ~14:10 RUNNING. START done; gear 3 -> 2 (7 appliers held the VM at 6.7/7.6 GB, a Page.goto
+# timeout), cap 4 (150/day), Role Keywords ON, Shadow autopilot, MCP write on. Sources: boards harvest (+~170),
+# recheck (10 back), scout (+373 boards), feed 51, newgrad 30 (Airtable fix 8573970: `urlWithParams =` layout).
+# GOVERNOR (engine/governor.py): the supervisor re-judges the fleet ceiling EVERY pass from VM memory (measured
+#   applier size, 2 GB reserve), CPU load (hold >70%, shed >95%), page/browser timeout share (last 30 min), the
+#   daily cap, ramping +1 per 120 s and shedding -1 per 90 s (drain handshake). Gear = allowed range, supply = useful,
+#   governor = safe. Snapshot: workspace/fleet/governor.json, `engine governor`; `supervisor` govern events on change.
+#   Bench scenario scale_up_to_backlog now expects 1 create per pass. Pipeline container still on the pre-governor
+#   image (recreate at a quiet moment; the Airtable fix was docker-cp'd into it).
+# Volume: domains.json (bak-20261113): + associate/junior/graduate, UI/UX/graphics/growth/search/API/distributed/
+#   storage/observability/web3/evals/platform/payments/data-infra engineers; quality/test titles software-only
+#   (bare Quality/Test Engineer, supplier/shift QA, hardware systems test, client/customer support out).
+
 # Handoff: 11-12 ~20:00 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
 # off, Shadow calls 5, `compose stop`, volumes kept; events end on a full line, no tmp. All images built with cfdc07a.
 # Run 18:40-20:00 (gear 3, cap 150, keywords on, keywords_ab now OFF, Shadow autopilot): 44 submitted. Confirmation

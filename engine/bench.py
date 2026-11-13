@@ -192,7 +192,7 @@ def b8_supervisor():
     try:
         beat(a[:12], "watching"); beat(b[:12], "applying")
         backlog(12); S.scale(1, 7, _idle={})
-        out["scale_up_to_backlog"] = len(made) == 2  # 12 jobs -> want 4, 2 running
+        out["scale_up_to_backlog"] = len(made) == 1  # 12 jobs -> want 4, 2 running: the governor ramps one per pass (11-13)
         backlog(0); calls.clear(); beat(b[:12], "watching")
         S.scale(1, 7, idle_grace=0, _idle={})
         out["drain_before_stop"] = os.path.exists(S.drain_path(b[:12])) and not calls

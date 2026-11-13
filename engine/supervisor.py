@@ -200,6 +200,13 @@ def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container
     now = time.time()
     drains = [r for r in running if os.path.exists(drain_path(r[0][:12]))]  # a container's hostname is its short id
     active = [r for r in running if r not in drains]
+    cap = hi
+    try:  # 11-13: the governor (engine/governor.py) re-judges memory, CPU, timeouts and the daily cap every pass
+        from engine import governor
+        cap = governor.ceiling(lo, hi, len(active), want, workspace=WORKSPACE)
+        want = min(want, cap)
+    except Exception as ex:
+        print(f"supervisor: governor skipped: {str(ex)[:120]}", flush=True)
     if len(active) < want:
         need = want - len(active)
         for r in [d for d in drains if not _expired(d[0])][:need]:  # cancel a drain before adding a container
@@ -222,7 +229,7 @@ def scale(lo, hi, idle_grace=180, _idle={}):  # _idle: first time each container
             if len(active) <= want:
                 break
             m = beats.get(cid[:12])
-            if len(active) > hi:
+            if len(active) > cap:  # above the gear's max or the governor's ceiling: drain even a busy applier
                 # 10-21: above the gear's cap (a downshift with batches waiting) no applier ever idles, so the extras
                 # ran on at full CPU. Drain now: the worker finishes its batch, then stops claiming (handshake above).
                 os.makedirs(FLEET, exist_ok=True)

@@ -12,6 +12,7 @@
   desk    [--fill url]             the desk: a visible browser you sign in to (noVNC :6080); fills Workday forms there
   shadow  calls|autopilot|always|off|status|train|ladder|agents   Shadow, your AI delegate (alias: draft): answers as you;
                                    train = train/test on your answers, ladder = ownership level, agents = agent graph
+  governor                         the supervisor's fleet ceiling now and why (memory, CPU, timeouts, daily cap)
   bench   [--save]                 system benchmarks B1-B7 (selection, answers, claims, coverage, rate, codes, fit gate)
 alerts  <file>                   job-alert emails (gmail_alerts.js output) resolved to the employer's ATS -> queue.json
   watch   [min] [--once] [--newgrad] poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)
@@ -190,6 +191,8 @@ def main():
         from engine.feedback.inbox import main as m
     elif cmd == "gear":
         from engine.gearbox import main as m
+    elif cmd == "governor":  # 11-13: the supervisor's live fleet judgement (memory, CPU, timeouts, cap)
+        from engine.governor import main as m
     elif cmd == "keywords":
         from engine.tailoring.keywords import main as m
     elif cmd == "feedback":
