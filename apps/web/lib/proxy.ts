@@ -163,6 +163,12 @@ export async function proxyGet<T>(path: string): Promise<T> {
         const g = overlay.gear.gear ?? d.gear.gear;
         d = { ...d, gear: { ...d.gear, ...overlay.gear, gear: g, label: d.gear.gears[g], appliers: GEAR_APPLIERS[g], loop_min: GEAR_LOOP[g] } };
       }
+      if (d.governor) {  // the demo snapshot is from build time: keep it live, and follow a simulated shift
+        const r = GEAR_APPLIERS[d.gear.gear] || [1, 7];
+        const ceiling = Math.max(r[0], Math.min(d.governor.ceiling ?? r[1], r[1]));
+        d = { ...d, governor: { ...d.governor, stale: false, gear_range: r, ceiling, running: Math.min(d.governor.running ?? 0, ceiling),
+              target: Math.min(ceiling, d.governor.supply_wants ?? ceiling) } };
+      }
       break;
     case "/api/control/reach":
       d = { ...d, write: true, rows: d.rows.map((r: any) => overlay.marks.has(r.url) ? { ...r, mark: overlay.marks.get(r.url)!.mark, marked: overlay.marks.get(r.url)!.ts } : r) };

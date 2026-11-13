@@ -1,3 +1,14 @@
+# Handoff: 11-13 14:25 STOP POINT (user: everything off by 14:30). Stack STOPPED cleanly: gear N, inbox+claimed 0,
+# cap 0, Role Keywords off, Shadow calls 5, `compose stop`, ledger ends on a full line. 6 submitted today.
+# DONE since 14:10: Gearbox page (web :3000) has a Governor panel (ceiling/running/queue/target, memory/CPU/timeouts/
+#   daily-cap gauges, reasons); /api/control/gearbox carries the snapshot; proxy dataset + lib/proxy.ts demo it.
+#   Unpushed history rewritten (backup/pre-scrub-20261113) so no private employer name reaches GitHub; the old
+#   flagged gauge-element blobs already on public main are pre-existing (CI --ci checks tree + new commits only).
+# NEXT (user asked, not done): read README + wiki thoroughly and fix stale content (governor, titles, Airtable,
+#   test count 378+), push bot/sync (force, rewritten) -> CI -> fast-forward main (`git push origin main`, POSIX
+#   python shim on PATH), Render auto-deploys main: check https://regen-engine.onrender.com/gearbox. Then delete the
+#   backup branch.
+
 # Handoff: 11-13 ~14:10 RUNNING. START done; gear 3 -> 2 (7 appliers held the VM at 6.7/7.6 GB, a Page.goto
 # timeout), cap 4 (150/day), Role Keywords ON, Shadow autopilot, MCP write on. Sources: boards harvest (+~170),
 # recheck (10 back), scout (+373 boards), feed 51, newgrad 30 (Airtable fix 8573970: `urlWithParams =` layout).

@@ -394,6 +394,13 @@ def main():
     bigtech(ws, now, resumes)
     # v1.1 gearbox + rejection feedback: gear 3, and what a feedback pass over the synthetic rejections looks like
     json.dump({"gear": "3", "clutch": "on"}, open(os.path.join(ws, "gear.json"), "w"))
+    # 11-13 governor: what the supervisor's fleet judgement looks like mid-run (memory is the limit here)
+    json.dump({"ts": time.time(), "at": time.strftime("%Y-%m-%d %H:%M:%S"), "gear_range": [1, 7], "running": 4,
+               "supply_wants": 6, "ceiling": 4, "target": 4,
+               "reasons": ["memory fits 4 appliers (~760 MB each, 2850 MB free)"],
+               "machine": {"free_mb": 2850, "load_per_cpu": 0.52, "cpus": 12}, "applier_mb": 800,
+               "health": {"recent": 38, "timeouts": 1, "rate": 0.03}, "submitted_today": 41, "daily_cap": 150},
+              open(os.path.join(ws, "fleet", "governor.json"), "w"))
     json.dump({"updated": time.strftime("%Y-%m-%d %H:%M:%S"), "stats": {"with_jd": 120, "rejected": 34, "positive": 3,
                "baseline_rejection_rate": 0.28, "phrases_tested": 640},
                "rules": [{"phrase": "active security clearance", "rejected": 11, "seen": 11, "rate": 1.0, "lift": 3.53,

@@ -257,7 +257,7 @@ function Governor({ g }: { g?: Gov | null }) {
   const free = m.free_mb ?? 0, load = m.load_per_cpu ?? 0, rate = h.rate ?? 0;
   const memPressure = free ? Math.max(0, 1 - (free - RESERVE_MB) / Math.max(1, free)) : 0;
   const cap = g.daily_cap || 0, subs = g.submitted_today ?? 0;
-  const limiting = (g.ceiling ?? 0) < (g.gear_range?.[1] ?? 0);
+  const limiting = (g.reasons || []).some((r) => !r.includes("cooldown"));
   return (
     <section className={`gb-governor${g.stale ? " stale" : ""}`} aria-live="polite">
       <h2>Governor <span className={`tag ${g.stale ? "proposed" : limiting ? "warn" : "active"}`}>{g.stale ? "stale" : limiting ? "limiting" : "clear"}</span></h2>
@@ -284,7 +284,7 @@ function Governor({ g }: { g?: Gov | null }) {
       </div>
       <ul className="gov-reasons">
         {(g.reasons || []).map((r) => <li key={r}>{r}</li>)}
-        {!g.reasons?.length && <li className="dim">Nothing is limiting the fleet: the gear and the queue decide.</li>}
+        {!g.reasons?.length && <li className="dim">Nothing is limiting the fleet: the gear and the queue decide (new appliers still start one at a time).</li>}
       </ul>
     </section>
   );
