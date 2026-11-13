@@ -36,3 +36,10 @@ def test_proof_file_accepts_text_sibling(tmp_path, monkeypatch):
     (tmp_path / "proof").mkdir()
     (tmp_path / "proof" / "a.txt").write_text("x")
     assert c.proof_file("proof/a.png") and c.proof_file("proof/a.txt") and not c.proof_file("proof/b.png")
+
+
+def test_ai_interview_invite_from_relay_is_caught():
+    from engine.feedback import inbox
+    s, sn = "AI-Led Interview Invitation from AcMe", "Your interview invitation from AcMe. Thank you for your interest in the role"
+    assert inbox.classify(s, sn) == "interview"
+    assert inbox.match_company({"from": "AcMe <no-reply@crosschq.com>", "subject": s, "snippet": sn}, {"Ac.me": [{}]}) == "Ac.me"

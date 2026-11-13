@@ -45,7 +45,10 @@ CLASSES = [  # first match wins. Order matters: scam > offer > rejection > OA > 
     # strong signals only: confirmations often say "if selected, we'll reach out to schedule an interview"
     ("interview", r"(invite|inviting) you to (an? )?(interview|call|chat|conversation|phone screen)|calendly\.com|goodtime\.io|"
                   r"(share|send|provide) (us )?your availability|schedule (a|an|your) (call|chat|interview|phone screen|time to)|"
-                  r"next round|move you forward|moving you forward|like to (speak|chat|talk) with you"),
+                  r"next round|move you forward|moving you forward|like to (speak|chat|talk) with you|"
+                  # 11-12: an "AI-Led Interview Invitation" (sent via crosschq) was read as a confirmation
+                  r"interview invitation|invitation to (an? )?interview|(ai-led|video|one-way|async(hronous)?|recorded) interview|"
+                  r"hirevue|crosschq|spark ?hire|myinterview|willo\.video"),
     ("action", r"complete your application|action required|verify your email"),
     ("confirmation", r"thanks? (you )?for (applying|your application|your interest|your [\w&.-]+ application)|application (was |has been )?received|"
                      r"we.ve received your application|received your application|^your application (for|to) "),
@@ -136,7 +139,9 @@ def _match(msg, companies):
     for co in companies:
         key = re.sub(r"[,.]? (inc|llc|ltd|corp|financial)\.?$", "", co.lower()).strip()
         sq = re.sub(r"[^a-z0-9]", "", key)
-        if len(key) >= 3 and (re.search(r"(?<![a-z0-9])" + re.escape(key) + r"(?![a-z0-9])", hay) or (len(sq) >= 6 and sq in squashed)):
+        # 11-12: "Ac.me" applied, mail says "AcMe": a short punctuated name also matches its squashed form as a whole word
+        if len(key) >= 3 and (re.search(r"(?<![a-z0-9])" + re.escape(key) + r"(?![a-z0-9])", hay) or (len(sq) >= 6 and sq in squashed)
+                              or (len(sq) >= 4 and sq != key and re.search(r"(?<![a-z0-9])" + re.escape(sq) + r"(?![a-z0-9])", hay))):
             if not best or len(key) > len(best[1]):
                 best = (co, key)
     return best[0] if best else None
