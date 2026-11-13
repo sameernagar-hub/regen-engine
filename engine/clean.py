@@ -3,7 +3,7 @@
     python -m engine clean [--dry]
 
 Retention policy (user, 10-11). The event log keeps the record: job, status, resume name, proof name, answers.
-  proof/*.png            older than PROOF_DAYS (90)   confirmation screenshots: the evidence a submission happened
+  proof/*.png            older than PROOF_DAYS (90)   old confirmation screenshots (since 11-12 proofs are small .txt files, kept)
   out/*.pdf              older than RESUME_DAYS (3)   tailored resumes; rebuilt from the Fact Bank on demand
   jd/*                   older than JD_DAYS (14)      cached job descriptions
   logs/*.log             older than LOG_DAYS (14)

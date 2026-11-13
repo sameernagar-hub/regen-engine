@@ -5,7 +5,7 @@ can't answer is never guessed: the job goes to the human queue and is not submit
 Greenhouse email security codes: the runner pauses and waits for workspace/code.txt.
 
 python -m engine apply batches/b1.json          # fill + submit every job in the batch
-python -m engine apply batches/b1.json --dry    # fill only, screenshot to workspace/proof/
+python -m engine apply batches/b1.json --dry    # fill only, text proof (URL + page text) to workspace/proof/
 batch: [{"name":..., "url":..., "resume":"out/x.pdf", "extra":{"label regex":"answer"}, "note":"optional"}]
 """
 import json, re, sys, time, os, datetime

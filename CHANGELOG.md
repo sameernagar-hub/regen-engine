@@ -4,6 +4,35 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-13 · Supervisor governor, governor panel, wider sources, text proofs, truthful sponsorship
+- **Governor** (`engine/governor.py`, `engine/supervisor.py`): the supervisor re-judges the applier ceiling on every
+  15 s pass from VM memory (measured applier size, 2 GB reserve), CPU load (hold above 70%, drain one above 95%),
+  the share of page/browser timeouts in the last 30 min (drain one at 25%) and the daily cap (down to the gear
+  minimum). It adds one applier per 120 s (a new one is ~20 MB until Chromium grows to ~700 MB) and drains one per
+  90 s through the existing drain handshake. The gear is now only the allowed range. Snapshot in
+  `workspace/fleet/governor.json`, `python -m engine governor`, a `supervisor` event when the ceiling or reasons change.
+  **Why**: on 11-13 gear 3 grew to 7 appliers and 6.7 of 7.6 GB because the headroom check ran only at creation;
+  page loads timed out. **Verify**: `pytest tests/test_governor.py` (ramp, cooldowns, memory, CPU, timeouts, cap,
+  bounds); bench scenario `scale_up_to_backlog` now expects one create per pass.
+- **Governor panel** (web :3000 `/gearbox`, `apps/api/control.py`): `/api/control/gearbox` carries the snapshot; the
+  page shows ceiling / running / queue / target, memory, CPU, timeout and daily-cap gauges and the reasons. The public
+  demo serves a synthetic snapshot (`scripts/proxy_dataset.py`, `lib/proxy.ts`). Verify: open /gearbox.
+- **Sources**: Airtable reader accepts `urlWithParams =` (newgrad-jobs.com views returned nothing after a page change;
+  1,411 rows again). Scout container (every 3 h: GitHub job lists, public job APIs, new employer names). ~7,100 live
+  boards on 11-13.
+- **Proof is text** (`engine/apply/runner.py`, `proof_file()`): URL + page text instead of screenshots; the API and
+  report accept a `.txt` sibling of an old `.png` path. proof/ went from 450 MB to 2.3 MB.
+- **Sponsorship** (`engine/override.py`, derived preset): questions about sponsorship NOW answer No on OPT, questions
+  about now-or-future answer Yes; a regression test keeps the two wordings apart.
+- **Resume** (8bd4750): real tech vocabulary only (generic words no longer inflate coverage), awards and publications
+  printed, the page filled with JD-relevant bullets first. **Learning** (0de82a8): rejections keep a reason and a
+  snippet; entry/unlevelled titles are selected before II/lead (measured 48-50% vs 30-34% rejected).
+- **Inbox**: AI-led and video interview invites count as interviews; short punctuated employer names match their
+  squashed form. **Known bug (open)**: "Thank you for applying" mail can still be filed as an interview and a job
+  alert as an offer; on 11-13 `report rate` printed 0.8 per 100 where the hand-checked figure is 0.4.
+- **ALIVE** (web-alive :3001 only): Phases 2, 3, 5 (part 1), electric drivetrain hero, Phase 1b doors; plan
+  proofread as one system (`docs/ALIVE_PLAN.md`).
+
 ## [Unreleased] - 2026-11-09 · Role Keywords: off by default, the user's choice at each start (NEXT_STEPS §1.1)
 - **What** (`engine/tailoring/keywords.py`, `resume.py`): the "Role Keywords" resume line is off unless the user
   switches it on for a run: `python -m engine keywords on|off` (stored in `workspace/keywords.json`, read live by every

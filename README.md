@@ -24,28 +24,32 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 > reason each passed. No database, no Docker, nothing applied, nothing saved.
 
 > [!NOTE]
-> **v2.0 "ALIVE" is next.** The control room becomes the running engine: every part is a real container, every
-> motion a real event, Shadow takes the wheel on screen, and 15 pages become 4 rooms. Built one benchmarked phase
+> **v2.0 "ALIVE" is being built.** The control room becomes the running engine, drawn as an electric drivetrain:
+> every part is a real container, every pulse a real event, Shadow takes the wheel on screen, and 15 pages become 4
+> rooms. It runs beside the current control room (`web-alive` on :3001) until it replaces it, one benchmarked phase
 > at a time. **[Read the plan →](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2)**
 
 ## What it does
 
 | | |
 |---|---|
-| **Gets there first** | Polls ~6,400 employer boards directly, minutes after a role goes live. [Discovery →](https://github.com/sameernagar-hub/regen-engine/wiki/Discovery) |
+| **Gets there first** | Polls ~7,100 employer boards directly, minutes after a role goes live. [Discovery →](https://github.com/sameernagar-hub/regen-engine/wiki/Discovery) |
 | **Never bluffs** | Every resume line comes from your Fact Bank; a validator rejects anything else. (One optional line of the posting's own keywords is off unless you switch it on for a run.) [Tailoring →](https://github.com/sameernagar-hub/regen-engine/wiki/Tailoring) |
 | **Skips what you'd lose** | Reads the whole job description first: sponsorship, years, clearance, stack. [Fit gate →](https://github.com/sameernagar-hub/regen-engine/wiki/Fit-Gate) |
 | **Never stalls** | Stuck on a question? Shadow, your AI delegate, answers as you, truthfully, or leaves it for you. [Shadow →](https://github.com/sameernagar-hub/regen-engine/wiki/Shadow) |
-| **Proves it** | A submit counts only when the confirmation page is saved. [Evidence →](https://github.com/sameernagar-hub/regen-engine/wiki/Evidence) |
+| **Proves it** | A submit counts only when the confirmation page is saved (its URL and text); the employer's "application received" email is the second check. [Evidence →](https://github.com/sameernagar-hub/regen-engine/wiki/Evidence) |
 | **Learns from no** | Every rejection is read back and turned into the fit gate's next rule. [Feedback →](https://github.com/sameernagar-hub/regen-engine/wiki/Rejection-Feedback) |
+| **Stays in control** | The supervisor's governor resizes the applier fleet every 15 s from memory, CPU, page timeouts and the daily cap, one applier at a time, so a run never outgrows the machine. [Gearbox →](https://github.com/sameernagar-hub/regen-engine/wiki/Gearbox) |
 | **Costs nothing to think** | No model keys: Claude, Cursor or any MCP client operates it. [Zero cost →](https://github.com/sameernagar-hub/regen-engine/wiki/Zero-Cost-and-MCP) |
 
-| 443 | 0.2 per 100 | ~6,400 | 43 | 0 |
+| 509 | 0.4 per 100 | ~7,100 | 43 | 0 |
 |:-:|:-:|:-:|:-:|:-:|
-| applications sent with proof | reached an OA or interview: 0.2 per 100 (1 OA, 0 interviews; 95% interval 0.0 to 1.3) | employer boards watched | MCP tools | model API keys |
+| applications sent with proof | reached an OA or interview: 0.4 per 100 (1 OA, 1 interview; 95% interval 0.1 to 1.4) | employer boards watched | MCP tools | model API keys |
 
-From the engine's own ledger as of 2026-11-09. The second number is the one that matters, and it is low: no
-interview yet. Reproduce both with `python -m engine report` and `python -m engine report rate`. [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
+From the engine's own ledger as of 2026-11-13, outcomes checked by hand. The second number is the one that matters,
+and it is low. `python -m engine report` and `python -m engine report rate` reproduce them; on 11-13 `report rate`
+still printed 0.8 because the mail classifier had filed two "thank you for applying" mails as interviews and a job
+alert as an offer (a known classifier bug, listed in the changelog). [Metrics →](https://github.com/sameernagar-hub/regen-engine/wiki/Metrics)
 
 ## Quick start
 
