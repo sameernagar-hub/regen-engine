@@ -16,7 +16,7 @@ def read_view(share_url, timeout=30):
     app, shr = m.groups()
     op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
     page = op.open(urllib.request.Request(f"https://airtable.com/embed/{app}/{shr}", headers={"User-Agent": UA}), timeout=timeout).read().decode("utf-8", "replace")
-    u = re.search(r'urlWithParams: "([^"]+)"', page)
+    u = re.search(r'urlWithParams\s*[:=]\s*"([^"]+)"', page)
     if not u:
         raise RuntimeError(f"Airtable page layout changed: no readSharedViewData url for {shr}")
     path = u.group(1).encode().decode("unicode_escape")
