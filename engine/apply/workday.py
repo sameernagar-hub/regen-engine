@@ -302,10 +302,9 @@ def handle(ctx, req, log=print):
     shot = ""
     try:
         os.makedirs(os.path.join(WORKSPACE, "proof"), exist_ok=True)
-        shot = f"proof/{re.sub(r'[^A-Za-z0-9]+', '_', job['name'])[:50]}_{datetime.datetime.now():%m%d-%H%M%S}.png"
-        page.screenshot(path=os.path.join(WORKSPACE, shot), full_page=True)
-        from engine.clean import shrink
-        shrink(os.path.join(WORKSPACE, shot))
+        shot = f"proof/{re.sub(r'[^A-Za-z0-9]+', '_', job['name'])[:50]}_{datetime.datetime.now():%m%d-%H%M%S}.txt"
+        from engine.apply.runner import text_proof  # 11-12 (user): text proof, no screenshots
+        text_proof(page, os.path.join(WORKSPACE, shot))
     except Exception:
         shot = ""
     log(f"desk: {job['name'][:60]} -> {status}")

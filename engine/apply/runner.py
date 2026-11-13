@@ -29,6 +29,23 @@ if P.get("authorized_without_sponsorship") in ("Yes", "No"):
     P.setdefault("needs_sponsorship_now", "No" if P["authorized_without_sponsorship"] == "Yes" else "Yes")
 
 
+def text_proof(page, path):
+    """11-12 (user): no screenshots (proof/ had grown to 450 MB). The proof is a small text file: the page URL and the
+    first 1,500 characters of what the page says (the confirmation message after a submit). The event keeps its path,
+    so `report` and the dashboard still verify by file existence; the confirmation email is the second check."""
+    try:
+        body = " ".join((page.inner_text("body") or "").split())[:1500]
+    except Exception as e:
+        body = f"(page text unavailable: {e})"
+    try:
+        url = page.url
+    except Exception:
+        url = ""
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)  # page.screenshot made the folder itself; open() doesn't
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(datetime.datetime.now().isoformat(timespec="seconds") + "\n" + url + "\n\n" + body + "\n")
+
+
 def preferred_language():
     """The first general-purpose language your Fact Bank skills name (derived from facts, never invented)."""
     try:
@@ -1748,7 +1765,7 @@ def job_task(page, job, dry, results, log_base=print):
                                   else fill_workable(page, job, log) if wk else fill_yc(page, job, log) if yc
                                   else fill_rippling(page, job, log) if rip else fill_gh(page, job, log))
             stamp = datetime.datetime.now().strftime("%m%d-%H%M%S")
-            shot = f"proof/{re.sub(r'[^A-Za-z0-9]+', '_', name)[:50]}_{stamp}.png"
+            shot = f"proof/{re.sub(r'[^A-Za-z0-9]+', '_', name)[:50]}_{stamp}.txt"  # 11-12 (user): text proof, no screenshots
             # airbags: anything sensitive, unexpected or over the limits stops this job before submit
             problems = (safety.check_labels([a[0] for a in job.get("_answers", [])])
                         + safety.check_page(page.inner_text("body"), page.url, job["url"])
@@ -1757,18 +1774,18 @@ def job_task(page, job, dry, results, log_base=print):
             if not resume_in(page, job) and "RESUME UPLOAD FAILED" not in missing:
                 missing = list(missing) + ["RESUME UPLOAD FAILED (no attached file seen; not submitted)"]
             if problems:
-                page.screenshot(path=shot, full_page=True)
+                text_proof(page, shot)
                 status = "FLAGGED: " + safety.flag("airbag", name, " | ".join(problems), job["url"])
             elif missing:
-                page.screenshot(path=shot, full_page=True)
+                text_proof(page, shot)
                 status = "NEEDS YOU: " + " | ".join(missing)
             elif dry:
-                page.screenshot(path=shot, full_page=True); status = "filled (dry run)"
+                text_proof(page, shot); status = "filled (dry run)"
             elif ash and ashby_cooling():
-                page.screenshot(path=shot, full_page=True)
+                text_proof(page, shot)
                 status = "NEEDS YOU: Ashby cooldown after a bot-check; form is filled, submit it by hand (resume ready)"
             elif safety.stop_requested():  # the kill switch is checked again right before the click: nothing is sent
-                page.screenshot(path=shot, full_page=True)
+                text_proof(page, shot)
                 status = "STOPPED: kill switch before submit (" + (safety.killed() or "workspace/STOP")[:80] + ")"
             else:
                 sub = (lambda: submit_ashby(page)) if ash else (lambda: submit_lever(page)) if lev else \
@@ -1783,7 +1800,7 @@ def job_task(page, job, dry, results, log_base=print):
                         ok, msg = yield from sub()
                     else:
                         msg = "NEEDS YOU: " + " | ".join(again)
-                page.screenshot(path=shot, full_page=True)
+                text_proof(page, shot)
                 if not ok and (msg.startswith("BOT-CHECK") or (ash and msg.startswith("CAPTCHA"))):
                     open("ashby_cooldown", "w").write(datetime.datetime.now().isoformat())  # a challenge = Ashby is suspicious
                 status = "SUBMITTED" if ok else (msg if msg.startswith("NEEDS YOU") else "FAILED: " + msg)

@@ -217,12 +217,13 @@ _NARR = {}  # event id -> Narration or None (events never change, so this never 
 @app.get("/api/proof/{name}")
 def proof(name: str):
     """A proof screenshot, by file name only (no paths), from workspace/proof."""
-    if not re.fullmatch(r"[A-Za-z0-9_.\-]+\.png", name):
+    if not re.fullmatch(r"[A-Za-z0-9_.\-]+\.(png|txt)", name):
         raise HTTPException(400, "bad name")
     p = os.path.join(WORKSPACE, "proof", name)
     if not os.path.exists(p):
         raise HTTPException(404)
-    return FileResponse(p, media_type="image/png")
+    # 11-12: new proofs are text (URL + confirmation page text), older ones are screenshots
+    return FileResponse(p, media_type="text/plain; charset=utf-8" if name.endswith(".txt") else "image/png")
 
 
 @app.get("/api/signals", response_model=list[Signal])
