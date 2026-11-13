@@ -784,7 +784,15 @@ def gearbox():
         pass
     s = G.spec()
     s["appliers"] = list(s["appliers"])
-    return {"gear": s, "fleet": fleet, "speed": {"last_hour": per(1), "last_24h": per(24)},
+    try:  # 11-13: the supervisor's governor (engine/governor.py): ceiling, signals, reasons; stale after 2 min
+        from engine.governor import _load as gov_load
+        gov = gov_load() or None
+        if gov:
+            gov = {k: v for k, v in gov.items() if k not in ("last_grow", "last_shed")}
+            gov["stale"] = now - float(gov.get("ts") or 0) > 120
+    except Exception:
+        gov = None
+    return {"gear": s, "fleet": fleet, "governor": gov, "speed": {"last_hour": per(1), "last_24h": per(24)},
             "outcomes": dict(outs), "feedback": {"updated": gate.get("updated"), "stats": gate.get("stats", {}),
                                                  "rules": gate.get("rules", [])[:20]}}
 

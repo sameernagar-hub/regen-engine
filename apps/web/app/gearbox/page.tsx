@@ -11,7 +11,14 @@ import { PUBLIC } from "@/lib/engine";
 import { get, post, poll } from "@/lib/types";
 
 type Rule = { phrase: string; rejected?: number; seen?: number; rate?: number; lift?: number; p_adj?: number; status: string };
+// 11-13: the supervisor's governor (engine/governor.py) re-judges the applier ceiling every 15 s from these signals
+type Gov = {
+  at?: string; stale?: boolean; gear_range?: number[]; running?: number; supply_wants?: number; ceiling?: number; target?: number;
+  reasons?: string[]; machine?: { free_mb?: number; load_per_cpu?: number; cpus?: number }; applier_mb?: number;
+  health?: { recent?: number; timeouts?: number; rate?: number }; submitted_today?: number | null; daily_cap?: number | null;
+};
 type Box = {
+  governor?: Gov | null;
   gear: { gear: string; clutch: string; label: string; appliers: number[]; loop_min: number | null; gears: Record<string, string>; set_at?: string; by?: string };
   fleet: { appliers_up?: number; inbox?: number; claimed?: number; verdict?: string };
   speed: { last_hour: number; last_24h: number };
@@ -204,6 +211,8 @@ export default function Gearbox() {
         </div>
       </section>
 
+      <Governor g={box?.governor} />
+
       <section className="gb-feedback">
         <h2>What the feedback taught</h2>
         <p className="dim small">
@@ -222,5 +231,61 @@ export default function Gearbox() {
         </table>
       </section>
     </main>
+  );
+}
+
+// thresholds mirror engine/governor.py defaults (REGEN_MIN_FREE_MB 2048, REGEN_MAX_LOAD 0.7, REGEN_SHED_LOAD 0.95, 25% timeouts)
+const RESERVE_MB = 2048, HOLD_LOAD = 0.7, SHED_LOAD = 0.95, TIMEOUT_RATE = 0.25;
+
+function Gauge({ label, value, max, warn, alarm, text, note }: { label: string; value: number; max: number; warn: number; alarm: number; text: string; note: string }) {
+  const lvl = value >= alarm ? "alarm" : value >= warn ? "warn" : "ok";
+  return (
+    <div className={`gov-gauge ${lvl}`}>
+      <div className="gov-gauge-head"><span>{label}</span><b>{text}</b></div>
+      <progress max={max} value={Math.min(value, max)} aria-label={`${label}: ${text}`} />
+      <small>{note}</small>
+    </div>
+  );
+}
+
+function Governor({ g }: { g?: Gov | null }) {
+  if (g === undefined) return null;
+  if (!g) return (
+    <section className="gb-governor"><h2>Governor</h2>
+      <p className="dim small">No governor snapshot yet: the supervisor writes one every 15 s while it runs.</p></section>);
+  const m = g.machine || {}, h = g.health || {};
+  const free = m.free_mb ?? 0, load = m.load_per_cpu ?? 0, rate = h.rate ?? 0;
+  const memPressure = free ? Math.max(0, 1 - (free - RESERVE_MB) / Math.max(1, free)) : 0;
+  const cap = g.daily_cap || 0, subs = g.submitted_today ?? 0;
+  const limiting = (g.ceiling ?? 0) < (g.gear_range?.[1] ?? 0);
+  return (
+    <section className={`gb-governor${g.stale ? " stale" : ""}`} aria-live="polite">
+      <h2>Governor <span className={`tag ${g.stale ? "proposed" : limiting ? "warn" : "active"}`}>{g.stale ? "stale" : limiting ? "limiting" : "clear"}</span></h2>
+      <p className="dim small">
+        The gear sets the range you allow, the queue sets how many appliers are useful, and the supervisor&apos;s governor sets how many are
+        safe right now from memory, CPU, page timeouts and the daily cap. It adds one applier at a time (every 2 min, so each
+        reaches its real size) and drains one at a time (every 90 s); a draining applier finishes its batch first. Updated {g.at || "·"}.
+      </p>
+      <dl className="gauges gov-gauges">
+        <div><dt>Ceiling</dt><dd>{g.ceiling ?? "·"}</dd><small>gear range {(g.gear_range || []).join("-") || "·"}</small></div>
+        <div><dt>Running</dt><dd>{g.running ?? "·"}</dd><small>appliers not draining</small></div>
+        <div><dt>Queue wants</dt><dd>{g.supply_wants ?? "·"}</dd><small>one per 3 jobs waiting</small></div>
+        <div><dt>Target</dt><dd>{g.target ?? "·"}</dd><small>min(gear, queue, governor)</small></div>
+      </dl>
+      <div className="gov-gauges">
+        <Gauge label="Memory" value={memPressure} max={1} warn={0.6} alarm={1} text={free ? `${(free / 1024).toFixed(1)} GB free` : "·"}
+               note={`reserve ${(RESERVE_MB / 1024).toFixed(0)} GB · ~${g.applier_mb ?? "·"} MB per applier`} />
+        <Gauge label="CPU" value={load} max={1.2} warn={HOLD_LOAD} alarm={SHED_LOAD} text={`${Math.round(load * 100)}% load`}
+               note={`${m.cpus ?? "·"} CPUs · hold above ${HOLD_LOAD * 100}%, drain one above ${SHED_LOAD * 100}%`} />
+        <Gauge label="Page timeouts" value={rate} max={0.5} warn={TIMEOUT_RATE / 2} alarm={TIMEOUT_RATE} text={`${h.timeouts ?? 0} of ${h.recent ?? 0}`}
+               note={`last 30 min · drain one at ${TIMEOUT_RATE * 100}%`} />
+        <Gauge label="Daily cap" value={cap ? subs / cap : 0} max={1} warn={0.8} alarm={1} text={cap ? `${subs} / ${cap}` : "·"}
+               note="at the cap the fleet drops to the gear minimum" />
+      </div>
+      <ul className="gov-reasons">
+        {(g.reasons || []).map((r) => <li key={r}>{r}</li>)}
+        {!g.reasons?.length && <li className="dim">Nothing is limiting the fleet: the gear and the queue decide.</li>}
+      </ul>
+    </section>
   );
 }

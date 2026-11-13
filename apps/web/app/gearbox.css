@@ -124,3 +124,25 @@ svg.cord { width: 100%; height: auto; display: block; margin: 8px 0 18px; }
 .engine .part.hot .mcp-cord { opacity: 1; stroke: var(--tone); }
 .engine .part.hot .mcp-plug { stroke: var(--tone); }
 @media (prefers-reduced-motion: reduce) { .cord .spark, .engine .mcp-spark { display: none; } }
+
+/* 11-13 governor panel */
+.gb-governor { margin-top: 28px; border: 1px solid var(--faint); border-radius: 14px; padding: 16px 18px; }
+.gb-governor.stale { opacity: .6; }
+.gb-governor h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
+.gb-governor .tag { padding: 2px 8px; border-radius: 999px; font-size: 11px; border: 1px solid var(--line); font-weight: 400; }
+.gb-governor .tag.active { color: var(--calm); border-color: var(--calm); }
+.gb-governor .tag.warn { color: var(--amber); border-color: var(--amber); }
+.gov-gauges { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.gov-gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 14px; }
+.gov-gauge { border: 1px solid var(--faint); border-radius: 10px; padding: 10px; }
+.gov-gauge-head { display: flex; justify-content: space-between; font-size: 12px; color: var(--dim); letter-spacing: .06em; }
+.gov-gauge-head b { color: var(--ink); font-weight: 600; letter-spacing: 0; }
+.gov-gauge.warn .gov-gauge-head b { color: var(--amber); }
+.gov-gauge.alarm .gov-gauge-head b { color: var(--alarm); }
+.gov-gauge progress { width: 100%; height: 10px; margin: 8px 0 4px; accent-color: var(--calm); }
+.gov-gauge.warn progress { accent-color: var(--amber); }
+.gov-gauge.alarm progress { accent-color: var(--alarm); }
+.gov-gauge small { color: var(--dim); font-size: 11px; }
+.gov-reasons { margin: 14px 0 0; padding-left: 18px; font-size: 13px; }
+.gov-reasons li { margin: 3px 0; }
+@media (max-width: 640px) { .gov-gauges { grid-template-columns: 1fr 1fr; } }
