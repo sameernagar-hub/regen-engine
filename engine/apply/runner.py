@@ -37,6 +37,9 @@ def preferred_language():
 
 
 PREFERRED_LANGUAGE = P.get("preferred_language") or preferred_language()
+NOW_ONLY = (r"^(?!.*(future|long.?term|later|eventually|next \d|\d+ years|h-?1b|green card|extension|ever)).*"
+            r"((currently|presently|right now|at this time|today)\b.{0,40}(require|need).{0,60}sponsor"
+            r"|(require|need).{0,60}sponsor.{0,60}\b(currently|presently|right now|at this time|today|to start)\b)")
 LONG_TERM = r"without .{0,40}sponsorship.{0,60}(next \d+|\d+ years|long.?term|future|foreseeable|indefinitely|duration)|(next \d+ years|long.?term|indefinitely).{0,60}without .{0,40}sponsorship"
 
 
@@ -153,6 +156,9 @@ RULES = [
     # "the country you are legally registered / authorized to work in" asks for a country, not Yes (10-17: got an essay)
     (r"countr(y|ies)\b.{0,40}\b(registered|authori[sz]ed|eligible|permitted|allowed|entitled) to work", P["country"]),
     (LONG_TERM, P.get("authorized_without_sponsorship_long_term")),  # before the plain "without sponsorship" rule
+    # 11-12 (user): a question about NOW only ("do you currently require sponsorship?") is No on OPT; it used to fall
+    # through to the catch-all sponsor rule below and answer Yes. Any mention of the future keeps the future answer.
+    (NOW_ONLY, "No" if P.get("authorized_without_sponsorship") == "Yes" else None),
     (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
     (r"(will|do) you (now or in the future )?(require|need) (any )?(work |employment )?(authori[sz]ation|permit)", P.get("needs_sponsorship_now_or_future")),
     (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor|(file|submit) a petition|employment.based (visa|immigration)", P.get("needs_sponsorship_now_or_future")),
