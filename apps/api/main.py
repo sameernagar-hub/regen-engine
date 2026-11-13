@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 from apps.api import store
 from apps.api import control
 from apps.api.models import AnswerIn, AnswerOut, Application, Drafted, Event, HumanItem, Narration, Outcome, Signal, Snapshot
-from engine.config import WORKSPACE
+from engine.config import WORKSPACE, proof_file
 from engine.feedback import answers as A
 from engine.live.server import narrate, signal, who
 
@@ -64,7 +64,7 @@ WAITING = ("NEEDS YOU", "FAILED", "FLAGGED")
 
 
 def _proof(path):
-    return path if path and os.path.exists(os.path.join(WORKSPACE, path)) else None
+    return path if proof_file(path, WORKSPACE) else None
 
 
 _MEMO = {}  # name -> (log version, value): recomputed only when a new event lands
@@ -219,11 +219,10 @@ def proof(name: str):
     """A proof screenshot, by file name only (no paths), from workspace/proof."""
     if not re.fullmatch(r"[A-Za-z0-9_.\-]+\.(png|txt)", name):
         raise HTTPException(400, "bad name")
-    p = os.path.join(WORKSPACE, "proof", name)
-    if not os.path.exists(p):
+    p = proof_file(os.path.join("proof", name), WORKSPACE)  # 11-12: an old .png name is served from its .txt replacement
+    if not p:
         raise HTTPException(404)
-    # 11-12: new proofs are text (URL + confirmation page text), older ones are screenshots
-    return FileResponse(p, media_type="text/plain; charset=utf-8" if name.endswith(".txt") else "image/png")
+    return FileResponse(p, media_type="text/plain; charset=utf-8" if p.endswith(".txt") else "image/png")
 
 
 @app.get("/api/signals", response_model=list[Signal])

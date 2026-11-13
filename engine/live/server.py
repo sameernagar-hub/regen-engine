@@ -11,7 +11,7 @@ listening -> judging -> writing -> applying -> hearing back.
 import json, os, re, sys, time, threading, webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from engine.config import WORKSPACE
+from engine.config import WORKSPACE, proof_file
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EVENTS = lambda: os.path.join(WORKSPACE, "events.jsonl")
@@ -115,7 +115,7 @@ def _narrate(e):
             return dict(stage="judge", tone="quiet", **_common(e, "gate.skip", co), detail=short(d.replace("JD: ", ""), 120),
                         text=f"Let {co} go: {short(d.replace('JD: ', ''), 60)}.")
         if st == "SUBMITTED":
-            proof = e.get("proof") and os.path.exists(os.path.join(WORKSPACE, e["proof"]))
+            proof = proof_file(e.get("proof"), WORKSPACE)
             return dict(stage="apply", tone="win", **_common(e, "submitted", co),
                         text=f"Applied to {co}, {role}." + (" Proof saved." if proof else ""), verified=bool(proof))
         if e.get("correction"):
@@ -173,8 +173,7 @@ def snapshot():
                 lanes[e.get("job")] = e["lane"]                  # which resume lane wrote this application
             if e.get("kind") == "application" and not e.get("dry"):
                 latest[" ".join((e.get("job") or "").lower().split())] = e  # by job name: old backfilled events have no url
-    verified = [e for e in latest.values() if e.get("status") == "SUBMITTED" and e.get("proof")
-                and os.path.exists(os.path.join(WORKSPACE, e["proof"]))]
+    verified = [e for e in latest.values() if e.get("status") == "SUBMITTED" and proof_file(e.get("proof"), WORKSPACE)]
     waiting_items = []
     for e in latest.values():  # what is waiting on the human NOW (each job's latest status), not old history
         if e.get("status") in ("NEEDS YOU", "FAILED", "FLAGGED"):  # not submitted, not deliberately skipped

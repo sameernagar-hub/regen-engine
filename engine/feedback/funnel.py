@@ -10,7 +10,7 @@ rate carries a Wilson interval and the text says so when the data cannot tell tw
 import math
 import os
 
-from engine.config import WORKSPACE
+from engine.config import WORKSPACE, proof_file
 from engine.feedback.events import read
 
 POSITIVE = ("oa", "interview", "offer")
@@ -35,7 +35,7 @@ def verified(day=None):
         if not e.get("dry"):
             latest[e.get("url") or e["job"]] = e
     rows = [e for e in latest.values() if e["status"] == "SUBMITTED" and (not day or e["ts"].startswith(day))]
-    return [e for e in rows if e.get("proof") and os.path.exists(os.path.join(WORKSPACE, e["proof"]))], rows
+    return [e for e in rows if proof_file(e.get("proof"), WORKSPACE)], rows
 
 
 def outcomes(events=None, prefer=None):

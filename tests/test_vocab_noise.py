@@ -28,3 +28,11 @@ def test_reject_reason_and_level_rank():
     assert reject_reason("thanks for applying") == "unstated"
     assert targeting.level_rank({"title": "Software Engineer II"}) == 1
     assert targeting.level_rank({"title": "Software Engineer, New Grad"}) == 0
+
+
+def test_proof_file_accepts_text_sibling(tmp_path, monkeypatch):
+    import engine.config as c
+    monkeypatch.setattr(c, "WORKSPACE", str(tmp_path))
+    (tmp_path / "proof").mkdir()
+    (tmp_path / "proof" / "a.txt").write_text("x")
+    assert c.proof_file("proof/a.png") and c.proof_file("proof/a.txt") and not c.proof_file("proof/b.png")
