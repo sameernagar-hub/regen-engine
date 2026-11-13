@@ -24,6 +24,9 @@ P = json.load(open(os.environ.get("REGEN_PRESETS") or profile_file("presets.json
 # whoever will need sponsorship in the future can't work long-term without it.
 if P.get("needs_sponsorship_now_or_future") in ("Yes", "No"):
     P.setdefault("authorized_without_sponsorship_long_term", "No" if P["needs_sponsorship_now_or_future"] == "Yes" else "Yes")
+# 11-12: "do you need sponsorship NOW" is the inverse of "authorized without sponsorship (today)", derived the same way
+if P.get("authorized_without_sponsorship") in ("Yes", "No"):
+    P.setdefault("needs_sponsorship_now", "No" if P["authorized_without_sponsorship"] == "Yes" else "Yes")
 
 
 def preferred_language():
@@ -158,7 +161,7 @@ RULES = [
     (LONG_TERM, P.get("authorized_without_sponsorship_long_term")),  # before the plain "without sponsorship" rule
     # 11-12 (user): a question about NOW only ("do you currently require sponsorship?") is No on OPT; it used to fall
     # through to the catch-all sponsor rule below and answer Yes. Any mention of the future keeps the future answer.
-    (NOW_ONLY, "No" if P.get("authorized_without_sponsorship") == "Yes" else None),
+    (NOW_ONLY, P.get("needs_sponsorship_now")),
     (r"without (the need for |requiring |needing )?(current or future )?(visa |employer |employment )?sponsorship", P.get("authorized_without_sponsorship")),
     (r"(will|do) you (now or in the future )?(require|need) (any )?(work |employment )?(authori[sz]ation|permit)", P.get("needs_sponsorship_now_or_future")),
     (r"(require|need).{0,60}(sponsor|visa|immigration)|sponsor|(file|submit) a petition|employment.based (visa|immigration)", P.get("needs_sponsorship_now_or_future")),

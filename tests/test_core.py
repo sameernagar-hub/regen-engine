@@ -864,3 +864,20 @@ def test_reposync_token_never_leaks(tmp_path, monkeypatch):
     assert not any("x" * 36 in c for c in seen["cmd"])  # only the base64 header carries it, never the raw token
     tok.write_text("PASTE_YOUR_GITHUB_TOKEN_HERE")
     assert R.token() is None
+
+
+def test_sponsorship_now_vs_future_never_mixed():
+    """11-12 regression: a NOW-only sponsorship question got the future answer (Yes) on OPT. Each wording must get
+    the preset for exactly what it asks; a wrong answer here can knock out an application or misstate status."""
+    import engine.apply.runner as r
+    now = r.P["needs_sponsorship_now"]
+    fut = r.P["needs_sponsorship_now_or_future"]
+    assert now == ("No" if r.P["authorized_without_sponsorship"] == "Yes" else "Yes")
+    for q in ("Do you currently require visa sponsorship?", "Do you require sponsorship at this time?",
+              "Do you need sponsorship to start working?"):
+        assert answer_for(q, {}) == now, q
+    for q in ("Will you now or in the future require sponsorship for employment visa status?",
+              "Will you require sponsorship in the future (e.g. H-1B)?",
+              "Do you now, or will you in the future, require immigration sponsorship?"):
+        assert answer_for(q, {}) == fut, q
+    assert answer_for("Are you authorized to work in the US without sponsorship?", {}) == r.P["authorized_without_sponsorship"]
