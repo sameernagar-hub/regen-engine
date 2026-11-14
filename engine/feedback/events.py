@@ -16,7 +16,7 @@ parses only bytes appended since (O(new lines) instead of O(whole file) per call
 per job for the rate cap and the already-submitted check, so a batch was O(jobs x events); now it's O(events)
 once plus O(new) per job. A malformed line is skipped (and counted), never fatal.
 """
-import datetime, json, os
+import datetime, json, os, threading
 
 from engine.config import WORKSPACE
 
@@ -73,12 +73,24 @@ def record(kind, **fields):
 
 
 _cache = {"path": None, "offset": 0, "events": [], "bad": 0, "ino": None}
+# 11-13: the API serves sync routes from a thread pool; two threads catching up the same chunk both appended it, and
+# every count doubled (the tab read "30 sent" for 15). One lock around the catch-up keeps the cache single-copy.
+_read_lock = threading.Lock()
 
 
 def read(kind=None):
     path = _path()
     if not os.path.exists(path):
         return []
+    with _read_lock:
+        evs = _catch_up(path)
+    if kind == "outcome":
+        return _outcomes(evs)
+    return list(evs) if kind is None else [e for e in evs if e.get("kind") == kind]
+
+
+def _catch_up(path):
+    """Read the lines appended since the last call into the cache (caller holds _read_lock); return the cache."""
     st = os.stat(path)
     c = _cache
     if c["path"] != path or st.st_size < c["offset"] or c["ino"] != (st.st_ino, st.st_dev) and st.st_ino:
@@ -96,10 +108,7 @@ def read(kind=None):
             except ValueError:
                 c["bad"] += 1
         c["offset"] += end
-    evs = c["events"]
-    if kind == "outcome":
-        return _outcomes(evs)
-    return list(evs) if kind is None else [e for e in evs if e.get("kind") == kind]
+    return c["events"]
 
 
 def _outcomes(evs):

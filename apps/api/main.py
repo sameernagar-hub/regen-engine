@@ -214,6 +214,23 @@ def narration(after: int = 0, limit: int = Query(40, le=500)):
 _NARR = {}  # event id -> Narration or None (events never change, so this never goes stale)
 
 
+@app.get("/api/replay", response_model=list[Narration])
+def replay(since: str = Query(..., description="local ISO time, e.g. 2026-11-13T19:40:00"),
+           limit: int = Query(2000, ge=1, le=5000)):
+    """ALIVE Phase 4: every narration after `since`, oldest first, for "While you were away". A gap with more than
+    `limit` narrations keeps the newest `limit`, so the replay always ends where live begins."""
+    out = []
+    for i, e in store.read(0):
+        if (e.get("ts") or "") <= since:  # ledger ts are fixed-width local ISO strings: string order is time order
+            continue
+        if i not in _NARR:
+            n = narrate(e)
+            _NARR[i] = Narration(id=i, ts=e.get("ts"), **n) if n else None
+        if _NARR[i]:
+            out.append(_NARR[i])
+    return out[-limit:]
+
+
 @app.get("/api/proof/{name}")
 def proof(name: str):
     """A proof screenshot, by file name only (no paths), from workspace/proof."""

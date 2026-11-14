@@ -312,3 +312,11 @@ def test_next_steps_controls_refuse_when_writes_are_off(monkeypatch):
     for path, body in (("/api/control/keywords", {"on": True}), ("/api/control/cap", {"level": 1}),
                        ("/api/control/targeting", {"key": "skip_unsure", "value": False}), ("/api/outreach/sent", {"company": "x"})):
         assert client.post(path, json=body).status_code == 403
+
+
+def test_replay_returns_the_gap_oldest_first():
+    allx = client.get("/api/replay", params={"since": "2000-01-01T00:00:00"}).json()
+    assert allx and [n["id"] for n in allx] == sorted(n["id"] for n in allx)
+    assert client.get("/api/replay", params={"since": "2999-01-01T00:00:00"}).json() == []
+    assert len(client.get("/api/replay", params={"since": "2000-01-01T00:00:00", "limit": 1}).json()) == 1
+    assert client.get("/api/replay").status_code == 422  # since is required
