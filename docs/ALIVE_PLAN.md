@@ -277,7 +277,9 @@ Accept:
   modes, what Your turn means, clean stop, FAQ) and "Build on REGEN" (§3 parts table, §4 event kinds, API routes, MCP
   config, contributing), copied from the wiki + this plan, no new facts; Garage > Docs tab. Bug fixed: every drawer
   had collapsed to ~145 px because `.alive-home > * { position: relative }` beat `.al-room-back { position: fixed }`.
-- NOT done yet: removing `NEXT_PUBLIC_ALIVE` (stays on purpose until v2.0 ships, see below); `POST /try` paste box (§5a).
+- DONE 11-13: `POST /api/try` (try_it.skills + rank, default gate, 50k chars max, one per client per minute, board fetch
+  cached 10 min, nothing stored; test) + the paste box in /docs "Try it first" (hidden on the public build for now).
+- NOT done yet: removing `NEXT_PUBLIC_ALIVE` (stays on purpose until v2.0 ships, see below).
   The flag stays for now on purpose: the user keeps `web` (:3000) on the old v1.x home until v2.0 ships.
 - [ ] A non-technical read-through of /docs "Use REGEN" needs no other page to start a run.
 

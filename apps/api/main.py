@@ -214,6 +214,49 @@ def narration(after: int = 0, limit: int = Query(40, le=500)):
 _NARR = {}  # event id -> Narration or None (events never change, so this never goes stale)
 
 
+# ---- ALIVE §5a quick start: "Try it first" as a paste box (POST /api/try) ----
+# Same code path as `python -m engine try` (engine/try_it.py): the resume text is read for skill words, the sample
+# public Greenhouse boards are ranked with the default fit gate (never the owner's profile), the top 10 come back
+# with their reasons. Nothing is stored or logged: the text lives only for this request. One call per client per
+# minute; the board fetch is cached 10 minutes so repeated tries do not hammer the boards.
+_TRY_HITS: dict = {}
+_TRY_JOBS = {"at": 0.0, "jobs": [], "boards": 0}
+TRY_EVERY_S, TRY_CACHE_S, TRY_MAX_CHARS = 60, 600, 50_000
+
+
+def _try_jobs():
+    if time.time() - _TRY_JOBS["at"] > TRY_CACHE_S or not _TRY_JOBS["jobs"]:
+        from engine import try_it
+        from engine.discovery.ats import fetch_all
+        boards = try_it.sample_boards(40)
+        jobs, _, _ = fetch_all({"greenhouse": boards}, workers=16)
+        _TRY_JOBS.update(at=time.time(), jobs=jobs, boards=len(boards))
+    return _TRY_JOBS["jobs"], _TRY_JOBS["boards"]
+
+
+@app.post("/api/try")
+def try_resume(body: dict, request: Request):
+    text = str((body or {}).get("text") or "")
+    if not text.strip():
+        raise HTTPException(400, "paste your resume text")
+    if len(text) > TRY_MAX_CHARS:
+        raise HTTPException(413, f"resume text over {TRY_MAX_CHARS} characters")
+    who, now = (request.client.host if request.client else "?"), time.time()
+    if now - _TRY_HITS.get(who, 0) < TRY_EVERY_S:
+        raise HTTPException(429, f"one try per {TRY_EVERY_S} s; wait {int(TRY_EVERY_S - (now - _TRY_HITS[who])) + 1} s")
+    _TRY_HITS[who] = now
+    for k in [k for k, t in _TRY_HITS.items() if now - t > TRY_EVERY_S]:  # forget old clients: the table stays small
+        _TRY_HITS.pop(k, None)
+    from engine import try_it
+    have = try_it.skills(text)
+    jobs, boards = _try_jobs()
+    passed, blocked = try_it.rank(jobs, have)
+    return {"skills": {f: w[:4] for f, w in have.items()}, "boards": boards, "postings": len(jobs), "passing": len(passed),
+            "top": [{"company": j.get("company"), "title": j.get("title"), "location": j.get("location"), "url": j.get("url"),
+                     "reason": r} for _, j, r in passed[:10]],
+            "blocked": dict(blocked.most_common()), "stored": False}
+
+
 @app.get("/api/replay", response_model=list[Narration])
 def replay(since: str = Query(..., description="local ISO time, e.g. 2026-11-13T19:40:00"),
            limit: int = Query(2000, ge=1, le=5000)):

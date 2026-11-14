@@ -4,6 +4,44 @@
 // plan's §3 container map and §4 event contract: no new facts. Also rendered as Garage > Docs inside the drawer.
 import { useState } from "react";
 import { Nav } from "../nav";
+import { post } from "@/lib/types";
+
+const PUBLIC = process.env.NEXT_PUBLIC_REGEN_MODE === "public";
+type TryOut = { skills: Record<string, string[]>; boards: number; postings: number; passing: number;
+  top: { company: string; title: string; location: string; url: string; reason: string }[]; blocked: Record<string, number> };
+
+/** §5a quick start as a paste box: POST /api/try (nothing stored, one try a minute). The public site shows the CLI. */
+function TryBox() {
+  const [text, setText] = useState("");
+  const [out, setOut] = useState<TryOut | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  if (PUBLIC) return null;
+  const go = async () => {
+    setBusy(true); setErr(""); setOut(null);
+    try { setOut(await post<TryOut>("/api/try", { text })); }
+    catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="dc-try">
+      <label htmlFor="dc-try-text">Or paste resume text here (nothing is stored):</label>
+      <textarea id="dc-try-text" rows={6} value={text} onChange={(e) => setText(e.target.value)} maxLength={50000}
+                placeholder="Paste the text of your resume" />
+      <button type="button" onClick={go} disabled={busy || !text.trim()}>{busy ? "Scanning sample boards…" : "Show my 10 best roles"}</button>
+      {err && <p className="alive-error" role="status">{err}</p>}
+      {out && (
+        <div role="status">
+          <p>Your resume shows: {Object.entries(out.skills).map(([f, w]) => `${f} (${w.join(", ")})`).join("; ") || "no known skill words"}.
+            Scanned {out.boards} public boards, {out.postings} postings; {out.passing} pass.</p>
+          <ol>{out.top.map((j) => <li key={j.url}><a href={j.url} target="_blank" rel="noreferrer noopener">{j.company}: {j.title}</a>
+            {j.location ? ` [${j.location}]` : ""}<br /><small>{j.reason}</small></li>)}</ol>
+          <p><small>Blocked by the fit gate: {Object.entries(out.blocked).map(([r, n]) => `${n} ${r}`).join(", ") || "none"}.</small></p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const START = `cd regen-engine
 REGEN_MCP_WRITE=1 REGEN_DAYS=30 REGEN_MAX_PER_DAY=150 REGEN_TABS=4 \\
@@ -84,6 +122,7 @@ export default function Docs() {
             <h2>Try it first</h2>
             <p>No Docker, no database, nothing applied: read a resume, scan sample boards, print the 10 best-fitting fresh roles and why each passed.</p>
             <Code>{"python -m engine try resume.txt"}</Code>
+            <TryBox />
           </section>
           <section>
             <h2>Start a run</h2>
