@@ -301,7 +301,8 @@ site's loop of last night's scrubbed replay.
 Files: `apps/web/app/alive/TabPulse.tsx`, `layout.tsx`.
 - `document.title` = "REGEN · 3 sent · 2 yours" (only when changed); the favicon is a tiny flywheel that turns on submit.
 Accept:
-- [ ] Title updates from events within 2 s; no update when nothing changed.
+- [x] Title updates from events within 2 s; no update when nothing changed. (11-13: live submit -> title 60 ms later;
+      MutationObserver saw only real changes.)
 **As built (11-13):** `alive/TabPulse.tsx`, mounted from the ALIVE home in page.tsx (not layout.tsx, so web :3000 keeps
 the v1.x title). Title from /api/control/cap `today` + /api/human count, re-read on `submitted` / `parked` /
 `shadow.answer`, written only when the text changes; favicon = a canvas-drawn gold flywheel turning a quarter per
