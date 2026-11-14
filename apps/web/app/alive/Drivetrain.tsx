@@ -7,7 +7,7 @@
 // Every wire is connected end to end. A wire carries animated current only while the container behind it is warm and
 // the engine is in gear; every pulse that runs along it is one real event (discovered, gate.skip, resume, apply.start,
 // submitted, parked, shadow.*, outcome). Nothing moves without the engine moving.
-import type { KeyboardEvent, ReactNode } from "react";
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 
 /** A drivetrain part as a door to its room (Phase 1b): click, Enter or Space opens the drawer (alive/Rooms.tsx). */
 const door = (room: string, tab: string | undefined, name: string) => ({
@@ -18,6 +18,8 @@ const door = (room: string, tab: string | undefined, name: string) => ({
 
 export type Route = "in" | "dump" | "write" | "apply" | "out" | "seat" | "tray" | "back" | "shadowtray" | "return" | "fail";
 export type Pulse = { id: number; route: Route; text?: string };
+/** A posting sitting in a stage: it rides that stage's coil as a bead (employer initial; full name on hover). */
+export type Bead = { id: string; company: string | null; by: string | null };
 
 const M = { x: 560, y: 300 };  // motor centre
 export const ROUTES: Record<Route, string> = {
@@ -38,7 +40,48 @@ const WIRES: [Route, string][] = [  // static conductors and the container that 
   ["seat", "answers"], ["tray", "applier"], ["back", "answers"], ["shadowtray", "answers"], ["return", "feedback"],
 ];
 
+/** Cubic Bezier point at t (the Write and Apply coils are single cubics in ROUTES). */
+function cubic(d: string, t: number): [number, number] {
+  const n = d.match(/-?\d+(\.\d+)?/g)!.map(Number);  // M x0 y0 C x1 y1 x2 y2 x3 y3
+  const u = 1 - t;
+  const f = (a: number, b: number, c: number, e: number) => u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * e;
+  return [f(n[0], n[2], n[4], n[6]), f(n[1], n[3], n[5], n[7])];
+}
+
+/** Beads spread evenly along a coil; Shadow's (by = shadow) are violet. Each is a real posting in that stage. */
+function Beads({ route, beads }: { route: Route; beads: Bead[] }) {
+  return (
+    <g className={`dt-beads dt-beads-${route}`}>
+      {beads.map((b, i) => {
+        const [x, y] = cubic(ROUTES[route], (i + 1) / (beads.length + 1));
+        const who = b.company ?? "a posting";
+        return (
+          <g key={b.id} className={`dt-bead${b.by === "shadow" ? " dt-bead-shadow" : ""}`} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`}>
+            <title>{who}</title>
+            <circle r={10} />
+            <text y={4}>{who.charAt(0).toUpperCase()}</text>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+/** Under 600 px the circuit turns a quarter so it stacks top to bottom (sources on top, flywheel below). */
+function usePortrait(): boolean {
+  const [p, setP] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 600px)");
+    const on = () => setP(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return p;
+}
+
 export type DrivetrainProps = {
+  beads?: { write: Bead[]; apply: Bead[] };
   gear: string; speed?: string; warm: (role: string) => boolean; capped: boolean;
   counts: { heard: number; letGo: number; write: number; apply: number; sent: number | null; replies: number; tray: number };
   shadow: string | null; pulses: Pulse[]; fired: Record<string, number>; seat: ReactNode; label: string;
@@ -59,19 +102,23 @@ function Spark({ p }: { p: Pulse }) {
   );
 }
 
-export function Drivetrain({ gear, speed, warm, capped, counts, shadow, pulses, fired, seat, label }: DrivetrainProps) {
+export function Drivetrain({ gear, speed, warm, capped, counts, shadow, pulses, fired, seat, label, beads }: DrivetrainProps) {
+  const portrait = usePortrait();
   const running = gear !== "N" && !capped;
   const engaged = shadow === "autopilot" || shadow === "always";
   const live = (role: string) => running && warm(role);
   const teeth = Array.from({ length: 12 }, (_, i) => i * 30);
   return (
-    <svg className={`alive-svg dt${running ? " dt-running" : ""}${engaged ? " dt-engaged" : ""}`} viewBox="0 0 1000 600"
+    <svg className={`alive-svg dt${running ? " dt-running" : ""}${engaged ? " dt-engaged" : ""}${portrait ? " dt-portrait" : ""}`}
+         viewBox={portrait ? "0 0 600 1000" : "0 0 1000 600"}
          preserveAspectRatio="xMidYMid meet" role="group" aria-label={label}
          style={speed ? { ["--speed" as string]: speed } : undefined}>
       <defs>
         <radialGradient id="dt-core"><stop offset="0" stopColor="#f2c14e" stopOpacity=".55" /><stop offset="1" stopColor="#f2c14e" stopOpacity="0" /></radialGradient>
         <filter id="dt-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
       </defs>
+      {/* portrait: the same circuit turned a quarter; labels turn back upright in CSS (.dt-portrait text) */}
+      <g transform={portrait ? "translate(600 0) rotate(90)" : undefined}>
 
       {/* conductors: a dim copper line, and over it the current (dashes flowing) while its container is warm */}
       {WIRES.map(([r, role]) => (
@@ -98,8 +145,8 @@ export function Drivetrain({ gear, speed, warm, capped, counts, shadow, pulses, 
       <g className={`dt-inverter${warm("pipeline") ? "" : " dt-cold"}`} key={`j${fired.judge ?? 0}`}>
         <rect x={262} y={250} width={100} height={102} rx={14} />
         <path d="M282 312 q15 -30 30 0 t30 0" className="dt-sine" />
-        <text x={312} y={240} className="dt-label">Judge</text>
-        <text x={312} y={276} className="dt-sub">inverter</text>
+        <g className="dt-txt"><text x={312} y={240} className="dt-label">Judge</text>
+        <text x={312} y={276} className="dt-sub">inverter</text></g>
       </g>
       <g className="dt-ground"><path d="M290 466 h44 M298 474 h28 M306 482 h12" /></g>
       <text x={344} y={470} className="dt-count dt-left">{counts.letGo} let go</text>
@@ -118,11 +165,11 @@ export function Drivetrain({ gear, speed, warm, capped, counts, shadow, pulses, 
           {[0, 60, 120, 180, 240, 300].map((a) => <rect key={a} x={M.x - 6} y={M.y - 70} width={12} height={46} rx={5} transform={`rotate(${a} ${M.x} ${M.y})`} />)}
           <circle cx={M.x} cy={M.y} r={18} className="dt-hub" />
         </g>
-        <text x={M.x} y={M.y + 6} className="dt-gear">{gear}</text>
-        <text x={M.x} y={M.y + 26} className="dt-sub">{capped ? "cap reached" : gear === "N" ? "neutral" : "gear"}</text>
+        <g className="dt-txt"><text x={M.x} y={M.y + 6} className="dt-gear">{gear}</text>
+        <text x={M.x} y={M.y + 26} className="dt-sub">{capped ? "cap reached" : gear === "N" ? "neutral" : "gear"}</text></g>
       </g>
-      <g className="dt-station" key={`w${fired.write ?? 0}`}><circle cx={480} cy={190} r={13} /><text x={448} y={176} className="dt-label dt-right">Write</text><text x={448} y={154} className="dt-count dt-right">{counts.write} resumes</text></g>
-      <g className="dt-station" key={`a${fired.apply ?? 0}`}><circle cx={644} cy={190} r={13} /><text x={676} y={176} className="dt-label dt-left">Apply</text><text x={676} y={154} className="dt-count dt-left">{counts.apply} applying</text></g>
+      <g className="dt-station" key={`w${fired.write ?? 0}`}><circle cx={480} cy={190} r={13} /><g className="dt-txt"><text x={448} y={176} className="dt-label dt-right">Write</text><text x={448} y={154} className="dt-count dt-right dt-keep">{counts.write} resumes</text></g></g>
+      <g className="dt-station" key={`a${fired.apply ?? 0}`}><circle cx={644} cy={190} r={13} /><g className="dt-txt"><text x={676} y={176} className="dt-label dt-left">Apply</text><text x={676} y={154} className="dt-count dt-left dt-keep">{counts.apply} applying</text></g></g>
 
       {/* output shaft and the flywheel: each submission gives it a turn */}
       <rect x={722} y={292} width={110} height={16} rx={6} className={`dt-shaft${live("applier") ? " dt-turning" : ""}`} />
@@ -148,10 +195,13 @@ export function Drivetrain({ gear, speed, warm, capped, counts, shadow, pulses, 
       {/* the "Your turn" capacitor: charges with every parked job */}
       <g className={`dt-cap${counts.tray ? " dt-charged" : ""}`} {...door("turn", "needs", "Your turn")}>
         <rect x={736} y={466} width={52} height={8} rx={2} /><rect x={736} y={486} width={52} height={8} rx={2} />
-        <text x={810} y={486} className="dt-count dt-left dt-amber">{counts.tray ? `Your turn: ${counts.tray}` : "nothing waiting"}</text>
+        <text x={810} y={486} className="dt-count dt-left dt-amber dt-keep">{counts.tray ? `Your turn: ${counts.tray}` : "nothing waiting"}</text>
       </g>
 
+      {beads && <Beads route="write" beads={beads.write} />}
+      {beads && <Beads route="apply" beads={beads.apply} />}
       {pulses.map((p) => <Spark key={p.id} p={p} />)}
+      </g>
     </svg>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
-// The living engine (ALIVE Phase 1, docs/ALIVE_PLAN.md §5): the home page's engine block. Five cylinders, one per
-// pipeline stage, around a crankcase that breathes at the current gear. Every chip is a real posting, every motion a
-// real event from the stream (lib/stream.ts), every part's warmth a real container's heartbeat (/api/control/fleet).
+// The living engine (ALIVE Phases 1 + 1b, docs/ALIVE_PLAN.md §0a): the home page's engine block, drawn as the electric
+// drivetrain (Drivetrain.tsx). Every bead on a coil is a real posting, every pulse a real event from the stream
+// (lib/stream.ts), every part's warmth a real container's heartbeat (/api/control/fleet).
 // Nothing is invented: with no events the engine sits still, and a cold part says which container is down.
 // Controls (gear, daily cap, Role Keywords) post to the engine and change on screen only when its signal comes back.
 import Link from "next/link";
@@ -9,25 +9,20 @@ import { useEffect, useRef, useState } from "react";
 import { subscribe } from "@/lib/stream";
 import { get, post } from "@/lib/types";
 import { empty, foldNarration, foldSignal, type Narration, type Signal, type Spine, type Stage } from "@/lib/spine";
-import { Bundle, Chip } from "./Chip";
-import { Cylinder, at, slot, CX, CY, R_IN } from "./Cylinder";
 import { reducedMotion, schedule, watchVisibility } from "./loop";
 import { badge, hasWheel, type Brain } from "./Seat";
-import { Drivetrain, type Pulse, type Route } from "./Drivetrain";
+import { Drivetrain, type Bead, type Pulse, type Route } from "./Drivetrain";
 import { Captions, caption, type Caption } from "./Captions";
 
-const STATIONS: { stage: Stage; label: string; verb: string; deg: number; role: string }[] = [
-  { stage: "listen", label: "Listen", verb: "heard (1 h)", deg: 198, role: "pipeline" },
-  { stage: "judge", label: "Judge", verb: "let go", deg: 270, role: "pipeline" },
-  { stage: "write", label: "Write", verb: "resumes ready", deg: 342, role: "pipeline" },
-  { stage: "apply", label: "Apply", verb: "applying", deg: 54, role: "applier" },
-  { stage: "hear", label: "Hear", verb: "replies", deg: 126, role: "feedback" },
+// the drivetrain's parts by pipeline stage, and the container that powers each (for the cold-part warning)
+const STATIONS: { stage: Stage; label: string; role: string }[] = [
+  { stage: "listen", label: "Sources", role: "pipeline" },
+  { stage: "judge", label: "Judge", role: "pipeline" },
+  { stage: "write", label: "Write", role: "pipeline" },
+  { stage: "apply", label: "Apply", role: "applier" },
+  { stage: "hear", label: "Hear", role: "feedback" },
 ];
-const DEG = Object.fromEntries(STATIONS.map((s) => [s.stage, s.deg])) as Record<Stage, number>;
-const INTAKE: [number, number] = [60, 230];
-const EXHAUST: [number, number] = [960, 560];
-const TRAY: [number, number] = [CX, 662];
-const PER_CYL = 8;
+const BEADS = 8;  // at most this many beads ride a coil; the count says the rest
 const LISTEN_WINDOW_MS = 60 * 60 * 1000;
 // A part is warm while its container beat recently. Appliers beat every 5 s while watching and every 30 s while
 // applying, so silence past 15 s (watching) or 40 s (applying) means it is down: a stopped idle applier goes cold in
@@ -43,7 +38,6 @@ const HUMAN_CHECK = /captcha|human click|bot.?check|hcaptcha/i;
 type Member = { role?: string; up?: boolean; age?: number; state?: string };
 type Fleet = { members: Member[]; problems: string[] };
 type Cap = { cap_levels: number[]; cap_level: number; cap: number; today: number };
-type Ghost = { id: number; kind: "sent" | "parked" | "skip" | "fail" | "seat" | "answer"; from: [number, number]; to: [number, number]; text?: string };
 type Pending = { control: "gear" | "cap" | "keywords" | "shadow.mode"; want: string; since: number; error?: string };
 
 /** Parse a ledger ts ("2026-11-10T21:03:05", local time) to epoch ms; NaN when missing. */
@@ -73,12 +67,10 @@ export function Engine() {
   const [skips, setSkips] = useState(0);
   const [fire, setFire] = useState<Record<string, number>>({});
   const [pulses, setPulses] = useState<Pulse[]>([]);
-  const [born, setBorn] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Pending | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [brain, setBrain] = useState<Brain | null>(null);
   const [captions, setCaptions] = useState<Caption[]>([]);
-  const pos = useRef(new Map<string, [number, number]>());
   const gid = useRef(0);
   const still = useRef(false);
 
@@ -120,8 +112,6 @@ export function Engine() {
         return;
       }
       const n = data as Narration;
-      const job = n.job ?? "";
-      const from = pos.current.get(job) ?? at(DEG[n.stage] ?? 270, 170);
       schedule(() => {
         foldNarration(spine.current, n);
         const pulse = (route: Route, text?: string) => setPulses((p) => [...p.slice(-23), { id: ++gid.current, route, text }]);
@@ -129,7 +119,8 @@ export function Engine() {
         else if (n.kind === "gate.skip") { pulse("dump", n.detail ?? undefined); setSkips((s) => s + 1); }
         else if (n.kind === "resume") pulse("write");
         else if (n.kind === "apply.start") pulse("apply");
-        else if (n.kind === "submitted") { pulse("out"); setCap((c) => (c ? { ...c, today: c.today + 1 } : c)); }
+        // the gauge re-reads the engine's own count: a local +1 drifted when the stream replayed its backlog (11-13)
+        else if (n.kind === "submitted") { pulse("out"); get<Cap>("/api/control/cap").then(setCap).catch(fail("cap unavailable")); }
         else if (n.kind === "parked") {
           // Shadow's motor takes parked questions while it is on; human checks always go straight to you
           const toSeat = !!spine.current.shadow && spine.current.shadow !== "off" && !HUMAN_CHECK.test(n.detail ?? "");
@@ -141,7 +132,6 @@ export function Engine() {
         else if (n.kind === "apply.fail") pulse("fail");
         const cp = caption(n);
         if (cp) setCaptions((cs) => [cp, ...cs.filter((c) => c.id !== cp.id)].slice(0, 4));
-        if (n.kind === "discovered" && job) setBorn((b) => new Set(b).add(job));
         if (["discovered", "resume", "apply.start", "shadow.answer", "outcome", "gate.skip"].includes(n.kind ?? "")) {
           const st = n.kind === "gate.skip" ? "judge" : n.stage;
           setFire((f) => ({ ...f, [st]: (f[st] ?? 0) + 1 }));
@@ -152,12 +142,6 @@ export function Engine() {
     return () => { alive = false; unsub(); stop(); clearInterval(fleetTimer); };
   }, []);
 
-  // newborn chips render at the intake for one frame, then the transition carries them to their slot
-  useEffect(() => {
-    if (!born.size) return;
-    const t = requestAnimationFrame(() => requestAnimationFrame(() => setBorn(new Set())));
-    return () => cancelAnimationFrame(t);
-  }, [born]);
   // a pulse runs its wire once (<= 2.4 s), then leaves
   useEffect(() => {
     if (!pulses.length) return;
@@ -173,28 +157,18 @@ export function Engine() {
 
   const s = spine.current;
   const now = Date.now();
-  const layout = (() => {  // cheap (<= 100 chips): recomputed every render, so a stage change always moves its chip
-    const by: Record<string, [string, { company: string | null; by: string | null; since: string | null }][]> = {};
+  // postings per stage (cheap: <= a few hundred chips, recomputed every render so a stage change always moves its bead)
+  const layout = (() => {
+    const count: Record<string, number> = {};
+    const beads: Record<string, Bead[]> = {};
     for (const [job, c] of s.chips) {
       if (c.stage === "listen" && now - ms(c.since) > LISTEN_WINDOW_MS) continue;  // heard over an hour ago
-      (by[c.stage] ??= []).push([job, c]);
+      count[c.stage] = (count[c.stage] ?? 0) + 1;
+      (beads[c.stage] ??= []).push({ id: job, company: c.company, by: c.by });
     }
-    const chips: { id: string; x: number; y: number; company: string | null; by: string | null }[] = [];
-    const extra: Record<string, number> = {};
-    const count: Record<string, number> = {};
-    for (const st of STATIONS) {
-      const list = by[st.stage] ?? [];
-      count[st.stage] = list.length;
-      const shown = list.slice(-PER_CYL);
-      extra[st.stage] = list.length - shown.length;
-      shown.forEach(([id, c], i) => {
-        const [x, y] = born.has(id) && !still.current ? INTAKE : slot(st.deg, i);
-        chips.push({ id, x, y, company: c.company, by: c.by });
-      });
-    }
-    return { chips, extra, count };
+    for (const k of Object.keys(beads)) beads[k] = beads[k].slice(-BEADS);  // newest ride the coil
+    return { count, beads };
   })();
-  pos.current = new Map(layout.chips.map((c) => [c.id, [c.x, c.y] as [number, number]]));  // ghosts start where a chip was last drawn
 
   const heard = Object.values(s.heard).reduce((a, b) => a + b, 0);
   const counts: Record<Stage, number> = { listen: layout.count.listen ?? 0, judge: skips, write: layout.count.write ?? 0,
@@ -217,6 +191,7 @@ export function Engine() {
     <section className={`alive${capped ? " al-idling" : ""}${hasWheel(s.shadow) ? " al-shadow-wheel" : ""}`} aria-label="The engine, live">
       <Drivetrain gear={gear} speed={breath} warm={(r) => !cold(r)} capped={capped} shadow={s.shadow} pulses={still.current ? [] : pulses}
                   fired={fire} label={`Engine in gear ${gear}. ${coldParts.length ? `Cold: ${coldParts.join(", ")}.` : "All parts warm."}`}
+                  beads={{ write: layout.beads.write ?? [], apply: layout.beads.apply ?? [] }}
                   counts={{ heard: counts.listen, letGo: skips, write: counts.write, apply: counts.apply, sent: verified, replies: heard, tray: s.tray.size }}
                   seat={<g className={`dt-seat${hasWheel(s.shadow) ? " dt-on" : ""}`}>
                     <text className="dt-label dt-right" y={0}>Shadow</text>
