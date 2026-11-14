@@ -1,3 +1,13 @@
+# Handoff: 11-13 ~23:25 RUNNING (user: run until 80% of the Claude 5-hour window, then clean stop; keep building +
+# applying). 17 submitted today. Since 22:50 (all local commits -> reposync PR):
+#   8a970a7 GET /api/replay?since= + Replay uses it; events.read() lock (API threads doubled counts: 30 shown for 15).
+#   (next) selector: 3 parks on one question = yours (Shadow's answers.json writes made dead-end parks re-run every pass).
+#   0083d57 POST /api/try + /docs paste box. ALIVE checks: V9 wires PASS (14.9 s / 7.9 s), title PASS (60 ms).
+#   Images rebuilt; pipeline + api + web-alive recreated (settings kept). Appliers pick up the new image as the
+#   governor replaces them. Track A done except the 10-min DevTools CPU check (user's tab) and the v2.0 ship call.
+# Supply note: queue = Workday 1,305 (yours) + Ashby 647 (1/pass) + jobgether Lever (captcha-walled); Greenhouse
+#   fillable ~17 paced by 3/company/day. Volume is supply-bound, not speed-bound.
+
 # Handoff: 11-13 ~22:50 RUNNING (user: "start the engine, keywords, Shadow autopilot, cap raised, apply as much as
 # possible; update the revamp side by side"). Stack UP since 22:12: gear 3, cap 4 (150/day), Role Keywords ON, Shadow
 # autopilot, MCP write on. Governor holds 1-3 appliers on memory (VM ~2-4.6 GB free; web-alive builds briefly shed one).
