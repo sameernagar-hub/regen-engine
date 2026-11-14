@@ -1,3 +1,10 @@
+# Handoff: 11-13 ~23:30 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
+# off, Shadow calls 5, `compose stop`, 0 containers, events end on a full line. 20 submitted today (536 -> ~556 all time).
+# Images are current with every commit through 88379fb (pipeline/api/web-alive recreated; appliers recreate on start).
+# NEXT: START -> gear 2/3 -> ask Role Keywords -> cap level. ALIVE: the 10-min DevTools CPU check in a tab the user
+#   keeps visible, then the user's v2.0 ship call (remove NEXT_PUBLIC_ALIVE, retire the old home) before Track B.
+#   Parked for the user: Judi Health non-compete, Veeam side business, Latitude human-check quiz, captchas.
+
 # Handoff: 11-13 ~23:25 RUNNING (user: run until 80% of the Claude 5-hour window, then clean stop; keep building +
 # applying). 17 submitted today. Since 22:50 (all local commits -> reposync PR):
 #   8a970a7 GET /api/replay?since= + Replay uses it; events.read() lock (API threads doubled counts: 30 shown for 15).
