@@ -4,7 +4,8 @@
 import { api } from "./types";
 
 // ALIVE Phase 0: "signal" carries control-plane events (gear, cap, Shadow mode, warning lights); see lib/spine.ts.
-type Handler = (type: "narration" | "snapshot" | "signal", data: any) => void;
+// ALIVE Phase 4: "replay" is local only (alive/Replay.tsx plays past narration at speed): pulses and captions, no fold.
+type Handler = (type: "narration" | "snapshot" | "signal" | "replay", data: any) => void;
 const subs = new Set<Handler>();
 let es: EventSource | null = null;
 
@@ -20,4 +21,9 @@ export function subscribe(h: Handler): () => void {
     subs.delete(h);
     if (!subs.size) { es?.close(); es = null; }
   };
+}
+
+/** Phase 4: hand a past narration to every subscriber as type "replay" (no network; subscribers decide what to draw). */
+export function replay(data: unknown): void {
+  subs.forEach((s) => s("replay", data));
 }

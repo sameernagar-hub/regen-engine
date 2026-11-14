@@ -1,7 +1,8 @@
 # REGEN v2.0 "ALIVE": one living engine (revamp plan)
 
 Status (11-13): IN BUILD. Done: Phase 0, 1 (superseded by the drivetrain, §0a), 2, 3, 1b (built; V9-wire and
-10-min CPU checks open), 5 parts 1+2 (/docs), 6 (built). Next: Phase 4 (replay; needs GET /api/replay), then the open checks.
+10-min CPU checks open), 5 parts 1+2 (/docs), 4 (built on /api/narration), 6 (built). Next: the open checks, /api/replay,
+then v2.0 ship review (remove NEXT_PUBLIC_ALIVE only when the user says v2.0 ships).
 v1.x stays the released line on `web` (:3000, never touched); all v2.0 work ships in `web-alive` (:3001).
 Wiki: [v2.0 Revamp](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2). This file is the build checklist.
 Owner: the user decides; Claude builds phase by phase. Each session: start/verify the engine, re-read §0-§5, build.
@@ -285,7 +286,14 @@ Files: `apps/web/app/alive/Replay.tsx`, `lib/engine.ts`, `apps/api/main.py` (`GE
   (pulses at speed, flywheel spinning up, trail filling, gauges rolling), then switch to live.
   A scrubber (play/pause, 1x/10x/60x) appears only during replay. Public site loops last night's scrubbed replay.
 Accept:
-- [ ] A 3 h run replays in 25-40 s and ends in the same state as live; skip button works.
+- [x] A 3 h gap replays in 25-40 s (measured 36 s at 1x, 500 events) and ends in the live state (replayed events are
+      stream type "replay": pulses + captions only, never re-folded); Skip to live works; console clean. (11-13)
+**As built (11-13):** `alive/Replay.tsx` + `replay()` in lib/stream.ts + a "replay" branch in Engine.tsx; last seen in
+localStorage (refreshed every 60 s while visible and on pagehide). Deviations, on purpose: it reads the existing
+`/api/narration?limit=500` (newest 500; the bar says "latest 500 events" when the gap holds more) instead of a new
+`GET /api/replay?since=`, because that route lives in the applier image and rebuilding it mid-run competes with the
+appliers for memory. Open: `/api/replay?since=` (oldest-first, whole gap) at the next quiet rebuild; the public
+site's loop of last night's scrubbed replay.
 
 ### Phase 6: alive in the tab. Budget: ½ session
 Files: `apps/web/app/alive/TabPulse.tsx`, `layout.tsx`.

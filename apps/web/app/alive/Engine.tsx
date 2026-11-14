@@ -113,6 +113,18 @@ export function Engine() {
         return;
       }
       const n = data as Narration;
+      if (type === "replay") {  // Phase 4: a past event replayed at speed: draw its pulse and caption, never re-fold it
+        const route: Partial<Record<string, Route>> = { discovered: "in", "gate.skip": "dump", resume: "write", "apply.start": "apply",
+          submitted: "out", parked: HUMAN_CHECK.test(n.detail ?? "") ? "tray" : "seat", "shadow.abstain": "shadowtray",
+          "shadow.answer": "back", outcome: "return", "apply.fail": "fail" };
+        const r = route[n.kind ?? ""];
+        schedule(() => {
+          if (r) setPulses((p) => [...p.slice(-23), { id: ++gid.current, route: r, text: n.kind === "gate.skip" ? n.detail ?? undefined : undefined }]);
+          const cp = caption(n);
+          if (cp) setCaptions((cs) => [cp, ...cs.filter((c) => c.id !== cp.id)].slice(0, 4));
+        });
+        return;
+      }
       schedule(() => {
         foldNarration(spine.current, n);
         const pulse = (route: Route, text?: string) => setPulses((p) => [...p.slice(-23), { id: ++gid.current, route, text }]);
