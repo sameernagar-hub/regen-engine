@@ -13,6 +13,7 @@ import { reducedMotion, schedule, watchVisibility } from "./loop";
 import { badge, hasWheel, type Brain } from "./Seat";
 import { Drivetrain, type Bead, type Pulse, type Route } from "./Drivetrain";
 import { Captions, caption, type Caption } from "./Captions";
+import { Trail } from "./Trail";
 
 // the drivetrain's parts by pipeline stage, and the container that powers each (for the cold-part warning)
 const STATIONS: { stage: Stage; label: string; role: string }[] = [
@@ -189,6 +190,7 @@ export function Engine() {
 
   return (
     <section className={`alive${capped ? " al-idling" : ""}${hasWheel(s.shadow) ? " al-shadow-wheel" : ""}`} aria-label="The engine, live">
+      <div className="al-stage">{/* Phase 1b: the receipt trail docks under the drivetrain, newest under the flywheel */}
       <Drivetrain gear={gear} speed={breath} warm={(r) => !cold(r)} capped={capped} shadow={s.shadow} pulses={still.current ? [] : pulses}
                   fired={fire} label={`Engine in gear ${gear}. ${coldParts.length ? `Cold: ${coldParts.join(", ")}.` : "All parts warm."}`}
                   beads={{ write: layout.beads.write ?? [], apply: layout.beads.apply ?? [] }}
@@ -198,6 +200,8 @@ export function Engine() {
                     <text className="dt-count dt-right" y={18}>{s.shadow === "always" ? "autopilot" : s.shadow ?? "mode unknown"}{hasWheel(s.shadow) ? " · engaged" : ""}</text>
                     {badge(brain) && <text className="dt-count dt-right" y={34}>{badge(brain)![0]}</text>}
                   </g>} />
+      <Trail />
+      </div>
 
       <div className="alive-side">
         {(lights.length > 0 || coldParts.length > 0) && (

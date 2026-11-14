@@ -245,7 +245,8 @@ Chip.tsx, ghost/born/slot layout in Engine.tsx, ~50 dead CSS rules); portrait ci
 quarter, stacked labels turn back as one group `.dt-txt`, numbers already in the gauges hidden on phones; 375 px:
 scrollWidth 375, console clean); rotor/flywheel spin on fill-box so they stay centred when turned. Bug fixed: the cap
 gauge added +1 per streamed `submitted` and drifted (12 shown vs 6 real); it now re-reads /api/control/cap.
-Still open: the trail docking under the flywheel (it sits below the engine block), and the two checks below.
+Trail docked (11-13): Trail renders inside Engine's stage column under the drivetrain, newest receipt right-aligned
+under the Sent flywheel (page.tsx no longer renders it). Still open: the two checks below.
 Accept:
 - [ ] V9 on the wires: pause an idle applier -> Apply wires go dark <= 30 s; unpause -> current back.
 - [ ] Every part opens its room; 375 px screenshot reads as a circuit; console clean; 10-min CPU < 15% (V2).

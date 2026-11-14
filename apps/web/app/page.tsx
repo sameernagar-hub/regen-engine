@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { PUBLIC } from "@/lib/engine";
 import { Engine } from "./alive/Engine";
-import { Trail } from "./alive/Trail";
 import { Rooms } from "./alive/Rooms";
 import { Pulse } from "./alive/Pulse";
 
@@ -60,7 +59,6 @@ function AliveHome() {
       <Pulse />
       <Rooms />
       <Engine />
-      <Trail />
       <details className="al-all-pages">
         <summary>Every page on its own</summary>
         <nav className="engine-list" aria-label="Engine parts">
