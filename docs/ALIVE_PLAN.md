@@ -249,7 +249,8 @@ gauge added +1 per streamed `submitted` and drifted (12 shown vs 6 real); it now
 Trail docked (11-13): Trail renders inside Engine's stage column under the drivetrain, newest receipt right-aligned
 under the Sent flywheel (page.tsx no longer renders it). Still open: the two checks below.
 Accept:
-- [ ] V9 on the wires: pause an idle applier -> Apply wires go dark <= 30 s; unpause -> current back.
+- [x] V9 on the wires: pause an idle applier -> Apply wires go dark <= 30 s; unpause -> current back. (11-13: `docker pause`
+      of the idle applier -> motor + apply/out/tray wires cold after 14.9 s; unpause -> warm after 7.9 s.)
 - [ ] Every part opens its room; 375 px screenshot reads as a circuit; console clean; 10-min CPU < 15% (V2).
 
 ### Phase 5: four rooms as drawers + /docs. Budget: 1-2 sessions
@@ -281,6 +282,7 @@ Accept:
 - [ ] A non-technical read-through of /docs "Use REGEN" needs no other page to start a run.
 
 ### Phase 4: "While you were away" replay. Budget: 1 session
+(11-13 later: `GET /api/replay?since=` built (8a970a7, oldest first, newest 2000 kept); Replay.tsx uses it; 863-event gap in ~37 s.)
 Files: `apps/web/app/alive/Replay.tsx`, `lib/engine.ts`, `apps/api/main.py` (`GET /api/replay?since=`).
 - On open after > 30 min away (localStorage last-seen), play the gap compressed to ~30 s through the drivetrain
   (pulses at speed, flywheel spinning up, trail filling, gauges rolling), then switch to live.
