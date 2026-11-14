@@ -199,7 +199,7 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
 .al-rooms button { min-height: 44px; padding: 6px 18px; border-radius: 22px; border: 1px solid var(--line); background: #121821; color: var(--ink); font: 600 14px inherit; cursor: pointer; }
 .al-rooms button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
 .al-rooms button:focus-visible, .al-room-tabs button:focus-visible { outline: 2px solid var(--calm); outline-offset: 2px; }
-.al-room-back { position: fixed; inset: 0; background: #0009; z-index: 40; display: flex; justify-content: flex-end; }
+.al-room-back, .alive-home > .al-room-back { position: fixed; inset: 0; background: #0009; z-index: 40; display: flex; justify-content: flex-end; }  /* beats .alive-home > * { position: relative } (drawers collapsed to ~145 px) */
 .al-room { width: min(1100px, 100%); height: 100%; display: flex; flex-direction: column; background: var(--bg); border-left: 1px solid var(--line); box-sizing: border-box; animation: alive-slide .25s ease-out; }
 .al-room header { display: flex; justify-content: space-between; gap: 12px; padding: 14px 20px 6px; }
 .al-room h2 { margin: 0; font-size: 20px; color: var(--gold); }
@@ -358,3 +358,20 @@ svg.engine { width: 100%; height: 100%; min-height: 0; }
   .al-trail ol { scroll-behavior: auto; }
   .al-seat rect, .al-captions { transition: none; }
 }
+
+/* ALIVE Phase 5 part 2: /docs (Use REGEN / Build on REGEN), also Garage > Docs */
+.dc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 18px 0 8px; }
+.dc-head h1 { margin: 0; font-size: 28px; }
+.dc-tabs { display: flex; gap: 6px; }
+.dc-tabs button { min-height: 40px; padding: 4px 14px; border-radius: 20px; border: 1px solid var(--line); background: #121821; color: var(--ink); font: 600 14px inherit; cursor: pointer; }
+.dc-tabs button[aria-selected="true"] { border-color: var(--gold); color: var(--gold); }
+.dc-body { max-width: 920px; display: grid; gap: 22px; padding-bottom: 40px; line-height: 1.55; }
+.dc-body h2 { font-size: 18px; margin: 0 0 6px; color: var(--gold); }
+.dc-body p, .dc-body li, .dc-body dd { color: var(--ink); font-size: 14px; }
+.dc-body table { width: 100%; border-collapse: collapse; font-size: 13px; display: block; overflow-x: auto; }
+.dc-body th, .dc-body td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--faint); vertical-align: top; }
+.dc-body thead th { color: var(--dim); font-weight: 600; }
+.dc-body code { font-family: var(--mono); font-size: 12.5px; color: #cfe3ff; word-break: break-word; }
+.dc-code { background: #0d1219; border: 1px solid var(--faint); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 8px 0; }
+.dc-code code { white-space: pre; word-break: normal; }
+.dc-body dt { font-weight: 650; margin-top: 8px; } .dc-body dd { margin: 2px 0 0; }

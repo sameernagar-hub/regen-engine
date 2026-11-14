@@ -271,7 +271,11 @@ Accept:
   (Applications, Reach, Outreach) · Garage (Gearbox, Fact Bank, Memory graph, Shadow brain, Evals, Maintenance, MCP).
   Each tab is the existing page component loaded on demand (next/dynamic), with an "open on its own page" link; the
   pages' own dock is hidden inside a drawer. The old pill row stays under a "Every page on its own" disclosure.
-- NOT done yet: `/docs` (Use REGEN / Build on REGEN), the Docs tab in Garage, and removing `NEXT_PUBLIC_ALIVE`.
+- DONE 11-13 (part 2): `/docs` (apps/web/app/docs/page.tsx): "Use REGEN" (try it, start a run, gears, Shadow
+  modes, what Your turn means, clean stop, FAQ) and "Build on REGEN" (§3 parts table, §4 event kinds, API routes, MCP
+  config, contributing), copied from the wiki + this plan, no new facts; Garage > Docs tab. Bug fixed: every drawer
+  had collapsed to ~145 px because `.alive-home > * { position: relative }` beat `.al-room-back { position: fixed }`.
+- NOT done yet: removing `NEXT_PUBLIC_ALIVE` (stays on purpose until v2.0 ships, see below); `POST /try` paste box (§5a).
   The flag stays for now on purpose: the user keeps `web` (:3000) on the old v1.x home until v2.0 ships.
 - [ ] A non-technical read-through of /docs "Use REGEN" needs no other page to start a run.
 

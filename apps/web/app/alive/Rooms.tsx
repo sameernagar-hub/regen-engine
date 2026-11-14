@@ -28,6 +28,7 @@ const ROOMS: { key: string; label: string; about: string; tabs: Tab[] }[] = [
     { key: "evals", label: "Evals", href: "/evals", Page: load(() => import("../evals/page")) },
     { key: "oilchange", label: "Maintenance", href: "/oilchange", Page: load(() => import("../oilchange/page")) },
     { key: "mcp", label: "MCP cord", href: "/mcp", Page: load(() => import("../mcp/page")) },
+    { key: "docs", label: "Docs", href: "/docs", Page: load(() => import("../docs/page")) },
   ] },
 ];
 
