@@ -1,7 +1,7 @@
 # REGEN v2.0 "ALIVE": one living engine (revamp plan)
 
-Status (proofread 11-11): IN BUILD. NEXT_STEPS §9 met 11-10. Done: Phase 0, Phase 1 (superseded by the drivetrain,
-§0a), Phase 2, Phase 3, Phase 5 part 1. Next: Phase 1b (drivetrain integration), then 5 part 2 -> 4 -> 6.
+Status (11-13): IN BUILD. Done: Phase 0, 1 (superseded by the drivetrain, §0a), 2, 3, 1b (built; V9-wire and
+10-min CPU checks open), 5 parts 1+2 (/docs), 6 (built). Next: Phase 4 (replay; needs GET /api/replay), then the open checks.
 v1.x stays the released line on `web` (:3000, never touched); all v2.0 work ships in `web-alive` (:3001).
 Wiki: [v2.0 Revamp](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2). This file is the build checklist.
 Owner: the user decides; Claude builds phase by phase. Each session: start/verify the engine, re-read §0-§5, build.
@@ -292,6 +292,11 @@ Files: `apps/web/app/alive/TabPulse.tsx`, `layout.tsx`.
 - `document.title` = "REGEN · 3 sent · 2 yours" (only when changed); the favicon is a tiny flywheel that turns on submit.
 Accept:
 - [ ] Title updates from events within 2 s; no update when nothing changed.
+**As built (11-13):** `alive/TabPulse.tsx`, mounted from the ALIVE home in page.tsx (not layout.tsx, so web :3000 keeps
+the v1.x title). Title from /api/control/cap `today` + /api/human count, re-read on `submitted` / `parked` /
+`shadow.answer`, written only when the text changes; favicon = a canvas-drawn gold flywheel turning a quarter per
+submission (none under reduced motion). Live check: "REGEN · 15 sent · 398 yours", console clean. Open: the timed
+within-2-s check on a live submit.
 
 ## 5a. NEXT_STEPS work on the front end (merged 11-09 by the user)
 
