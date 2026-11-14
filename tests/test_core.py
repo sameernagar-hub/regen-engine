@@ -881,3 +881,16 @@ def test_sponsorship_now_vs_future_never_mixed():
               "Do you now, or will you in the future, require immigration sponsorship?"):
         assert answer_for(q, {}) == fut, q
     assert answer_for("Are you authorized to work in the US without sponsorship?", {}) == r.P["authorized_without_sponsorship"]
+
+
+def test_three_parks_on_one_question_stay_with_the_user(monkeypatch):
+    """11-13: Shadow keeps answers.json fresh, so 'the bank changed since' was always true; a third stop on the same
+    question now keeps the job parked instead of re-running it every pass."""
+    from engine import pipeline as Pl
+    park = {"url": "u", "status": "NEEDS YOU", "detail": "NEEDS YOU: When do you graduate?", "ts": "1"}
+    evs = [dict(park), dict(park)]
+    monkeypatch.setattr(Pl, "read", lambda kind: evs)
+    monkeypatch.setattr(Pl, "answerable_now", lambda d: True)
+    assert Pl.latest_status()["u"] == "RETRY"  # two stops, older than the bank: one more try
+    evs.append(dict(park))
+    assert Pl.latest_status()["u"] == "NEEDS YOU"

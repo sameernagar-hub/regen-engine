@@ -80,3 +80,11 @@ def test_applier_mb_uses_measured_size_with_floor():
                            {"service": "api", "state": "running", "mem_mb": 5000}]}
     assert g.applier_mb(cont) == 1100
     assert g.applier_mb({"containers": [{"service": "applier", "state": "running", "mem_mb": 20}]}) == g.APPLIER_MB
+
+
+def test_reasons_compare_without_numbers():
+    from engine.governor import same_reasons
+    a = ["memory fits 3 appliers (~800 MB each, 4217 MB free)"]
+    b = ["memory fits 3 appliers (~800 MB each, 4265 MB free)"]
+    assert same_reasons(a) == same_reasons(b)
+    assert same_reasons(a) != same_reasons(["grow cooldown: holding"])

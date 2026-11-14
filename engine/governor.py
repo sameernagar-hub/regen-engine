@@ -138,6 +138,13 @@ def _today_capped():
         return None, None, False
 
 
+def same_reasons(why):
+    """Reasons with their numbers masked: "memory fits 3 appliers (~800 MB each, 4217 MB free)" changes its free MB
+    every pass, which wrote a govern event every ~15 s (11-13). An event is due only when the ceiling or the kind of
+    reason changes."""
+    return [re.sub(r"\d+", "#", r) for r in (why or [])]
+
+
 def ceiling(lo, hi, running, wanted, workspace=None, proc="/proc"):
     """The supervisor's call: judge, persist the analytics snapshot, record a supervisor event on change.
     `wanted` = what supply alone asks for (for the snapshot only). Returns the ceiling. A workspace other than the
@@ -167,7 +174,7 @@ def ceiling(lo, hi, running, wanted, workspace=None, proc="/proc"):
     snap = {**st, "ts": now, "at": time.strftime("%Y-%m-%d %H:%M:%S"), "gear_range": [lo, hi], "running": running,
             "supply_wants": wanted, "ceiling": c, "target": target, "reasons": why, "machine": m, "applier_mb": per,
             "health": h, "submitted_today": subs, "daily_cap": cap}
-    if live and (st.get("ceiling"), st.get("reasons")) != (c, why):
+    if live and (st.get("ceiling"), same_reasons(st.get("reasons"))) != (c, same_reasons(why)):
         try:
             from engine.feedback.events import record
             record("supervisor", action="govern", target=f"ceiling {c}", reasons=why, running=running,

@@ -55,7 +55,10 @@ def latest_status():
             st = (e.get("status") or "").split(":")[0]
             if st == "NEEDS YOU":  # stopped twice on the same question: the rule that "answers" it doesn't fill it
                 asked[(e["url"], e.get("detail") or "")] += 1
-                if asked[(e["url"], e.get("detail") or "")] >= 2 and (e.get("ts") or "") > bank_t:
+                n = asked[(e["url"], e.get("detail") or "")]
+                # 3 stops on the same question: it is yours, whatever the bank says. 11-13: Shadow writes answers.json
+                # all the time, so "the bank changed since" was always true and dead-end parks re-ran every pass.
+                if n >= 3 or n >= 2 and (e.get("ts") or "") > bank_t:
                     out[e["url"]] = st
                     continue
             if st == "ERROR":  # a page that never rendered its form: twice is enough (10-12: one Ashby job took

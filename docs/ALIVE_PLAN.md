@@ -1,7 +1,8 @@
 # REGEN v2.0 "ALIVE": one living engine (revamp plan)
 
-Status (proofread 11-11): IN BUILD. NEXT_STEPS §9 met 11-10. Done: Phase 0, Phase 1 (superseded by the drivetrain,
-§0a), Phase 2, Phase 3, Phase 5 part 1. Next: Phase 1b (drivetrain integration), then 5 part 2 -> 4 -> 6.
+Status (11-13): IN BUILD. Done: Phase 0, 1 (superseded by the drivetrain, §0a), 2, 3, 1b (built; V9-wire and
+10-min CPU checks open), 5 parts 1+2 (/docs), 4 (built on /api/narration), 6 (built). Next: the open checks, /api/replay,
+then v2.0 ship review (remove NEXT_PUBLIC_ALIVE only when the user says v2.0 ships).
 v1.x stays the released line on `web` (:3000, never touched); all v2.0 work ships in `web-alive` (:3001).
 Wiki: [v2.0 Revamp](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2). This file is the build checklist.
 Owner: the user decides; Claude builds phase by phase. Each session: start/verify the engine, re-read §0-§5, build.
@@ -239,6 +240,14 @@ Files: `apps/web/app/alive/{Drivetrain.tsx,Engine.tsx,Rooms.tsx,Trail.tsx}`, `en
 - Jobs in a stage ride their coil as beads (count + up to 8 beads, employer initial on hover).
 - The receipt trail docks under the flywheel; a submit pulse ends at the flywheel and the receipt appears.
 - Mobile: the circuit stacks vertically under 600 px, no horizontal scroll.
+**As built (11-13):** doors (65919be, 11-11); beads: postings in Write / Apply ride their coil (Drivetrain.tsx
+`Beads`, newest 8, employer initial + name on hover, Shadow's violet); dead piston code removed (Cylinder.tsx,
+Chip.tsx, ghost/born/slot layout in Engine.tsx, ~50 dead CSS rules); portrait circuit under 600 px (same SVG turned a
+quarter, stacked labels turn back as one group `.dt-txt`, numbers already in the gauges hidden on phones; 375 px:
+scrollWidth 375, console clean); rotor/flywheel spin on fill-box so they stay centred when turned. Bug fixed: the cap
+gauge added +1 per streamed `submitted` and drifted (12 shown vs 6 real); it now re-reads /api/control/cap.
+Trail docked (11-13): Trail renders inside Engine's stage column under the drivetrain, newest receipt right-aligned
+under the Sent flywheel (page.tsx no longer renders it). Still open: the two checks below.
 Accept:
 - [ ] V9 on the wires: pause an idle applier -> Apply wires go dark <= 30 s; unpause -> current back.
 - [ ] Every part opens its room; 375 px screenshot reads as a circuit; console clean; 10-min CPU < 15% (V2).
@@ -263,7 +272,11 @@ Accept:
   (Applications, Reach, Outreach) · Garage (Gearbox, Fact Bank, Memory graph, Shadow brain, Evals, Maintenance, MCP).
   Each tab is the existing page component loaded on demand (next/dynamic), with an "open on its own page" link; the
   pages' own dock is hidden inside a drawer. The old pill row stays under a "Every page on its own" disclosure.
-- NOT done yet: `/docs` (Use REGEN / Build on REGEN), the Docs tab in Garage, and removing `NEXT_PUBLIC_ALIVE`.
+- DONE 11-13 (part 2): `/docs` (apps/web/app/docs/page.tsx): "Use REGEN" (try it, start a run, gears, Shadow
+  modes, what Your turn means, clean stop, FAQ) and "Build on REGEN" (§3 parts table, §4 event kinds, API routes, MCP
+  config, contributing), copied from the wiki + this plan, no new facts; Garage > Docs tab. Bug fixed: every drawer
+  had collapsed to ~145 px because `.alive-home > * { position: relative }` beat `.al-room-back { position: fixed }`.
+- NOT done yet: removing `NEXT_PUBLIC_ALIVE` (stays on purpose until v2.0 ships, see below); `POST /try` paste box (§5a).
   The flag stays for now on purpose: the user keeps `web` (:3000) on the old v1.x home until v2.0 ships.
 - [ ] A non-technical read-through of /docs "Use REGEN" needs no other page to start a run.
 
@@ -273,13 +286,25 @@ Files: `apps/web/app/alive/Replay.tsx`, `lib/engine.ts`, `apps/api/main.py` (`GE
   (pulses at speed, flywheel spinning up, trail filling, gauges rolling), then switch to live.
   A scrubber (play/pause, 1x/10x/60x) appears only during replay. Public site loops last night's scrubbed replay.
 Accept:
-- [ ] A 3 h run replays in 25-40 s and ends in the same state as live; skip button works.
+- [x] A 3 h gap replays in 25-40 s (measured 36 s at 1x, 500 events) and ends in the live state (replayed events are
+      stream type "replay": pulses + captions only, never re-folded); Skip to live works; console clean. (11-13)
+**As built (11-13):** `alive/Replay.tsx` + `replay()` in lib/stream.ts + a "replay" branch in Engine.tsx; last seen in
+localStorage (refreshed every 60 s while visible and on pagehide). Deviations, on purpose: it reads the existing
+`/api/narration?limit=500` (newest 500; the bar says "latest 500 events" when the gap holds more) instead of a new
+`GET /api/replay?since=`, because that route lives in the applier image and rebuilding it mid-run competes with the
+appliers for memory. Open: `/api/replay?since=` (oldest-first, whole gap) at the next quiet rebuild; the public
+site's loop of last night's scrubbed replay.
 
 ### Phase 6: alive in the tab. Budget: ½ session
 Files: `apps/web/app/alive/TabPulse.tsx`, `layout.tsx`.
 - `document.title` = "REGEN · 3 sent · 2 yours" (only when changed); the favicon is a tiny flywheel that turns on submit.
 Accept:
 - [ ] Title updates from events within 2 s; no update when nothing changed.
+**As built (11-13):** `alive/TabPulse.tsx`, mounted from the ALIVE home in page.tsx (not layout.tsx, so web :3000 keeps
+the v1.x title). Title from /api/control/cap `today` + /api/human count, re-read on `submitted` / `parked` /
+`shadow.answer`, written only when the text changes; favicon = a canvas-drawn gold flywheel turning a quarter per
+submission (none under reduced motion). Live check: "REGEN · 15 sent · 398 yours", console clean. Open: the timed
+within-2-s check on a live submit.
 
 ## 5a. NEXT_STEPS work on the front end (merged 11-09 by the user)
 

@@ -1,3 +1,24 @@
+# Handoff: 11-13 ~22:50 RUNNING (user: "start the engine, keywords, Shadow autopilot, cap raised, apply as much as
+# possible; update the revamp side by side"). Stack UP since 22:12: gear 3, cap 4 (150/day), Role Keywords ON, Shadow
+# autopilot, MCP write on. Governor holds 1-3 appliers on memory (VM ~2-4.6 GB free; web-alive builds briefly shed one).
+# Supply: newgrad + feed 3 + boards harvest/recheck run at start (64 dead boards back). Pass 1: 9 of 24 submitted
+# (rest = truthful skips, Lever/Ashby captchas, parks); 15 submitted today at 22:45.
+# CLEAN STOP when asked: gear N -> wait inbox+claimed 0 -> cap 0, keywords off, shadow calls 5 -> compose stop.
+# DONE this session (all local commits -> reposync PR):
+#   80e96a8 + d1e4713 ALIVE Phase 1b: beads on Write/Apply coils, portrait circuit < 600 px, dead piston code gone,
+#     cap gauge re-reads /api/control/cap (local +1 drifted to 12 vs 6), trail docked under the flywheel.
+#   f65d80e governor records a govern event only on a real change (free-MB numbers masked; it wrote one every 15 s).
+#     Hot-copied into deploy-supervisor-1 + restarted; rebuild the applier image at a quiet moment.
+#   7396a15 Phase 5 part 2: /docs (Use REGEN / Build on REGEN) + Garage > Docs; FIXED every drawer collapsing
+#     (.alive-home > * { position: relative } beat .al-room-back { position: fixed }).
+#   67fbe87 Phase 6: tab title "REGEN · N sent · M yours" + flywheel favicon.  479d252 Phase 4: "While you were
+#     away" replay on /api/narration (36 s for 500 events at 1x; skip works).
+#   Volume: domains.json exclude += lab tech/lead/operations (HP "Lab Tech Lead" was submitted; bak-20261113c).
+#     answers.json: "How active are you in your job search?" -> Actively looking (shadow).
+# NEXT: ALIVE open checks (V9 wires, 10-min CPU, title-within-2-s), GET /api/replay?since= at the next quiet applier-
+#   image rebuild, then a v2.0 ship review with the user. Parked for the user: Judi Health non-compete, Veeam side
+#   business, Latitude human-check quiz, 84.51 LGB wording, Lever/Ashby captchas.
+
 # Handoff: 11-13 14:25 STOP POINT (user: everything off by 14:30). Stack STOPPED cleanly: gear N, inbox+claimed 0,
 # cap 0, Role Keywords off, Shadow calls 5, `compose stop`, ledger ends on a full line. 6 submitted today.
 # DONE since 14:10: Gearbox page (web :3000) has a Governor panel (ceiling/running/queue/target, memory/CPU/timeouts/
