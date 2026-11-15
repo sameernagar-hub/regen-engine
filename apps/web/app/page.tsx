@@ -12,6 +12,7 @@ import { Rooms } from "./alive/Rooms";
 import { Pulse } from "./alive/Pulse";
 import { TabPulse } from "./alive/TabPulse";
 import { Replay } from "./alive/Replay";
+import { TryPanel } from "./try-box";
 
 // ALIVE Phase 1 (docs/ALIVE_PLAN.md §5): the living engine replaces the door engine when NEXT_PUBLIC_ALIVE=1 (local
 // builds only: the public demo has no live stream). Off restores this page exactly as it was.
@@ -63,6 +64,7 @@ function AliveHome() {
       <Rooms />
       <Replay />
       <Engine />
+      <TryPanel />
       <details className="al-all-pages">
         <summary>Every page on its own</summary>
         <nav className="engine-list" aria-label="Engine parts">
@@ -134,7 +136,8 @@ function EngineHome() {
   const info = ALL.find((p) => p.key === hot);
 
   return (
-    <main className={`engine-home${launch ? " launching" : ""}`} id="main">
+    <main id="main" className="engine-page">
+    <div className={`engine-home${launch ? " launching" : ""}`}>
       <header className="engine-title">
         <p className="eyebrow"><span className="brand">REGEN</span> open-source job engine</p>
         <h1>Be the first application they read, <em>not the 400th.</em></h1>
@@ -143,6 +146,8 @@ function EngineHome() {
         <ul className="proof-strip" aria-label="Measured in production">
           <li><b>{strip.boards}</b> company boards watched</li><li><b>{strip.sent}</b> {strip.sentLabel}</li><li><b>$0</b> in model costs</li>
         </ul>
+        <a className="try-pill" href="#try-h" onClick={(e) => { e.preventDefault(); document.getElementById("try-h")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+          <span className="try-live" aria-hidden />Try it in a minute: paste a resume <span aria-hidden>↓</span></a>
         {PUBLIC && <p className="demo-pill" title="Built by scripts/proxy_dataset.py: the real API over a synthetic engine">Interactive demo on synthetic data. Every part of the engine is a door: hover to wake it, click to step inside.</p>}
         {/* 10-29: the part card lives under the pitch, never over the engine; its slot is reserved so nothing jumps */}
         <aside className={`engine-card${info ? " on" : ""}`} aria-live="polite" style={info ? { ["--tone" as any]: info.tone } : undefined}>
@@ -269,6 +274,8 @@ function EngineHome() {
              onClick={(e) => { e.preventDefault(); go(p); }}>{p.label}</a>
         ))}
       </nav>
+    </div>
+    <TryPanel />
     </main>
   );
 }
