@@ -21,7 +21,8 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 > [!TIP]
 > **Try it in a minute, nothing to set up:** `git clone` this repo, then `python -m engine try resume.txt` (a PDF
 > needs `pip install pypdf`). It scans a sample of public boards and shows the 10 best-fitting fresh roles with the
-> reason each passed. No database, no Docker, nothing applied, nothing saved.
+> reason each passed. No database, no Docker, nothing applied, nothing saved. **Or skip the clone:** paste your resume
+> into the Intake on the [live demo's front page](https://regen-engine.onrender.com) (same rules, run on the server).
 
 > [!NOTE]
 > **v2.0 "ALIVE" is being built.** The control room becomes the running engine, drawn as an electric drivetrain:

@@ -4,6 +4,18 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-14 · Try it on the front page and the live demo
+- **Intake** (front page `/`, `/docs`, `apps/web/app/try-box.tsx`): the README's "Try it in a minute" as a paste box
+  styled like the engine (flywheel that spins up while scanning, read/scan/gate/rank stations, roles arriving like
+  cylinders; reduced-motion safe). The hero stays one full screen with a pill that scrolls to it.
+  **Why**: the quick start only existed as a CLI line; the demo's paste box was hidden in public mode (no Python API).
+- **`POST /api/public/try`** (`apps/web/app/api/public/try/route.ts`, `apps/web/lib/tryit.ts`): a Node port of
+  `engine try` that runs inside the Next.js server, so it works on Render. Rules come from `lib/try-rules.json`, written
+  by `scripts/try_rules.py` from the Python source; boards stay only in `boards.example.txt`. Nothing stored, one try per
+  client per 30 s, board fetch cached 10 min. **Verify**: `pytest tests/test_try_rules.py`; CLI and web give the same
+  top 10 for the same text.
+- **Next.js 16.4.0 -> 16.4.6**: `next build` refused 16.4.0 for a known vulnerability, which would fail the Render deploy.
+
 ## [Unreleased] - 2026-11-13 · Supervisor governor, governor panel, wider sources, text proofs, truthful sponsorship
 - **Governor** (`engine/governor.py`, `engine/supervisor.py`): the supervisor re-judges the applier ceiling on every
   15 s pass from VM memory (measured applier size, 2 GB reserve), CPU load (hold above 70%, drain one above 95%),
