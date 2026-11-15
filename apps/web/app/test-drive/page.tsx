@@ -124,15 +124,19 @@ function Dyno({ mode }: { mode: "idle" | "rev" | "cruise" }) {
 }
 
 function Tach({ mode }: { mode: "idle" | "rev" | "cruise" }) {
+  // one centre (100, 100) for the arc, the ticks and the needle; the dial sweeps 240° (-120° to +120° from straight up)
+  const C = 100, R = 80, pt = (deg: number, r: number) => [f(C + Math.sin((deg * Math.PI) / 180) * r), f(C - Math.cos((deg * Math.PI) / 180) * r)];
+  const [sx, sy] = pt(-120, R), [ex, ey] = pt(120, R);
+  const dial = `M ${sx} ${sy} A ${R} ${R} 0 1 1 ${ex} ${ey}`;
   const ticks = Array.from({ length: 11 }, (_, i) => -120 + i * 24);
   return (
-    <svg className={`td-tach ${mode}`} viewBox="0 0 200 130" role="img" aria-label={`Tachometer: ${mode}`}>
+    <svg className={`td-tach ${mode}`} viewBox="0 0 200 172" role="img" aria-label={`Tachometer: ${mode}`}>
       <defs><linearGradient id="tdRpm" x1="0" x2="1"><stop offset="0" stopColor="#3ddc84" /><stop offset=".55" stopColor="#f2c14e" /><stop offset="1" stopColor="#ff5a5f" /></linearGradient></defs>
-      <path className="arc" d="M 27 112 A 84 84 0 1 1 173 112" />
-      <path className="arc-live" d="M 27 112 A 84 84 0 1 1 173 112" pathLength={100} />
-      {ticks.map((a, i) => { const r = ((a - 90) * Math.PI) / 180; return <line key={i} className="tick" x1={f(100 + Math.cos(r) * 66)} y1={f(96 + Math.sin(r) * 66)} x2={f(100 + Math.cos(r) * 76)} y2={f(96 + Math.sin(r) * 76)} />; })}
-      <g className="needle"><line x1="100" y1="96" x2="100" y2="30" /><circle cx="100" cy="96" r="8" /></g>
-      <text x="100" y="126">{mode === "rev" ? "RUNNING" : mode === "cruise" ? "DONE" : "IDLE"}</text>
+      <path className="arc" d={dial} />
+      <path className="arc-live" d={dial} pathLength={100} />
+      {ticks.map((a) => { const [x1, y1] = pt(a, 60), [x2, y2] = pt(a, 68); return <line key={a} className="tick" x1={x1} y1={y1} x2={x2} y2={y2} />; })}
+      <g className="needle"><line x1={C} y1={C} x2={C} y2={34} /><circle cx={C} cy={C} r="8" /></g>
+      <text x={C} y="164">{mode === "rev" ? "RUNNING" : mode === "cruise" ? "DONE" : "IDLE"}</text>
     </svg>
   );
 }

@@ -214,7 +214,7 @@ ol.td-stations { list-style: none; margin: 0; padding: 0; display: grid; grid-te
 .td-tach.rev .arc-live { stroke-dashoffset: 12; animation: td-rpm .18s ease-in-out infinite alternate; }
 .td-tach.cruise .arc-live { stroke-dashoffset: 52; }
 @keyframes td-rpm { from { stroke-dashoffset: 16; } to { stroke-dashoffset: 9; } }
-.td-tach .needle { transform-origin: 100px 96px; }
+.td-tach .needle { transform-origin: 100px 100px; }
 
 /* sections: numbered badges in each station's color */
 .td h2 .n { background: var(--tone, var(--gold)); box-shadow: 0 0 14px color-mix(in oklab, var(--tone, #f2c14e) 60%, transparent); }
