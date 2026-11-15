@@ -1,29 +1,70 @@
-"""Quick start for a stranger: a first result in minutes with no database, no Docker and nothing applied.
+"""Quick start / Test drive for a stranger: the roles a resume actually fits, ranked the way an ATS reads them.
 
     python -m engine try resume.pdf|resume.txt [--boards N] [--days D]
 
-Reads the resume (PDF needs the one optional dependency, pypdf; .txt / .md need nothing), scans a sample of public
-Greenhouse boards (engine/discovery/boards.example.txt), runs the same fit gate the engine uses (default rules, not
-anyone's profile), and prints the 10 best-fitting fresh roles with the reason each passed, plus why the rest were
-blocked. Read-only: it writes no files and records no events. Standard library only, apart from pypdf for PDFs.
-O(B) board fetches in parallel, then O(J) over the postings.
+1. Read the resume like a recruiter: its role lane(s) (software, AI/ML, data, DevOps, security, product, design,
+   program, solutions), years of experience and level, and its keywords (the engine's JD vocabulary,
+   engine/tailoring/keywords.TECH, plus the product / design / analytics terms in DOMAIN below).
+2. Scan a sample of public Greenhouse boards (engine/discovery/boards.example.txt) and keep only postings in those lanes,
+   at a level the resume supports, in the US, posted in the last D days.
+3. Fetch the job description of the best-looking shortlist and score each like an ATS: the share of the JD's keywords the
+   resume also has, the experience the JD asks for against the resume's years, and freshness.
+Prints the 10 best with matched and missing keywords. Read-only: no files, no events, nothing applied. Standard library
+only (a PDF needs pypdf). The public site runs the same rules (apps/web/lib/tryit.ts, from scripts/try_rules.py).
 """
-import collections, datetime, os, re, sys, time
+import collections, concurrent.futures as cf, datetime, html, json, os, re, sys, time, urllib.request
 
-# Role families: a title word and the resume words that show the same skill. A title earns points only for families
-# the resume also shows, so a ranking never claims a skill the resume lacks.
-FAMILIES = {
-    "ai / ml": (r"\bai\b|machine learning|\bml\b|\bllm|applied ai|genai|deep learning",
-                r"machine learning|\bml\b|pytorch|tensorflow|\bllm|langchain|transformers?|\bnlp\b|computer vision|\bai\b"),
-    "backend": (r"back.?end|platform|infrastructure|distributed|api\b|server",
-                r"back.?end|rest\b|api|postgres|sql|django|flask|fastapi|node|spring|\bgo\b|golang|microservice|kafka|redis"),
-    "full stack": (r"full.?stack|product engineer|founding", r"react|next\.?js|typescript|javascript|node|full.?stack"),
-    "frontend": (r"front.?end|\bui\b|web", r"react|vue|angular|typescript|javascript|css|html|front.?end"),
-    "data": (r"\bdata\b|analytics|etl|pipeline", r"\bsql\b|spark|airflow|dbt|pandas|etl|data pipeline|snowflake|bigquery"),
-    "cloud / devops": (r"devops|\bsre\b|reliability|cloud|kubernetes",
-                       r"aws|gcp|azure|docker|kubernetes|terraform|ci/cd|devops|linux"),
-    "forward deployed": (r"forward.?deployed|solutions engineer", r"customer|client|deploy|integration|consult"),
+# Role lanes. title: posting titles in the lane. resume: how a resume shows it (role names and lane-only work), counted.
+LANES = {
+    "software": {"title": r"software|full.?stack|back.?end|front.?end|developer|\bsde\b|\bswe\b|platform engineer|product engineer|founding engineer|member of technical staff|web engineer|application engineer|api engineer",
+                 "resume": r"software (?:engineer|developer|development)|full.?stack|back.?end|front.?end|web developer|\bsde\b|\bswe\b|microservices?|rest ?(?:ful)? ?apis?"},
+    "ai / ml": {"title": r"machine learning|\bml\b|\bai\b|applied scientist|research engineer|\bllm|deep learning|computer vision|\bnlp\b|genai",
+                "resume": r"machine learning engineer|\bml engineer|\bai engineer|deep learning|pytorch|tensorflow|model training|fine.?tun"},
+    "data": {"title": r"data (?:engineer|scientist|analyst|platform|infrastructure)|analytics engineer|business intelligence|\bbi (?:engineer|developer|analyst)|machine learning scientist",
+             "resume": r"data (?:engineer|scientist|analyst)|analytics engineer|etl|data pipelines?|data warehouse|dbt|airflow"},
+    "devops / sre": {"title": r"devops|\bsre\b|site reliability|infrastructure engineer|cloud engineer|production engineer|reliability engineer|platform reliability",
+                     "resume": r"devops|site reliability|\bsre\b|infrastructure engineer|cloud engineer|terraform|kubernetes"},
+    "security": {"title": r"security engineer|application security|appsec|product security|detection engineer|security analyst",
+                 "resume": r"security engineer|appsec|application security|penetration test|threat model|soc analyst"},
+    "product": {"title": r"product manager|product owner|product lead|group product manager|\bpm\b,|technical product manager",
+                "resume": r"product manager|product owner|product management|\bprds?\b|roadmap|go-to-market"},
+    "design": {"title": r"product designer|ux designer|ui designer|ux/ui|ui/ux|user experience designer|interaction designer|design engineer|ux researcher",
+               "resume": r"product designer|ux designer|ui designer|ui/ux|ux/ui|interaction design|user experience design|design systems?|wirefram"},
+    "program": {"title": r"program manager|\btpm\b",
+                "resume": r"program manager|\btpm\b|program management"},
+    "solutions": {"title": r"forward.?deployed|solutions engineer|sales engineer|customer engineer|solutions architect",
+                  "resume": r"forward.?deployed|solutions engineer|sales engineer|customer engineer|solutions architect"},
 }
+# Product / design / analytics terms the tech vocabulary lacks, as name -> extra patterns (the name itself also matches).
+DOMAIN = {
+    "Product Strategy": [], "Roadmapping": [r"roadmap"], "Go-to-Market": [r"\bgtm\b"], "User Research": [r"user interviews?|customer discovery|customer research"],
+    "PRDs": [r"\bprds?\b|product requirements"], "OKRs": [r"\bokrs?\b"], "Pricing": [], "Stakeholder Management": [r"stakeholders?"],
+    "Cross-functional": [r"cross functional"], "Funnel Optimization": [r"funnels?"], "Retention": [r"churn"], "Growth": [],
+    "Product Analytics": [r"analytics"], "Mixpanel": [], "Amplitude": [], "Jira": [], "Figma": [], "Confluence": [], "Salesforce": [],
+    "Tableau": [], "Looker": [], "Excel": [], "B2B": [], "SaaS": [], "Payments": [r"payment|checkout"],
+    "Enterprise": [], "Wireframing": [r"wirefram"], "Prototyping": [r"prototyp"],
+    "Design Systems": [r"design system"], "Usability Testing": [r"usability"], "Accessibility": [r"wcag|a11y"], "Interaction Design": [],
+    "Customer Success": [], "Technical Program Management": [r"program management"], "Risk Management": [],
+}
+# Title words that need the same word (or a sibling) on the resume, so a web resume is not sent to iOS or FPGA roles.
+SPECIALTY = {"ios": r"\bios\b|swift", "android": r"android|kotlin", "mobile": r"mobile|ios|android|react native|flutter",
+             "embedded": r"embedded|firmware|rtos", "firmware": r"firmware|embedded", "hardware": r"hardware|fpga|asic|pcb",
+             "fpga": r"fpga|verilog", "asic": r"asic|verilog", "verification": r"verification|uvm", "salesforce": r"salesforce",
+             "sap": r"\bsap\b", "mainframe": r"mainframe|cobol", "game": r"game|unity|unreal", "graphics": r"graphics|opengl|vulkan|shader",
+             "robotics": r"robotics|\bros\b", "quant": r"quant|trading", "compiler": r"compiler|llvm", "kernel": r"kernel|linux internals"}
+STUDENT = r"\bstudent\b|expected (?:graduation|20\d\d)|graduating|class of 20\d\d|seeking (?:an )?internship"
+LEVELS = [  # (title pattern, rule) checked in order; the first that matches decides
+    (r"\bintern\b|internship|co-?op\b|apprentice", "student"),
+    (r"\bvp\b|vice president|\bchief\b|\bhead of\b|\bdirector\b", "exec"),
+    (r"\bstaff\b|\bprincipal\b|\bdistinguished\b|\barchitect\b", "staff"),
+    (r"(?<!product )(?<!program )(?<!project )\bmanager\b", "people"),
+    (r"\blead\b|\bsenior\b|\bsr\.?\b|\biii\b|\biv\b|\blevel [45]\b", "senior"),
+    (r"new grad|entry.level|junior|\bjr\.?\b|associate|early career|graduate|\bi\b$|\bl[1-3]\b", "junior"),
+]
+WEIGHTS = {"ats": 0.7, "fresh": 0.15, "lane": 0.15}
+# a JD's closing boilerplate (benefits, pay, EEO) is not what the role asks for; "Go" is not the go in go-to-market
+BOILERPLATE = r"\b(?:benefits (?:include|we offer)|what we offer|our benefits|perks|pay transparency|salary range|compensation range|base pay range|the (?:annual|base) salary|equal (?:employment )?opportunity|we are an equal|eeo statement)"
+OVERRIDE = {"Go": [r"(?<![a-z0-9+#.])go(?![a-z0-9+#-])", r"golang"]}
 
 
 def resume_text(path):
@@ -36,55 +77,227 @@ def resume_text(path):
     return open(path, encoding="utf-8", errors="replace").read()
 
 
-def skills(text):
-    """Families the resume shows, each with the words that showed it."""
+def plain(text):
+    return " ".join(re.sub(r"<[^>]+>", " ", html.unescape(html.unescape(text or ""))).split()).lower()
+
+
+def terms_table():
+    """name -> compiled pattern, for every keyword the engine knows (tech + DOMAIN). Same shape as keywords._RX."""
+    from engine.tailoring.keywords import TECH
     out = {}
-    for fam, (_, words) in FAMILIES.items():
-        hits = sorted({m.group(0).lower() for m in re.finditer(words, text, re.I)})
-        if hits:
-            out[fam] = hits
+    for name, extra in {**TECH, **DOMAIN}.items():
+        pats = OVERRIDE.get(name) or [r"(?<![a-z0-9+#.])" + re.escape(name.lower()) + r"(?![a-z0-9+#])"] + list(extra)
+        out[name] = re.compile("|".join(f"(?:{p})" for p in pats))
     return out
+
+
+def keywords(text, table=None):
+    low = plain(text)
+    table = table or terms_table()
+    return {name for name, rx in table.items() if rx.search(low)}
+
+
+def years(text):
+    """Years of experience the resume shows: an explicit "N+ years", else the span of its dated roles."""
+    low = text.lower()
+    said = [int(n) for n in re.findall(r"(\d{1,2})\+?\s*(?:years|yrs)", low) if int(n) < 40]
+    if said:
+        return max(said)
+    now = datetime.date.today().year
+    spans = re.findall(r"((?:19|20)\d\d)\s*(?:-|–|—|to)\s*((?:19|20)\d\d|present|current|now)", low)
+    starts = [int(a) for a, _ in spans]
+    return max(0, now - min(starts)) if starts else 0
+
+
+def profile(text, table=None):
+    """What a recruiter reads first: lanes (strongest first), years, whether it reads senior / student, keywords."""
+    low = plain(text)
+    score = {lane: len(re.findall(r["resume"], low)) + 2 * len(re.findall(r["title"], low)) for lane, r in LANES.items()}
+    best = max(score.values()) if score else 0
+    lanes = [l for l, s in sorted(score.items(), key=lambda x: -x[1]) if s and s >= best * 0.5][:3] or ["software"]
+    y = years(text)
+    return {"lanes": lanes, "years": y, "senior": y >= 5 or bool(re.search(r"\bsenior\b|\bsr\.?\s", low)),
+            "student": bool(re.search(STUDENT, low)), "keywords": sorted(keywords(text, table)),
+            "staff": y >= 8 or bool(re.search(r"\bstaff\b|\bprincipal\b", low)),
+            "people": bool(re.search(r"engineering manager|managed a team of|direct reports", low)), "low": low}
+
+
+def level_ok(title, p):
+    """None when the resume supports the posting's level, else the reason."""
+    t = title.lower()
+    for pat, rule in LEVELS:
+        if re.search(pat, t):
+            if rule == "student":
+                return None if p["student"] else "internship (resume is not a student's)"
+            if rule == "exec":
+                return "executive level" if p["years"] < 12 else None
+            if rule == "staff":
+                return None if p["staff"] else "staff / principal level"
+            if rule == "people":
+                return None if p["people"] else "people-manager role"
+            if rule == "senior":
+                return None if p["senior"] or p["years"] >= 4 else "senior level"
+            if rule == "junior":
+                return None if p["years"] <= 3 or "associate" in t and "product" in t and p["years"] <= 5 else "junior level"
+    return None
+
+
+def gate(job, p, now, days):
+    """None when the posting fits the resume's profile, else the reason it was filtered (same keys the page charts)."""
+    from engine.discovery.filters import DEFAULT_DOMAIN, NON_SOFTWARE, SOFTWARE_WORDS, us_location, NON_US, US_WORDS
+    title, loc = job.get("title", ""), job.get("location", "")
+    lanes = [l for l in p["lanes"] if re.search(LANES[l]["title"], title, re.I)]
+    if not lanes:
+        return "different kind of role"
+    if lanes == ["software"] and NON_SOFTWARE.search(title) and not SOFTWARE_WORDS.search(title):
+        return "different kind of role"
+    why = level_ok(title, p)
+    if why:
+        return "level: " + why
+    for word, need in SPECIALTY.items():
+        if re.search(r"\b" + word + r"\b", title, re.I) and not re.search(need, p["low"]):
+            return "specialty the resume doesn't show"
+    co = job.get("company", "")
+    rx = re.compile(DEFAULT_DOMAIN["exclude_companies"], re.I)
+    if co and (rx.search(co) or rx.search(re.sub(r"[\s_-]+", " ", co))):
+        return "company excluded (clearance / defense)"
+    if not us_location(loc) or (NON_US.search(title) and not US_WORDS.search(title)):
+        return "outside the US"
+    age = age_days(job, now)
+    if age is not None and age > days:
+        return f"older than {days} days"
+    return None
+
+
+def age_days(job, now):
+    try:
+        return (now - datetime.datetime.fromisoformat((job.get("posted") or "").replace("Z", "+00:00"))).days
+    except ValueError:
+        return None
+
+
+def jd_years(jd_low):
+    """The experience a JD asks for (the smallest "N+ years" it states), or None."""
+    asks = [int(n) for n in re.findall(r"(\d{1,2})\+?\s*(?:or more\s*)?(?:years|yrs)", jd_low) if 0 < int(n) < 20]
+    return min(asks) if asks else None
+
+
+def role_text(jd):
+    """The JD without its closing boilerplate (cut only in the back 40%, so an early 'benefits' mention keeps the rest)."""
+    low = plain(jd)
+    m = re.search(BOILERPLATE, low[int(len(low) * 0.6):])
+    return low[:int(len(low) * 0.6) + m.start()] if m else low
+
+
+def score(job, jd, p, table, now):
+    """ATS-style: (score, matched, missing, asks_years). JD keywords the resume shares (a short JD counts for less),
+    freshness, lane fit; a JD that asks for more years than the resume shows, or a senior title on < 5 years, costs."""
+    jd_low = role_text(jd)
+    co = re.sub(r"[^a-z0-9]", "", (job.get("company") or "").lower())
+    want = {name for name, rx in table.items() if rx.search(jd_low) and re.sub(r"[^a-z0-9]", "", name.lower()) != co} \
+        or keywords(job.get("title", ""), table)
+    have = set(p["keywords"])
+    matched, missing = sorted(want & have), sorted(want - have)
+    ats = (len(matched) / len(want)) * (0.6 + 0.4 * min(1, len(want) / 10)) if want else 0.0
+    age = age_days(job, now)
+    fresh = 1.0 if age is None else max(0.0, 1 - age / 30)
+    lane = 1.0 if re.search(LANES[p["lanes"][0]]["title"], job.get("title", ""), re.I) else 0.6
+    asks = jd_years(jd_low)
+    s = WEIGHTS["ats"] * ats + WEIGHTS["fresh"] * fresh + WEIGHTS["lane"] * lane
+    if asks is not None and asks > p["years"] + 1:
+        s -= 0.15 * min(3, asks - p["years"] - 1)
+    if re.search(r"\bsenior\b|\bsr\.?\b", job.get("title", ""), re.I) and p["years"] < 5:
+        s -= 0.08
+    return s, matched, missing, asks
+
+
+def reason(match_pct, matched, missing, asks, p, age):
+    r = f"ATS match {match_pct}% ({len(matched)} of {len(matched) + len(missing)} JD keywords)"
+    if matched:
+        r += ": " + ", ".join(matched[:6])
+    if missing:
+        r += "; missing " + ", ".join(missing[:4])
+    if asks is not None:
+        r += f"; asks {asks}+ yrs, resume shows {p['years']}"
+    if age is not None:
+        r += f"; posted {age} d ago"
+    return r
+
+
+def shortlist(jobs, p, now, days, n=36, per_company=3):
+    """(candidates, blocked Counter): postings past the gate, best-looking first by title keywords + freshness."""
+    blocked, cand = collections.Counter(), []
+    have = set(p["keywords"])
+    table = None
+    for j in jobs:
+        why = gate(j, p, now, days)
+        if why:
+            blocked[why] += 1
+            continue
+        table = table or terms_table()
+        tk = keywords(j.get("title", ""), table)
+        age = age_days(j, now)
+        pre = len(tk & have) - 0.5 * len(tk - have) + (1 if age is not None and age <= 7 else 0)
+        cand.append((pre, j.get("posted") or "", j))
+    cand.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    out, per = [], collections.Counter()
+    for _, _, j in cand:
+        if per[j.get("company")] < per_company:
+            out.append(j)
+            per[j.get("company")] += 1
+        if len(out) >= n:
+            break
+    return out, blocked, len(cand)
+
+
+def greenhouse_jd(job):
+    """The posting's description HTML from the public board API ('' when it fails)."""
+    m = re.search(r"greenhouse\.io/([^/]+)/jobs/(\d+)", job.get("url", ""))
+    if not m:
+        return ""
+    try:
+        req = urllib.request.Request(f"https://boards-api.greenhouse.io/v1/boards/{m.group(1)}/jobs/{m.group(2)}",
+                                     headers={"User-Agent": "regen-engine try"})
+        return json.load(urllib.request.urlopen(req, timeout=15)).get("content", "")
+    except Exception:
+        return ""
+
+
+def rank(jobs, text, now=None, days=30, fetch=None, top=10):
+    """Everything the CLI and the API need: profile, ranked top roles with reasons, what the gate filtered."""
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    fetch = fetch or greenhouse_jd
+    table = terms_table()
+    p = profile(text, table)
+    cands, blocked, passing = shortlist(jobs, p, now, days)
+    with cf.ThreadPoolExecutor(12) as ex:
+        jds = list(ex.map(fetch, cands))
+    ranked = []
+    for j, jd in zip(cands, jds):
+        s, matched, missing, asks = score(j, jd, p, table, now)
+        pct = round(100 * len(matched) / max(1, len(matched) + len(missing)))
+        ranked.append((s, j, reason(pct, matched, missing, asks, p, age_days(j, now)), pct, matched, missing))
+    ranked.sort(key=lambda x: x[0], reverse=True)
+    per, seen, best = collections.Counter(), set(), []
+    for r in ranked:  # at most two roles per company in the top 10, and one per title (multi-city reposts)
+        key = (r[1].get("company"), r[1].get("title"))
+        if key in seen:
+            continue
+        seen.add(key)
+        if per[r[1].get("company")] < 2:
+            best.append(r)
+            per[r[1].get("company")] += 1
+        if len(best) >= top:
+            break
+    prof = {k: p[k] for k in ("lanes", "years", "senior", "student", "keywords")}
+    return {"profile": prof, "passing": passing, "blocked": dict(blocked.most_common()), "checked": len(cands),
+            "top": [{"company": j.get("company"), "title": j.get("title"), "location": j.get("location"), "url": j.get("url"),
+                     "reason": why, "match": pct, "matched": m, "missing": mi} for _, j, why, pct, m, mi in best]}
 
 
 def sample_boards(n):
     p = os.path.join(os.path.dirname(__file__), "discovery", "boards.example.txt")
     return [t.strip() for t in open(p, encoding="utf-8").read().split(",") if t.strip()][:n]
-
-
-def domain():
-    """The engine's default fit-gate rules, compiled; a stranger's run never reads the owner's profile."""
-    from engine.discovery.filters import DEFAULT_DOMAIN
-    return {k: re.compile(v, re.I) if isinstance(v, str) else v for k, v in DEFAULT_DOMAIN.items()}
-
-
-def rank(jobs, have, now=None, days=14):
-    """(passed, blocked): passed = [(score, job, reason)] best first; blocked = Counter of gate reasons."""
-    from engine.discovery.filters import keep
-    now = now or datetime.datetime.now(datetime.timezone.utc)
-    dom, passed, blocked = domain(), [], collections.Counter()
-    for j in jobs:
-        why = keep(dom, j.get("title", ""), j.get("location", ""), j.get("company", ""))
-        age = None
-        try:
-            age = (now - datetime.datetime.fromisoformat((j.get("posted") or "").replace("Z", "+00:00"))).days
-        except ValueError:
-            pass
-        if why is None and age is not None and age > days:
-            why = f"older than {days} days"
-        fams = [f for f, (title_words, _) in FAMILIES.items() if re.search(title_words, j.get("title", ""), re.I)]
-        match = [f for f in fams if f in have]
-        if why is None and fams and not match:
-            why = "resume does not show this role's skills"
-        if why:
-            blocked[why] += 1
-            continue
-        score = 2 * len(match) + (1 if age is not None and age <= 3 else 0)
-        reason = ("matches " + "; ".join(f"{f} ({', '.join(have[f][:3])})" for f in match) if match
-                  else "passes the gate (general software title)")
-        reason += f"; posted {age} d ago" if age is not None else ""
-        passed.append((score, j, reason))
-    passed.sort(key=lambda x: (x[0], x[1].get("posted") or ""), reverse=True)  # best, then newest
-    return passed, blocked
 
 
 def main(argv=None):
@@ -93,17 +306,21 @@ def main(argv=None):
         sys.exit("usage: python -m engine try resume.pdf|resume.txt [--boards N] [--days D]")
     opt = lambda k, d: int(argv[argv.index(k) + 1]) if k in argv and argv.index(k) + 1 < len(argv) else d
     t0 = time.time()
-    have = skills(resume_text(argv[0]))
-    print("Your resume shows: " + ("; ".join(f"{f} ({', '.join(w[:4])})" for f, w in have.items()) or "no known skill words"))
+    text = resume_text(argv[0])
     from engine.discovery.ats import fetch_all
     boards = sample_boards(opt("--boards", 40))
     jobs, _, total = fetch_all({"greenhouse": boards}, workers=16)
-    passed, blocked = rank(jobs, have, days=opt("--days", 14))
-    print(f"\nScanned {len(boards)} public boards, {total} postings. Top {min(10, len(passed))} of {len(passed)} that pass:\n")
-    for i, (_, j, reason) in enumerate(passed[:10], 1):
-        print(f"{i:>2}. {j['company']}: {j['title']}  [{j.get('location') or '-'}]\n    {reason}\n    {j['url']}")
-    print("\nBlocked by the fit gate: " + (", ".join(f"{n} {r}" for r, n in blocked.most_common()) or "none"))
-    print(f"Done in {time.time() - t0:.0f} s. Nothing was applied to and nothing was saved.")
+    out = rank(jobs, text, days=opt("--days", 30))
+    p = out["profile"]
+    print(f"Your resume reads as: {', '.join(p['lanes'])} · {p['years']} yrs{' · senior' if p['senior'] else ''}"
+          f"{' · student' if p['student'] else ''} · {len(p['keywords'])} keywords ({', '.join(p['keywords'][:12])}{'…' if len(p['keywords']) > 12 else ''})")
+    print(f"\nScanned {len(boards)} public boards, {total} postings; {out['passing']} fit your profile; read {out['checked']} job descriptions.\n"
+          f"Top {len(out['top'])} by ATS match:\n")
+    for i, j in enumerate(out["top"], 1):
+        print(f"{i:>2}. {j['company']}: {j['title']}  [{j.get('location') or '-'}]\n    {j['reason']}\n    {j['url']}")
+    print("\nFiltered out: " + (", ".join(f"{n} {r}" for r, n in out["blocked"].items()) or "none"))
+    print(f"Done in {time.time() - t0:.0f} s. Nothing was applied to and nothing was saved. "
+          "For illustration only: check each posting yourself before you apply.")
 
 
 if __name__ == "__main__":

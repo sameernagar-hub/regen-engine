@@ -324,14 +324,16 @@ def test_replay_returns_the_gap_oldest_first():
 
 def test_try_ranks_pasted_text_rate_limited_and_stores_nothing(monkeypatch):
     import time as _t
-    jobs = [{"company": "Initech", "title": "Backend Engineer", "location": "Remote, US", "url": "https://x/1",
+    jobs = [{"company": "Initech", "title": "Backend Software Engineer", "location": "Remote, US", "url": "https://x/1",
              "posted": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime())}]
     monkeypatch.setattr(M, "_try_jobs", lambda: (jobs, 1))
+    from engine import try_it as T
+    monkeypatch.setattr(T, "greenhouse_jd", lambda j: "<p>Python, FastAPI, REST APIs</p>")
     M._TRY_HITS.clear()
     before = len(client.get("/api/events").json())
     r = client.post("/api/try", json={"text": "Python, FastAPI, Postgres, REST APIs, Docker"})
     assert r.status_code == 200 and r.json()["stored"] is False
-    assert r.json()["top"][0]["company"] == "Initech" and "backend" in r.json()["skills"]
+    assert r.json()["top"][0]["company"] == "Initech" and r.json()["profile"]["lanes"][0] == "software"
     assert client.post("/api/try", json={"text": "again"}).status_code == 429  # one per minute per client
     M._TRY_HITS.clear()
     assert client.post("/api/try", json={"text": " "}).status_code == 400

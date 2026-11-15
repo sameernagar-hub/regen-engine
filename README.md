@@ -19,10 +19,11 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 </div>
 
 > [!TIP]
-> **Try it in a minute, nothing to set up:** `git clone` this repo, then `python -m engine try resume.txt` (a PDF
-> needs `pip install pypdf`). It scans a sample of public boards and shows the 10 best-fitting fresh roles with the
-> reason each passed. No database, no Docker, nothing applied, nothing saved. **Or skip the clone:** paste your resume
-> into the Intake on the [live demo's front page](https://regen-engine.onrender.com) (same rules, run on the server).
+> **Test drive it, nothing to set up:** paste your resume on the [live demo's Test drive](https://regen-engine.onrender.com/test-drive),
+> or `git clone` this repo and run `python -m engine try resume.txt` (a PDF needs `pip install pypdf`). It works out
+> the kind of role and level the resume shows, pulls every open posting from 40 public company boards, reads the job
+> descriptions of the ones that fit and ranks them by ATS match (the JD's keywords your resume has, with what's
+> missing). No database, no Docker, nothing applied, nothing saved. For illustration only: check each posting yourself.
 
 > [!NOTE]
 > **v2.0 "ALIVE" is being built.** The control room becomes the running engine, drawn as an electric drivetrain:

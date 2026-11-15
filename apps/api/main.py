@@ -248,13 +248,9 @@ def try_resume(body: dict, request: Request):
     for k in [k for k, t in _TRY_HITS.items() if now - t > TRY_EVERY_S]:  # forget old clients: the table stays small
         _TRY_HITS.pop(k, None)
     from engine import try_it
-    have = try_it.skills(text)
     jobs, boards = _try_jobs()
-    passed, blocked = try_it.rank(jobs, have)
-    return {"skills": {f: w[:4] for f, w in have.items()}, "boards": boards, "postings": len(jobs), "passing": len(passed),
-            "top": [{"company": j.get("company"), "title": j.get("title"), "location": j.get("location"), "url": j.get("url"),
-                     "reason": r} for _, j, r in passed[:10]],
-            "blocked": dict(blocked.most_common()), "stored": False}
+    out = try_it.rank(jobs, text)  # profile -> gate -> JD keywords (ATS match) -> top 10; the text is not kept
+    return {**out, "boards": boards, "postings": len(jobs), "stored": False}
 
 
 @app.get("/api/replay", response_model=list[Narration])

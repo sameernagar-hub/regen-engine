@@ -12,7 +12,6 @@ import { Rooms } from "./alive/Rooms";
 import { Pulse } from "./alive/Pulse";
 import { TabPulse } from "./alive/TabPulse";
 import { Replay } from "./alive/Replay";
-import { TryPanel } from "./try-box";
 
 // ALIVE Phase 1 (docs/ALIVE_PLAN.md §5): the living engine replaces the door engine when NEXT_PUBLIC_ALIVE=1 (local
 // builds only: the public demo has no live stream). Off restores this page exactly as it was.
@@ -39,7 +38,8 @@ const GEARBOX: Part = { key: "gearbox", href: "/gearbox", label: "Gearbox", abou
 const CORD: Part = { key: "mcp", href: "/mcp", label: "MCP cord", about: "Your AI client plugs in here and operates the engine at zero cost: 35 tools, from memory to the gearbox.", tone: "#5ee6b5" };
 const OIL: Part = { key: "oilchange", href: "/oilchange", label: "Maintenance", about: "Clears what applications leave behind (expired files, old code and alert mail, closed postings) so the search stays fast. Shows the engine’s health and each clean-up live.", tone: "#f0b64c" };
 const SHADOW: Part = { key: "shadow", href: "/shadow", label: "Shadow", about: "Your AI delegate. It answers stuck forms as you from five strategies, abstains when unsure, is trained and tested on your own answers, and earns ownership of the engine's agents rung by rung.", tone: "#a78bfa" };
-const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL, SHADOW];
+const TEST: Part = { key: "test-drive", href: "/test-drive", label: "Test drive", about: "Paste a resume and watch it run through every station: the 10 roles the engine would pick for you, in about 15 seconds.", tone: "#f2c14e" };
+const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL, SHADOW, TEST];
 const FIRING = [0, 7, 3, 2, 5, 4, 6, 1];  // eight cylinders since Desk joined (11-02): the classic V8 order 1-8-4-3-6-5-7-2
 
 const ang = (i: number) => -90 + (i * 360) / CYL.length;
@@ -63,8 +63,8 @@ function AliveHome() {
       <Pulse />
       <Rooms />
       <Replay />
+      <TestDriveButton />
       <Engine />
-      <TryPanel />
       <details className="al-all-pages">
         <summary>Every page on its own</summary>
         <nav className="engine-list" aria-label="Engine parts">
@@ -136,8 +136,7 @@ function EngineHome() {
   const info = ALL.find((p) => p.key === hot);
 
   return (
-    <main id="main" className="engine-page">
-    <div className={`engine-home${launch ? " launching" : ""}`}>
+    <main className={`engine-home${launch ? " launching" : ""}`} id="main">
       <header className="engine-title">
         <p className="eyebrow"><span className="brand">REGEN</span> open-source job engine</p>
         <h1>Be the first application they read, <em>not the 400th.</em></h1>
@@ -146,8 +145,7 @@ function EngineHome() {
         <ul className="proof-strip" aria-label="Measured in production">
           <li><b>{strip.boards}</b> company boards watched</li><li><b>{strip.sent}</b> {strip.sentLabel}</li><li><b>$0</b> in model costs</li>
         </ul>
-        <a className="try-pill" href="#try-h" onClick={(e) => { e.preventDefault(); document.getElementById("try-h")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-          <span className="try-live" aria-hidden />Try it in a minute: paste a resume <span aria-hidden>↓</span></a>
+        <TestDriveButton onGo={() => go(TEST)} onWarm={() => router.prefetch(TEST.href)} />
         {PUBLIC && <p className="demo-pill" title="Built by scripts/proxy_dataset.py: the real API over a synthetic engine">Interactive demo on synthetic data. Every part of the engine is a door: hover to wake it, click to step inside.</p>}
         {/* 10-29: the part card lives under the pitch, never over the engine; its slot is reserved so nothing jumps */}
         <aside className={`engine-card${info ? " on" : ""}`} aria-live="polite" style={info ? { ["--tone" as any]: info.tone } : undefined}>
@@ -274,8 +272,25 @@ function EngineHome() {
              onClick={(e) => { e.preventDefault(); go(p); }}>{p.label}</a>
         ))}
       </nav>
-    </div>
-    <TryPanel />
     </main>
+  );
+}
+
+/** The front page's way into the Test drive: a big button under the pitch. On the old home it runs the engine's own
+ * launch (the engine zooms into the crankcase, then the page opens); elsewhere it is a plain link. */
+function TestDriveButton({ onGo, onWarm }: { onGo?: () => void; onWarm?: () => void }) {
+  return (
+    <a className="td-cta" href="/test-drive" onMouseEnter={onWarm} onFocus={onWarm}
+       onClick={onGo ? (e) => {
+         e.preventDefault(); onGo();
+         // if the browser aborts the page transition (a hidden tab does), load the page directly instead of staying zoomed
+         setTimeout(() => { if (location.pathname === "/") location.assign("/test-drive"); }, 1500);
+       } : undefined}>
+      <svg className="wheel" viewBox="0 0 40 40" aria-hidden><circle cx="20" cy="20" r="16" /><circle cx="20" cy="20" r="4" />
+        {[0, 120, 240].map((r) => <line key={r} x1="20" y1="16" x2="20" y2="5" transform={`rotate(${r} 20 20)`} />)}</svg>
+      <b>Test drive the engine</b>
+      <small>Paste a resume, see the 10 roles it would pick for you. About 15 seconds.</small>
+      <span className="go" aria-hidden>→</span>
+    </a>
   );
 }

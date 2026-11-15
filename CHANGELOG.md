@@ -4,6 +4,22 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-14 · Test drive: resume-driven ATS matching, its own page
+- **Resume decides the roles** (`engine/try_it.py`, ported line for line to `apps/web/lib/tryit.ts`): the quick start
+  used to rank by title words against a fixed software-only filter, so an engineer's and a product manager's resumes
+  got the same 10 roles (and "manager" blocked every PM role). Now it reads the resume like a recruiter (role lane:
+  software, AI/ML, data, DevOps, security, product, design, program, solutions; years; senior/student), filters by
+  that profile (level rules, specialty words like iOS or FPGA the resume must show, US, 30 days), fetches the job
+  description of the best 36 and scores each like an ATS: the JD's keywords (keywords.TECH + product/design/analytics
+  terms) the resume has, with the benefits/EEO boilerplate cut, the years the JD asks vs. the resume shows, freshness.
+  Reasons list matched and missing keywords. **Verify**: `pytest tests/test_try_it.py` (two resumes, two different
+  top lists); `python -m engine try` on an engineer's and a PM's resume.
+- **Test drive page** (`/test-drive`): the engine on a dyno (radial engine, belt, postings dropping at the gate, gold
+  ones reaching "your 10"; idles, revs while running), tach + gauges, the six stations lit in run order, match rings
+  with matched/missing chips, why the rest were filtered, links to every part, a one-line illustration-only
+  disclaimer, a sample resume. The front page has a big "Test drive the engine" button that zooms into the crankcase
+  and opens it; phones scroll the front page so the engine keeps its size.
+
 ## [Unreleased] - 2026-11-14 · Try it on the front page and the live demo
 - **Intake** (front page `/`, `/docs`, `apps/web/app/try-box.tsx`): the README's "Try it in a minute" as a paste box
   styled like the engine (flywheel that spins up while scanning, read/scan/gate/rank stations, roles arriving like
