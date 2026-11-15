@@ -88,3 +88,14 @@ def test_reasons_compare_without_numbers():
     b = ["memory fits 3 appliers (~800 MB each, 4265 MB free)"]
     assert same_reasons(a) == same_reasons(b)
     assert same_reasons(a) != same_reasons(["grow cooldown: holding"])
+
+
+def test_fleet_skips_governor_snapshot(tmp_path, monkeypatch):
+    """governor.json shares the heartbeat folder; it must not show up as a fleet member (it crashed `engine fleet`)."""
+    import json, time
+    from engine import supervisor
+    (tmp_path / "governor.json").write_text(json.dumps({"ceiling": 3, "ts": time.time()}))
+    (tmp_path / "a1.json").write_text(json.dumps({"role": "applier", "host": "a1", "ts": time.time()}))
+    monkeypatch.setattr(supervisor, "FLEET", str(tmp_path))
+    hosts = [m.get("host") for m in supervisor.fleet()["members"]]
+    assert hosts == ["a1"]

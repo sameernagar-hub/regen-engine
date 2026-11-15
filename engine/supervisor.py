@@ -61,6 +61,8 @@ def fleet(now=None):
             m = json.load(open(os.path.join(FLEET, n), encoding="utf-8"))
         except (OSError, ValueError):
             continue
+        if not m.get("role"):
+            continue  # not a heartbeat (governor.json, the governor's snapshot, shares this folder)
         age = now - m.get("ts", 0)
         if age > 900:
             continue  # a recreated container gets a new hostname; the old one never beats again
@@ -1097,7 +1099,7 @@ def main(argv=None):
           + (f"{f['gmail_tab_age']}s ago" if f["gmail_tab_age"] is not None else "never"))
     for m in f["members"]:
         extra = " ".join(f"{k}={m[k]}" for k in ("state", "batch", "pass", "codes") if m.get(k) not in (None, ""))
-        print(f"  {'up  ' if m['up'] else 'DOWN'} {m['role']:<8} {m['host']:<14} {m['age']:>5}s ago  {extra}")
+        print(f"  {'up  ' if m['up'] else 'DOWN'} {m.get('role', '?'):<8} {m.get('host', '?'):<14} {m.get('age', 0):>5}s ago  {extra}")
     for p in f["problems"]:
         print(f"  ! {p}")
 
