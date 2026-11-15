@@ -1,3 +1,17 @@
+# Handoff: 11-14 ~20:50 STOP POINT (80% of the 5-hour window). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0,
+# Role Keywords off, Shadow calls 5, `compose stop`, 0 containers. Run 19:10-20:45 (gear 3, cap 150, keywords on,
+# Shadow autopilot): 0 submitted, 81 truthful JD skips, 2 parked, 4 errors. SUPPLY-BOUND: queue = Workday 1,277 (Reach,
+# yours) + Ashby 673 (1/pass) + ~300 already tried; supply refill (newgrad/feed/boards) added little.
+# SHIPPED + PUSHED (main e8c81e4, wiki ec61594, Render live, CI green):
+#   Test drive (/test-drive): resume-driven ATS matching (engine/try_it.py + apps/web/lib/tryit.ts, rules via
+#   scripts/try_rules.py): lane/years/level from the resume, profile gate, JD keywords scored on 36 fetched JDs;
+#   an engineer's and a PM's resume now get different top 10s. Dyno hero, tach (fixed: one centre), stations,
+#   match rings, disclaimer, sample resume. Front page: big "Test drive the engine" button (crankcase zoom +
+#   direct-load fallback); phones scroll the front page. Next 16.4.0 -> 16.4.6 (build refused 16.4.0).
+#   engine fleet KeyError fixed (governor.json skipped). Privacy scan: "figma" counts as a tool name.
+# NEXT: START -> gear 2/3 -> ask Role Keywords -> cap level. Volume needs Workday sign-ins (Reach) or more open-ATS
+#   supply; Ashby stays 1/pass. GitHub reports 3 Dependabot alerts on main (2 critical): look at them.
+
 # Handoff: 11-13 ~23:30 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
 # off, Shadow calls 5, `compose stop`, 0 containers, events end on a full line. 20 submitted today (536 -> ~556 all time).
 # Images are current with every commit through 88379fb (pipeline/api/web-alive recreated; appliers recreate on start).
