@@ -1,3 +1,21 @@
+# Handoff: 11-15 ~23:08 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
+# off, Shadow calls 5, `compose stop` (+ web/mcp stopped by hand: they came back once), 0 containers.
+# Run 21:52-23:05 (gear 2->3, cap 2->4, keywords on, Shadow autopilot): 8 submitted today (CPI Security, Accenture
+# Federal, Roblox GenAI [SUBMITTED TWICE before the fix], Notion, Everlaw, Labelbox, Judi Health, +1).
+# LOCAL COMMITS (reposync PR): 5a7fe26 ensure_resume drops stale Fact Bank ids (RESUME UPLOAD FAILED on retries);
+#   f1563e4 open_only (default on): no Workday/iCIMS/SmartRecruiters/JazzHR in scout/harvest/scan/queue (queue
+#   2,244 -> 820); 90b00b2 claim_job (one claim per URL across appliers, no double submits) + Shadow agrees to
+#   "I affirm" attestations (user: Shadow decides attestations on autopilot). All hot-copied; REBUILD the applier +
+#   pipeline + scout images before the next start or new containers lack them.
+# Ashby: REGEN_ASHBY_PER_PASS=5 this run (START line still says 1: pass 5 if the user wants it). Cooldown cleared once
+#   on the user's call at 22:47; ElevenLabs captcha re-armed it at 22:57 (until 11-16 22:57). Clearing = user's call.
+# Shadow: level 1 (test 15/20 for L2, precision 1.0, coverage 0.13). L3 needs test_n 40 + 30 live answers: more of the
+#   user's own answers (/shadow training ground), never lower thresholds. 61 Shadow answers saved (answers.json
+#   bak-20261115). Parked for the user: experience claims (Jamf Java, Zocdoc, Rackner, Allegiant), Brattle BS date,
+#   StubHub <1 yr, Anavation employment record, Veeam side business, Latitude quiz, 84.51, arbitration (Roblox ...).
+# User declined path: Claude does not create Workday accounts / store passwords.
+# NEXT: rebuild images, START, gear 2/3, ask keywords, cap level. Supply = Ashby (cooldown-bound) + new GH/Lever.
+
 # Handoff: 11-14 ~20:50 STOP POINT (80% of the 5-hour window). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0,
 # Role Keywords off, Shadow calls 5, `compose stop`, 0 containers. Run 19:10-20:45 (gear 3, cap 150, keywords on,
 # Shadow autopilot): 0 submitted, 81 truthful JD skips, 2 parked, 4 errors. SUPPLY-BOUND: queue = Workday 1,277 (Reach,
