@@ -552,7 +552,10 @@ def harvest(feeds=None):
             urls += re.findall(r"https?://[^\s\"'<>]+", open(os.path.join(WORKSPACE, name), encoding="utf-8").read())
         except OSError:
             pass
+    from engine import targeting
+    gated = REACH if targeting.open_only() else ()  # 11-15: no new account-gated boards while open_only
     for a, toks in harvest_urls(urls).items():
-        b[a] = list(set(b[a]) | toks)
+        if a not in gated:
+            b[a] = list(set(b[a]) | toks)
     save_boards(b)
     return {a: (before[a], len(set(b[a]))) for a in ATS}

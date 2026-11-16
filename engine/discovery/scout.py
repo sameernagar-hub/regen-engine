@@ -82,6 +82,9 @@ def _tally(s, name, **kw):
 def add_board_urls(urls):
     """Every ATS board in these URLs that boards.json lacks -> added. Returns {ats: [tokens]} of the new ones."""
     found = A.harvest_urls(urls)
+    from engine import targeting
+    if targeting.open_only():  # 11-15: only boards that take an application without an account
+        found = {a: t for a, t in found.items() if a not in A.REACH}
     b = A.load_boards()
     new = {}
     for a, toks in found.items():

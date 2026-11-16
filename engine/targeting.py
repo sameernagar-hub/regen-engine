@@ -23,7 +23,8 @@ import datetime, json, os, re
 from engine.config import PROFILE
 
 DEFAULTS = {"cap_levels": [15, 25, 50, 100, 150], "cap_level": 0, "daily_cap": 15, "tier_first": True, "skip_unsure": True, "keywords_ab": False, "ab_per_arm": 150,
-            "unsure_min_terms": 5, "unsure_min_share": 0.4}
+            "unsure_min_terms": 5, "unsure_min_share": 0.4,
+            "open_only": True}  # 11-15 user: only sources that take an application without an account
 _C = {"mtime": None, "cfg": dict(DEFAULTS)}
 
 
@@ -40,6 +41,12 @@ def load():
             raw = {}
         _C.update(mtime=m, cfg={**DEFAULTS, **{k: v for k, v in raw.items() if k in DEFAULTS}})
     return dict(_C["cfg"])
+
+
+def open_only():
+    """True: discovery, scan and the queue skip account-gated ATS (ats.REACH: Workday, iCIMS, SmartRecruiters,
+    JazzHR). The reach code stays; set "open_only": false in profile/targeting.json to bring it back."""
+    return bool(load().get("open_only", True))
 
 
 def cap(cfg=None):

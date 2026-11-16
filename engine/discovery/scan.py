@@ -45,6 +45,10 @@ def merge_queue(new, path=None, log=True):
     unless the caller records its own (`log=False`: watch, alerts)."""
     path = path or os.path.join(WORKSPACE, "queue.json")
     old = json.load(open(path)) if os.path.exists(path) else []
+    from engine import targeting
+    if targeting.open_only():  # 11-15: sign-up portals never enter the queue (newgrad, feed, alerts, vc all merge here)
+        from engine.discovery.ats import REACH
+        new = [j for j in new if j.get("ats") not in REACH]
     by = {str(j["id"]): j for j in old if j.get("ats")}  # legacy greenhouse-only records lack "ats"
     fresh = [j for j in new if str(j["id"]) not in by]
     for j in new:

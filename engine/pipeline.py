@@ -251,7 +251,8 @@ def prune(queue):
     st = latest_status()
     walled, _ = history()
     keep = [j for j in queue if st.get(j["url"]) not in ("SUBMITTED", "SKIPPED", "FLAGGED", "FAILED")
-            and j.get("ats") not in SKIP_ATS and j.get("ats") not in walled]  # reach jobs stay: reach.py reads them
+            and j.get("ats") not in SKIP_ATS and j.get("ats") not in walled  # reach jobs stay: reach.py reads them
+            and not (j.get("ats") in REACH and _open_only())]  # 11-15: ...unless open_only (the default)
     if len(keep) != len(queue):
         json.dump(keep, open(os.path.join(WORKSPACE, "queue.json"), "w", encoding="utf-8"), indent=1)
         print(f"prune: {len(queue) - len(keep)} unusable jobs dropped, {len(keep)} kept")
@@ -264,6 +265,11 @@ def split(jobs, parts):
     for i, j in enumerate(jobs):
         out[i % len(out)].append(j)
     return [b for b in out if b]
+
+
+def _open_only():
+    from engine import targeting
+    return targeting.open_only()
 
 
 def halted(stage):
@@ -291,7 +297,9 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
         beat("pipeline", state="scanning boards", stage="discover")
         ats = "greenhouse,ashby,lever,workable" if ashby_ok else "greenhouse,lever,workable"
         ats += ",rippling"  # 10-15: filled by the runner (ats.FILLED); it was never scanned, so the queue had none
-        ats += ",smartrecruiters,workday,icims,jazzhr"  # reach: discovered + tailored, the user submits (engine/discovery/reach.py)
+        from engine import targeting as _t
+        if not _t.open_only():  # 11-15: account-gated portals are off by default (user: apply freely, in bulk)
+            ats += ",smartrecruiters,workday,icims,jazzhr"  # reach: discovered + tailored, the user submits (engine/discovery/reach.py)
         subprocess.run([sys.executable, "-m", "engine", "scan", str(days), "--ats", ats] + (["--hot"] if hot else []),
                        cwd=ROOT, check=False)
     if sources:  # boards miss companies we have no board for: new-grad sites (~25 s) + curated GitHub lists (~4 s)
@@ -301,7 +309,8 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
             beat("pipeline", state=f"scanning {step[0]}", stage=step[0])
             subprocess.run([sys.executable, "-m", "engine", *step], cwd=ROOT, check=False, timeout=900)
     q = prune(json.load(open(os.path.join(WORKSPACE, "queue.json"), encoding="utf-8")))
-    if not halted("reach"):
+    from engine import targeting as _t2
+    if not _t2.open_only() and not halted("reach"):
         from engine.discovery.reach import run as reach
         try:
             listed = reach(q)
