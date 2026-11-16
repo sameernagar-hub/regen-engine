@@ -1682,8 +1682,24 @@ def ensure_resume(job):
     try:
         resume.fit(spec)
     except (SystemExit, Exception) as e:
-        print(f"   ! resume rebuild failed for {path}: {str(e)[:80]}", flush=True)
-        return False
+        # 11-15: old specs carry skill lines the Fact Bank has since reworded (skill_text:lang) -> drop the stale
+        # overrides so the bank's own current line is used, and drop ids the bank no longer has; never adds text
+        stale = re.findall(r"(skill_text|skill|project):([\w-]+)", str(e))
+        if not stale:
+            print(f"   ! resume rebuild failed for {path}: {str(e)[:80]}", flush=True)
+            return False
+        for kind, k in stale:
+            if kind == "skill_text":
+                spec.get("skill_text", {}).pop(k, None)
+            elif kind == "skill":
+                spec["skills"] = [s for s in spec["skills"] if s != k]
+            else:
+                spec["projects"] = [p for p in spec.get("projects", []) if p != k]
+        try:
+            resume.fit(spec)
+        except (SystemExit, Exception) as e2:
+            print(f"   ! resume rebuild failed for {path}: {str(e2)[:80]}", flush=True)
+            return False
     print(f"   . rebuilt {path} from {spec_path}", flush=True)
     return os.path.exists(path)
 
