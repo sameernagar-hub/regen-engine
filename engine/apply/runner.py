@@ -249,7 +249,9 @@ RULES = [
     # "Which of these have you used? Select all that apply" -> tick only the options your Fact Bank skills name
     (r"which of the following .{0,80}(used|worked with|experience|familiar|proficient)|select all .{0,40}(used|worked with|experience)|"
      r"^which .{0,80}(have you|do you) (worked|used|integrated|built|deployed)|^which .{0,60}(have you|do you) .{0,20}(hands.on )?experience", "__SKILLS__"),
-    (r"privacy|consent|acknowledge|agree|certify|attest", "__ACK__"),
+    # 11-15 user: "agree to the attestations ... Shadow is on autopilot, these decisions are why we need Shadow":
+    # truthful affirmations (information is true, no confidential info from a former employer) are agreed
+    (r"privacy|consent|acknowledge|agree|certify|attest|affirm|hereby (state|declare|confirm)", "__ACK__"),
 ]
 DECLINE = re.compile(r"decline|prefer not|don.t wish|do not wish|not to (answer|disclose|say)|choose not|do not want to answer|don.t want to (answer|disclose)", re.I)
 ACK = re.compile(r"^(yes|i agree|i acknowledge|i consent|i accept|i have read|i will read|i understand|i confirm|i certify|i attest|acknowledged?|agreed?|accepted?|confirm(ed)?|understood)\b", re.I)
@@ -1755,12 +1757,43 @@ def resume_in(page, job):
         return False
 
 
+def claim_job(url, ttl=2700):
+    """Atomic per-URL claim in the shared workspace (O_EXCL), so two appliers never apply to one posting at once;
+    a fresh SUBMITTED for the URL also refuses. A claim older than ttl seconds is stale and taken over."""
+    import hashlib
+    if url in already_submitted():
+        return False
+    d = os.path.join(WORKSPACE, "claims")
+    os.makedirs(d, exist_ok=True)
+    p = os.path.join(d, hashlib.sha1(url.encode()).hexdigest()[:20])
+    try:
+        m = os.path.getmtime(p)
+        # released when that attempt has ended (any outcome recorded after the claim: a park, a failure)
+        from engine.feedback.events import read
+        ended = any(e.get("url") == url and not e.get("dry") and (e.get("ts") or "") >=
+                    datetime.datetime.fromtimestamp(m).isoformat(timespec="seconds") for e in read("application"))
+        if ended or time.time() - m > ttl:
+            os.remove(p)
+    except OSError:
+        pass
+    try:
+        os.close(os.open(p, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+        return True
+    except FileExistsError:
+        return False
+
+
 def job_task(page, job, dry, results, log_base=print):
     """One application as a generator: fill, airbags, submit, record. The scheduler interleaves several."""
     name = job.get("name") or job["url"]
     tag = re.sub(r"\s+", " ", name.split(" - ")[0])[:16]
     log = lambda s: log_base(f"[{tag}] {s.strip()}", flush=True)
     log(f"== {name}")
+    if not dry and not claim_job(job["url"]):
+        # 11-15: Shadow's retry and an answers retry carried the same Roblox job in two batches on two appliers ->
+        # submitted twice. One claim per URL across every applier (shared workspace), 45 min, checked per job.
+        log("-> already submitted or in flight on another applier, skipping")
+        return
     ash = "ashbyhq" in job["url"]; lev = "jobs.lever.co" in job["url"]; wk = "workable.com" in job["url"]
     rip = "ats.rippling.com" in job["url"]; yc = "ycombinator.com/companies/" in job["url"]
     shot = ""
