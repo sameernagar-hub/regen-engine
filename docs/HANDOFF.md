@@ -6,28 +6,28 @@
 # LOCAL COMMIT 9817e8f (reposync PR): Greenhouse upload fields read their real label (was "Attach"); transcripts are
 #   uploaded from profile/docs/ (transcript_undergrad.pdf = B.Tech RGPV, transcript_graduate.pdf = CSUF M.S.); other
 #   required uploads park by name. Verkada retry was requeued but never ran before the stop: verify on the next run.
-# Ashby: user cleared the cooldown 3x tonight (captchas: Ambrook 22:02, Goaly 22:23). Cooldown file currently cleared.
+# Ashby: user cleared the cooldown 3x tonight (captchas: a startup 22:02, Goaly 22:23). Cooldown file currently cleared.
 # Shadow: ~60 recurring Qs answered positively/from presets (user 11-16: opinion/rating/interest Qs -> most positive
 #   option). Plaid rating -> "4 - Among the leaders"; Netic domain -> Infrastructure.
 # TODO: Netic "When can you start a new role?" is a required Ashby field the filler misses (date picker?);
 #   `engine fleet` crashes with KeyError 'role' (supervisor.py:1100, a heartbeat without role).
-# Still parked for the user: Blockhouse trading-firm experience, Stripe X-years experience Qs, arbitration/export Qs.
+# Still parked for the user: Blockhouse trading-firm experience, a fintech's X-years experience Qs, arbitration/export Qs.
 
 # Handoff: 11-15 ~23:08 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
 # off, Shadow calls 5, `compose stop` (+ web/mcp stopped by hand: they came back once), 0 containers.
-# Run 21:52-23:05 (gear 2->3, cap 2->4, keywords on, Shadow autopilot): 8 submitted today (CPI Security, Accenture
-# Federal, Roblox GenAI [SUBMITTED TWICE before the fix], Notion, Everlaw, Labelbox, Judi Health, +1).
+# Run 21:52-23:05 (gear 2->3, cap 2->4, keywords on, Shadow autopilot): 8 submitted today (one GenAI role
+# SUBMITTED TWICE before the fix).
 # LOCAL COMMITS (reposync PR): 5a7fe26 ensure_resume drops stale Fact Bank ids (RESUME UPLOAD FAILED on retries);
 #   f1563e4 open_only (default on): no Workday/iCIMS/SmartRecruiters/JazzHR in scout/harvest/scan/queue (queue
 #   2,244 -> 820); 90b00b2 claim_job (one claim per URL across appliers, no double submits) + Shadow agrees to
 #   "I affirm" attestations (user: Shadow decides attestations on autopilot). All hot-copied; REBUILD the applier +
 #   pipeline + scout images before the next start or new containers lack them.
 # Ashby: REGEN_ASHBY_PER_PASS=5 this run (START line still says 1: pass 5 if the user wants it). Cooldown cleared once
-#   on the user's call at 22:47; ElevenLabs captcha re-armed it at 22:57 (until 11-16 22:57). Clearing = user's call.
+#   on the user's call at 22:47; a captcha re-armed it at 22:57 (until 11-16 22:57). Clearing = user's call.
 # Shadow: level 1 (test 15/20 for L2, precision 1.0, coverage 0.13). L3 needs test_n 40 + 30 live answers: more of the
 #   user's own answers (/shadow training ground), never lower thresholds. 61 Shadow answers saved (answers.json
-#   bak-20261115). Parked for the user: experience claims (Jamf Java, Zocdoc, Rackner, Allegiant), Brattle BS date,
-#   StubHub <1 yr, Anavation employment record, Veeam side business, Latitude quiz, 84.51, arbitration (Roblox ...).
+#   bak-20261115). Parked for the user: experience claims (4 jobs), a degree date, tenure, an employment
+#   record, a side business, a quiz, wording, arbitration (several).
 # User declined path: Claude does not create Workday accounts / store passwords.
 # NEXT: rebuild images, START, gear 2/3, ask keywords, cap level. Supply = Ashby (cooldown-bound) + new GH/Lever.
 

@@ -1841,7 +1841,7 @@ def job_task(page, job, dry, results, log_base=print):
     log = lambda s: log_base(f"[{tag}] {s.strip()}", flush=True)
     log(f"== {name}")
     if not dry and not claim_job(job["url"]):
-        # 11-15: Shadow's retry and an answers retry carried the same Roblox job in two batches on two appliers ->
+        # 11-15: Shadow's retry and an answers retry carried the same job in two batches on two appliers ->
         # submitted twice. One claim per URL across every applier (shared workspace), 45 min, checked per job.
         log("-> already submitted or in flight on another applier, skipping")
         return
