@@ -1418,6 +1418,16 @@ def fill_employment(page, log):
         yield
 
 
+def upload_doc(label):
+    """The user's own document for a file-upload question, from profile/docs/ (private volume), or None.
+    Transcripts only: undergraduate -> B.Tech transcript; graduate / unspecified -> the M.S. record (most recent)."""
+    from engine.config import PROFILE
+    if not re.search(r"transcript", label or "", re.I): return None
+    name = "transcript_undergrad.pdf" if re.search(r"under\s*grad|bachelor", label, re.I) else "transcript_graduate.pdf"
+    p = os.path.join(PROFILE, "docs", name)
+    return p if os.path.exists(p) else None
+
+
 def fill_gh(page, job, log):
     url = gh_embed_url(job["url"])
     page.goto(url); page.wait_for_selector("#application-form, form", timeout=30000)
@@ -1478,6 +1488,23 @@ def fill_gh(page, job, log):
         if not lab_el: continue
         label = lab_el.inner_text().strip(); req = "*" in label
         label = label.rstrip("*").strip()
+        fin = f.query_selector("input[type=file]")
+        if fin and (not label or re.fullmatch(r"attach", label, re.I)):
+            # 11-16: upload fields' first <label> is the Attach button; the field's own text holds the real name
+            # (Verkada: "Undergraduate Transcript*" was read as "Attach" and the submit failed on it)
+            first = (f.evaluate("e => e.innerText") or "").strip().split("\n")[0]
+            req = req or "*" in first
+            label = first.rstrip("*").strip() or label
+        if fin and not re.search(r"^resume", label, re.I):
+            doc = upload_doc(label)
+            if doc:
+                try:
+                    fin.set_input_files(doc); log(f"   . {label[:60]} -> {os.path.basename(doc)}")
+                    job.setdefault("_answers", []).append([label[:200], os.path.basename(doc)])
+                    yield 2.5; continue
+                except Exception as e: log(f"  ! {label[:60]} upload: {str(e)[:80]}")
+            if req and not re.search(r"^cover letter", label, re.I):
+                missing.append(f"{label[:80]} (file upload)"); continue
         if re.search(r"^resume", label, re.I) or (re.search(r"^cover letter", label, re.I) and not req and not job.get("note")): continue
         if f.query_selector("input#phone") or re.fullmatch(r"(country|phone)", label, re.I) and f.query_selector("input#phone, #country"): continue
         ans = answer(label, job)
