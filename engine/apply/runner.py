@@ -833,12 +833,36 @@ def ashby_fields(page, job, log, first=True):
         yield  # checkpoint: the scheduler may switch jobs between fields
     return missing
 
+def date_answer(label, ans, today=None):
+    """MM/DD/YYYY for a date-picker question, or None. A start-date question gets today + the notice period from the
+    preset ("Immediately (2 weeks notice)" -> 14 days); an answer that already is a date is kept. Anything else: None
+    (a birth date or graduation date is never guessed here)."""
+    import datetime as _dt
+    today = today or _dt.date.today()
+    s = str(ans or "")
+    m = re.fullmatch(r"\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*", s)
+    if m: return f"{int(m[1]):02d}/{int(m[2]):02d}/{m[3]}"
+    if not re.search(r"start|available|availability|join|begin", label or "", re.I): return None
+    w = re.search(r"(\d+)\s*weeks?", s, re.I); d = re.search(r"(\d+)\s*days?", s, re.I)
+    days = int(w[1]) * 7 if w else int(d[1]) if d else 14 if re.search(r"immediate|asap|now", s, re.I) else None
+    if days is None: return None
+    return (today + _dt.timedelta(days=days)).strftime("%m/%d/%Y")
+
+
 def set_field(page, f, label, ans):
     """Generator: `ok = yield from set_field(...)`. It yields once, before touching the field; inside a widget it
     never yields: switching tabs while a dropdown is open lets the other tab's clicks close it (seen 10-07: work
     authorization, sponsorship and EEO selects left on "Select..."). The short waits inside are bounded sleeps."""
     yield  # checkpoint: a safe place to switch tabs
     if ans is None: return False
+    dp = f.query_selector("input.ashby-application-form-input-date")
+    if dp:
+        # 11-16 (Netic): a react-datepicker; free text like "Immediately (2 weeks notice)" leaves it empty and Ashby
+        # refuses the submit. Type a real date and confirm it with Enter (checked by hand: the value sticks).
+        d = date_answer(label, ans)
+        if not d: return False
+        dp.click(); dp.fill(""); dp.type(d); dp.press("Enter"); dp.press("Tab")
+        return dp.input_value() == d
     # 10-26: Ashby's Location autocomplete is an <input role=combobox> with no type; `input:not([type])` took it as a
     # text box, so the city was typed but no suggestion picked and Ashby refused the submit ("Missing entry: Location")
     txt = f.query_selector("input[type=text]:not([role=combobox]), input[type=email], input[type=tel], input[type=url], input[type=number], input:not([type]):not([role=combobox]), textarea")
