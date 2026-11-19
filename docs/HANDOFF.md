@@ -1,3 +1,16 @@
+# Handoff: 11-18 ~22:58 STOP POINT (user asked, after the resume-classifier work). Stack STOPPED cleanly: gear N,
+# inbox+claimed 0, no apply/Chrome running, cap 0, Role Keywords off, Shadow calls, `compose stop`, 0 containers.
+# Run 21:24-22:56 (gear 3, cap 4 = 150, keywords on, Shadow autopilot, ASHBY_PER_PASS=5): 20 SUBMITTED today
+#   (569 all time). Memory-bound at 2-3 appliers. Ashby cooldown cleared twice on the user's call (bot-checks re-arm it).
+# FIXED + PUSHED (main b3ca676, CI on push): Ashby yes/no buttons render upper-case ("YES"/"NO") -> filler matched
+#   none, every Ashby yes/no question parked (b64153d; applier image rebuilt). Resume classifier for the Test drive
+#   (engine/resume_nlp.py + apps/web/lib/resume-nlp.ts, /pipeline page, held-out benchmark): see CHANGELOG 11-18.
+# Shadow answered ~13 parked questions from presets (location, employer, grad year, past-employer No, attestations).
+# Still for the user: OPT expiry / sponsorship detail questions, spoken languages (not in the Fact Bank), Lever
+#   human checks (filled, in the desk), one email-code timeout.
+# Known filler gap: free-text fallback puts resume blurbs into demographic / language fields (gate parks them; fix next).
+# NEXT: START -> gear 2/3 -> ask Role Keywords -> cap level.
+
 # Handoff: 11-16 ~22:45 STOP POINT (user: stop at 80% or 23:00). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0,
 # Role Keywords off, Shadow calls 5, `compose stop`, 0 containers (checked twice).
 # Run 21:06-22:40 (gear 3, cap 4 = 150, keywords on, Shadow autopilot, ASHBY_PER_PASS=5): 19 SUBMITTED, 57 truthful
