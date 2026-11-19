@@ -867,7 +867,9 @@ def set_field(page, f, label, ans):
     # text box, so the city was typed but no suggestion picked and Ashby refused the submit ("Missing entry: Location")
     txt = f.query_selector("input[type=text]:not([role=combobox]), input[type=email], input[type=tel], input[type=url], input[type=number], input:not([type]):not([role=combobox]), textarea")
     combo = f.query_selector("input[role=combobox]")
-    btns = [b for b in f.query_selector_all("button") if b.inner_text().strip() in ("Yes", "No")]
+    # 11-18 (Snowflake): Ashby's yes/no buttons now render upper-case ("YES"/"NO" via CSS), so innerText no longer
+    # equals "Yes"; match case-insensitively and hand pick_option the title-case text the answers use
+    btns = [b for b in f.query_selector_all("button") if b.inner_text().strip().lower() in ("yes", "no")]
     choices = f.query_selector_all("input[type=radio], input[type=checkbox]")
     if len(ans) > MAX_OPTION and not txt:
         # a drafted paragraph is never typed into a button, choice or dropdown; for radio/checkbox choices it picks the
@@ -882,7 +884,7 @@ def set_field(page, f, label, ans):
     if txt and not ans.startswith("__") and ans not in ("Yes", "No"):
         txt.fill(ans); return True
     if btns:
-        h = pick_option([(b.inner_text(), b) for b in btns], "Yes" if ans in ("__ACK__",) else ans)
+        h = pick_option([(b.inner_text().strip().title(), b) for b in btns], "Yes" if ans in ("__ACK__",) else ans)
         if not h: return False
         sel = lambda b: bool(re.search(r"active|selected", b.get_attribute("class") or "", re.I)) or b.get_attribute("aria-pressed") == "true"
         if not sel(h): h.click()
