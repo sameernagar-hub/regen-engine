@@ -11,7 +11,9 @@ export type Ranked = { company: string; title: string; location: string; url: st
 type P = Profile & { staff: boolean; people: boolean; low: string };
 
 const LANES = Object.entries(R.lanes as Record<string, { title: string; resume: string }>);
-const LANE = Object.fromEntries(LANES.map(([k, v]) => [k, { title: new RegExp(v.title, "i"), resume: new RegExp(v.resume, "g"), titleG: new RegExp(v.title, "gi") }]));
+// titleG counts the lane's title on a resume; resume_title narrows loose words ("software" in an employer's name)
+const RT = (R.resume_title ?? {}) as Record<string, string>;
+const LANE = Object.fromEntries(LANES.map(([k, v]) => [k, { title: new RegExp(v.title, "i"), resume: new RegExp(v.resume, "g"), titleG: new RegExp(RT[k] ?? v.title, "gi") }]));
 const LEVELS = (R.levels as unknown as [string, string][]).map(([p, rule]) => [new RegExp(p), rule] as const);
 const SPECIALTY = Object.entries(R.specialty as Record<string, string>).map(([w, need]) => [new RegExp(`\\b${w}\\b`, "i"), new RegExp(need)] as const);
 const TERMS = Object.entries(R.terms as Record<string, string[]>).map(([name, ps]) => [name, new RegExp(ps.map((p) => `(?:${p})`).join("|"))] as const);

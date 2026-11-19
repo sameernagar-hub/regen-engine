@@ -34,7 +34,17 @@ LANES = {
                 "resume": r"program manager|\btpm\b|program management"},
     "solutions": {"title": r"forward.?deployed|solutions engineer|sales engineer|customer engineer|solutions architect",
                   "resume": r"forward.?deployed|solutions engineer|sales engineer|customer engineer|solutions architect"},
+    # 11-18: an Account Executive resume read as "software" (no go-to-market lanes; "Cloud Software" in an employer name)
+    "sales": {"title": r"account executive|\bsales\b(?! engineer)|business development|\bsdr\b|\bbdr\b|account manager|partnerships? manager",
+              "resume": r"account executive|sales development|\bsdrs?\b|\bbdrs?\b|quota|closed.?won|prospecting|business development|account manager|president.s club|\bmeddic\b|cold call"},
+    "marketing": {"title": r"marketing|demand gen|growth marketer|content (?:strategist|manager|marketer)|brand manager|\bseo\b",
+                  "resume": r"marketing manager|demand generation|content marketing|\bseo\b|\bsem\b|campaign|brand (?:strategy|manager)|email marketing|paid (?:social|search)"},
+    "customer success": {"title": r"customer success|customer support|support engineer|implementation (?:manager|specialist)|onboarding specialist",
+                         "resume": r"customer success manager|\bcsm\b|customer support|renewals|\bnrr\b|net revenue retention|onboarding (?:customers|clients)"},
 }
+# How a resume shows a lane's posting title, where the bare title word is too loose: "software" alone also matches an
+# employer ("Veloce Cloud Software") or a product sold ("workflow automation software").
+RESUME_TITLE = {"software": r"software (?:engineer|developer|development|engineering)|full.?stack|back.?end|front.?end|developer|\bsde\b|\bswe\b|platform engineer|product engineer|founding engineer|member of technical staff|web engineer|api engineer"}
 # Product / design / analytics terms the tech vocabulary lacks, as name -> extra patterns (the name itself also matches).
 DOMAIN = {
     "Product Strategy": [], "Roadmapping": [r"roadmap"], "Go-to-Market": [r"\bgtm\b"], "User Research": [r"user interviews?|customer discovery|customer research"],
@@ -45,6 +55,12 @@ DOMAIN = {
     "Enterprise": [], "Wireframing": [r"wirefram"], "Prototyping": [r"prototyp"],
     "Design Systems": [r"design system"], "Usability Testing": [r"usability"], "Accessibility": [r"wcag|a11y"], "Interaction Design": [],
     "Customer Success": [], "Technical Program Management": [r"program management"], "Risk Management": [],
+    # sales / marketing (11-18), so a go-to-market resume scores on its own vocabulary
+    "MEDDIC": [r"meddpicc"], "Challenger Sale": [r"challenger"], "Sandler": [], "Negotiation": [r"negotiat"],
+    "Prospecting": [r"outbound"], "Pipeline Management": [r"pipeline generation|qualified pipeline"], "Quota Attainment": [r"\bquota\b"],
+    "Full-Cycle Sales": [r"full.cycle sales"], "Enterprise Sales": [r"enterprise (?:sales|deals|accounts)"],
+    "CRM": [r"\bcrm\b"], "HubSpot": [], "Gong": [], "ZoomInfo": [], "LinkedIn Sales Navigator": [r"sales navigator"],
+    "Upselling": [r"upsell|cross.?sell|account expansion"], "Demand Generation": [r"demand gen"], "SEO": [], "Email Marketing": [],
 }
 # Title words that need the same word (or a sibling) on the resume, so a web resume is not sent to iOS or FPGA roles.
 SPECIALTY = {"ios": r"\bios\b|swift", "android": r"android|kotlin", "mobile": r"mobile|ios|android|react native|flutter",
@@ -64,7 +80,11 @@ LEVELS = [  # (title pattern, rule) checked in order; the first that matches dec
 WEIGHTS = {"ats": 0.7, "fresh": 0.15, "lane": 0.15}
 # a JD's closing boilerplate (benefits, pay, EEO) is not what the role asks for; "Go" is not the go in go-to-market
 BOILERPLATE = r"\b(?:benefits (?:include|we offer)|what we offer|our benefits|perks|pay transparency|salary range|compensation range|base pay range|the (?:annual|base) salary|equal (?:employment )?opportunity|we are an equal|eeo statement)"
-OVERRIDE = {"Go": [r"(?<![a-z0-9+#.])go(?![a-z0-9+#-])", r"golang"]}
+OVERRIDE = {"Go": [r"(?<![a-z0-9+#.])go(?![a-z0-9+#-])", r"golang"],
+            # 11-18 (sales resume): "C-level", "SQL quota" (sales-qualified leads), "multi-threading complex accounts"
+            "C": [r"(?<![a-z0-9+#.])c(?![a-z0-9+#-])(?! suite)", r"\bc(?= programming| language|/c\+\+|,)"],
+            "SQL": [r"(?<![a-z0-9+#.])sql(?![a-z0-9+#])(?! quota| attainment| target| conversion| pipeline)"],
+            "Concurrency": [r"(?<![a-z0-9+#.])concurrency(?![a-z0-9+#])", r"multi-?thread(?:ed|ing)?(?![a-z])(?! (?:complex )?(?:accounts|deals|stakeholders|buying))"]}
 
 
 def resume_text(path):
@@ -112,7 +132,7 @@ def years(text):
 def profile(text, table=None):
     """What a recruiter reads first: lanes (strongest first), years, whether it reads senior / student, keywords."""
     low = plain(text)
-    score = {lane: len(re.findall(r["resume"], low)) + 2 * len(re.findall(r["title"], low)) for lane, r in LANES.items()}
+    score = {lane: len(re.findall(r["resume"], low)) + 2 * len(re.findall(RESUME_TITLE.get(lane, r["title"]), low)) for lane, r in LANES.items()}
     best = max(score.values()) if score else 0
     lanes = [l for l, s in sorted(score.items(), key=lambda x: -x[1]) if s and s >= best * 0.5][:3] or ["software"]
     y = years(text)

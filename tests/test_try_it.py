@@ -52,3 +52,20 @@ def test_txt_resume_needs_no_dependency(tmp_path):
     p = tmp_path / "r.txt"
     p.write_text(ENGINEER, encoding="utf-8")
     assert "FastAPI" in try_it.resume_text(str(p))
+
+
+SALES = """Senior Account Executive with 5+ years of B2B SaaS sales closing mid-market and enterprise deals; MEDDIC,
+Challenger Sale, cold outbound prospecting, contract negotiation, multi-threading complex accounts with C-level buyers.
+Senior Account Executive | Veloce Cloud Software | 2024 - Present. Achieved 132% of quota; managed full-cycle sales
+for workflow automation software. Sales Development Representative (SDR) | Acme | 2021 - 2022. Exceeded monthly SQL
+quota for 11 consecutive months. Salesforce CRM, HubSpot, Gong. President's Club 2025."""
+
+
+def test_sales_resume_reads_as_sales_not_software():
+    # 11-18: "Software" in an employer's name and in the product sold made an Account Executive read as "software"
+    p = try_it.profile(SALES)
+    assert p["lanes"] == ["sales"]
+    assert not {"C", "SQL", "Concurrency"} & set(p["keywords"])  # C-level, SQL quota, multi-threading accounts
+    assert {"MEDDIC", "Salesforce", "Negotiation"} <= set(p["keywords"])
+    jobs = [job("Enterprise Account Executive", "pm"), job("Software Engineer, Backend")]
+    assert [j["title"] for j in try_it.rank(jobs, SALES, now=NOW, fetch=fetch)["top"]] == ["Enterprise Account Executive"]

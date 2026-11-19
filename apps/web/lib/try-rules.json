@@ -36,7 +36,22 @@
   "solutions": {
    "title": "forward.?deployed|solutions engineer|sales engineer|customer engineer|solutions architect",
    "resume": "forward.?deployed|solutions engineer|sales engineer|customer engineer|solutions architect"
+  },
+  "sales": {
+   "title": "account executive|\\bsales\\b(?! engineer)|business development|\\bsdr\\b|\\bbdr\\b|account manager|partnerships? manager",
+   "resume": "account executive|sales development|\\bsdrs?\\b|\\bbdrs?\\b|quota|closed.?won|prospecting|business development|account manager|president.s club|\\bmeddic\\b|cold call"
+  },
+  "marketing": {
+   "title": "marketing|demand gen|growth marketer|content (?:strategist|manager|marketer)|brand manager|\\bseo\\b",
+   "resume": "marketing manager|demand generation|content marketing|\\bseo\\b|\\bsem\\b|campaign|brand (?:strategy|manager)|email marketing|paid (?:social|search)"
+  },
+  "customer success": {
+   "title": "customer success|customer support|support engineer|implementation (?:manager|specialist)|onboarding specialist",
+   "resume": "customer success manager|\\bcsm\\b|customer support|renewals|\\bnrr\\b|net revenue retention|onboarding (?:customers|clients)"
   }
+ },
+ "resume_title": {
+  "software": "software (?:engineer|developer|development|engineering)|full.?stack|back.?end|front.?end|developer|\\bsde\\b|\\bswe\\b|platform engineer|product engineer|founding engineer|member of technical staff|web engineer|api engineer"
  },
  "levels": [
   [
@@ -117,7 +132,7 @@
    "c\\+\\+"
   ],
   "C": [
-   "(?<![a-z0-9+#.])c(?![a-z0-9+#])",
+   "(?<![a-z0-9+#.])c(?![a-z0-9+#-])(?! suite)",
    "\\bc(?= programming| language|/c\\+\\+|,)"
   ],
   "C#": [
@@ -140,7 +155,7 @@
    "(?<![a-z0-9+#.])php(?![a-z0-9+#])"
   ],
   "SQL": [
-   "(?<![a-z0-9+#.])sql(?![a-z0-9+#])"
+   "(?<![a-z0-9+#.])sql(?![a-z0-9+#])(?! quota| attainment| target| conversion| pipeline)"
   ],
   "Bash": [
    "(?<![a-z0-9+#.])bash(?![a-z0-9+#])",
@@ -467,7 +482,7 @@
   ],
   "Concurrency": [
    "(?<![a-z0-9+#.])concurrency(?![a-z0-9+#])",
-   "multithread|multi-thread"
+   "multi-?thread(?:ed|ing)?(?![a-z])(?! (?:complex )?(?:accounts|deals|stakeholders|buying))"
   ],
   "Performance Optimization": [
    "(?<![a-z0-9+#.])performance\\ optimization(?![a-z0-9+#])",
@@ -802,6 +817,72 @@
   ],
   "Risk Management": [
    "(?<![a-z0-9+#.])risk\\ management(?![a-z0-9+#])"
+  ],
+  "MEDDIC": [
+   "(?<![a-z0-9+#.])meddic(?![a-z0-9+#])",
+   "meddpicc"
+  ],
+  "Challenger Sale": [
+   "(?<![a-z0-9+#.])challenger\\ sale(?![a-z0-9+#])",
+   "challenger"
+  ],
+  "Sandler": [
+   "(?<![a-z0-9+#.])sandler(?![a-z0-9+#])"
+  ],
+  "Negotiation": [
+   "(?<![a-z0-9+#.])negotiation(?![a-z0-9+#])",
+   "negotiat"
+  ],
+  "Prospecting": [
+   "(?<![a-z0-9+#.])prospecting(?![a-z0-9+#])",
+   "outbound"
+  ],
+  "Pipeline Management": [
+   "(?<![a-z0-9+#.])pipeline\\ management(?![a-z0-9+#])",
+   "pipeline generation|qualified pipeline"
+  ],
+  "Quota Attainment": [
+   "(?<![a-z0-9+#.])quota\\ attainment(?![a-z0-9+#])",
+   "\\bquota\\b"
+  ],
+  "Full-Cycle Sales": [
+   "(?<![a-z0-9+#.])full\\-cycle\\ sales(?![a-z0-9+#])",
+   "full.cycle sales"
+  ],
+  "Enterprise Sales": [
+   "(?<![a-z0-9+#.])enterprise\\ sales(?![a-z0-9+#])",
+   "enterprise (?:sales|deals|accounts)"
+  ],
+  "CRM": [
+   "(?<![a-z0-9+#.])crm(?![a-z0-9+#])",
+   "\\bcrm\\b"
+  ],
+  "HubSpot": [
+   "(?<![a-z0-9+#.])hubspot(?![a-z0-9+#])"
+  ],
+  "Gong": [
+   "(?<![a-z0-9+#.])gong(?![a-z0-9+#])"
+  ],
+  "ZoomInfo": [
+   "(?<![a-z0-9+#.])zoominfo(?![a-z0-9+#])"
+  ],
+  "LinkedIn Sales Navigator": [
+   "(?<![a-z0-9+#.])linkedin\\ sales\\ navigator(?![a-z0-9+#])",
+   "sales navigator"
+  ],
+  "Upselling": [
+   "(?<![a-z0-9+#.])upselling(?![a-z0-9+#])",
+   "upsell|cross.?sell|account expansion"
+  ],
+  "Demand Generation": [
+   "(?<![a-z0-9+#.])demand\\ generation(?![a-z0-9+#])",
+   "demand gen"
+  ],
+  "SEO": [
+   "(?<![a-z0-9+#.])seo(?![a-z0-9+#])"
+  ],
+  "Email Marketing": [
+   "(?<![a-z0-9+#.])email\\ marketing(?![a-z0-9+#])"
   ]
  },
  "exclude_companies": "anduril|spacex|chaos industries|lockheed|raytheon|\\brtx\\b|northrop|general dynamics|bae systems|l3harris|leidos|\\bsaic\\b|booz allen|palantir|epirus|saronic|hadrian|castelion|militar|defense|\\bfederal\\b",
