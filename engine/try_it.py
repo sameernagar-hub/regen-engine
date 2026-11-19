@@ -14,37 +14,11 @@ only (a PDF needs pypdf). The public site runs the same rules (apps/web/lib/tryi
 """
 import collections, concurrent.futures as cf, datetime, html, json, os, re, sys, time, urllib.request
 
-# Role lanes. title: posting titles in the lane. resume: how a resume shows it (role names and lane-only work), counted.
-LANES = {
-    "software": {"title": r"software|full.?stack|back.?end|front.?end|developer|\bsde\b|\bswe\b|platform engineer|product engineer|founding engineer|member of technical staff|web engineer|application engineer|api engineer",
-                 "resume": r"software (?:engineer|developer|development)|full.?stack|back.?end|front.?end|web developer|\bsde\b|\bswe\b|microservices?|rest ?(?:ful)? ?apis?"},
-    "ai / ml": {"title": r"machine learning|\bml\b|\bai\b|applied scientist|research engineer|\bllm|deep learning|computer vision|\bnlp\b|genai",
-                "resume": r"machine learning engineer|\bml engineer|\bai engineer|deep learning|pytorch|tensorflow|model training|fine.?tun"},
-    "data": {"title": r"data (?:engineer|scientist|analyst|platform|infrastructure)|analytics engineer|business intelligence|\bbi (?:engineer|developer|analyst)|machine learning scientist",
-             "resume": r"data (?:engineer|scientist|analyst)|analytics engineer|etl|data pipelines?|data warehouse|dbt|airflow"},
-    "devops / sre": {"title": r"devops|\bsre\b|site reliability|infrastructure engineer|cloud engineer|production engineer|reliability engineer|platform reliability",
-                     "resume": r"devops|site reliability|\bsre\b|infrastructure engineer|cloud engineer|terraform|kubernetes"},
-    "security": {"title": r"security engineer|application security|appsec|product security|detection engineer|security analyst",
-                 "resume": r"security engineer|appsec|application security|penetration test|threat model|soc analyst"},
-    "product": {"title": r"product manager|product owner|product lead|group product manager|\bpm\b,|technical product manager",
-                "resume": r"product manager|product owner|product management|\bprds?\b|roadmap|go-to-market"},
-    "design": {"title": r"product designer|ux designer|ui designer|ux/ui|ui/ux|user experience designer|interaction designer|design engineer|ux researcher",
-               "resume": r"product designer|ux designer|ui designer|ui/ux|ux/ui|interaction design|user experience design|design systems?|wirefram"},
-    "program": {"title": r"program manager|\btpm\b",
-                "resume": r"program manager|\btpm\b|program management"},
-    "solutions": {"title": r"forward.?deployed|solutions engineer|sales engineer|customer engineer|solutions architect",
-                  "resume": r"forward.?deployed|solutions engineer|sales engineer|customer engineer|solutions architect"},
-    # 11-18: an Account Executive resume read as "software" (no go-to-market lanes; "Cloud Software" in an employer name)
-    "sales": {"title": r"account executive|\bsales\b(?! engineer)|business development|\bsdr\b|\bbdr\b|account manager|partnerships? manager",
-              "resume": r"account executive|sales development|\bsdrs?\b|\bbdrs?\b|quota|closed.?won|prospecting|business development|account manager|president.s club|\bmeddic\b|cold call"},
-    "marketing": {"title": r"marketing|demand gen|growth marketer|content (?:strategist|manager|marketer)|brand manager|\bseo\b",
-                  "resume": r"marketing manager|demand generation|content marketing|\bseo\b|\bsem\b|campaign|brand (?:strategy|manager)|email marketing|paid (?:social|search)"},
-    "customer success": {"title": r"customer success|customer support|support engineer|implementation (?:manager|specialist)|onboarding specialist",
-                         "resume": r"customer success manager|\bcsm\b|customer support|renewals|\bnrr\b|net revenue retention|onboarding (?:customers|clients)"},
-}
-# How a resume shows a lane's posting title, where the bare title word is too loose: "software" alone also matches an
-# employer ("Veloce Cloud Software") or a product sold ("workflow automation software").
-RESUME_TITLE = {"software": r"software (?:engineer|developer|development|engineering)|full.?stack|back.?end|front.?end|developer|\bsde\b|\bswe\b|platform engineer|product engineer|founding engineer|member of technical staff|web engineer|api engineer"}
+# Role lanes come from the resume classifier (engine/resume_nlp.py): tokenize, normalize, sections, longest-first
+# phrases, TF-IDF-style family scores blended with nearest-centroid cosine. It labels the resume AND each posting
+# title from one taxonomy of role families, so the gate compares like with like.
+from engine import resume_nlp as NLP
+
 # Product / design / analytics terms the tech vocabulary lacks, as name -> extra patterns (the name itself also matches).
 DOMAIN = {
     "Product Strategy": [], "Roadmapping": [r"roadmap"], "Go-to-Market": [r"\bgtm\b"], "User Research": [r"user interviews?|customer discovery|customer research"],
@@ -132,11 +106,10 @@ def years(text):
 def profile(text, table=None):
     """What a recruiter reads first: lanes (strongest first), years, whether it reads senior / student, keywords."""
     low = plain(text)
-    score = {lane: len(re.findall(r["resume"], low)) + 2 * len(re.findall(RESUME_TITLE.get(lane, r["title"]), low)) for lane, r in LANES.items()}
-    best = max(score.values()) if score else 0
-    lanes = [l for l, s in sorted(score.items(), key=lambda x: -x[1]) if s and s >= best * 0.5][:3] or ["software"]
+    a = NLP.analyze(text)
+    lanes = a["labels"]  # [] = unclassified: nothing is guessed, every posting is filtered with that reason
     y = years(text)
-    return {"lanes": lanes, "years": y, "senior": y >= 5 or bool(re.search(r"\bsenior\b|\bsr\.?\s", low)),
+    return {"lanes": lanes, "analysis": a, "years": y, "senior": y >= 5 or bool(re.search(r"\bsenior\b|\bsr\.?\s", low)),
             "student": bool(re.search(STUDENT, low)), "keywords": sorted(keywords(text, table)),
             "staff": y >= 8 or bool(re.search(r"\bstaff\b|\bprincipal\b", low)),
             "people": bool(re.search(r"engineering manager|managed a team of|direct reports", low)), "low": low}
@@ -164,12 +137,14 @@ def level_ok(title, p):
 
 def gate(job, p, now, days):
     """None when the posting fits the resume's profile, else the reason it was filtered (same keys the page charts)."""
-    from engine.discovery.filters import DEFAULT_DOMAIN, NON_SOFTWARE, SOFTWARE_WORDS, us_location, NON_US, US_WORDS
+    from engine.discovery.filters import DEFAULT_DOMAIN, us_location, NON_US, US_WORDS
     title, loc = job.get("title", ""), job.get("location", "")
-    lanes = [l for l in p["lanes"] if re.search(LANES[l]["title"], title, re.I)]
-    if not lanes:
-        return "different kind of role"
-    if lanes == ["software"] and NON_SOFTWARE.search(title) and not SOFTWARE_WORDS.search(title):
+    if not p["lanes"]:
+        return "resume not classified"
+    fams = NLP.classify_title(title)
+    if not fams:
+        return "title not recognized"
+    if not set(fams) & set(p["lanes"]):
         return "different kind of role"
     why = level_ok(title, p)
     if why:
@@ -221,7 +196,7 @@ def score(job, jd, p, table, now):
     ats = (len(matched) / len(want)) * (0.6 + 0.4 * min(1, len(want) / 10)) if want else 0.0
     age = age_days(job, now)
     fresh = 1.0 if age is None else max(0.0, 1 - age / 30)
-    lane = 1.0 if re.search(LANES[p["lanes"][0]]["title"], job.get("title", ""), re.I) else 0.6
+    lane = 1.0 if p["lanes"] and p["lanes"][0] in NLP.classify_title(job.get("title", "")) else 0.6
     asks = jd_years(jd_low)
     s = WEIGHTS["ats"] * ats + WEIGHTS["fresh"] * fresh + WEIGHTS["lane"] * lane
     if asks is not None and asks > p["years"] + 1:
@@ -310,7 +285,7 @@ def rank(jobs, text, now=None, days=30, fetch=None, top=10):
         if len(best) >= top:
             break
     prof = {k: p[k] for k in ("lanes", "years", "senior", "student", "keywords")}
-    return {"profile": prof, "passing": passing, "blocked": dict(blocked.most_common()), "checked": len(cands),
+    return {"profile": prof, "analysis": p["analysis"], "passing": passing, "blocked": dict(blocked.most_common()), "checked": len(cands),
             "top": [{"company": j.get("company"), "title": j.get("title"), "location": j.get("location"), "url": j.get("url"),
                      "reason": why, "match": pct, "matched": m, "missing": mi} for _, j, why, pct, m, mi in best]}
 
@@ -331,8 +306,16 @@ def main(argv=None):
     boards = sample_boards(opt("--boards", 40))
     jobs, _, total = fetch_all({"greenhouse": boards}, workers=16)
     out = rank(jobs, text, days=opt("--days", 30))
-    p = out["profile"]
-    print(f"Your resume reads as: {', '.join(p['lanes'])} · {p['years']} yrs{' · senior' if p['senior'] else ''}"
+    p, a = out["profile"], out["analysis"]
+    st = a["steps"]
+    print(f"Pipeline: {st['tokens']} tokens -> {st['terms']} normalized terms ({st['stopwords']} stopwords dropped, "
+          f"{st['aliases']} abbreviations expanded) -> sections {', '.join(st['sections']) or 'none found'}, {st['roles']} roles "
+          f"-> {st['phrases']} matched phrases")
+    print("Classifier: " + ", ".join(f"{s['family']} {s['p']:.0%}" for s in st["scores"][:4]) +
+          f"  (confidence {a['level']}{', hybrid profile' if a['hybrid'] else ''})")
+    if not p["lanes"]:
+        print("The resume could not be classified: too little evidence of any kind of role. Add your job titles and skills.")
+    print(f"Your resume reads as: {', '.join(p['lanes']) or 'unclassified'} · {p['years']} yrs{' · senior' if p['senior'] else ''}"
           f"{' · student' if p['student'] else ''} · {len(p['keywords'])} keywords ({', '.join(p['keywords'][:12])}{'…' if len(p['keywords']) > 12 else ''})")
     print(f"\nScanned {len(boards)} public boards, {total} postings; {out['passing']} fit your profile; read {out['checked']} job descriptions.\n"
           f"Top {len(out['top'])} by ATS match:\n")

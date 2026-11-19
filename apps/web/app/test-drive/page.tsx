@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Nav } from "../nav";
 import { useTestDrive, type TryOut } from "../try-box";
+import { PipelineRun, famColor } from "../pipeline-run";
 
 const SAMPLE = `Jane Doe, Software Engineer (sample resume)
 4+ years building backend and full-stack products.
@@ -25,7 +26,7 @@ const filtered = (o: TryOut) => Object.values(o.blocked).reduce((a, b) => a + b,
 const STATIONS: Station[] = [
   { key: "facts", name: "Fact Bank", href: "/facts", tone: "#f2c14e",
     does: "Everything a resume is allowed to say about you, each item backed by proof. The engine never writes anything that isn't in here.",
-    drive: (o) => o ? `reads as ${o.profile.lanes[0]}, ${o.profile.years} yrs, ${o.profile.keywords.length} keywords` : "reads your resume the way a recruiter would" },
+    drive: (o) => o ? `reads as ${o.profile.lanes[0] ?? "unclassified"}, ${o.profile.years} yrs, ${o.profile.keywords.length} keywords` : "reads your resume the way a recruiter would" },
   { key: "discover", name: "Discover", href: "/room/listen", tone: "#6fb7ff",
     does: "Checks thousands of company job boards and six big-tech career sites on a schedule, so new roles are seen within hours of posting.",
     drive: (o) => o ? `${o.boards} boards, ${o.postings.toLocaleString()} open postings` : "pulls every open posting from 40 boards" },
@@ -51,8 +52,7 @@ const PARTS: [string, string, string, string][] = [
   ["MCP cord", "/mcp", "Plug your AI client in and operate the engine at zero model cost.", "#ff7eb6"],
 ];
 const f = (n: number) => Math.round(n * 100) / 100;  // same digits on the server and in the browser (hydration)
-const LANE_TONE: Record<string, string> = { software: "#6fb7ff", "ai / ml": "#a78bfa", data: "#5ee6b5", "devops / sre": "#ff9f43", security: "#ff5a5f",
-  product: "#f2c14e", design: "#ff7eb6", program: "#f0b64c", solutions: "#7dd3fc" };
+const LANE_TONE = famColor;
 
 /** A number that counts up to its value when it changes (instant with reduced motion). */
 function Count({ to }: { to: number }) {
@@ -149,12 +149,20 @@ function Ring({ pct }: { pct: number }) {
 export default function TestDrive() {
   const t = useTestDrive();
   const [stage, setStage] = useState(-1);  // station being driven; 6 = drive complete
+  const [readId, setReadId] = useState(0);   // bumps on every drive: replays the resume pipeline live
+  const [readText, setReadText] = useState("");
+  useEffect(() => {  // handed over from /pipeline ("Search live jobs with this resume")
+    let handed = "";
+    try { handed = sessionStorage.getItem("td-text") || ""; sessionStorage.removeItem("td-text"); } catch { /* storage blocked */ }
+    if (handed.trim()) { t.setText(handed); setTimeout(() => document.getElementById("td-seat-h")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const clear = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => clear, []);
 
   const drive = async (override?: string) => {
     clear(); setStage(0);
+    setReadText(override ?? t.text); setReadId((n) => n + 1);
     timers.current.push(setTimeout(() => setStage(1), 600));
     timers.current.push(setTimeout(() => setStage(2), 4500));
     const o = await t.go(override);
@@ -212,6 +220,15 @@ export default function TestDrive() {
         <p className="td-fine">{DISCLAIMER}</p>
       </section>
 
+      {readId > 0 && (
+        <section className="td-read" aria-labelledby="td-read-h">
+          <h2 id="td-read-h"><span className="n" style={{ ["--tone" as any]: "#a78bfa" }}>◆</span>Reading your resume, live</h2>
+          <p className="td-sub">Each step below is the real output on your text, while the engine searches the boards.
+            <a href="/pipeline"> How each step works, and the benchmark →</a></p>
+          <PipelineRun text={readText} runId={readId} compact />
+        </section>
+      )}
+
       <section className="td-route" aria-labelledby="td-route-h">
         <h2 id="td-route-h"><span className="n" style={{ ["--tone" as any]: "#6fb7ff" }}>2</span>What happens, step by step</h2>
         <p className="td-sub">These are the engine&apos;s six stations, in the order every job moves through them. The test drive
@@ -239,8 +256,8 @@ export default function TestDrive() {
           <div className="td-profile">
             <div className="who">
               <span>Your resume reads as</span>
-              <b>{o.profile.lanes.map((l) => <i key={l} style={{ ["--tone" as any]: LANE_TONE[l] || "#6fb7ff" }}>{l}</i>)}</b>
-              <small>{o.profile.years} yrs{o.profile.senior ? " · senior" : ""}{o.profile.student ? " · student" : ""} · {o.profile.keywords.length} keywords found</small>
+              <b>{o.profile.lanes.length ? o.profile.lanes.map((l) => <i key={l} style={{ ["--tone" as any]: LANE_TONE(l) }}>{l}</i>) : <i style={{ ["--tone" as any]: "#ff9f43" }}>unclassified</i>}</b>
+              <small>{o.analysis ? `${o.analysis.level} confidence ${Math.round(o.analysis.confidence * 100)}%${o.analysis.hybrid ? " · hybrid" : ""} · ` : ""}{o.profile.years} yrs{o.profile.senior ? " · senior" : ""}{o.profile.student ? " · student" : ""} · {o.profile.keywords.length} keywords found</small>
             </div>
             <p className="kw">{o.profile.keywords.slice(0, 28).map((k) => <span key={k} className="try-chip">{k}</span>)}
               {o.profile.keywords.length > 28 && <span className="more">+{o.profile.keywords.length - 28} more</span>}</p>
@@ -261,7 +278,7 @@ export default function TestDrive() {
                     </div>
                   </li>))}
                 </ol>)
-                : <p className="td-sub">Nothing in this sample of boards fits this resume right now. Try again later: postings change hourly.</p>}
+                : <p className="td-sub">{o.profile.lanes.length ? "Nothing in this sample of boards fits this resume right now. Try again later: postings change hourly." : "The engine couldn't tell what kind of role this resume is for, so it didn't guess. Add your job titles and the work you did, then run it again."}</p>}
               <p className="td-legend"><span className="ok">has it</span><span className="miss">the job asks, resume doesn&apos;t show</span></p>
             </div>
             <aside className="td-gate">

@@ -5,6 +5,7 @@
 import { useState } from "react";
 
 export type TryOut = { profile: { lanes: string[]; years: number; senior: boolean; student: boolean; keywords: string[] };
+  analysis?: import("@/lib/resume-nlp").Analysis;
   boards: number; postings: number; passing: number; checked: number; blocked: Record<string, number>;
   top: { company: string; title: string; location: string; url: string; reason: string; match: number; matched: string[]; missing: string[] }[] };
 

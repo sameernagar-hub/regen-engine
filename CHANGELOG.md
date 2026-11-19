@@ -4,7 +4,34 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
-## [Unreleased] - 2026-11-14 · Test drive: resume-driven ATS matching, its own page
+## [Unreleased] - 2026-11-18 · Resume classifier: any resume, a live pipeline page, a benchmark
+- **The bug**: an Account Executive's resume read as "software" (the employer was "Veloce Cloud Software", there was
+  no sales lane, and "software" was the default when nothing matched), so the Test drive showed engineering jobs.
+- **Resume classifier** (`engine/resume_nlp.py`, ported line for line to `apps/web/lib/resume-nlp.ts`): tokenize
+  (Unicode fold, tech tokens kept whole) → normalize (abbreviation expansion, stopwords, one fixed stemmer) → structure
+  (sections; on a role line only the title counts, never the employer; dates-only lines are not roles; newest role
+  weighs most) → longest-first phrase features over 25 role families → TF-IDF-style specificity scores blended 70/30
+  with nearest-centroid cosine → label, secondary labels (hybrid), confidence, evidence. Too little evidence →
+  "unclassified" (no silent software default). Posting titles use the same taxonomy (`classify_title`) with a
+  domain-word back-off: 96% of 7,250 live titles get a family (was 71% after the first pass). The Test drive's fit
+  gate and lane score now use it; the old regex lanes are gone.
+- **Benchmark** (`scripts/resume_bench.py` → `apps/web/lib/resume-bench.json`): held-out set `tests/resume_bench.py`
+  (63 resumes, 26 classes, written apart from the 30-resume tuning set `tests/resume_corpus.py`): accuracy, per-class
+  and macro/weighted precision, recall and F1, the confusion matrix, and robustness under 7 mutations. Result: 100%,
+  macro F1 1.000, every mutation 100%. The resumes are synthetic: this shows the method holds on these formats and
+  traps, not a real-world error rate.
+- **Pipeline page** (`/pipeline`): paste a resume or pick a sample, press Run, and watch each step's real output
+  appear in order (tokens, normalization with stopwords / abbreviations / stems, sections and role titles, phrase
+  features by family, score bars, the label), then the explanation of every step and the benchmark (tiles,
+  robustness, per-class table, confusion matrix, caveats). "Search live jobs with this resume" hands the text to the
+  Test drive, which now plays the same steps live ("Reading your resume, live") while it searches.
+- Also: Ashby yes/no buttons render upper-case now ("YES"/"NO"); the filler matches them case-insensitively (every
+  Ashby yes/no question used to park). Privacy scan: "blend" and "generalist" are common words, not companies.
+- **Verify**: `pytest tests/test_resume_nlp.py` (corpus, traps, benchmark thresholds, stale JSON, node parity on 130
+  inputs); `python scripts/resume_bench.py`; `python -m engine try resume.txt` prints the pipeline summary; open
+  `/pipeline`, run the Account Executive sample: sales, high confidence.
+
+## 2026-11-14 · Test drive: resume-driven ATS matching, its own page
 - **Resume decides the roles** (`engine/try_it.py`, ported line for line to `apps/web/lib/tryit.ts`): the quick start
   used to rank by title words against a fixed software-only filter, so an engineer's and a product manager's resumes
   got the same 10 roles (and "manager" blocked every PM role). Now it reads the resume like a recruiter (role lane:

@@ -24,6 +24,17 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 > the kind of role and level the resume shows, pulls every open posting from 40 public company boards, reads the job
 > descriptions of the ones that fit and ranks them by ATS match (the JD's keywords your resume has, with what's
 > missing). No database, no Docker, nothing applied, nothing saved. For illustration only: check each posting yourself.
+>
+> **How it reads a resume:** a small, transparent NLP pipeline ([`engine/resume_nlp.py`](engine/resume_nlp.py), ported
+> line for line to [`apps/web/lib/resume-nlp.ts`](apps/web/lib/resume-nlp.ts)): tokenize → normalize (abbreviations,
+> stopwords, stemming) → structure (sections, role lines: only the job title counts, never the employer) → longest-first
+> phrase features over 25 role families → TF-IDF-style scores blended with nearest-centroid cosine → a label, any
+> secondary labels, a confidence, and the evidence. Watch it run step by step on the
+> [Resume pipeline page](https://regen-engine.onrender.com/pipeline). Held-out benchmark (63 resumes, 26 classes,
+> written apart from the tuning set): accuracy 100%, macro F1 1.000, and the label holds under 7 mutations (case,
+> one-line pastes, headers removed, misleading employer names…). The resumes are synthetic, so read that as "the
+> method holds on these formats and traps", not as a real-world rate. `python scripts/resume_bench.py` reproduces it;
+> details in the [wiki](https://github.com/sameernagar-hub/regen-engine/wiki/Resume-Classifier).
 
 > [!NOTE]
 > **v2.0 "ALIVE" is being built.** The control room becomes the running engine, drawn as an electric drivetrain:

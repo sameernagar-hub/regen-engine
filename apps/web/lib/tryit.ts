@@ -4,22 +4,18 @@
 // scripts/try_rules.py writes from the Python source (tests/test_try_rules.py fails when it is stale), so the CLI and the
 // site rank the same way. Nothing here stores or logs the resume.
 import R from "./try-rules.json";
+import { analyze, classifyTitle, type Analysis } from "./resume-nlp";
 
 export type Job = { company: string; title: string; location: string; posted: string | null; url: string };
 export type Profile = { lanes: string[]; years: number; senior: boolean; student: boolean; keywords: string[] };
 export type Ranked = { company: string; title: string; location: string; url: string; reason: string; match: number; matched: string[]; missing: string[] };
-type P = Profile & { staff: boolean; people: boolean; low: string };
+type P = Profile & { staff: boolean; people: boolean; low: string; analysis: Analysis };
 
-const LANES = Object.entries(R.lanes as Record<string, { title: string; resume: string }>);
-// titleG counts the lane's title on a resume; resume_title narrows loose words ("software" in an employer's name)
-const RT = (R.resume_title ?? {}) as Record<string, string>;
-const LANE = Object.fromEntries(LANES.map(([k, v]) => [k, { title: new RegExp(v.title, "i"), resume: new RegExp(v.resume, "g"), titleG: new RegExp(RT[k] ?? v.title, "gi") }]));
 const LEVELS = (R.levels as unknown as [string, string][]).map(([p, rule]) => [new RegExp(p), rule] as const);
 const SPECIALTY = Object.entries(R.specialty as Record<string, string>).map(([w, need]) => [new RegExp(`\\b${w}\\b`, "i"), new RegExp(need)] as const);
 const TERMS = Object.entries(R.terms as Record<string, string[]>).map(([name, ps]) => [name, new RegExp(ps.map((p) => `(?:${p})`).join("|"))] as const);
 const STUDENT = new RegExp(R.student), BOILER = new RegExp(R.boilerplate);
 const EXCLUDE_CO = new RegExp(R.exclude_companies, "i"), US_WORDS = new RegExp(R.us_words, "i"), NON_US = new RegExp(R.non_us, "i");
-const NON_SOFTWARE = new RegExp(R.non_software, "i"), SOFTWARE_WORDS = new RegExp(R.software_words, "i");
 const US_STATES = new Set(R.us_states);
 const W = R.weights as { ats: number; fresh: number; lane: number };
 const DAY = 86_400_000;
@@ -44,11 +40,9 @@ function years(text: string): number {
 
 export function profile(text: string): P {
   const low = plain(text);
-  const score = Object.fromEntries(LANES.map(([k]) => [k, count(LANE[k].resume, low) + 2 * count(LANE[k].titleG, low)]));
-  const best = Math.max(0, ...Object.values(score));
-  const lanes = Object.entries(score).sort((a, b) => b[1] - a[1]).filter(([, s]) => s && s >= best * 0.5).map(([k]) => k).slice(0, 3);
+  const a = analyze(text);  // lib/resume-nlp.ts: [] = unclassified, nothing guessed
   const y = years(text);
-  return { lanes: lanes.length ? lanes : ["software"], years: y, senior: y >= 5 || /\bsenior\b|\bsr\.?\s/.test(low), student: STUDENT.test(low),
+  return { lanes: a.labels, analysis: a, years: y, senior: y >= 5 || /\bsenior\b|\bsr\.?\s/.test(low), student: STUDENT.test(low),
            keywords: [...keywords(low, true)].sort(), staff: y >= 8 || /\bstaff\b|\bprincipal\b/.test(low),
            people: /engineering manager|managed a team of|direct reports/.test(low), low };
 }
@@ -80,9 +74,10 @@ const ageDays = (j: Job, now: number) => { const t = j.posted ? Date.parse(j.pos
 
 function gate(j: Job, p: P, now: number, days: number): string | null {
   const title = j.title || "", loc = j.location || "";
-  const lanes = p.lanes.filter((l) => LANE[l].title.test(title));
-  if (!lanes.length) return "different kind of role";
-  if (lanes.length === 1 && lanes[0] === "software" && NON_SOFTWARE.test(title) && !SOFTWARE_WORDS.test(title)) return "different kind of role";
+  if (!p.lanes.length) return "resume not classified";
+  const fams = classifyTitle(title);
+  if (!fams.length) return "title not recognized";
+  if (!fams.some((f) => p.lanes.includes(f))) return "different kind of role";
   const why = levelOk(title, p);
   if (why) return "level: " + why;
   for (const [word, need] of SPECIALTY) if (word.test(title) && !need.test(p.low)) return "specialty the resume doesn't show";
@@ -113,7 +108,7 @@ function score(j: Job, jd: string, p: P, now: number) {
   const matched = [...want].filter((k) => have.has(k)).sort(), missing = [...want].filter((k) => !have.has(k)).sort();
   const ats = want.size ? (matched.length / want.size) * (0.6 + 0.4 * Math.min(1, want.size / 10)) : 0;
   const age = ageDays(j, now), fresh = age === null ? 1 : Math.max(0, 1 - age / 30);
-  const lane = LANE[p.lanes[0]].title.test(j.title || "") ? 1 : 0.6;
+  const lane = p.lanes.length && classifyTitle(j.title || "").includes(p.lanes[0]) ? 1 : 0.6;
   const asks = jdYears(low);
   let s = W.ats * ats + W.fresh * fresh + W.lane * lane;
   if (asks !== null && asks > p.years + 1) s -= 0.15 * Math.min(3, asks - p.years - 1);
@@ -178,7 +173,7 @@ export async function rank(jobs: Job[], text: string, fetchJd = greenhouseJd, no
     if (best.length >= top) break;
   }
   const prof: Profile = { lanes: p.lanes, years: p.years, senior: p.senior, student: p.student, keywords: p.keywords };
-  return { profile: prof, passing, blocked, checked: cands.length,
+  return { profile: prof, analysis: p.analysis, passing, blocked, checked: cands.length,
            top: best.map(({ j, why, pct, matched, missing }) => ({ company: j.company, title: j.title, location: j.location, url: j.url, reason: why, match: pct, matched, missing })) as Ranked[] };
 }
 
