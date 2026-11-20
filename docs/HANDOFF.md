@@ -1,3 +1,23 @@
+# Handoff: 11-19 ~20:40 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
+# off, Shadow calls 5, `compose stop`, 0 containers. Ashby cooldown file clear (re-armed 5x tonight; a watcher cleared it
+# every minute on the user's call: stopped with the run).
+# Run 19:12-20:38 (gear 3, cap 4 = 150, keywords on, Shadow autopilot, ASHBY_PER_PASS=5): 12 SUBMITTED today (614 all
+#   time). Supply-bound: Ashby cooldowns + Workday (Reach) dominate the 1,233 queue; ~100 truthful JD skips.
+# SHIPPED + PUSHED (main): 616dc79 Test drive = pipeline board (11 clickable stages, full output, live wire; tach/dyno
+#   removed, new hero) + input screen (profanity/threats, SSN/card/password/key/bank numbers, non-resumes refused in
+#   the browser and by /api/public/try 422). Render verified. e812142 fit gate: JDs requiring a spoken language the
+#   user lacks are skipped (presets spoken_languages, default English) after a Spanish-speaking role was submitted.
+# IMAGES NOT REBUILT: e812142 was hot-copied into pipeline/applier/scout only. REBUILD applier + pipeline + scout
+#   before the next START, or new containers run the old gate.
+# Shadow answered from presets: work auth (preset), notice 2 weeks, Mandarin No, cities any US / languages English,
+#   based in US, immigration petition No, SJ location, within 50 mi of SF Yes. Ask the user: spoken languages beyond
+#   English (set presets spoken_languages), Mandarin answer.
+# Shadow ladder: level 1; L2 needs test_n 20 (has 15); L3 needs test_n 40 + live_answers 30 (has 10). User answers in
+#   the /shadow training ground are the fast path; never lower thresholds.
+# Still for the user: 5 CAPTCHA'd applications (2 Lever, 3 Ashby), forms filled in the desk. `engine fleet` KeyError 'role'
+#   (supervisor.py:1100) is back. Filler still drafts resume blurbs into language/city/country fields (gate parks them).
+# NEXT: rebuild images -> START -> gear 2/3 -> ask Role Keywords -> cap level.
+
 # Handoff: 11-18 ~22:58 STOP POINT (user asked, after the resume-classifier work). Stack STOPPED cleanly: gear N,
 # inbox+claimed 0, no apply/Chrome running, cap 0, Role Keywords off, Shadow calls, `compose stop`, 0 containers.
 # Run 21:24-22:56 (gear 3, cap 4 = 150, keywords on, Shadow autopilot, ASHBY_PER_PASS=5): 20 SUBMITTED today
