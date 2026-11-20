@@ -5,6 +5,10 @@ so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
 ## [Unreleased] - 2026-11-19 · Test drive: the pipeline is the page; bad input is refused
+- **Fit gate: spoken languages** (`engine/tailoring/tailor.py` `missing_language`): a "Spanish speaking" customer-facing
+  role was submitted on 11-19. A JD that requires fluency in a language the user doesn't speak is now a blocker
+  ("language: spanish"); "a plus" / "preferred" / "nice to have" in the same sentence is not. Languages come from
+  presets `spoken_languages` (default English). Test: `test_fit_spoken_language`.
 - **Pipeline board** (`apps/web/app/pipeline-board.tsx` + `pipeline-board.css`, replaces `pipeline-run.tsx`): one
   connected component for the whole run: a rail of 11 stages (6 read steps, Discover / Fit gate / Rank on live
   boards, Apply / Inbox shown as real-run-only) joined by a live wire, and a panel with any stage's FULL output.

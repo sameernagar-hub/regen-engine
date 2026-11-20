@@ -235,6 +235,46 @@ CORE_STACKS = {"c++": r"c\+\+", "c#": r"c#|\.net", "java": r"java(?!script)", "g
 REQUIRED_CUE = r"(strong|deep|expert|extensive|solid|proficien\w*|fluen\w*|mastery|advanced|professional|production)[^.;]{0,40}(?:{s})|(?:{s})[^.;]{0,25}(required|must|is a must|proficiency|expertise|experience required)"
 
 
+# 11-19: a "Spanish speaking" customer-facing role was submitted: the gate had no idea a JD can require a spoken
+# language. A JD that REQUIRES fluency in a language the user doesn't speak is a blocker; "a plus" / "preferred" /
+# "nice to have" in the same sentence is not. The user's languages come from presets "spoken_languages" (default:
+# English only, the one language the Fact Bank shows).
+LANGS = ("spanish", "mandarin", "chinese", "cantonese", "japanese", "korean", "french", "german", "portuguese", "italian",
+         "dutch", "arabic", "hebrew", "russian", "polish", "turkish", "vietnamese", "thai", "indonesian", "tagalog",
+         "hindi", "bengali", "tamil", "telugu", "urdu", "punjabi", "gujarati", "marathi", "swedish", "norwegian", "danish",
+         "finnish", "greek", "czech", "ukrainian", "romanian", "hungarian", "farsi", "persian")
+_L = "(" + "|".join(LANGS) + ")"
+_LANG_REQ = re.compile(r"(?:fluen\w*|native|bilingual|proficien\w*|business[- ]level|professional[- ]level|written and (?:spoken|verbal)|"
+                       r"verbal and written|speak|read and write)[^.;:]{0,40}?\b" + _L + r"\b"
+                       r"|\b" + _L + r"[- ](?:speaking|speaker|fluency|language (?:is )?required)"
+                       r"|\b" + _L + r"\b[^.;:]{0,25}\b(?:required|is a must|mandatory)")
+_LANG_SOFT = re.compile(r"\ba plus\b|\bpreferred\b|\bnice[- ]to[- ]have\b|\bbonus\b|\bdesired\b|\badvantage\b|\bnot required\b")
+
+
+def user_languages():
+    """Spoken languages from the presets (spoken_languages: "English, Hindi"); English only when unset."""
+    try:
+        from engine.apply.runner import P
+        raw = P.get("spoken_languages") or "English"
+    except Exception:
+        raw = "English"
+    return {w.strip().lower() for w in re.split(r"[,;/]| and ", str(raw)) if w.strip()}
+
+
+def missing_language(low, have=None):
+    """The first required spoken language the user doesn't have, or None. Sentence by sentence, so a soft cue only
+    excuses its own sentence."""
+    have = user_languages() if have is None else have
+    for sent in re.split(r"(?<=[.;!?])\s+|\n", low):
+        for m in _LANG_REQ.finditer(sent):
+            lang = next(g for g in m.groups() if g)
+            if lang == "chinese":
+                lang = "mandarin" if "mandarin" not in have and "chinese" not in have else lang
+            if lang not in have and not ({"chinese", "mandarin"} & have and lang in ("chinese", "mandarin")) and not _LANG_SOFT.search(sent):
+                return lang
+    return None
+
+
 def user_years():
     """Years of experience from the presets (the number the forms are answered with)."""
     try:
@@ -274,6 +314,9 @@ def fit(jd, max_years=None):
     for name in missing_stacks():
         if _STACK_RX[name][1].search(low):
             out.append(f"core stack: {name}")
+    lang = missing_language(low)
+    if lang:
+        out.append(f"language: {lang}")
     yrs = [int(m.group(1)) for m in _YEARS.finditer(low)]
     yrs = [y for y in yrs if y < 20]
     if yrs and min(yrs) > max_years:

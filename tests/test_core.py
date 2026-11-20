@@ -894,3 +894,18 @@ def test_three_parks_on_one_question_stay_with_the_user(monkeypatch):
     assert Pl.latest_status()["u"] == "RETRY"  # two stops, older than the bank: one more try
     evs.append(dict(park))
     assert Pl.latest_status()["u"] == "NEEDS YOU"
+
+
+def test_fit_spoken_language():
+    from engine.tailoring.tailor import missing_language
+    en = {"english"}
+    assert missing_language("this is a spanish-speaking, customer facing role.", en) == "spanish"
+    assert missing_language("you must be fluent in spanish and english.", en) == "spanish"
+    assert missing_language("professional verbal and written communication in mandarin is required.", en) == "mandarin"
+    assert missing_language("native or bilingual japanese.", en) == "japanese"
+    assert missing_language("fluency in spanish is a plus.", en) is None
+    assert missing_language("german preferred but not required.", en) is None
+    assert missing_language("we have offices in france and germany; english is our working language.", en) is None
+    assert missing_language("you must be fluent in spanish.", {"english", "spanish"}) is None
+    assert missing_language("strong python and sql; fluent in english.", en) is None
+    assert "language: spanish" in fit("Applied AI Engineer. Fluent in Spanish required to work with LATAM customers.")
