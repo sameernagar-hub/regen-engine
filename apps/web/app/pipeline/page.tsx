@@ -4,8 +4,9 @@
 // by scripts/resume_bench.py on a held-out set): accuracy, precision, recall, F1, robustness and the confusion matrix.
 import { useState } from "react";
 import { Nav } from "../nav";
-import { PipelineRun, STEPS, famColor } from "../pipeline-run";
+import { PipelineBoard, STEPS, famColor } from "../pipeline-board";
 import B from "@/lib/resume-bench.json";
+import { screenResume } from "@/lib/screen-input";
 
 const SAMPLES: [string, string][] = [
   ["Account Executive (the bug that started this)", `Jordan Taylor · Chicago, IL
@@ -39,7 +40,7 @@ Software Engineer | Startup Labs | 2023 - Present
 - React and TypeScript features, REST APIs in Node.js, unit tests and code reviews
 Math Teacher | Lincoln High School | 2014 - 2022
 - Lesson plans, curriculum and classroom management for 150 students`],
-  ["Not a resume", "Looking for a job. Hard worker, team player, fast learner."],
+  ["Not a resume (refused)", "Looking for a job. Hard worker, team player, fast learner."],
 ];
 
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
@@ -49,8 +50,16 @@ export default function Pipeline() {
   const [text, setText] = useState(SAMPLES[0][1]);
   const [runId, setRunId] = useState(0);
   const [done, setDone] = useState(false);
-  const run = (t?: string) => { if (t !== undefined) setText(t); setDone(false); setRunId((n) => n + 1); };
-  const search = () => { try { sessionStorage.setItem("td-text", text); } catch { /* private mode: the page still works */ } location.href = "/test-drive#td-seat-h"; };
+  const [refused, setRefused] = useState("");
+  const run = (t?: string) => {
+    const body = t ?? text;
+    if (t !== undefined) setText(t);
+    const screened = screenResume(body);  // abuse, sensitive data or not a resume: refused before any step runs
+    setDone(false);
+    if (!screened.ok) { setRefused(screened.reason); setRunId(0); return; }
+    setRefused(""); setRunId((n) => n + 1);
+  };
+  const search = () => { try { sessionStorage.setItem("td-text", text); } catch { /* private mode: the page still works */ } location.href = "/test-drive"; };
   const maxCell = Math.max(1, ...B.confusion.flat());
 
   return (
@@ -70,12 +79,13 @@ export default function Pipeline() {
           {SAMPLES.map(([name, t]) => <button key={name} type="button" onClick={() => run(t)} className={text === t ? "on" : ""}>{name}</button>)}
         </div>
         <label htmlFor="pl-text" className="td-sub">Or paste your own. It never leaves this page for this part.</label>
-        <textarea id="pl-text" rows={8} value={text} onChange={(e) => setText(e.target.value)} maxLength={50000} />
+        <textarea id="pl-text" rows={8} value={text} onChange={(e) => { setText(e.target.value); setRefused(""); }} maxLength={50000} aria-invalid={!!refused} />
+        {refused && <p className="td-refused" role="alert"><b>Not accepted.</b> {refused}</p>}
         <div className="td-actions">
           <button type="button" className="td-ignite" onClick={() => run()} disabled={!text.trim()}><span className="key" aria-hidden />Run the pipeline</button>
           {done && <button type="button" className="td-sample" onClick={search}>Search live jobs with this resume →</button>}
         </div>
-        <PipelineRun text={text} runId={runId} onDone={() => setDone(true)} />
+        <PipelineBoard text={text} runId={runId} pace={1100} onDone={() => setDone(true)} />
       </section>
 
       <section aria-labelledby="pl-how-h">

@@ -3,6 +3,7 @@
 // works the same on the Render demo and on your machine with no Python API behind it. The Test drive page
 // (app/test-drive) builds its cockpit on the hook; TryBox is the compact paste box /docs uses.
 import { useState } from "react";
+import { screenResume } from "@/lib/screen-input";
 
 export type TryOut = { profile: { lanes: string[]; years: number; senior: boolean; student: boolean; keywords: string[] };
   analysis?: import("@/lib/resume-nlp").Analysis;
@@ -17,6 +18,8 @@ export function useTestDrive() {
   const go = async (override?: string) => {
     const body = override ?? text;
     if (!body.trim()) return null;
+    const screened = screenResume(body);
+    if (!screened.ok) { setOut(null); setErr(screened.reason); return null; }
     setBusy(true); setErr(""); setOut(null);
     try {
       const r = await fetch("/api/public/try", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: body }) });

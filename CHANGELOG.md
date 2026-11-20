@@ -4,6 +4,23 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-19 · Test drive: the pipeline is the page; bad input is refused
+- **Pipeline board** (`apps/web/app/pipeline-board.tsx` + `pipeline-board.css`, replaces `pipeline-run.tsx`): one
+  connected component for the whole run: a rail of 11 stages (6 read steps, Discover / Fit gate / Rank on live
+  boards, Apply / Inbox shown as real-run-only) joined by a live wire, and a panel with any stage's FULL output.
+  No more "+300 more": every token, normalization, role line, phrase, family score, gate reason and ranked role,
+  with a filter box, kind filters with counts, scrolling lists, click-to-expand scores and roles. The board
+  follows the run until a stage is clicked ("Follow live" hands control back). Used by /test-drive and /pipeline.
+- **Test drive page**: the dyno, the tachometer, the gauge cluster and the six-station cards are gone; the hero is
+  new copy with the resume box beside it, and the pipeline board is the main section.
+- **Input screen** (`apps/web/lib/screen-input.ts`): profanity, slurs and threats (masked spellings too), sensitive
+  data (SSN, card numbers by Luhn, passwords, API/private keys, bank numbers) and non-resumes (too short, gibberish,
+  no titles/roles/dates) are refused with a red "Not accepted" message before any step runs, and again by
+  POST /api/public/try (422), so the API can't be called around it. Whole-word matching keeps Scunthorpe, assess,
+  Dickens and postal PINs safe. Nothing matched is logged.
+- Verify: /test-drive → type a swear word → red refusal; "Use a sample" → 11 stages land, Tokenize shows all tokens,
+  Rank shows 10 roles; `curl -X POST /api/public/try -d '{"text":"..."}'` with profanity → 422.
+
 ## [Unreleased] - 2026-11-18 · Resume classifier: any resume, a live pipeline page, a benchmark
 - **The bug**: an Account Executive's resume read as "software" (the employer was "Veloce Cloud Software", there was
   no sales lane, and "software" was the default when nothing matched), so the Test drive showed engineering jobs.

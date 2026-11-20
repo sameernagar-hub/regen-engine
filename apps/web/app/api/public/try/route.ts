@@ -3,6 +3,7 @@
 // description (lib/tryit.ts, the same rules as `python -m engine try`). Runs in this Next.js server, so it needs no
 // Python API, database or Docker. Nothing is stored or logged: the resume text lives only for this request. One run per
 // client per 30 s; the board listing is shared and cached for 10 minutes, job descriptions for an hour.
+import { screenResume } from "@/lib/screen-input";
 import { greenhouse, greenhouseJd, rank, sampleBoards, type Job } from "@/lib/tryit";
 
 export const runtime = "nodejs";
@@ -41,6 +42,8 @@ export async function POST(req: Request) {
   try { text = String((await req.json())?.text ?? ""); } catch { return err(400, "send JSON: { \"text\": \"...\" }"); }
   if (!text.trim()) return err(400, "paste your resume text");
   if (text.length > MAX_CHARS) return err(413, `resume text over ${MAX_CHARS} characters`);
+  const screened = screenResume(text);  // abuse, sensitive data, not a resume: refused before any work (and not logged)
+  if (!screened.ok) return Response.json({ detail: screened.reason, kind: screened.kind }, { status: 422 });
   const who = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || req.headers.get("x-real-ip") || "local";
   const now = Date.now(), last = hits.get(who) ?? 0;
   if (now - last < EVERY_MS) return err(429, `one run every ${EVERY_MS / 1000} s; try again in ${Math.ceil((EVERY_MS - (now - last)) / 1000)} s`);
