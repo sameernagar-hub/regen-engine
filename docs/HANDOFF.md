@@ -1,3 +1,19 @@
+# Handoff: 11-21 ~23:20 STOP POINT (80% usage rule). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role
+# Keywords off, Shadow calls 5, `compose stop`, 0 containers. Ashby cooldown watcher stopped.
+# Run 22:41-23:18 (gear 3, cap 4 = 150, keywords on, Shadow autopilot, ASHBY_PER_PASS=5): 17 SUBMITTED (633 all time
+#   by URL). Cooldown cleared 5x on the user's call (captchas re-arm it).
+# IMAGES REBUILT at start (applier image carries e812142 language gate). LOCAL COMMITS (not pushed):
+#   097628b Dockerfile libatomic1 (Playwright 1.65 node driver; base image dropped it, build failed exit 127);
+#   a9aec33 START = `sh scripts/start.sh` (waits for api + regen-bank MCP) and regen-engine stdio MCP runs inside
+#   deploy-pipeline-1 (scripts/mcp_stdio.py; local fallback); 44f209a relocation "Yes" vs an office list picks the
+#   Bay Area office (hot-copied into appliers + pipeline; image NOT rebuilt -> rebuild applier before next START).
+# User 11-21: Shadow decides every parked Q on autopilot, incl. ones the Fact Bank lacks (judgment Qs drafted from real
+#   work; background/conduct Qs clean); still no invented skills, captchas, EEO beyond decline, defense employers.
+# Open: one board repeats its "ever employed by us" question twice; the answer is now the option text but the 2nd copy
+#   still failed "required" (filler fills one field per label). A defense-AI employer left parked. 5 captcha'd forms
+#   are filled and waiting for the user (Ashby).
+# NEXT: rebuild applier image -> `sh scripts/start.sh` -> wake regen-bank/regen-engine MCPs -> gear 3 -> ask Role Keywords -> cap.
+
 # Handoff: 11-19 ~20:40 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
 # off, Shadow calls 5, `compose stop`, 0 containers. Ashby cooldown file clear (re-armed 5x tonight; a watcher cleared it
 # every minute on the user's call: stopped with the run).
