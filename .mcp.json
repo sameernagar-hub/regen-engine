@@ -3,9 +3,7 @@
     "regen-engine": {
       "command": "python",
       "args": [
-        "-m",
-        "engine",
-        "mcp"
+        "scripts/mcp_stdio.py"
       ],
       "env": {
         "PYTHONIOENCODING": "utf-8"
