@@ -694,6 +694,12 @@ def pick_option(options, ans):
         for t, h in options:
             if re.match(r"(i have never|i've never|never|i am not|i'm not|i do not|i don't|not |none\b)", t):
                 return h
+    if ans == "Yes" and not any(t.startswith("yes") for t, _ in options):
+        # 11-21: "Are you open to relocation?" answered with an office list ("No" / "San Francisco, CA" /
+        # "Seattle, WA" ...): yes = the preferred (Bay Area) office, else the first US office on the list
+        for rx in (BAY_AREA, r",\s*(ca|wa|ny|tx|ma|co|il|ut|or|ga|nc|va|az|fl)\b"):
+            for t, h in options:
+                if re.search(rx, t, re.I): return h
     if ans == P.get("preferred_location") and re.search(BAY_AREA, ans, re.I):
         # an office list ("San Mateo", "Raleigh", ...): any Bay Area office is the preferred location, else remote
         for rx in (BAY_AREA, r"\bremote\b"):
