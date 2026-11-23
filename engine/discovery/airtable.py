@@ -20,6 +20,9 @@ def read_view(share_url, timeout=30):
     if not u:
         raise RuntimeError(f"Airtable page layout changed: no readSharedViewData url for {shr}")
     path = u.group(1).encode().decode("unicode_escape")
+    # 11-22: the page now opts into msgpack ("allowMsgpackOfResult":true) and the reply was binary (newgrad view failed
+    # with "can't decode byte 0xd4"); ask for plain JSON instead
+    path = re.sub(r'(allowMsgpackOfResult(?:"|%22|\\")\s*(?::|%3A)\s*)true', r"\1false", path)
     hd = {"User-Agent": UA, "x-airtable-application-id": app, "x-requested-with": "XMLHttpRequest",
           "x-time-zone": "America/Los_Angeles", "x-user-locale": "en"}
     data = json.loads(op.open(urllib.request.Request("https://airtable.com" + path, headers=hd), timeout=timeout).read())
