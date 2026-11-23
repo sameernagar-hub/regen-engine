@@ -662,7 +662,43 @@ def control(argv):
         return {"requested": True, "note": "an eval container starts within a minute; results at /evals"}
     if "--quarantine" in a:
         return {"quarantine": quarantine_list()}
+    if "--ashby-autoclear" in a:
+        i = a.index("--ashby-autoclear")
+        v = a[i + 1].lower() if len(a) > i + 1 else ""
+        if v in ("on", "off"):
+            tmp = ASHBY_AUTOCLEAR + ".tmp"
+            json.dump({"on": v == "on", "set_at": time.strftime("%Y-%m-%d %H:%M:%S")}, open(tmp, "w", encoding="utf-8"))
+            os.replace(tmp, ASHBY_AUTOCLEAR)
+            _own(ASHBY_AUTOCLEAR)
+            audit("ashby_autoclear", v)
+        return {"ashby_autoclear": ashby_autoclear_on()}
     return None
+
+
+ASHBY_AUTOCLEAR = os.path.join(WORKSPACE, "ashby_autoclear.json")
+ASHBY_COOLDOWN = os.path.join(WORKSPACE, "ashby_cooldown")
+
+
+def ashby_autoclear_on():
+    try:
+        return bool(json.load(open(ASHBY_AUTOCLEAR, encoding="utf-8")).get("on"))
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def ashby_watch():
+    """11-22 (user): the supervisor clears the Ashby cooldown the runner starts after a bot check, so Ashby jobs keep
+    flowing. Switch: `supervise --ashby-autoclear on|off` (workspace/ashby_autoclear.json, off unless set). The bot
+    check itself is never touched: that job still parks as FAILED: CAPTCHA for the human. Returns True if cleared."""
+    if not ashby_autoclear_on() or not os.path.exists(ASHBY_COOLDOWN):
+        return False
+    try:
+        since = open(ASHBY_COOLDOWN).read().strip()[:40]
+        os.remove(ASHBY_COOLDOWN)
+    except OSError:
+        return False
+    audit("ashby_clear", "Ashby cooldown", since=since)
+    return True
 
 
 # services without a heartbeat of their own: the supervisor probes them over the compose network
@@ -1078,6 +1114,8 @@ def supervise(argv=None):
                     shadow_seen = oversight()
                 except Exception as e:
                     shadow_seen = {"error": str(e)[:120]}
+            if n % 4 == 3:  # every minute: the Ashby cooldown, when the operator switched auto-clear on
+                ashby_watch()
             if n % 4 == 1:  # every minute: warning lights (ALIVE Phase 0), recorded only when the list changes
                 problems_changed(seen_problems)
             beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap, services=svc,
