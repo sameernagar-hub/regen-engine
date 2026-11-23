@@ -261,3 +261,17 @@ def test_ashby_untyped_combobox_picks_a_suggestion(browser):
         ok = s.value
     assert ok and page.input_value("input").endswith("United States") and R.P["city"] in page.input_value("input")
     page.close()
+
+
+def test_greenhouse_same_label_twice_gets_two_visits(browser):
+    """11-21: two required selects with the same label; the innerText dedupe skipped the 2nd. Nested wrappers of ONE
+    field must still collapse to one key."""
+    page = browser.new_page()
+    page.set_content("""
+      <div class="field-wrapper" id="a"><fieldset><legend>Were you employed by us?*</legend>
+        <input type="radio" name="q1" value="Yes"><input type="radio" name="q1" value="No"></fieldset></div>
+      <div class="field-wrapper" id="b"><label>Were you employed by us?*</label><input role="combobox"></div>
+      <div class="field-wrapper" id="c"><label>Were you employed by us?*</label><input role="combobox"></div>""")
+    keys = [f.evaluate(R.GH_FIELD_KEY) for f in page.query_selector_all(".field-wrapper, fieldset")]
+    assert len(keys) == 4 and len(set(keys)) == 3  # a + its fieldset share one key; b and c differ
+    page.close()

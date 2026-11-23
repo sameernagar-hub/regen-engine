@@ -1513,7 +1513,7 @@ def fill_gh(page, job, log):
     loc = page.evaluate("() => (document.querySelector('.job__location, .location') || {}).innerText || ''").strip()
     seen = set()
     for f in page.query_selector_all(".field-wrapper, fieldset, .checkbox, [class*=demographic] .select, .eeoc__question, .eeoc__question__wrapper, .education--form .select__container, .education--form .text-input-wrapper"):
-        key = f.evaluate("e => e.innerText.slice(0,120)")
+        key = f.evaluate(GH_FIELD_KEY)
         if key in seen: continue
         seen.add(key)
         lab_el = f.query_selector("label, legend")
@@ -1553,6 +1553,15 @@ def fill_gh(page, job, log):
         if not ok and req: missing.append(label[:90])
         yield  # checkpoint
     return missing
+
+# Dedupe key for Greenhouse field wrappers: the selector list matches nested wrappers of one field (field-wrapper >
+# fieldset), so they must collapse to one visit; keying on innerText also collapsed two DIFFERENT fields with the same
+# label (11-21: a form repeated a required select twice and the 2nd failed "required"). Key = the field's first control,
+# tagged once; text only when a wrapper has no control.
+GH_FIELD_KEY = """e => { const c = e.querySelector('input, textarea, select'); if (!c) return 't:' + e.innerText.slice(0,120);
+  if (!c.dataset.regenKey) c.dataset.regenKey = String(window.__regenKey = (window.__regenKey || 0) + 1);
+  return 'c:' + c.dataset.regenKey; }"""
+
 
 def menu_options(page):
     """Options of the open dropdown. Greenhouse pages also carry the phone widget's hidden country list
