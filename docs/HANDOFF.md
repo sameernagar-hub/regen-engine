@@ -1,3 +1,18 @@
+# Handoff: 11-22 ~19:55 STOP POINT (user: close at 70% usage). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0,
+# Role Keywords off, Shadow autopilot, `compose stop`, 0 containers. Supervisor Ashby auto-clear left ON (user's choice).
+# Run 18:19-19:52 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 22 SUBMITTED (655 all time by URL).
+# SHIPPED + PUSHED (main, CI green on de8977a): f18fe41 Greenhouse fields sharing a label are each filled (dedupe keys
+#   on the control); de8977a Airtable shared views answer msgpack -> request JSON (newgrad feed reads again);
+#   8432828 age / birth-date questions never drafted (decline); d8e8ece supervisor ashby_watch(): clears the Ashby
+#   cooldown every minute while `supervise --ashby-autoclear on` (audited ashby_clear; captchas still park for the
+#   user); 6cf0abd + 0f4271b work-authorization / visa STATUS question -> work_auth_status preset, not Yes.
+#   Images rebuilt through d8e8ece; 6cf0abd was hot-copied only -> rebuild applier before next START.
+# Shadow ladder: L1. test_n 21 (user answered 7 test-split Qs) but test precision 0.75 (missed a 24/7 on-call Q:
+#   said No, user Yes). Thresholds untouched. L2 needs more user answers on test-split questions.
+# Open: free-text cover letters are never written (parks); one Ashby form's start-date picker + location select did not
+#   take the answers; Ashby captchas are frequent with auto-clear on (filled forms wait in the desk).
+# NEXT: rebuild images -> `sh scripts/start.sh` -> wake MCPs -> gear 3 -> ask Role Keywords -> cap.
+
 # Handoff: 11-21 ~23:20 STOP POINT (80% usage rule). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role
 # Keywords off, Shadow calls 5, `compose stop`, 0 containers. Ashby cooldown watcher stopped.
 # Run 22:41-23:18 (gear 3, cap 4 = 150, keywords on, Shadow autopilot, ASHBY_PER_PASS=5): 17 SUBMITTED (633 all time
