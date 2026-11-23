@@ -275,3 +275,11 @@ def test_greenhouse_same_label_twice_gets_two_visits(browser):
     keys = [f.evaluate(R.GH_FIELD_KEY) for f in page.query_selector_all(".field-wrapper, fieldset")]
     assert len(keys) == 4 and len(set(keys)) == 3  # a + its fieldset share one key; b and c differ
     page.close()
+
+
+def test_age_question_is_never_drafted():
+    """11-22: "What is your current age?" got a drafted job title. Age / birth date -> decline; 18+ keeps its rule."""
+    job = {"title": "Engineering Leader, GenAI", "company": "x", "extra": {}}
+    for q in ["What is your current age?", "Date of birth", "How old are you?", "Your birthday"]:
+        assert R.answer(q, dict(job)) == "__DECLINE__", q
+    assert R.answer("Are you at least 18 years of age?", dict(job)) == "Yes"

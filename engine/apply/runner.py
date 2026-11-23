@@ -555,11 +555,16 @@ def _answered_by(job):
     return "you" if job.get("extra") else "engine"
 
 
+AGE_Q = re.compile(r"\b(current|your) age\b|\bhow old are you\b|\bdate of birth\b|\bbirth ?(date|day)\b|\bage range\b", re.I)
+
+
 def answer(label, job, field=None):
     """Presets / approved answers / rules, the job's note for "why us", derived facts, a Fact Bank draft for open
     questions, then (autofill) yes/no defaults and drafts for any remaining non-sensitive text box."""
     if NO_AI_Q.search(label):
         return None  # the employer asked for the candidate's own words: you write it, the engine never drafts it
+    if AGE_Q.search(label) and not re.search(r"\b18\b|eighteen|\b21\b", label):
+        return "__DECLINE__"  # 11-22: "What is your current age?" got a drafted job title; age is never drafted
     if IF_YES_Q.match(label) and not answer_for(label, job.get("extra", {})):
         return None  # 10-18: "If yes, please provide your LDAP." (after a No) got a drafted paragraph: a follow-up stays blank
     ans = answer_for(label, job.get("extra", {}))
