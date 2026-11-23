@@ -283,3 +283,11 @@ def test_age_question_is_never_drafted():
     for q in ["What is your current age?", "Date of birth", "How old are you?", "Your birthday"]:
         assert R.answer(q, dict(job)) == "__DECLINE__", q
     assert R.answer("Are you at least 18 years of age?", dict(job)) == "Yes"
+
+
+def test_work_authorization_status_is_the_status_not_yes():
+    """11-22: "U.S. Work Authorization Status" got "Yes"; it asks for the status. The yes/no question keeps Yes."""
+    job = {"title": "x", "company": "y", "extra": {}}
+    assert R.answer("U.S. Work Authorization Status", dict(job)) == R.P["work_auth_status"]
+    assert R.answer("Visa Status", dict(job)) == R.P["work_auth_status"]
+    assert R.answer("Are you authorized to work in the United States?", dict(job)) == "Yes"

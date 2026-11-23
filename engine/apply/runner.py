@@ -101,6 +101,8 @@ RULES = [
     (r"vaccinat", P.get("covid_vaccinated")),
     # 10-20 parked: "If sponsorship is needed, please explain your current visa type and status" (before the sponsor rule)
     (r"explain .{0,40}visa|visa (type|status) and (status|type)", P.get("work_auth_status")),
+    # 11-22: "U.S. Work Authorization Status" is a status picker (citizen / green card / visa...), not a yes/no: got "Yes"
+    (r"^\W*(u\.?s\.? )?(current )?(work|employment) authori[sz]ation status\W*$|^\W*(current )?(visa|immigration) status\W*$", P.get("work_auth_status")),
     # no securities / brokerage license is on file; a preset can override
     (r"(securities|finra|brokerage)\b.{0,40}licen[cs]e|series (6|7|24|63|65|66)\b", P.get("securities_license", "No")),
     # 10-20 parked: wordings the general rules below missed; every answer is on file
