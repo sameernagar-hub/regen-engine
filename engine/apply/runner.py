@@ -210,6 +210,10 @@ RULES = [
     (r"(ever )?worked for .{0,40}(company|previously|before)|interviewed (at|with) .{0,30} before", P.get("previous_employer_of_company")),
     (r"related to|close personal relationship|relatives? (who |that )?(currently )?work|(personal|familial|family).{0,3}(/familial )?relationships?|(relatives?|friends?|family members?)( or (relatives?|friends?|family))? .{0,30}(work|employ)", P.get("relatives_at_company")),
     (r"(willing|consent|agree)[^?.]{0,30}background (check|screen|investigation)", P.get("willing_background_check")),
+    # 11-23: "I understand that as permitted by law, <co> will conduct a background check" got "No" (presets: Yes)
+    (r"^\W*i understand\b.{0,120}(background|consumer report|criminal history|reference) (check|report|screen|investigation)|as permitted by law.{0,80}(conduct|obtain|perform).{0,60}(background|consumer report)", P.get("willing_background_check")),
+    # 11-23: "If above question is 'Other' please add the source below" got a drafted resume line; the engine picks a real source
+    (r"if (the )?(above|previous) (question|answer|response) (is|was) \W*other\W*|^\W*if other,? (please )?(specify|add|describe|explain)\b", "N/A"),
     (r"(based|live|located|reside) (in|near) (or around )?the (san francisco )?bay area|in or around the (san francisco )?bay area",
      "Yes" if re.search(BAY_AREA, P.get("city", ""), re.I) else None),
     (r"current,? \(?(or (most recent|previous|last|past))?\)?,? ?(job )?title|most recent (job )?title", P["current_title"]),
@@ -560,9 +564,18 @@ def _answered_by(job):
 AGE_Q = re.compile(r"\b(current|your) age\b|\bhow old are you\b|\bdate of birth\b|\bbirth ?(date|day)\b|\bage range\b", re.I)
 
 
+# 11-23: a field only a human is told to leave blank ("If you're a human, leave this line blank") is a bot check. The
+# engine never works around one: it does not fill it AND does not submit; the job waits for the user (form filled).
+HUMAN_ONLY_Q = re.compile(r"if you('| a)re (a )?human,? (please )?leave (this|it)( line| field| box)? (blank|empty)|"
+                          r"leave (this|it)( line| field)? (blank|empty) if you('| a)re (a )?human|\bhoneypot\b", re.I)
+
+
 def answer(label, job, field=None):
     """Presets / approved answers / rules, the job's note for "why us", derived facts, a Fact Bank draft for open
     questions, then (autofill) yes/no defaults and drafts for any remaining non-sensitive text box."""
+    if HUMAN_ONLY_Q.search(label):
+        job["_human_check"] = " ".join(label.split())[:120]
+        return None
     if NO_AI_Q.search(label):
         return None  # the employer asked for the candidate's own words: you write it, the engine never drafts it
     if AGE_Q.search(label) and not re.search(r"\b18\b|eighteen|\b21\b", label):
@@ -1900,6 +1913,10 @@ def job_task(page, job, dry, results, log_base=print):
             if problems:
                 text_proof(page, shot)
                 status = "FLAGGED: " + safety.flag("airbag", name, " | ".join(problems), job["url"])
+            elif job.get("_human_check"):
+                text_proof(page, shot)
+                status = ("NEEDS YOU: the form has a human-only field (bot check), not worked around; finish it by hand "
+                          "(form filled, resume ready): " + job["_human_check"])
             elif missing:
                 text_proof(page, shot)
                 status = "NEEDS YOU: " + " | ".join(missing)
