@@ -29,6 +29,8 @@ from engine.config import PROFILE, WORKSPACE
 
 POLICY = os.path.join(PROFILE, "shadow_policy.json")
 EVAL = os.path.join(WORKSPACE, "shadow_eval.json")
+TRIAL = os.path.join(WORKSPACE, "shadow_trial.json")  # 11-23: the user's trial grant (shadow trial 2|off)
+TRIAL_MAX = 2  # a trial can lift Shadow to Job agents at most; higher rungs stay earned only
 STRATEGIES = ("bank", "memory", "neighbor", "engine", "yesno")
 RAW = {"bank": 1.0, "memory": 0.9, "engine": 0.75, "yesno": 0.6}
 PRIOR = {"bank": (9, 1), "memory": (6, 2), "neighbor": (3, 2), "engine": (4, 2), "yesno": (3, 2)}  # Beta(a, b)
@@ -463,7 +465,7 @@ def _meets(rec, needs):
     return miss
 
 
-def ladder(rec=None):
+def ladder(rec=None, trial=None):
     """-> {"level", "rungs": [... with "missing"], "record"}: the highest rung whose every need (and every lower
     rung's) is met. Level 2+ also needs the eval to have run at least once."""
     rec = rec or record_now()
@@ -476,7 +478,27 @@ def ladder(rec=None):
         if ok:
             level = r["level"]
         rungs.append({**r, "missing": miss, "unlocked": ok})
-    return {"level": level, "rungs": rungs, "record": rec}
+    out = {"level": level, "earned": level, "rungs": rungs, "record": rec, "trial": None}
+    t = _load(TRIAL, {}) if trial is None else trial
+    tl = int((t or {}).get("level") or 0)
+    if tl > level and not rec.get("violations"):  # the user's grant, to test a rung before it is earned;
+        out.update(level=min(tl, TRIAL_MAX), trial=t)  # thresholds untouched, a violation revokes it
+    return out
+
+
+def trial_set(level, by="user"):
+    """The user grants Shadow a rung on trial (level 2 max) or ends the trial (level 0). Audited as a shadow event."""
+    level = max(0, min(int(level), TRIAL_MAX))
+    t = {"level": level, "by": by, "ts": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    os.makedirs(os.path.dirname(TRIAL), exist_ok=True)
+    with open(TRIAL, "w", encoding="utf-8") as f:
+        json.dump(t, f)
+    try:
+        from engine.feedback.events import record
+        record("shadow", action="trial", level=level, by=by)
+    except Exception:
+        pass
+    return t
 
 
 def allowed(action):
@@ -509,12 +531,22 @@ def main(argv):
         print(f"  tau {r['tau']}, sigma {r['sigma']}; violations {len(r['violations'])}; reliability {r['reliability']}")
         for m in r["misses"]:
             print(f"  miss: {m['q']} | you: {m['you']} | shadow: {m['shadow']}")
+    elif cmd == "trial":
+        arg = (argv[1] if len(argv) > 1 else "").lower()
+        if arg not in ("off", "0", "1", "2"):
+            print("usage: shadow trial 2|off   (trial grant up to level 2; thresholds unchanged)"); return
+        t = trial_set(0 if arg == "off" else int(arg))
+        L = ladder()
+        print(f"Shadow trial {'off' if not t['level'] else 'level ' + str(t['level'])}; now level {L['level']} "
+              f"(earned {L['earned']})")
     elif cmd == "ask":
         print(json.dumps(decide(" ".join(argv[1:])), indent=1))
     else:
         L = ladder()
         print(f"Shadow ownership level {L['level']}: {LADDER[L['level']]['name']} ({LADDER[L['level']]['owns']})")
-        nxt = next((r for r in L["rungs"] if r["level"] == L["level"] + 1), None)
+        if L.get("trial"):
+            print(f"  ON TRIAL (user grant {L['trial'].get('ts')}): earned level is {L['earned']}; `shadow trial off` ends it")
+        nxt = next((r for r in L["rungs"] if r["level"] == L["earned"] + 1), None)
         if nxt:
             print(f"  next: level {nxt['level']} {nxt['name']} needs " + ", ".join(f"{m['need']} {m['want']} (have {m['have']})" for m in nxt["missing"]))
         print(f"  record: {L['record']}")

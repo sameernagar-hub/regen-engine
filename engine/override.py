@@ -148,7 +148,7 @@ def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     cmd = argv[0] if argv else "status"
     from engine import shadow
-    if cmd in ("train", "ladder", "ask"):  # 11-07: the brain (engine/shadow_brain.py)
+    if cmd in ("train", "ladder", "ask", "trial"):  # 11-07: the brain (engine/shadow_brain.py)
         from engine import shadow_brain
         return shadow_brain.main(["status" if cmd == "ladder" else cmd] + argv[1:])
     if cmd == "agents":  # the agent graph and what Shadow would do now (engine/agents.py)

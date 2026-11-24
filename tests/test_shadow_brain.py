@@ -121,3 +121,15 @@ def test_decide_abstains_on_form_helper_text(monkeypatch):
     monkeypatch.setattr(B, "choose", lambda c, pol=None, question=None: ("Draft an ideal answer with this", 0.9, "engine"))
     r = B.decide("How would you describe your experience with Acme? (Select one)")
     assert r["a"] is None and r["conf"] == 0.0
+
+
+def test_trial_grant_lifts_to_two_only_and_violation_revokes():
+    rec = {"test_n": 21, "test_precision": 0.75, "violations": 0, "live_answers": 9, "override_rate": 0,
+           "shadow_submitted": 73, "clean_days": 49, "trained": "now"}
+    assert B.ladder(rec, trial={})["level"] == 1
+    L = B.ladder(rec, trial={"level": 2, "by": "user"})
+    assert L["level"] == 2 and L["earned"] == 1 and L["trial"]
+    assert B.ladder(rec, trial={"level": 5})["level"] == 2  # a trial never goes past TRIAL_MAX
+    rec["violations"] = 1
+    assert B.ladder(rec, trial={"level": 2})["level"] == 1  # a truthfulness violation ends the trial
+    assert B.LADDER[2]["needs"]["test_precision"] == 0.90  # thresholds untouched
