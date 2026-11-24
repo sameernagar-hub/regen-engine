@@ -1090,7 +1090,14 @@ def supervise(argv=None):
             want, running, jobs = scale(*limits(lo, hi))
             if n % 8 == 0:
                 requeue_stale()
-            daily(imap)
+            from engine import orchestrator
+            if orchestrator.enabled():  # 11-23: one dispatcher for the daily / periodic agents and Shadow's plan
+                try:
+                    orchestrator.tick(imap)
+                except Exception as e:
+                    print(f"supervisor: orchestrator: {e}", flush=True)
+            else:
+                daily(imap)
             if n % 240 == 0:  # hourly: dangling images, then the retention policy (engine/clean.py)
                 prune_images()
                 from engine.clean import main as clean

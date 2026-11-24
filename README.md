@@ -53,6 +53,7 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 | **Proves it** | A submit counts only when the confirmation page is saved (its URL and text); the employer's "application received" email is the second check. [Evidence →](https://github.com/sameernagar-hub/regen-engine/wiki/Evidence) |
 | **Learns from no** | Every rejection is read back and turned into the fit gate's next rule. [Feedback →](https://github.com/sameernagar-hub/regen-engine/wiki/Rejection-Feedback) |
 | **Stays in control** | The supervisor's governor resizes the applier fleet every 15 s from memory, CPU, page timeouts and the daily cap, one applier at a time, so a run never outgrows the machine. [Gearbox →](https://github.com/sameernagar-hub/regen-engine/wiki/Gearbox) |
+| **Works while you sleep** | One orchestrator runs every background agent (7 a.m. outreach drafts, HN boards, learning passes, Shadow's retries) with leases, retries, daily budgets and a dead letter, and nothing fires past Shadow's ladder. [Fuel rail →](https://github.com/sameernagar-hub/regen-engine/wiki/Fuel-rail) |
 | **Costs nothing to think** | No model keys: Claude, Cursor or any MCP client operates it. [Zero cost →](https://github.com/sameernagar-hub/regen-engine/wiki/Zero-Cost-and-MCP) |
 
 | 509 | 0.4 per 100 | ~7,100 | 43 | 0 |

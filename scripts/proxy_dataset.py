@@ -410,6 +410,30 @@ def main():
                          {"phrase": "embedded systems", "rejected": 4, "seen": 7, "rate": 0.57, "lift": 2.02, "p_adj": 1.0,
                           "evidence": "weak", "status": "proposed"}]},
               open(os.path.join(ws, "learned_gate.json"), "w"), indent=1)
+    # 11-23 agent orchestrator: a mid-day state (one agent firing, one held by the ladder, one in the dead letter)
+    t0 = time.time()
+    os.makedirs(os.path.join(ws, "orchestrator"), exist_ok=True)
+    day = time.strftime("%Y-%m-%d")
+    tasks = {
+        "learn-1": {"id": "learn-1", "agent": "learn", "key": "learn", "state": "leased", "attempts": 1, "created": t0 - 40,
+                    "updated": t0 - 30, "by": "schedule", "payload": {}},
+        "outreach-1": {"id": "outreach-1", "agent": "outreach", "key": "outreach:" + day, "state": "done", "attempts": 1,
+                       "created": t0 - 9000, "updated": t0 - 8400, "finished": t0 - 8400, "by": "schedule",
+                       "result": "outreach: 6 notes written (nothing sent)", "payload": {}},
+        "hn-1": {"id": "hn-1", "agent": "hn", "key": "hn:" + day, "state": "done", "attempts": 1, "created": t0 - 9600,
+                 "updated": t0 - 9100, "finished": t0 - 9100, "by": "schedule", "result": "hn: 412 posts read; 96 hiring contacts",
+                 "payload": {}},
+        "report_rate-1": {"id": "report_rate-1", "agent": "report_rate", "key": "report_rate", "state": "failed", "attempts": 3,
+                          "created": t0 - 20000, "updated": t0 - 18000, "by": "schedule",
+                          "last_error": "rc 1: ledger busy (demo)", "payload": {}},
+        "shadow_retry-1": {"id": "shadow_retry-1", "agent": "shadow_retry", "key": "shadow_retry:Example Co - Software Engineer",
+                           "state": "held", "attempts": 0, "created": t0 - 600, "updated": t0 - 15, "by": "shadow plan",
+                           "held": "needs Shadow level 2 (now 1)", "payload": {"target": "Example Co - Software Engineer"}},
+    }
+    agents = {"learn": {"runs_day": day, "runs": 2}, "outreach": {"runs_day": day, "runs": 1, "day_done": day},
+              "hn": {"runs_day": day, "runs": 1, "day_done": day}, "report_rate": {"runs_day": day, "runs": 3}}
+    json.dump({"tasks": tasks, "agents": agents, "ts": t0, "level": 1, "running": 1},
+              open(os.path.join(ws, "orchestrator", "state.json"), "w"), indent=1)
     for f in resumes:
         lane = lane_of(f, jobs)
         open(os.path.join(ws, "out", f), "wb").write(pdf(["JANE DOE", "Example City, CA | jane@example.com | github.com/janedoe-demo",
@@ -427,7 +451,7 @@ def main():
               "/api/graph?questions=false", "/api/control/state", "/api/control/fleet", "/api/control/bench", "/api/control/evals?n=60",
               "/api/control/reach?limit=500", "/api/control/filters", "/api/reach/desk", "/api/reach/signins", "/api/reach/kit",
               "/api/factbank", "/api/outreach", "/api/control/containers",
-              "/api/control/gearbox", "/api/control/mcp", "/api/rules", "/api/control/bigtech", "/api/control/discover?n=40"]
+              "/api/control/gearbox", "/api/control/orchestrator", "/api/control/mcp", "/api/rules", "/api/control/bigtech", "/api/control/discover?n=40"]
     manifest = {"generated": now, "note": "Synthetic data: fictional candidate and companies. Built by scripts/proxy_dataset.py.",
                 "routes": {}, "jobs": {}}
     for r in routes:

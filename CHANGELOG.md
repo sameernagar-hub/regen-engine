@@ -4,6 +4,30 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-23 · Fuel rail: one orchestrator for every background agent
+- **Agent orchestrator** (`engine/orchestrator.py`): the supervisor ticks it every 15 s and is its only writer.
+  Agents are registered with a schedule (every N h or daily after an hour, with "after" chains), a timeout, retries,
+  a daily budget and the Shadow ladder level they need. Each run is a task: queued -> leased -> done, or retried with
+  exponential backoff and dead-lettered as failed after its last attempt. Child-process agents run as the engine user
+  with a lease; a supervisor restart requeues orphaned leases. Tasks are deduped by key while open; Shadow's plan
+  actions (retry a parked job, requeue a lost batch) become tasks with a 30-minute cooldown and are dropped when they
+  leave the plan. The supervisor's `daily()` HN + outreach run and `agents.act()` in Shadow's loop now go through it
+  (`REGEN_ORCH=0` restores the old paths). New agents: learn (6 h), report rate (12 h), boards recheck (daily 03:00).
+- **Why**: background work was scattered across the supervisor loop, Shadow's loop and threads, with no retries,
+  budgets or single view of what ran. One dispatcher makes every agent visible, bounded and audited (`orch_*` events).
+- **Operator requests** (`python -m engine orch run|pause|resume <agent>`, POST `/api/control/orchestrator`): written
+  as request files the next tick applies, so state.json keeps a single writer. GET `/api/control/orchestrator` and the
+  MCP tool `orchestrator_status` read it.
+- **Fuel rail page** (`/orchestrator`, default theme, new concept and motion): the supervisor is the pump (one stroke
+  per real tick), agents are injectors on the rail (spray while leased, valve shut with the reason while held), queued
+  tasks wait as droplets in the pump chamber, failed ones drip into the sump. Pick an injector to fire it once, pause
+  or resume it. Front page and dock link it; the public demo acts it out on a synthetic state.
+- **Shadow trial grant** (`engine/shadow_brain.py`, `python -m engine shadow trial 2|off`): the user can put Shadow on
+  level 2 before it is earned, to test it live. The thresholds are unchanged, the ladder shows "on trial" next to the
+  earned level, a trial never goes past level 2, and one truthfulness violation ends it.
+- Verify: `pytest tests/test_orchestrator.py tests/test_shadow_brain.py`; `python -m engine orch`; open
+  http://127.0.0.1:3000/orchestrator, pick Learn, Fire once now: a task appears and finishes within ~30 s.
+
 ## [Unreleased] - 2026-11-19 · Test drive: the pipeline is the page; bad input is refused
 - **Fit gate: spoken languages** (`engine/tailoring/tailor.py` `missing_language`): a "Spanish speaking" customer-facing
   role was submitted on 11-19. A JD that requires fluency in a language the user doesn't speak is now a blocker

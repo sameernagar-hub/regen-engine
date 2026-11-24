@@ -13,6 +13,7 @@
   shadow  calls|autopilot|always|off|status|train|ladder|agents   Shadow, your AI delegate (alias: draft): answers as you;
                                    train = train/test on your answers, ladder = ownership level, agents = agent graph
   governor                         the supervisor's fleet ceiling now and why (memory, CPU, timeouts, daily cap)
+  orch    [status|run|pause|resume <agent>]  the agent orchestrator: periodic agents + Shadow's plan, leases, retries
   bench   [--save]                 system benchmarks B1-B7 (selection, answers, claims, coverage, rate, codes, fit gate)
 alerts  <file>                   job-alert emails (gmail_alerts.js output) resolved to the employer's ATS -> queue.json
   watch   [min] [--once] [--newgrad] poll all boards continuously; announce only brand-new matches (REGEN_WEBHOOK)
@@ -197,6 +198,8 @@ def main():
         from engine.tailoring.keywords import main as m
     elif cmd == "feedback":
         from engine.feedback.rejections import main as m
+    elif cmd in ("orch", "orchestrator"):  # 11-23: the agent orchestrator (engine/orchestrator.py)
+        from engine.orchestrator import main as m
     elif cmd == "learn":
         from engine.feedback.inbox import learn
         m = lambda _argv: learn()

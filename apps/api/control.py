@@ -480,6 +480,25 @@ def shadow_agents():
     return {"graph": g, "counts": agents.count(g), "plan": agents.plan()}
 
 
+@router.get("/control/orchestrator")
+def orchestrator_get():
+    """The agent orchestrator (engine/orchestrator.py): every agent with its schedule, ladder level, budget and pause
+    state, the open tasks (queued / leased / held with why) and the last finished ones."""
+    from engine import orchestrator
+    return orchestrator.status()
+
+
+@router.post("/control/orchestrator")
+def orchestrator_post(body: dict, request: Request):
+    """{"agent", "action": "run"|"pause"|"resume"}: queue one run now or pause / resume an agent. Local only."""
+    _local_write(request)
+    from engine import orchestrator
+    try:
+        return orchestrator.command(str(body.get("action") or ""), str(body.get("agent") or ""), by="control room")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @router.get("/control/bench")
 def bench():
     """Latest benchmark run B1-B7 (engine/bench.py; the supervisor saves one every REGEN_BENCH_HOURS)."""

@@ -39,12 +39,13 @@ const CORD: Part = { key: "mcp", href: "/mcp", label: "MCP cord", about: "Your A
 const OIL: Part = { key: "oilchange", href: "/oilchange", label: "Maintenance", about: "Clears what applications leave behind (expired files, old code and alert mail, closed postings) so the search stays fast. Shows the engine’s health and each clean-up live.", tone: "#f0b64c" };
 const SHADOW: Part = { key: "shadow", href: "/shadow", label: "Shadow", about: "Your AI delegate. It answers stuck forms as you from five strategies, abstains when unsure, is trained and tested on your own answers, and earns ownership of the engine's agents rung by rung.", tone: "#a78bfa" };
 const TEST: Part = { key: "test-drive", href: "/test-drive", label: "Test drive", about: "Paste a resume and watch it run through every station: the 10 roles the engine would pick for you, in about 15 seconds.", tone: "#f2c14e" };
-const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL, SHADOW, TEST];
+const RAIL: Part = { key: "orchestrator", href: "/orchestrator", label: "Fuel rail", about: "The crew that works while you sleep: the supervisor pumps work to every background agent, from 7 a.m. outreach to Shadow's retries, and nothing fires past the ladder.", tone: "#ff9f43" };
+const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL, SHADOW, TEST, RAIL];
 const FIRING = [0, 7, 3, 2, 5, 4, 6, 1];  // eight cylinders since Desk joined (11-02): the classic V8 order 1-8-4-3-6-5-7-2
 
 const ang = (i: number) => -90 + (i * 360) / CYL.length;
 const at = (deg: number, r: number) => [CX + Math.cos((deg * Math.PI) / 180) * r, CY + Math.sin((deg * Math.PI) / 180) * r];
-const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 }, PLUG = { x: 150, y: 150 }, FLT = { x: W - 150, y: 150 };
+const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 }, PLUG = { x: 150, y: 150 }, FLT = { x: W - 150, y: 150 }, RL = { x: W - 150, y: 400 };
 
 export default function Home() {
   return ALIVE ? <AliveHome /> : <EngineHome />;
@@ -107,6 +108,7 @@ function EngineHome() {
     get<any>("/api/control/evals?n=60").then((x) => put("evals", `${x.runs.length} benchmark runs`)).catch(() => {});
     get<any>("/api/control/gearbox").then((x) => put("gearbox", `gear ${x.gear.gear}, ${x.feedback.stats.rejected ?? 0} rejections read`)).catch(() => {});
     get<any>("/api/control/oilchange").then((x) => { setOilLife(x.life ?? 100); put("oilchange", x.running ? `cleaning up: ${x.stage}` : `health ${Math.round(x.life ?? 100)}%`); }).catch(() => {});
+    get<any>("/api/control/orchestrator").then((x) => put("orchestrator", `${x.running} firing, ${x.open.length} open tasks`)).catch(() => {});
     get<any>("/api/control/mcp").then((x) => put("mcp", `${x.tools.length} tools, bank ${x.servers[0].up ? "up" : "down"}`)).catch(() => {});
     get<any>("/api/factbank").then((x) => { put("facts", `${x.facts.length} facts, ${x.resumes_built} resumes`); put("graph", `${x.roles.length + x.facts.length + x.projects.length}+ nodes`); }).catch(() => {});
   }, []);
@@ -123,7 +125,7 @@ function EngineHome() {
     if (!launch) return null;
     const i = CYL.findIndex((c) => c.key === launch);
     if (i >= 0) { const [x, y] = at(ang(i), 190); return { x, y }; }
-    return launch === "facts" ? TANK : launch === "graph" ? HARNESS : launch === "gearbox" ? GBX : launch === "mcp" ? PLUG : launch === "oilchange" ? FLT : { x: CX, y: CY };
+    return launch === "facts" ? TANK : launch === "graph" ? HARNESS : launch === "gearbox" ? GBX : launch === "mcp" ? PLUG : launch === "oilchange" ? FLT : launch === "orchestrator" ? RL : { x: CX, y: CY };
   }, [launch]);
   const part = (p: Part) => ({
     role: "link" as const, tabIndex: 0, "aria-label": `${p.label}: ${p.about}`,
@@ -215,6 +217,19 @@ function EngineHome() {
           </g>
 
           {/* gearbox under the crankcase: the crank drives it down the shaft, feedback climbs back up the dashed line */}
+          {/* fuel rail: the agent orchestrator; the pump feeds four injectors, droplets run down the rail */}
+          <g {...part(RAIL)}>
+            <g transform={`translate(${RL.x} ${RL.y})`}>
+              <rect className="rl-pump" x={-78} y={-22} width={26} height={44} rx={6} />
+              <line className="rl-line" x1={-52} y1={0} x2={74} y2={0} />
+              <line className="rl-flow" x1={-52} y1={0} x2={74} y2={0} />
+              {[-30, 0, 30, 60].map((x, i) => (
+                <g key={x} transform={`translate(${x} 0)`}><path className="rl-inj" d="M-6 4 H6 V24 L2 32 H-2 L-6 24 Z" />
+                  <circle className={`rl-mist m${i}`} cx={0} cy={38} r={2.5} /></g>))}
+            </g>
+            <rect className="hit" x={RL.x - 90} y={RL.y - 40} width={180} height={96} />
+            <text className="part-label" x={RL.x} y={RL.y + 66}>Fuel rail</text>
+          </g>
           <g {...part(GEARBOX)}>
             <line className="gbx-shaft" x1={CX - 3} y1={CY + 96} x2={CX - 3} y2={GBX.y - 34} />
             <path className="gbx-return" d={`M ${CX + 30} ${GBX.y - 10} C ${CX + 14} ${GBX.y - 60} ${CX + 5} ${CY + 160} ${CX + 5} ${CY + 98}`} />

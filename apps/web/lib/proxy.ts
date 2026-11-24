@@ -14,6 +14,7 @@ const overlay = {
   run: null as any,
   filters: null as any,
   gear: null as any,                                  // gearbox shifts in this tab
+  orch: null as null | { paused: Record<string, boolean>; runs: string[] },  // fuel rail requests in this tab
 };
 
 const load = (name: string) => {
@@ -158,6 +159,15 @@ export async function proxyGet<T>(path: string): Promise<T> {
     case "/api/control/filters":
       if (overlay.filters) d = overlay.filters;
       break;
+    case "/api/control/orchestrator":
+      d = { ...d, ts: Date.now() / 1000 - 3 };
+      if (overlay.orch) {
+        const agents = Object.fromEntries(Object.entries(d.agents).map(([k, a]: [string, any]) => [k, { ...a, paused: overlay.orch!.paused[k] ?? a.paused }]));
+        const open = [...d.open, ...overlay.orch.runs.map((a: string, i: number) => ({ id: `${a}-demo-${i + 1}`, agent: a, state: "queued", attempts: 0,
+                      updated: Date.now() / 1000, by: "control room (demo)", payload: {} }))];
+        d = { ...d, agents, open };
+      }
+      break;
     case "/api/control/gearbox":
       if (overlay.gear) {
         const g = overlay.gear.gear ?? d.gear.gear;
@@ -211,6 +221,14 @@ export async function proxyPost<T>(path: string, body: any): Promise<T> {
   const p = path.split("?")[0];
   if (p === "/api/shadow/train") return shadowBrainDemo().latest as T;
   switch (p) {
+    case "/api/control/orchestrator": {  // demo: queue / pause acted out in this tab, the next poll shows it
+      const name = String(body.agent || ""), action = String(body.action || "");
+      if (!["run", "pause", "resume"].includes(action)) throw new Error("/api/control/orchestrator: 400");
+      overlay.orch = overlay.orch || { paused: {}, runs: [] };
+      if (action === "run") { overlay.orch.runs.push(name); return { queued: `${name}-demo-${overlay.orch.runs.length}`, note: "Demo: queued in this tab." } as T; }
+      overlay.orch.paused[name] = action === "pause";
+      return { [name]: action === "pause" ? "paused" : "resumed" } as T;
+    }
     case "/api/control/gearbox":
       overlay.gear = { ...(overlay.gear || {}), ...(body.gear ? { gear: String(body.gear).toUpperCase() } : {}), ...(body.clutch ? { clutch: body.clutch } : {}) };
       return proxyGet<T>("/api/control/gearbox");

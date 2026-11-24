@@ -155,8 +155,9 @@ def tick(now=None):
             if now - _TRAINED[0] >= 3600 and os.environ.get("REGEN_SHADOW_TRAIN", "1") != "0":  # hourly retrain + re-test
                 _TRAINED[0] = now
                 shadow_brain.train_and_test()
-            if shadow_brain.allowed("job"):
-                agents.act()  # only actions Shadow has earned (engine/agents.py)
+            from engine import orchestrator
+            if shadow_brain.allowed("job") and not orchestrator.enabled():
+                agents.act()  # only actions Shadow has earned (engine/agents.py); the orchestrator runs them when on
         except Exception as e:
             print(f"shadow brain: {e}", flush=True)
     return counts

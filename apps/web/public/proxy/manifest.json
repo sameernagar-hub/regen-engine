@@ -1,5 +1,5 @@
 {
- "generated": 1794608449.3710034,
+ "generated": 1795495533.530133,
  "note": "Synthetic data: fictional candidate and companies. Built by scripts/proxy_dataset.py.",
  "routes": {
   "/api/snapshot": "snapshot.json",
@@ -21,6 +21,7 @@
   "/api/outreach": "outreach.json",
   "/api/control/containers": "control_containers.json",
   "/api/control/gearbox": "control_gearbox.json",
+  "/api/control/orchestrator": "control_orchestrator.json",
   "/api/control/mcp": "control_mcp.json",
   "/api/rules": "rules.json",
   "/api/control/bigtech": "control_bigtech.json",

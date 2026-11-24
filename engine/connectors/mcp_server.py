@@ -267,6 +267,14 @@ def _supervisor(*verb):
     return json.loads(line)
 
 
+@mcp.tool(description="The agent orchestrator: every agent (periodic, daily, Shadow's plan actions) with its schedule, "
+                      "ladder level, budget and pause state, the open tasks (queued / leased / held with why) and the last "
+                      "finished ones. Read-only.")
+def orchestrator_status() -> dict:
+    from engine import orchestrator
+    return orchestrator.status()
+
+
 @mcp.tool(description="Fleet health from the bank: every container's heartbeat (pipeline, appliers, relay, supervisor), "
                       "batch queue (inbox/claimed/done), codes waiting, problems, whether the kill switch is on, and the "
                       "applier min/max. Read-only.")
