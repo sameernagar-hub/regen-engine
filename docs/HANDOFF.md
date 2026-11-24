@@ -1,3 +1,20 @@
+# Handoff: 11-23 ~21:15 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
+# off, Shadow autopilot, `compose stop`, 0 containers. Shadow L2 TRIAL left ON (user's call; `shadow trial off` ends it).
+# Run 20:05-21:12 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 18 SUBMITTED (673 all time by URL, 638 verified
+#   with proof). Supply-bound: inbox empty most of the run, 566 of 710 queued are Ashby (few per pass). User: gear 4 is
+#   off the table (memory strain); speed comes from supply (harvest, parked answers), not more appliers.
+# SHIPPED + PUSHED (main): 7ac98fb Shadow trial grant (thresholds unchanged, max L2, a violation revokes);
+#   22ab540 Fuel rail: engine/orchestrator.py, the supervisor's single-writer dispatcher for background agents (hn,
+#   outreach, outreach_gmail, learn, report_rate, boards_recheck, Shadow's retry/requeue) with leases, backoff retries,
+#   daily budgets, ladder gating, dead letter, operator run/pause/resume as request files; /orchestrator default-theme
+#   page + front-page part, GET/POST /api/control/orchestrator, MCP orchestrator_status, proxy dataset (Render live),
+#   README row, CHANGELOG, wiki Fuel-rail page; 046f6c8 filler: background-check consent follows presets, "if Other,
+#   add source" -> N/A, a human-only (honeypot) field parks the job (never filled, never worked around).
+# Images rebuilt through 046f6c8 (applier); web rebuilt. Shadow answered 39 parked questions from presets.
+# Open: on a phone the fuel-rail SVG labels are tiny; one application went out with a honeypot field filled before the
+#   fix; ~480 parked are mostly CAPTCHAs for the user (desk).
+# NEXT: `sh scripts/start.sh` -> wake MCPs -> gear 3 (never 4) -> ask Role Keywords -> cap -> check `engine orch`.
+
 # Handoff: 11-22 ~19:55 STOP POINT (user: close at 70% usage). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0,
 # Role Keywords off, Shadow autopilot, `compose stop`, 0 containers. Supervisor Ashby auto-clear left ON (user's choice).
 # Run 18:19-19:52 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 22 SUBMITTED (655 all time by URL).
