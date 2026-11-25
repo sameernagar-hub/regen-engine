@@ -9,6 +9,7 @@ import "./pipeline.css";
 import "./pipeline-board.css";
 import "./gearbox.css";
 import "./orchestrator.css";
+import "./cord.css";
 import "./oilchange.css";
 import "./rules.css";
 import "./shadow.css";

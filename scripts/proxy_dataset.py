@@ -434,6 +434,23 @@ def main():
               "hn": {"runs_day": day, "runs": 1, "day_done": day}, "report_rate": {"runs_day": day, "runs": 3}}
     json.dump({"tasks": tasks, "agents": agents, "ts": t0, "level": 1, "running": 1},
               open(os.path.join(ws, "orchestrator", "state.json"), "w"), indent=1)
+    # 11-24 Claude cord + ignition: two open asks, one answered, and the last key turn (fictional companies only)
+    os.makedirs(os.path.join(ws, "cord"), exist_ok=True)
+    asks = [{"id": "shadow-demo-1", "t": t0 - 240, "from": "shadow", "kind": "question", "key": "q:demo-notice",
+             "text": "Shadow abstained: no Fact Bank entry for 'What is your notice period?'",
+             "context": {"job": "Northwind Robotics - Software Engineer", "question": "What is your notice period?"}},
+            {"id": "supervisor-demo-2", "t": t0 - 90, "from": "supervisor", "kind": "problem", "key": "p:demo-applier",
+             "text": "applier-2 missed 3 heartbeats; recreated it, watching the next batch", "context": {}},
+            {"id": "orchestrator-demo-3", "t": t0 - 5400, "from": "orchestrator", "kind": "dead_letter", "key": "d:demo-rate",
+             "text": "report_rate used every attempt (rc 1: ledger busy)", "context": {"task": "report_rate-1"}}]
+    with open(os.path.join(ws, "cord", "asks.jsonl"), "w", encoding="utf-8") as f:
+        f.writelines(json.dumps(a) + "\n" for a in asks)
+    with open(os.path.join(ws, "cord", "replies.jsonl"), "w", encoding="utf-8") as f:
+        f.write(json.dumps({"id": "orchestrator-demo-3", "t": t0 - 5100, "by": "claude",
+                            "answer": "Ledger was mid-vacuum; requeued report_rate and it ran clean."}) + "\n")
+    os.makedirs(os.path.join(ws, "ignite"), exist_ok=True)
+    json.dump({"t": t0 - 1500, "by": "mcp", "asked": {"gear": "3", "keywords": "off", "cap": 0, "shadow": "calls"},
+               "result": {"gear": "drive", "agents": list(agents)}}, open(os.path.join(ws, "ignite", "last.json"), "w"))
     for f in resumes:
         lane = lane_of(f, jobs)
         open(os.path.join(ws, "out", f), "wb").write(pdf(["JANE DOE", "Example City, CA | jane@example.com | github.com/janedoe-demo",
@@ -451,7 +468,7 @@ def main():
               "/api/graph?questions=false", "/api/control/state", "/api/control/fleet", "/api/control/bench", "/api/control/evals?n=60",
               "/api/control/reach?limit=500", "/api/control/filters", "/api/reach/desk", "/api/reach/signins", "/api/reach/kit",
               "/api/factbank", "/api/outreach", "/api/control/containers",
-              "/api/control/gearbox", "/api/control/orchestrator", "/api/control/mcp", "/api/rules", "/api/control/bigtech", "/api/control/discover?n=40"]
+              "/api/control/gearbox", "/api/control/orchestrator", "/api/control/cord", "/api/control/mcp", "/api/rules", "/api/control/bigtech", "/api/control/discover?n=40"]
     manifest = {"generated": now, "note": "Synthetic data: fictional candidate and companies. Built by scripts/proxy_dataset.py.",
                 "routes": {}, "jobs": {}}
     for r in routes:

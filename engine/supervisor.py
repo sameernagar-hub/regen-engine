@@ -1103,6 +1103,12 @@ def supervise(argv=None):
                     print(f"supervisor: orchestrator: {e}", flush=True)
             else:
                 daily(imap)
+            try:  # 11-24: the control room's ignition key (a request file) runs here as the engine user
+                from engine import ignite
+                if ignite.apply_request(preexec=_as_engine_user):
+                    audit("ignite", "control room")
+            except Exception as e:
+                print(f"supervisor: ignite: {e}", flush=True)
             if n % 240 == 0:  # hourly: dangling images, then the retention policy (engine/clean.py)
                 prune_images()
                 from engine.clean import main as clean

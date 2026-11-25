@@ -17,6 +17,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 - **One-off resume** (`engine/tailoring/quick.py`, `engine resume <jd|-> --title T --company C`): the batch builder's
   route -> tailor -> one-page PDF -> QA gate -> ATS read-back for a pasted JD, Fact Bank only; missing JD terms are
   reported, never added. Why: no more hand-drafted resumes.
+- **Control room: Claude cord page** (`/cord`, front-page ignition switch, dock link): the ignition switches (gear,
+  Role Keywords, daily cap, Shadow, agents resumed, last ignition) with a key to turn, the open asks (from, kind, job,
+  text, age) and Claude's recent replies, refreshed every 5 s. GET `/api/control/cord` reads `engine/cord.py` and
+  `ignite.status()`; POST `/api/control/ignite` drops `workspace/ignite/request.json` and the supervisor's next tick
+  runs `engine ignite` as the engine user (the API container never writes engine state). Replies stay MCP-only
+  (`cord_reply`), so the answer policy lives in one place. Every ignition writes `workspace/ignite/last.json`. The
+  public demo serves a synthetic cord (fictional companies) and turns the key in the tab. Verify:
+  `pytest tests/test_cord.py`, `npm --prefix apps/web run typecheck`, `/cord` at 375 px has no horizontal scroll.
 
 ## [Unreleased] - 2026-11-23 · Fuel rail: one orchestrator for every background agent
 - **Agent orchestrator** (`engine/orchestrator.py`): the supervisor ticks it every 15 s and is its only writer.

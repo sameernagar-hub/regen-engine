@@ -299,7 +299,7 @@ def ignite(gear: str = "3", keywords: str = "on", cap: int = 4, shadow: str = "a
     if not WRITE:
         return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
     from engine import ignite as I
-    return I.ignite(gear=gear, keywords=keywords, cap=cap, shadow=shadow)
+    return I.ignite(gear=gear, keywords=keywords, cap=cap, shadow=shadow, by="mcp")
 
 
 @mcp.tool(description="Fleet health from the bank: every container's heartbeat (pipeline, appliers, relay, supervisor), "

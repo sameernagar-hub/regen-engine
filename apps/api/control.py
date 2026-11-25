@@ -499,6 +499,28 @@ def orchestrator_post(body: dict, request: Request):
         raise HTTPException(400, str(e))
 
 
+@router.get("/control/cord")
+def cord_get():
+    """The Claude cord (engine/cord.py): open asks from the agents and the last replies, plus the ignition switches
+    (engine/ignite.py: gear, Role Keywords, cap, Shadow, paused agents, the last ignition). Read-only: Claude replies
+    over MCP (cord_reply), which keeps the answer policy in one place."""
+    from engine import cord, ignite
+    return {"ts": time.time(), "open": cord.open_asks(), "replies": cord.replies(20), "ignition": ignite.status()}
+
+
+@router.post("/control/ignite")
+def ignite_post(body: dict, request: Request):
+    """{"gear": N|1|2|3, "keywords": on|off, "cap": 0..4, "shadow": autopilot|calls|always|off}: drop an ignition
+    request; the supervisor's next tick runs it as the engine user. Local only."""
+    _local_write(request)
+    from engine import ignite
+    try:
+        return ignite.request(body.get("gear", "3"), body.get("keywords", "on"), body.get("cap", 4),
+                              body.get("shadow", "autopilot"), by="control room")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @router.get("/control/bench")
 def bench():
     """Latest benchmark run B1-B7 (engine/bench.py; the supervisor saves one every REGEN_BENCH_HOURS)."""

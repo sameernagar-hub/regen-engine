@@ -7,7 +7,7 @@ import { API_ORIGIN } from "../lib/types";
 
 const HERE: [string, string][] = [
   ["/live", "Live"], ["/control", "Control"], ["/applications", "Applications"], ["/needs", "Needs you"], ["/desk", "Desk"], ["/shadow", "Shadow"], ["/reach", "Reach"],
-  ["/outreach", "Outreach"], ["/room", "Engine room"], ["/gearbox", "Gearbox"], ["/orchestrator", "Fuel rail"], ["/oilchange", "Maintenance"], ["/mcp", "MCP cord"], ["/job", "Job"], ["/evals", "Evals"], ["/facts", "Fact Bank"], ["/graph", "Memory graph"], ["/test-drive", "Test drive"], ["/pipeline", "Resume pipeline"],
+  ["/outreach", "Outreach"], ["/room", "Engine room"], ["/gearbox", "Gearbox"], ["/orchestrator", "Fuel rail"], ["/cord", "Claude cord"], ["/oilchange", "Maintenance"], ["/mcp", "MCP cord"], ["/job", "Job"], ["/evals", "Evals"], ["/facts", "Fact Bank"], ["/graph", "Memory graph"], ["/test-drive", "Test drive"], ["/pipeline", "Resume pipeline"],
 ];
 
 export function Nav() {

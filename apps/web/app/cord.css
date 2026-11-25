@@ -1,0 +1,58 @@
+/* 11-24 Claude cord + ignition (app/cord/page.tsx): a key switch and a line of asks. Mobile first: every grid
+   collapses to one column, long ids and job names wrap instead of widening the page. */
+.cd .cd-ign { margin-top: 8px; border: 1px solid var(--line); border-radius: 18px; padding: 16px;
+  background: linear-gradient(180deg, #0c1118, #080b10); display: grid; gap: 16px;
+  grid-template-columns: 120px minmax(0, 1fr); align-items: center; }
+.cd-key svg { width: 120px; height: 120px; display: block; }
+.cd-key .cd-bezel { fill: #121922; stroke: var(--line); stroke-width: 3; }
+.cd-key .cd-barrel { fill: #0a0e14; stroke: #4b5768; stroke-width: 2; }
+.cd-key .cd-blade { fill: #6a778a; transform-origin: 60px 60px; transform: rotate(-35deg); transition: transform .6s cubic-bezier(.3, 0, .2, 1), fill .3s; }
+.cd-key.on .cd-blade { transform: rotate(90deg); fill: var(--gold); }
+.cd-key.turning .cd-blade { transform: rotate(150deg); fill: var(--amber); }
+.cd-key text { fill: var(--dim); font: 9px var(--mono); text-anchor: middle; }
+.cd-gauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.cd-gauges div { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; background: #0f141b; min-width: 0; }
+.cd-gauges dt { color: var(--dim); font-size: 12px; letter-spacing: .04em; }
+.cd-gauges dd { margin: 2px 0 0; font: 600 20px var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+.cd-gauges dd small, .cd-gauges dd.cd-sm { font-size: 13px; font-weight: 400; color: var(--dim); }
+.cd-form { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.cd-form label { display: grid; gap: 4px; font-size: 12px; color: var(--dim); }
+.cd-form select { background: #121922; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+.cd-btn { border: 1px solid var(--gold); color: var(--gold); border-radius: 8px; padding: 8px 16px; font-size: 13px; background: #121922; cursor: pointer; }
+.cd-btn:disabled { opacity: .4; cursor: not-allowed; }
+.cd-agents { grid-column: 1 / -1; list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.cd-agents li { font: 12px var(--mono); padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); text-transform: capitalize; }
+.cd-agents li.on { border-color: var(--calm); color: var(--calm); }
+.cd-agents li.paused { color: var(--amber); border-color: var(--amber); }
+
+.cd-line { margin-top: 26px; }
+.cd-line h2 { font-size: 18px; margin: 0 0 10px; display: flex; gap: 8px; align-items: center; }
+.cd-count { font: 600 13px var(--mono); padding: 1px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
+.cd-asks, .cd-replies { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.cd-asks li, .cd-replies li { border: 1px solid var(--line); border-left-width: 4px; border-radius: 12px; padding: 10px 14px; background: #0f141b; min-width: 0; }
+.cd-ask.question { border-left-color: var(--gold); }
+.cd-ask.problem { border-left-color: var(--amber); }
+.cd-ask.dead_letter { border-left-color: var(--alarm); }
+.cd-replies li { border-left-color: var(--calm); }
+.cd-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; }
+.cd-from { color: var(--ink); }
+.cd-tag { padding: 1px 8px; border-radius: 999px; font-size: 11px; border: 1px solid var(--line); }
+.cd-tag.question { color: var(--gold); border-color: var(--gold); }
+.cd-tag.problem { color: var(--amber); border-color: var(--amber); }
+.cd-tag.dead_letter { color: var(--alarm); border-color: var(--alarm); }
+.cd-tag.saved { color: var(--calm); border-color: var(--calm); }
+.cd-job { margin: 6px 0 0; font-size: 13px; color: var(--dim); overflow-wrap: anywhere; }
+.cd-text { margin: 6px 0; font-size: 14px; overflow-wrap: anywhere; }
+.cd-id { font: 11px var(--mono); color: var(--dim); overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .cd .cd-ign { grid-template-columns: 1fr; justify-items: start; }
+  .cd-gauges { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .cd-key .cd-blade { transition: none; } }
+
+/* front page part (app/page.tsx): the ignition switch */
+.ign-bezel { fill: #121922; stroke: var(--tone, #f2c14e); stroke-width: 2; }
+.ign-blade { fill: #6a778a; transform: rotate(-35deg); transition: transform .5s cubic-bezier(.3, 0, .2, 1), fill .3s; }
+.part.hot .ign-blade { transform: rotate(90deg); fill: var(--tone, #f2c14e); }
+@media (prefers-reduced-motion: reduce) { .ign-blade { transition: none; } }

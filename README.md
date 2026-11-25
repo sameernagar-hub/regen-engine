@@ -54,6 +54,8 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 | **Learns from no** | Every rejection is read back and turned into the fit gate's next rule. [Feedback →](https://github.com/sameernagar-hub/regen-engine/wiki/Rejection-Feedback) |
 | **Stays in control** | The supervisor's governor resizes the applier fleet every 15 s from memory, CPU, page timeouts and the daily cap, one applier at a time, so a run never outgrows the machine. [Gearbox →](https://github.com/sameernagar-hub/regen-engine/wiki/Gearbox) |
 | **Works while you sleep** | One orchestrator runs every background agent (7 a.m. outreach drafts, HN boards, learning passes, Shadow's retries) with leases, retries, daily budgets and a dead letter, and nothing fires past Shadow's ladder. [Fuel rail →](https://github.com/sameernagar-hub/regen-engine/wiki/Fuel-rail) |
+| **Starts with one key** | Ignition (`sh scripts/ignite.sh`, or the MCP tool `ignite`) brings the stack up, puts it in gear (never above 3), sets Role Keywords, the daily cap and Shadow's mode, and wakes every background agent. [Ignition →](https://github.com/sameernagar-hub/regen-engine/wiki/Ignition) |
+| **Asks your AI when stuck** | The Claude cord: when Shadow won't guess, a fleet problem appears or a task dead-letters, the agents ask your Claude chat (MCP `cord_asks` / `cord_reply`, `python -m engine cord watch`), and the answer goes back through the same truth policy. [Claude cord →](https://github.com/sameernagar-hub/regen-engine/wiki/Claude-cord) |
 | **Costs nothing to think** | No model keys: Claude, Cursor or any MCP client operates it. [Zero cost →](https://github.com/sameernagar-hub/regen-engine/wiki/Zero-Cost-and-MCP) |
 
 | 509 | 0.4 per 100 | ~7,100 | 43 | 0 |
@@ -74,7 +76,11 @@ docker compose -f deploy/bank.compose.yml run --rm seed
 REGEN_MCP_WRITE=1 docker compose -f deploy/bank.compose.yml up -d
 ```
 
-Control room: http://127.0.0.1:3000 · MCP: `http://127.0.0.1:8790/mcp` · Step by step: [Running the engine](https://github.com/sameernagar-hub/regen-engine/wiki/Running)
+Already set up? `sh scripts/ignite.sh` starts everything your way (`--gear 3 --keywords on --cap 4 --shadow autopilot`).
+One resume for one job: `python -m engine resume jd.txt --title "Software Engineer" --company Acme` (Fact Bank only,
+QA and ATS checked; missing JD terms are reported, never added).
+
+Control room: http://127.0.0.1:3000 (`/cord` for ignition and the Claude cord) · MCP: `http://127.0.0.1:8790/mcp` · Step by step: [Running the engine](https://github.com/sameernagar-hub/regen-engine/wiki/Running)
 
 ## Guardrails
 

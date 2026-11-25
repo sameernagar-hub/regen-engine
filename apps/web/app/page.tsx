@@ -40,12 +40,13 @@ const OIL: Part = { key: "oilchange", href: "/oilchange", label: "Maintenance", 
 const SHADOW: Part = { key: "shadow", href: "/shadow", label: "Shadow", about: "Your AI delegate. It answers stuck forms as you from five strategies, abstains when unsure, is trained and tested on your own answers, and earns ownership of the engine's agents rung by rung.", tone: "#a78bfa" };
 const TEST: Part = { key: "test-drive", href: "/test-drive", label: "Test drive", about: "Paste a resume and watch it run through every station: the 10 roles the engine would pick for you, in about 15 seconds.", tone: "#f2c14e" };
 const RAIL: Part = { key: "orchestrator", href: "/orchestrator", label: "Fuel rail", about: "The crew that works while you sleep: the supervisor pumps work to every background agent, from 7 a.m. outreach to Shadow's retries, and nothing fires past the ladder.", tone: "#ff9f43" };
-const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL, SHADOW, TEST, RAIL];
+const KEY: Part = { key: "cord", href: "/cord", label: "Claude cord", about: "Ignition and the line to your Claude chat: one key turn starts the engine your way, and the agents ask Claude when they are stuck.", tone: "#f2c14e" };
+const ALL = [...CYL, CORE, GEARBOX, FUEL, WIRES, CORD, OIL, SHADOW, TEST, RAIL, KEY];
 const FIRING = [0, 7, 3, 2, 5, 4, 6, 1];  // eight cylinders since Desk joined (11-02): the classic V8 order 1-8-4-3-6-5-7-2
 
 const ang = (i: number) => -90 + (i * 360) / CYL.length;
 const at = (deg: number, r: number) => [CX + Math.cos((deg * Math.PI) / 180) * r, CY + Math.sin((deg * Math.PI) / 180) * r];
-const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 }, PLUG = { x: 150, y: 150 }, FLT = { x: W - 150, y: 150 }, RL = { x: W - 150, y: 400 };
+const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 }, PLUG = { x: 150, y: 150 }, FLT = { x: W - 150, y: 150 }, RL = { x: W - 150, y: 400 }, IGN = { x: 150, y: 290 };
 
 export default function Home() {
   return ALIVE ? <AliveHome /> : <EngineHome />;
@@ -109,6 +110,7 @@ function EngineHome() {
     get<any>("/api/control/gearbox").then((x) => put("gearbox", `gear ${x.gear.gear}, ${x.feedback.stats.rejected ?? 0} rejections read`)).catch(() => {});
     get<any>("/api/control/oilchange").then((x) => { setOilLife(x.life ?? 100); put("oilchange", x.running ? `cleaning up: ${x.stage}` : `health ${Math.round(x.life ?? 100)}%`); }).catch(() => {});
     get<any>("/api/control/orchestrator").then((x) => put("orchestrator", `${x.running} firing, ${x.open.length} open tasks`)).catch(() => {});
+    get<any>("/api/control/cord").then((x) => put("cord", `${x.open.length} open ask${x.open.length === 1 ? "" : "s"}, gear ${x.ignition.gear ?? "?"}`)).catch(() => {});
     get<any>("/api/control/mcp").then((x) => put("mcp", `${x.tools.length} tools, bank ${x.servers[0].up ? "up" : "down"}`)).catch(() => {});
     get<any>("/api/factbank").then((x) => { put("facts", `${x.facts.length} facts, ${x.resumes_built} resumes`); put("graph", `${x.roles.length + x.facts.length + x.projects.length}+ nodes`); }).catch(() => {});
   }, []);
@@ -125,7 +127,7 @@ function EngineHome() {
     if (!launch) return null;
     const i = CYL.findIndex((c) => c.key === launch);
     if (i >= 0) { const [x, y] = at(ang(i), 190); return { x, y }; }
-    return launch === "facts" ? TANK : launch === "graph" ? HARNESS : launch === "gearbox" ? GBX : launch === "mcp" ? PLUG : launch === "oilchange" ? FLT : launch === "orchestrator" ? RL : { x: CX, y: CY };
+    return launch === "facts" ? TANK : launch === "graph" ? HARNESS : launch === "gearbox" ? GBX : launch === "mcp" ? PLUG : launch === "oilchange" ? FLT : launch === "orchestrator" ? RL : launch === "cord" ? IGN : { x: CX, y: CY };
   }, [launch]);
   const part = (p: Part) => ({
     role: "link" as const, tabIndex: 0, "aria-label": `${p.label}: ${p.about}`,
@@ -216,6 +218,15 @@ function EngineHome() {
             <text className="part-label" x={PLUG.x} y={PLUG.y + 62}>MCP cord</text>
           </g>
 
+          {/* ignition: the Claude cord's key switch; the blade turns to ON while the part is hot */}
+          <g {...part(KEY)}>
+            <g transform={`translate(${IGN.x} ${IGN.y})`}>
+              <circle className="ign-bezel" r={26} />
+              <g className="ign-blade"><rect x={-4} y={-20} width={8} height={40} rx={3} /><circle r={5} /></g>
+            </g>
+            <rect className="hit" x={IGN.x - 60} y={IGN.y - 36} width={120} height={84} />
+            <text className="part-label" x={IGN.x} y={IGN.y + 46}>Claude cord</text>
+          </g>
           {/* gearbox under the crankcase: the crank drives it down the shaft, feedback climbs back up the dashed line */}
           {/* fuel rail: the agent orchestrator; the pump feeds four injectors, droplets run down the rail */}
           <g {...part(RAIL)}>

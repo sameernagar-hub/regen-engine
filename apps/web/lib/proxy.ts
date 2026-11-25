@@ -15,6 +15,7 @@ const overlay = {
   filters: null as any,
   gear: null as any,                                  // gearbox shifts in this tab
   orch: null as null | { paused: Record<string, boolean>; runs: string[] },  // fuel rail requests in this tab
+  ignite: null as null | { gear: string; keywords: string; cap: number; shadow: string; t: number },  // ignition key turned in this tab
 };
 
 const load = (name: string) => {
@@ -24,7 +25,7 @@ const load = (name: string) => {
 const getManifest = () => (manifest ??= load("manifest.json"));
 
 // Move every timestamp by (now - generated), so "3 min ago" stays 3 min ago on every visit.
-const TIME_KEYS = new Set(["ts", "updated", "created", "started", "finished", "last_poll", "last_post", "marked"]);
+const TIME_KEYS = new Set(["t", "ts", "updated", "created", "started", "finished", "last_poll", "last_post", "marked"]);
 const ISO = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/;
 const pad = (n: number) => String(n).padStart(2, "0");
 const isoLocal = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
@@ -168,6 +169,14 @@ export async function proxyGet<T>(path: string): Promise<T> {
         d = { ...d, agents, open };
       }
       break;
+    case "/api/control/cord":
+      if (overlay.ignite) {  // demo: the key turned in this tab shows as the live switches and the last ignition
+        const k = overlay.ignite, levels = d.ignition.cap_levels || [15, 25, 50, 100, 150];
+        d = { ...d, ignition: { ...d.ignition, gear: k.gear, keywords: k.keywords === "on", cap_level: k.cap, cap: levels[k.cap], shadow: k.shadow,
+              agents: Object.fromEntries(Object.keys(d.ignition.agents || {}).map((a) => [a, false])), pending: false,
+              last: { t: k.t, by: "control room (demo)", result: {} } } };
+      }
+      break;
     case "/api/control/gearbox":
       if (overlay.gear) {
         const g = overlay.gear.gear ?? d.gear.gear;
@@ -221,6 +230,12 @@ export async function proxyPost<T>(path: string, body: any): Promise<T> {
   const p = path.split("?")[0];
   if (p === "/api/shadow/train") return shadowBrainDemo().latest as T;
   switch (p) {
+    case "/api/control/ignite": {  // demo: the key turns in this tab only; gear 4 is refused like the real one
+      const gear = String(body.gear ?? "3").toUpperCase(), keywords = String(body.keywords ?? "on"), cap = Number(body.cap ?? 4), shadow = String(body.shadow ?? "autopilot");
+      if (!["N", "1", "2", "3"].includes(gear) || !["on", "off"].includes(keywords) || !(cap >= 0 && cap <= 4)) throw new Error("/api/control/ignite: 400");
+      overlay.ignite = { gear, keywords, cap, shadow, t: Date.now() / 1000 };
+      return { request: "ignite", note: "Demo: the key turned in this tab." } as T;
+    }
     case "/api/control/orchestrator": {  // demo: queue / pause acted out in this tab, the next poll shows it
       const name = String(body.agent || ""), action = String(body.action || "");
       if (!["run", "pause", "resume"].includes(action)) throw new Error("/api/control/orchestrator: 400");
