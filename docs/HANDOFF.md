@@ -1,3 +1,19 @@
+# Handoff: 11-24 ~20:50 STOP POINT (80% usage rule). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role
+# Keywords off, Shadow autopilot, `compose stop`, 0 containers.
+# Run 19:43-20:45 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 13 SUBMITTED today (651 verified). Supply-bound:
+#   Ashby (541 queued) on cooldown until ~08:00 11-25; non-Ashby passes dispatched 1-3 jobs.
+# SHIPPED + PUSHED (main): 09b3d4d Ignition (engine ignite / scripts/ignite.sh / MCP ignite, gear <= 3) + Claude cord
+#   (engine/cord.py; Shadow abstains, supervisor problems, orchestrator dead letters -> asks; MCP cord_asks/cord_reply)
+#   + `engine resume`; 7133e89 /cord page, GET /api/control/cord, POST /api/control/ignite (request file, supervisor
+#   applies), Render demo route, README + wiki (db7c426). Images rebuilt through 7133e89; supervisor recreated.
+# Agents: REGEN Captain (~/.claude/agents/regen-captain.md) + crew scout/clerk/mechanic/scribe/lookout/tailor. Main
+#   session dispatches; Captain can't spawn crew itself (messages main `CREW <name>: task`).
+# Clerk cleared 31 parked answers on 28 old jobs (outside Shadow's 48 h window). User gave facts 11-24 -> presets.json
+#   (start immediately, no notice, OPT exp 2027-07-05 + STEM ext, 3 yrs Terraform/AWS, offers = "active interview
+#   processes", platform-usage answers). Shadow memory has a stale "August" start date: retire it.
+# NEXT IDEA: Shadow sweeps parked jobs older than 48 h itself (WINDOW_H). NEXT START: /regen-start (or
+#   `sh scripts/ignite.sh`), then spawn regen-captain.
+
 # Handoff: 11-23 ~21:15 STOP POINT (user asked). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role Keywords
 # off, Shadow autopilot, `compose stop`, 0 containers. Shadow L2 TRIAL left ON (user's call; `shadow trial off` ends it).
 # Run 20:05-21:12 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 18 SUBMITTED (673 all time by URL, 638 verified
