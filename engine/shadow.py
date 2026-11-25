@@ -124,6 +124,7 @@ def tick(now=None):
                             "recommend": [recommend(q, job) for q in missing_questions(detail)[:8]]}
             record("shadow", action="call1", job=job, url=u)
             counts["call1"] += 1
+            _ask_claude(job, c["recommend"])
             continue
         if "recommend" not in c:  # a line from before recommendations existed: write them down now
             from engine.feedback.answers import missing_questions
@@ -161,6 +162,20 @@ def tick(now=None):
         except Exception as e:
             print(f"shadow brain: {e}", flush=True)
     return counts
+
+
+def _ask_claude(job, recs):
+    """11-24: questions Shadow abstains on go to the operator's Claude session over the cord (engine/cord.py),
+    one open ask per question wording; Claude's reply is saved as Shadow's answer and the job retries."""
+    try:
+        from engine import cord
+        from engine.feedback.answers import pattern_for
+        for r in recs or []:
+            if r.get("q") and not r.get("a"):
+                cord.ask("shadow", r["q"], kind="question", key="q:" + pattern_for(r["q"])[:160],
+                         context={"job": job, "question": r["q"], "conf": r.get("conf")})
+    except Exception as e:
+        print(f"shadow cord: {e}", flush=True)
 
 
 def _retry_as_shadow(jobs):

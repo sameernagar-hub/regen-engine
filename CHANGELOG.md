@@ -4,6 +4,20 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-24 · Ignition, Claude cord, one-off resumes
+- **Ignition** (`engine/ignite.py`, `scripts/ignite.sh`, MCP `ignite`): starting the engine starts the agents. One
+  command brings the stack up, then sets gear (<= 3; 4 refused), Role Keywords, daily cap level, Shadow mode, and
+  resumes every orchestrator agent. Why: the user wants to call one agent that knows the whole start sequence.
+  Verify: `sh scripts/ignite.sh` prints the gear, keywords, cap, Shadow mode and agent list.
+- **Claude cord** (`engine/cord.py`, MCP `cord_asks` / `cord_reply`, `engine cord list|reply|watch`): agents ask the
+  operator's Claude session, Claude answers back. Shadow posts each question it abstains on (with the job), the
+  supervisor each new fleet problem, the orchestrator each dead-lettered task; one open ask per key. A reply to a
+  question is saved through the answer bank as Shadow (same truth policy) so the job retries. `cord watch` runs under
+  the Claude session's Monitor, so an ask wakes the chat. Verify: `pytest tests/test_cord.py`.
+- **One-off resume** (`engine/tailoring/quick.py`, `engine resume <jd|-> --title T --company C`): the batch builder's
+  route -> tailor -> one-page PDF -> QA gate -> ATS read-back for a pasted JD, Fact Bank only; missing JD terms are
+  reported, never added. Why: no more hand-drafted resumes.
+
 ## [Unreleased] - 2026-11-23 · Fuel rail: one orchestrator for every background agent
 - **Agent orchestrator** (`engine/orchestrator.py`): the supervisor ticks it every 15 s and is its only writer.
   Agents are registered with a schedule (every N h or daily after an hour, with "after" chains), a timeout, retries,

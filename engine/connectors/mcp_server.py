@@ -275,6 +275,33 @@ def orchestrator_status() -> dict:
     return orchestrator.status()
 
 
+@mcp.tool(description="Claude cord: open asks the engine's agents sent to you (Shadow's abstained questions with their job, "
+                      "supervisor fleet problems, orchestrator dead letters), plus the last replies. Read-only.")
+def cord_asks() -> dict:
+    from engine import cord
+    return {"open": cord.open_asks(), "replies": cord.replies(10)}
+
+
+@mcp.tool(description="Claude cord: answer an agent's ask by id. A question with a job is saved as Shadow's answer (same "
+                      "truth policy as answer_save: Fact Bank / presets only, EEO decline-only) and the job retries; "
+                      "for problems / dead letters, say what you did. Needs REGEN_MCP_WRITE=1.")
+def cord_reply(id: str, answer: str) -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    from engine import cord
+    return cord.reply(id, answer)
+
+
+@mcp.tool(description="Ignition: one call starts the engine the user's way: gear (default 3, never 4), Role Keywords, "
+                      "daily cap level, Shadow autopilot, orchestrator agents resumed; returns a status report. The Docker "
+                      "stack must already be up (scripts/ignite.sh brings it up first). Needs REGEN_MCP_WRITE=1.")
+def ignite(gear: str = "3", keywords: str = "on", cap: int = 4, shadow: str = "autopilot") -> dict:
+    if not WRITE:
+        return {"error": "writes are disabled for this MCP server (set REGEN_MCP_WRITE=1)"}
+    from engine import ignite as I
+    return I.ignite(gear=gear, keywords=keywords, cap=cap, shadow=shadow)
+
+
 @mcp.tool(description="Fleet health from the bank: every container's heartbeat (pipeline, appliers, relay, supervisor), "
                       "batch queue (inbox/claimed/done), codes waiting, problems, whether the kill switch is on, and the "
                       "applier min/max. Read-only.")

@@ -141,6 +141,12 @@ def _fail(s, t, now, why):
     else:
         _set(t, "failed", now, last_error=why[:200], finished=now)
         _audit("dead", t["id"], why=why[:120], attempts=t["attempts"])
+        try:  # 11-24: a dead-lettered task asks the operator's Claude session over the cord (engine/cord.py)
+            from engine import cord
+            cord.ask("orchestrator", f"agent {t['agent']} dead-lettered after {t['attempts']} attempts: {why[:200]}",
+                     kind="dead_letter", key=f"dead:{t['agent']}", context={"task": t["id"], "agent": t["agent"]})
+        except Exception:
+            pass
 
 
 def reap(s, now=None):

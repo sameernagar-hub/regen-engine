@@ -113,6 +113,11 @@ def problems_changed(seen, problems=None):
     new, gone = sorted(now - seen), sorted(seen - now)
     for p in new:
         record("problem", text=p[:200])
+        try:  # 11-24: each new fleet problem asks the operator's Claude session over the cord (engine/cord.py)
+            from engine import cord
+            cord.ask("supervisor", p[:300], kind="problem", key="problem:" + p[:120])
+        except Exception:
+            pass
     for p in gone:
         record("problem_clear", text=p[:200])
     seen.clear()

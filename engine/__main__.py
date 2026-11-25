@@ -198,6 +198,12 @@ def main():
         from engine.tailoring.keywords import main as m
     elif cmd == "feedback":
         from engine.feedback.rejections import main as m
+    elif cmd == "resume":  # 11-24: one tailored, Fact-Bank-only resume for a pasted JD (engine/tailoring/quick.py)
+        from engine.tailoring.quick import main as m
+    elif cmd == "cord":  # 11-24: agents <-> the operator's Claude session (engine/cord.py)
+        from engine.cord import main as m
+    elif cmd == "ignite":  # 11-24: one command that starts the engine the way the user runs it (engine/ignite.py)
+        from engine.ignite import main as m
     elif cmd in ("orch", "orchestrator"):  # 11-23: the agent orchestrator (engine/orchestrator.py)
         from engine.orchestrator import main as m
     elif cmd == "learn":
