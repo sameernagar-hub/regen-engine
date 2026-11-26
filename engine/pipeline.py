@@ -379,11 +379,32 @@ def _drop(parts, stamp, offset):
     return names
 
 
+def _settled(names, dirs, live_appliers):
+    """True when the next pass may start: every dispatched part is done, OR at most one is still unclaimed in inbox/ and no
+    more batches are claimed than there are live appliers (a claimed batch with no live applier was lost: keep waiting).
+    11-25: waiting for EVERY part let one slow batch idle the other appliers for 20+ min and the governor shed them.
+    Overlap is safe: select() skips every job still in inbox/ or claimed/ (in_flight())."""
+    pend = [n for n in names if not os.path.exists(os.path.join(dirs["done"], n))]
+    if not pend:
+        return True
+    unclaimed = [n for n in pend if os.path.exists(os.path.join(dirs["inbox"], n))]
+    claimed = [n for n in os.listdir(dirs["claimed"]) if n.endswith(".json")] if os.path.isdir(dirs["claimed"]) else []
+    return len(unclaimed) <= 1 and len(claimed) <= live_appliers
+
+
+def _live_appliers():
+    from engine.supervisor import fleet
+    try:
+        return sum(1 for m in fleet()["members"] if m.get("role") == "applier" and m.get("up"))
+    except Exception:
+        return 0  # unknown: never return early on a guess
+
+
 def _wait(names, timeout_h=3):
-    """Block until every dispatched part is in batches/done/ (or the timeout: a dead worker never stalls the loop)."""
+    """Block until the pass has drained (see _settled) or the 3 h timeout: a dead worker never stalls the loop."""
     from engine.apply.worker import DIRS
     end = time.monotonic() + timeout_h * 3600
-    while names and time.monotonic() < end and not all(os.path.exists(os.path.join(DIRS["done"], n)) for n in names):
+    while names and time.monotonic() < end and not _settled(names, DIRS, _live_appliers()):
         time.sleep(5)
         beat("pipeline", state="waiting for appliers", parts=len(names))
 

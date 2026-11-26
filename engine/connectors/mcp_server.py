@@ -184,15 +184,40 @@ def priority_explain(top: int = 20) -> list[dict]:
     return [{"company": j["company"], "title": j["title"], "score": s, "parts": parts, "url": j["url"]} for (s, parts), j in rows[:top]]
 
 
-@mcp.tool(description="What's waiting on the user, grouped by blocking question (answer one question to unblock many jobs).")
-def needs_by_question() -> list[dict]:
+HUMAN_ONLY = re.compile(r"captcha|bot[- ]?check|human[- ]only|human click|human check|verify you are|not a robot|tick it and submit|"
+                        r"finish it by hand|submit it by hand|ashby cooldown|no adapter", re.I)
+
+
+@mcp.tool(description="What's waiting on the user, grouped by blocking question (answer one question to unblock many jobs). "
+                      "Each group: the FULL question text, its options when the form showed a choice, count, up to 5 job "
+                      "names, and user_only. skip_human_only=True (default, the Shadow/clerk view) drops CAPTCHA / bot-check / "
+                      "human-click entries and user_only questions (legal, sponsorship, EEO: presets or the user only); "
+                      "pass False to see everything.")
+def needs_by_question(skip_human_only: bool = True) -> list[dict]:
     from engine.feedback.answers import LEGAL_OR_SENSITIVE
+    api = _api()
+    opts = {}  # job -> {question: [options]} from each job's latest application event
+    for _, e in api.store.read():
+        if e.get("kind") == "application" and e.get("job") and not e.get("dry"):
+            opts[e["job"]] = e.get("options") or {}
     groups = {}
-    for it in _api().human():
+    for it in api.human():
         for q in (it.missing or [it.text]):
-            groups.setdefault(q, []).append(it.job)
-    return sorted(({"question": q, "jobs": js, "count": len(js), "user_only": bool(LEGAL_OR_SENSITIVE.search(q))}
-                   for q, js in groups.items()), key=lambda g: (g["user_only"], -g["count"]))
+            g = groups.setdefault(q, {"jobs": [], "options": []})
+            g["jobs"].append(it.job)
+            for o in opts.get(it.job, {}).get(q[:300]) or []:
+                if o not in g["options"]:
+                    g["options"].append(o)
+    out = []
+    for q, g in groups.items():
+        user_only = bool(LEGAL_OR_SENSITIVE.search(q))
+        if skip_human_only and (user_only or HUMAN_ONLY.search(q)):
+            continue
+        row = {"question": q, "count": len(g["jobs"]), "jobs": g["jobs"][:5], "user_only": user_only}
+        if g["options"]:
+            row["options"] = g["options"][:12]
+        out.append(row)
+    return sorted(out, key=lambda r: (r["user_only"], -r["count"]))
 
 
 @mcp.tool(description="Save an answer to a blocking question as Shadow, the user's AI delegate (policy: engine/override.py; "

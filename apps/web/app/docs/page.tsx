@@ -1,7 +1,7 @@
 "use client";
-// /docs (ALIVE Phase 5 part 2, docs/ALIVE_PLAN.md §5): "Use REGEN" for someone starting a run, and "Build on REGEN"
+// /docs: "Use REGEN" for someone starting a run, and "Build on REGEN"
 // for someone extending it. Content is copied from the wiki (Running, Gearbox, Shadow, FAQ, MCP-Tools) and from the
-// plan's §3 container map and §4 event contract: no new facts. Also rendered as Garage > Docs inside the drawer.
+// container map and event contract: no new facts. Also rendered as Garage > Docs inside the drawer.
 import { useState } from "react";
 import { Nav } from "../nav";
 import { TryBox } from "../try-box";
@@ -156,7 +156,7 @@ fields:          job, company (null on the public site), by (engine|shadow|desk|
             <ul>
               <li><code>python -m pytest -q</code>, <code>npm run typecheck</code> and <code>python scripts/privacy_scan.py</code> clean before every change.</li>
               <li>Commit locally; the <code>reposync</code> container runs tests and the privacy scan, then opens the pull request.</li>
-              <li>Coding rules: <code>docs/CODING_STANDARDS.md</code>. The revamp's build checklist: <code>docs/ALIVE_PLAN.md</code>.</li>
+              <li>Coding rules: <code>docs/CODING_STANDARDS.md</code>.</li>
             </ul>
           </section>
         </article>

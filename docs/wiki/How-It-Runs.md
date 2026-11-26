@@ -37,6 +37,7 @@ applier (N)   loop: claim = create claimed/<part>.lock exclusively (O_CREAT|O_EX
               -> move the part to claimed/ -> engine apply (headed Chromium, REGEN_TABS tabs round-robin)
               -> move to done/, drop the lock
 relay (1)     codes from the Gmail feed tab -> codes/<board>_<id>.txt for whichever worker is waiting
+reposync (0/1) OPT-IN (compose profile `sync`, not in a plain `up`): feed -> gh-pages, checked local commits -> bot/sync + PR
 ```
 - **Who gets what:** the first free worker claims the oldest part. Nothing is pinned to a worker, so a slow form never
   idles the others.

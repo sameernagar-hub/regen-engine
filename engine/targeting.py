@@ -80,7 +80,7 @@ def set_level(arg):
     json.dump(raw, open(tmp, "w", encoding="utf-8"), indent=1)
     os.replace(tmp, p)
     _C.update(mtime=None)
-    from engine.feedback.events import record  # the revamp's `cap` event (docs/ALIVE_PLAN.md §5a), CLI or API alike
+    from engine.feedback.events import record  # the `cap` event, CLI or API alike
     record("cap", level=new, cap=int(levels[new]))
     return new, int(levels[new])
 

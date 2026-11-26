@@ -312,7 +312,7 @@ def memory(limit=40):
 def _use_recommendations(c, url=None):
     """Shadow picks up: its recommendations become answers (job-scoped for legal ones) and memories. Every question
     it leaves (nothing on file, never-answer list, human check, refused by the bank) is recorded once as a
-    `shadow` abstain event (ALIVE Phase 0: the live view sends it to your tray). Returns the left questions."""
+    `shadow` abstain event (the live view sends it to your tray). Returns the left questions."""
     from engine.feedback import answers as A
     from engine import override
     left = []

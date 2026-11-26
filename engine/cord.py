@@ -18,7 +18,7 @@ asks without a reply. O(asks) per read; asks older than KEEP_S drop out of the o
     python -m engine cord reply <id> <answer>
     python -m engine cord watch [seconds]   stream new open asks (one line each)
 """
-import json, os, sys, time
+import json, os, sys, time, uuid
 
 from engine.config import WORKSPACE
 
@@ -43,10 +43,28 @@ def _read(path):
     return out
 
 
+ENGINE_UID = 10001  # the engine user the MCP / CLI run as (`docker exec -u 10001`)
+
+
+def _share(path, mode):
+    """Make `path` usable by the engine user whoever created it. The supervisor runs as root and posts asks, so a
+    root-owned cord dir/file made cord_reply fail with a permission error (11-25). Root hands ownership to uid 10001;
+    anyone else just opens the mode up. Best effort: a failure here must never lose an ask."""
+    try:
+        if os.name == "posix" and os.geteuid() == 0:
+            os.chown(path, ENGINE_UID, ENGINE_UID)
+        os.chmod(path, mode)
+    except OSError:
+        pass
+
+
 def _append(path, row):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    d = os.path.dirname(path)
+    os.makedirs(d, exist_ok=True)
+    _share(d, 0o777)
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    _share(path, 0o666)  # every append: a file an older root process made is fixed too
 
 
 def open_asks(now=None, asks_path=None, replies_path=None):
@@ -64,7 +82,7 @@ def ask(frm, text, kind="question", key=None, context=None, now=None, asks_path=
     for a in open_asks(now, asks_path, replies_path):
         if a.get("key") == key:
             return a["id"]
-    aid = f"{frm}-{int(now * 1000)}"
+    aid = f"{frm}-{int(now * 1000)}-{uuid.uuid4().hex[:4]}"  # the suffix keeps two asks in one millisecond apart (11-25)
     _append(asks_path or ASKS, {"id": aid, "t": now, "ts": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)),
                                 "from": frm, "kind": kind, "key": key, "text": str(text)[:600],
                                 "context": context or {}})  # asks.jsonl is the record (no event: callers log their own)

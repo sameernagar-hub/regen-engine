@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from engine import control as C
-from engine.config import WORKSPACE, profile_file
+from engine.config import ASHBY_COOLDOWN, WORKSPACE, profile_file
 
 router = APIRouter(prefix="/api")
 from engine.notify import _env as _local_env
@@ -121,7 +121,7 @@ def state():
         pass
     cool = None
     try:
-        t = open(os.path.join(WORKSPACE, "ashby_cooldown")).read().strip()
+        t = open(ASHBY_COOLDOWN).read().strip()
         cool = time.mktime(time.strptime(t[:19], "%Y-%m-%dT%H:%M:%S")) + 86400
     except (OSError, ValueError):
         pass
@@ -682,7 +682,7 @@ def resume(name: str, download: int = 0):
         "Content-Disposition": f'inline; filename="{name}"', "Content-Security-Policy": f"frame-ancestors {origins}"})
 
 
-# ---- NEXT_STEPS controls (docs/ALIVE_PLAN.md §5a): the revamp UI posts here; the engine stays the truth ----
+# ---- NEXT_STEPS controls: the UI and the MCP cord post here; the engine stays the truth ----
 @router.get("/control/keywords")
 def keywords_get():
     """Role Keywords: the per-run switch and whether the A/B (which overrides it per posting) is on."""

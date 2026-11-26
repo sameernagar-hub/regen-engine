@@ -26,7 +26,7 @@ By = Literal["engine", "shadow", "desk", "you", "user", "operator", "api"]
 
 
 class Narration(BaseModel):
-    """An event as one plain-English sentence (engine.live.server.narrate). ALIVE Phase 0 adds the typed fields
+    """An event as one plain-English sentence (engine.live.server.narrate). The typed live-event contract adds the fields
     (all optional, so older clients keep working): kind, job (the posting URL: one chip followed across stages),
     company (never sent on the public site), by, detail (skip reason / parked question, shortened), conf (Shadow's
     confidence on shadow.answer), jobs (the postings an apply.start batch or an outcome covers)."""

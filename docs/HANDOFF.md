@@ -1,3 +1,9 @@
+# 11-25 UPDATE (read first): the ALIVE revamp / `web-alive` (:3001) is RETIRED and removed (user decision); there is one
+#   control room, `web` on :3000. START no longer brings up web-alive. `reposync` is OPT-IN (compose profile `sync`): a plain
+#   `up` skips it and the supervisor no longer restarts it. For a GitHub sync run
+#   `docker compose -f deploy/bank.compose.yml --profile sync up -d reposync` (public feed -> gh-pages, checked commits ->
+#   bot/sync PR, eval-on-commit triggers; `python -m engine site --push` refreshes the feed by hand). Older entries below that
+#   mention web-alive, ALIVE phases or docs/ALIVE_PLAN.md are history only.
 # Handoff: 11-24 ~20:50 STOP POINT (80% usage rule). Stack STOPPED cleanly: gear N, inbox+claimed 0, cap 0, Role
 # Keywords off, Shadow autopilot, `compose stop`, 0 containers.
 # Run 19:43-20:45 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 13 SUBMITTED today (651 verified). Supply-bound:

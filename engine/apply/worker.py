@@ -55,7 +55,7 @@ def apply_one(name):
     log = open(os.path.join(WORKSPACE, "logs", name[:-5] + ".log"), "a", encoding="utf-8")
     log.write(f"worker {socket.gethostname()} claimed {name}\n")
     log.flush()
-    try:  # ALIVE Phase 0: the live view moves these jobs into the Apply cylinder now (kind "apply.start")
+    try:  # the live view moves these jobs into the Apply cylinder now (kind "apply.start")
         from engine.feedback.events import record
         jobs = json.load(open(os.path.join(DIRS["claimed"], name), encoding="utf-8"))
         record("apply_start", batch=name, host=socket.gethostname(),

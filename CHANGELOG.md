@@ -4,6 +4,32 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-25 · web-alive retired, reposync opt-in, cord and Ashby fixes
+- **web-alive / ALIVE revamp retired (user decision, 11-25).** Removed the `web-alive` compose service (:3001), `apps/web/app/alive/`,
+  `lib/spine.ts`, `scripts/spine_check.mjs`, `scripts/bench_alive.py`, `docs/ALIVE_PLAN.md`, `docs/bench/alive.md`, the
+  `engine replay` command (`engine/live/replay.py`), `GET /api/replay` and the `NEXT_PUBLIC_ALIVE` switch; the home page
+  renders the engine home only and the ALIVE-only CSS is gone. Kept: the typed live-event contract and `/api/signals` (the
+  backend still emits them; `tests/test_replay.py` became `tests/test_live_contract.py` without the replay cases), the
+  `/docs` page and `/api/try`. `DECLARED` in `engine/supervisor.py` no longer lists `web-alive`. Why: one fewer idle
+  container (~75 MB) and a smaller surface. Verify: `pytest`, `npm --prefix apps/web run typecheck && npm --prefix apps/web run build`.
+- **reposync is opt-in.** Compose profile `sync`: a plain `up` does not start it; run `docker compose -f deploy/bank.compose.yml
+  --profile sync up -d reposync` for a sync (public feed -> gh-pages, checked commits -> bot/sync PR, eval-on-commit triggers).
+  The supervisor no longer watches, probes or restarts it (still in `DECLARED`). Why: idle at ~400 MB with a 1 GB limit, memory
+  the governor needs for appliers.
+- **Pipeline no longer waits for the slowest batch.** `_wait` returned only when EVERY part of a pass was in `done/`, so one slow
+  claimed batch idled the other appliers for 20+ min and the governor shed them. It now returns once at most one dispatched part
+  is still unclaimed and no more batches are claimed than there are live appliers (a batch whose applier died keeps it waiting;
+  the 3 h timeout stays). Overlapping passes cannot double-dispatch: `select()` skips every job still in `inbox/` or `claimed/`.
+  Test: `tests/test_pipeline_wait.py`.
+- **Ashby cooldown path.** The runner read and wrote a relative `./ashby_cooldown` (its cwd, lost on recreate, invisible to the
+  supervisor); every reader and writer now uses `engine.config.ASHBY_COOLDOWN` in the shared workspace. Test:
+  `tests/test_ashby_autoclear.py`.
+- **Cord permissions and ids.** Cord dir/files are handed to uid 10001 (and opened to 0777/0666) whenever the root supervisor
+  writes them, so `cord_reply` cannot hit a root-owned file again; ask ids gain a short suffix so two asks in one millisecond no
+  longer collide. Tests: `tests/test_cord.py`.
+- **needs_by_question** returns the full question (the runner cut labels at 90 characters; now 300), the form's options, and
+  `skip_human_only` (default on) drops CAPTCHA / human-click / user-only entries. Tests: `tests/test_needs_by_question.py`.
+
 ## [Unreleased] - 2026-11-24 · Ignition, Claude cord, one-off resumes
 - **Ignition** (`engine/ignite.py`, `scripts/ignite.sh`, MCP `ignite`): starting the engine starts the agents. One
   command brings the stack up, then sets gear (<= 3; 4 refused), Role Keywords, daily cap level, Shadow mode, and

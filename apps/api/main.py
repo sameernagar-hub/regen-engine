@@ -214,7 +214,7 @@ def narration(after: int = 0, limit: int = Query(40, le=500)):
 _NARR = {}  # event id -> Narration or None (events never change, so this never goes stale)
 
 
-# ---- ALIVE §5a quick start: "Try it first" as a paste box (POST /api/try) ----
+# ---- quick start: "Try it first" as a paste box (POST /api/try) ----
 # Same code path as `python -m engine try` (engine/try_it.py): the resume text is read for skill words, the sample
 # public Greenhouse boards are ranked with the default fit gate (never the owner's profile), the top 10 come back
 # with their reasons. Nothing is stored or logged: the text lives only for this request. One call per client per
@@ -251,23 +251,6 @@ def try_resume(body: dict, request: Request):
     jobs, boards = _try_jobs()
     out = try_it.rank(jobs, text)  # profile -> gate -> JD keywords (ATS match) -> top 10; the text is not kept
     return {**out, "boards": boards, "postings": len(jobs), "stored": False}
-
-
-@app.get("/api/replay", response_model=list[Narration])
-def replay(since: str = Query(..., description="local ISO time, e.g. 2026-11-13T19:40:00"),
-           limit: int = Query(2000, ge=1, le=5000)):
-    """ALIVE Phase 4: every narration after `since`, oldest first, for "While you were away". A gap with more than
-    `limit` narrations keeps the newest `limit`, so the replay always ends where live begins."""
-    out = []
-    for i, e in store.read(0):
-        if (e.get("ts") or "") <= since:  # ledger ts are fixed-width local ISO strings: string order is time order
-            continue
-        if i not in _NARR:
-            n = narrate(e)
-            _NARR[i] = Narration(id=i, ts=e.get("ts"), **n) if n else None
-        if _NARR[i]:
-            out.append(_NARR[i])
-    return out[-limit:]
 
 
 @app.get("/api/proof/{name}")

@@ -28,7 +28,7 @@ def who(job):
     return co.strip(), short(role.strip(), 60)
 
 
-# ALIVE Phase 0 event contract (docs/ALIVE_PLAN.md §4). Every ledger kind maps to a contract kind or to INTERNAL
+# Typed live-event contract. Every ledger kind maps to a contract kind or to INTERNAL
 # (plumbing the live view never draws); bench V6 fails on any kind missing from this table.
 STAGE_KINDS = ("discovered", "gate.skip", "resume", "apply.start", "submitted", "parked", "apply.fail",
                "shadow.answer", "shadow.abstain", "outcome")

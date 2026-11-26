@@ -12,7 +12,7 @@ import json, re, sys, time, os, datetime
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from playwright.sync_api import sync_playwright
 
-from engine.config import WORKSPACE, in_workspace, profile_file
+from engine.config import ASHBY_COOLDOWN, WORKSPACE, in_workspace, profile_file
 from engine.feedback.events import record
 from engine import override, safety
 from engine.apply import drafts
@@ -288,6 +288,7 @@ if P.get("work_auth_status"):  # visa-type dropdowns word the same status many w
 ALIASES["Company careers page"] = ["Company Website", "Company website", "Careers Page", "Career Site", "Website", "Company Careers Site", "Job Board", "Other"]
 ALIASES = {k: [v for v in vs if v] for k, vs in ALIASES.items()}
 
+MAX_Q = 300  # longest question label kept in a NEEDS YOU line (11-25: 90 cut real questions in half for the cord / Shadow)
 MAX_OPTION = 80  # longest answer we will try to match against dropdown / choice options
 YESNO_Q = re.compile(r"^\s*(are|do|does|did|will|would|have|has|had|is|was|can|could|should|may|any)\b", re.I)
 
@@ -309,6 +310,16 @@ def attest_text(label, ans):
 
 
 OFFICE_Q = re.compile(r"office|on-?site|in-?person|hybrid|which (location|city)|work location|location\(?s\)?\b", re.I)
+
+
+def note_options(job, label, opts):
+    """Remember a choice question's visible options (text only, compact) so a NEEDS YOU can show them (needs_by_question)."""
+    try:
+        texts = [" ".join(t.split())[:60] for t, _ in opts if t and t.strip()][:12]
+        if texts:
+            job.setdefault("_options", {})[label[:MAX_Q]] = texts
+    except Exception:
+        pass
 
 
 def office_option(options, label, loc):
@@ -855,7 +866,7 @@ def ashby_fields(page, job, log, first=True):
                 job["_other_hear"] = ans
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
-        if not ok and req: missing.append(label[:90])
+        if not ok and req: missing.append(label[:MAX_Q])
         yield  # checkpoint: the scheduler may switch jobs between fields
     return missing
 
@@ -1047,7 +1058,7 @@ def fill_lever(page, job, log):
                 ok = yield from set_field(page, f, label, ans)
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
-        if not ok and req: missing.append(label[:90])
+        if not ok and req: missing.append(label[:MAX_Q])
         yield  # checkpoint
     # EEO block: always decline
     for sel in page.query_selector_all("select[name^='eeo']"):
@@ -1126,7 +1137,7 @@ def fill_rippling(page, job, log):
                 if opts:
                     opts[0].click()
         if not ok and req:
-            missing.append(label[:90])
+            missing.append(label[:MAX_Q])
         yield
     # dropdowns (react-select style comboboxes): open, read the options, pick
     for el in page.query_selector_all("[role=combobox]:visible"):
@@ -1142,6 +1153,7 @@ def fill_rippling(page, job, log):
             try:
                 el.click(); yield 0.6
                 opts = [(o.inner_text().strip(), o) for o in page.query_selector_all("[role=option]:visible")]
+                note_options(job, label, opts)
                 h = pick_option(opts, str(ans)) if opts else None
                 if h:
                     h.click()
@@ -1150,7 +1162,7 @@ def fill_rippling(page, job, log):
             except Exception as e:
                 log(f"  ! {label[:60]}: {e}")
         if not h and req:
-            missing.append(label[:90])
+            missing.append(label[:MAX_Q])
         yield
     # single choice: radio groups (an SMS opt-in is always No: the user never asked for text messages)
     for grp in page.query_selector_all("[role=radiogroup]:visible"):
@@ -1158,13 +1170,14 @@ def fill_rippling(page, job, log):
         if not opts or grp.query_selector("input[type=radio]:checked, [role=radio][aria-checked=true]"):
             continue
         label = ask(grp)
+        note_options(job, label, opts)
         ans = "No" if SMS_Q.search(label + " " + " ".join(t for t, _ in opts)) else answer(label, job)
         note(label, ans)
         h = pick_option(opts, str(ans)) if ans else None
         if h:
             h.click()
         elif grp.get_attribute("aria-required") == "true":
-            missing.append(label[:90])
+            missing.append(label[:MAX_Q])
         yield
     # multiple choice: checkbox groups (one name per question). Skills lists check what your Fact Bank names.
     groups = {}
@@ -1179,6 +1192,7 @@ def fill_rippling(page, job, log):
         text = (holder.as_element().inner_text() if holder.as_element() else "") or ""
         req = bool(re.search(r"\*", text.split("\n")[0])) or any(b.get_attribute("aria-required") == "true" for b in boxes)
         opts = [((b.evaluate("e => (e.labels[0] || e.closest('label') || e.parentElement).innerText") or "").strip(), b) for b in boxes]
+        note_options(job, label, opts)
         ans = answer(label, job)
         picked = skill_options(opts) if ans == "__SKILLS__" or re.search(r"language|skill|technolog|framework|tool", label, re.I) else \
             [h for h in [pick_option(opts, str(ans))] if h] if ans else []
@@ -1187,7 +1201,7 @@ def fill_rippling(page, job, log):
             h.evaluate("e => (e.labels[0] || e.closest('label') || e).click()")
             yield 0.2
         if not picked and req:
-            missing.append(label[:90])
+            missing.append(label[:MAX_Q])
         yield
     return missing
 
@@ -1248,7 +1262,7 @@ def fill_workable(page, job, log):
         log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
         ok = bool(ans) and not ans.startswith("__") and text_ok(label, ans)
         if ok: el.fill(ans)
-        if not ok and req: missing.append(label[:90])
+        if not ok and req: missing.append(label[:MAX_Q])
         yield  # checkpoint
     # single / multiple choice
     for grp in page.query_selector_all("fieldset[role=radiogroup][aria-labelledby], fieldset[role=group][aria-labelledby]"):
@@ -1258,10 +1272,11 @@ def fill_workable(page, job, log):
         ans = answer_for(label, job.get("extra", {}))
         log(f"   . {label[:60]} -> {str(ans)[:30]}"); job.setdefault("_answers", []).append([label[:200], ans])
         opts = [(o.inner_text().strip(), o) for o in grp.query_selector_all("[role=radio], [role=checkbox]")]
+        note_options(job, label, opts)
         h = pick_option(opts, ans) if ans and opts else None
         if h:
             if h.get_attribute("aria-checked") != "true": h.click()
-        elif req: missing.append(label[:90])
+        elif req: missing.append(label[:MAX_Q])
     return missing
 
 
@@ -1366,7 +1381,7 @@ def fill_yc(page, job, log):
         if ans and not str(ans).startswith("__") and text_ok(label, ans):
             el.fill(str(ans))
         elif "*" in (el.get_attribute("placeholder") or "") or el.get_attribute("required") is not None:
-            missing.append(label[:90])
+            missing.append(label[:MAX_Q])
         yield
     return missing
 
@@ -1570,7 +1585,7 @@ def fill_gh(page, job, log):
             ok = yield from set_gh(page, f, ans, label, loc)
         except Exception as e:
             ok = False; log(f"  ! {label[:60]}: {e}")
-        if not ok and req: missing.append(label[:90])
+        if not ok and req: missing.append(label[:MAX_Q])
         yield  # checkpoint
     return missing
 
@@ -1813,7 +1828,7 @@ def ashby_cooling(hours=24):
     """After Ashby flags an automated submit, stop auto-submitting Ashby for a day: repeated flagged attempts
     could hurt the candidate's standing. Forms are still filled; the human clicks submit."""
     try:
-        t = datetime.datetime.fromisoformat(open("ashby_cooldown").read().strip())
+        t = datetime.datetime.fromisoformat(open(ASHBY_COOLDOWN).read().strip())
     except (OSError, ValueError):
         return False
     return datetime.datetime.now() - t < datetime.timedelta(hours=hours)
@@ -1943,7 +1958,7 @@ def job_task(page, job, dry, results, log_base=print):
                         msg = "NEEDS YOU: " + " | ".join(again)
                 text_proof(page, shot)
                 if not ok and (msg.startswith("BOT-CHECK") or (ash and msg.startswith("CAPTCHA"))):
-                    open("ashby_cooldown", "w").write(datetime.datetime.now().isoformat())  # a challenge = Ashby is suspicious
+                    open(ASHBY_COOLDOWN, "w").write(datetime.datetime.now().isoformat())  # a challenge = Ashby is suspicious
                 status = "SUBMITTED" if ok else (msg if msg.startswith("NEEDS YOU") else "FAILED: " + msg)
         except Exception as e:
             status, shot = f"ERROR: {e}"[:200], ""
@@ -1953,6 +1968,7 @@ def job_task(page, job, dry, results, log_base=print):
     log(f"   -> {status}")
     record("application", job=name, url=job["url"], status=status.split(":")[0], detail=status, proof=shot, answers=job.get("_answers"),
            drafted=job.get("_drafted"), resume=job.get("resume"), dry=dry,
+           options={k: v for k, v in (job.get("_options") or {}).items() if status.startswith("NEEDS YOU") and k in status} or None,
            answered_by=_answered_by(job))  # you / shadow / engine: the supervisor counts who cleared each form
     if status == "SUBMITTED":
         m = re.search(r"(?:jobs/|token=|gh_jid=)(\d+)", job["url"])

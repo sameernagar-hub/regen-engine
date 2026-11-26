@@ -10,6 +10,9 @@ from contextlib import contextmanager
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROFILE = os.environ.get("REGEN_PROFILE", os.path.join(ROOT, "profile"))
 WORKSPACE = os.environ.get("REGEN_WORKSPACE", os.path.join(ROOT, "workspace"))
+# Ashby's cooldown stamp: ONE shared file in the workspace volume (11-25: the runner used a relative ./ashby_cooldown in
+# its cwd, lost on every recreate and invisible to the supervisor, API and pipeline)
+ASHBY_COOLDOWN = os.path.join(WORKSPACE, "ashby_cooldown")
 PACKAGE = os.path.join(ROOT, "engine")
 
 

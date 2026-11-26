@@ -86,3 +86,33 @@ def test_status_reads_last_and_pending(tmp_path):
     json.dump({"t": 1, "by": "mcp", "result": {"gear": "drive"}}, open(last, "w"))
     s = I.status(last_path=last, request_path=req)
     assert s["last"]["by"] == "mcp" and s["pending"] is False and "agents" in s
+
+
+def test_cord_files_are_handed_to_the_engine_user_when_root_writes_them(tmp_path, monkeypatch):
+    """11-25: the supervisor (root) created /data/workspace/cord, so cord_reply (uid 10001) could not write a reply."""
+    import os
+    chowned = []
+    monkeypatch.setattr(os, "name", "posix")
+    monkeypatch.setattr(os, "geteuid", lambda: 0, raising=False)
+    monkeypatch.setattr(os, "chown", lambda p, u, g: chowned.append((str(p), u, g)), raising=False)
+    asks = tmp_path / "cord" / "asks.jsonl"
+    C.ask("supervisor", "x", asks_path=str(asks), replies_path=str(tmp_path / "cord" / "replies.jsonl"))
+    assert (str(tmp_path / "cord"), 10001, 10001) in chowned
+    assert (str(asks), 10001, 10001) in chowned
+    if os.sep == "/":
+        assert asks.stat().st_mode & 0o666 == 0o666
+
+
+def test_two_asks_in_the_same_millisecond_get_distinct_ids_and_replies_save_the_right_question(tmp_path):
+    """11-25: ids were f"{from}-{ms}", so same-ms asks collided and one reply saved only the first question."""
+    p = paths(tmp_path)
+    a = C.ask("shadow", "Years of Go?", key="q:go", context={"job": "Acme - SWE", "question": "Years of Go?"}, now=100.0, **p)
+    b = C.ask("shadow", "Years of Rust?", key="q:rust", context={"job": "Acme - SWE", "question": "Years of Rust?"}, now=100.0, **p)
+    assert a != b and a.startswith("shadow-100000-") and b.startswith("shadow-100000-")
+    saved = []
+    save = lambda job, q, ans, by: saved.append((job, q, ans)) or {"ok": True}
+    assert "error" not in C.reply(b, "1", save=save, **p)
+    assert saved == [("Acme - SWE", "Years of Rust?", "1")]
+    assert [x["id"] for x in C.open_asks(now=101, **p)] == [a]  # the other ask is still open
+    assert "error" not in C.reply(a, "3", save=save, **p)
+    assert saved[-1] == ("Acme - SWE", "Years of Go?", "3")

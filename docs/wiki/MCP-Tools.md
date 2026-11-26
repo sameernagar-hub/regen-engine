@@ -49,7 +49,7 @@ Every tool the engine exposes over MCP (43 tools), grouped by the engine level i
 | Tool | Kind | What it does |
 |---|---|---|
 | `human_queue` | read | What only the human can do right now (each job's latest state): personal questions, bot checks, missing answers. |
-| `needs_by_question` | read | What's waiting on the user, grouped by blocking question (answer one question to unblock many jobs). |
+| `needs_by_question` | read | What's waiting on the user, grouped by blocking question (answer one question to unblock many jobs). Full question text, the form's options when it showed a choice, count, up to 5 jobs. `skip_human_only` (default true, the Shadow/clerk view) drops CAPTCHA / bot-check / human-click entries and user-only (legal, sponsorship, EEO) questions. |
 | `answer_save` | write | Save the user's answer to a blocking question (reused on every form that asks it; legal / EEO / sponsorship questions are refused: those come from presets only). Needs REGEN_MCP_WRITE=1. |
 | `inbox_record` | write | Record recruiting emails the assistant read from the user's inbox: messages = [{date, from, subject, snippet}]. Classifies confirmation / rejection / OA / interview / offer / scam and links them to applications. Needs REGEN_MCP_WRITE=1. |
 | `answer_queue_add` | write | Queue an answer to a blocking question (the answers container saves it and retries the job). Legal / sponsorship / EEO / sensitive questions are refused. Needs REGEN_MCP_WRITE=1. |
@@ -95,6 +95,6 @@ Every tool the engine exposes over MCP (43 tools), grouped by the engine level i
 
 | Tool | Kind | What it does |
 |---|---|---|
-| `reposync_status` | read | Repo-sync container: its last heartbeat (feed / code state, open PR) and its last audited actions. |
+| `reposync_status` | read | Repo-sync container: its last heartbeat (feed / code state, open PR) and its last audited actions. The container is opt-in since 11-25 (`--profile sync`), so with it stopped this shows the last heartbeat it left. |
 
 Related: [Zero cost: your AI runs it](Zero-Cost-and-MCP) · [Discovery](Discovery) · [Gearbox](Gearbox) · [Platform](Platform)

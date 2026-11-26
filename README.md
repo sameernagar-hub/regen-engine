@@ -37,10 +37,10 @@ applies, and keeps a receipt for every submit. Your AI drives it. Zero model spe
 > details in the [wiki](https://github.com/sameernagar-hub/regen-engine/wiki/Resume-Classifier).
 
 > [!NOTE]
-> **v2.0 "ALIVE" is being built.** The control room becomes the running engine, drawn as an electric drivetrain:
-> every part is a real container, every pulse a real event, Shadow takes the wheel on screen, and 15 pages become 4
-> rooms. It runs beside the current control room (`web-alive` on :3001) until it replaces it, one benchmarked phase
-> at a time. **[Read the plan →](https://github.com/sameernagar-hub/regen-engine/wiki/Revamp-v2)**
+> **Status 11-25.** One control room (`web`, http://127.0.0.1:3000). The v2.0 "ALIVE" revamp (the `web-alive` container on
+> :3001) was **retired** by the author's decision and removed. Ignition, the Claude cord and the crew agents are the
+> current operating model. `reposync` (the container that pushes the public feed and checked commits to GitHub) is
+> **opt-in**: it is not part of a plain `up`; start it with `--profile sync` when you want a sync.
 
 ## What it does
 
@@ -75,6 +75,9 @@ cp -r profile.example profile        # your facts and answers, once (git-ignored
 docker compose -f deploy/bank.compose.yml run --rm seed
 REGEN_MCP_WRITE=1 docker compose -f deploy/bank.compose.yml up -d
 ```
+
+GitHub sync is off by default (it idled at ~400 MB): `docker compose -f deploy/bank.compose.yml --profile sync up -d reposync`
+pushes the public feed and checked commits when you want them (`python -m engine site --push` also refreshes the feed by hand).
 
 Already set up? `sh scripts/ignite.sh` starts everything your way (`--gear 3 --keywords on --cap 4 --shadow autopilot`).
 One resume for one job: `python -m engine resume jd.txt --title "Software Engineer" --company Acme` (Fact Bank only,

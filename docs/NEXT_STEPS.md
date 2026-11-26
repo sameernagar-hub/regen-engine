@@ -1,9 +1,9 @@
-# REGEN: instructions for the AI operating the engine (before v2.0 ALIVE)
+# REGEN: instructions for the AI operating the engine 
 
-Status: ACTIVE since 2026-11-07 (added by the user). Followed strictly; v2.0 ALIVE is on hold until §9 is met.
+Status: ACTIVE since 2026-11-07 (added by the user). Followed strictly. (The v2.0 ALIVE revamp was retired 11-25; references to it below are history.)
 
 Read this at the start of every session, before docs/HANDOFF.md. It overrides the HANDOFF "NEXT SESSION" order
-until every exit criterion in §9 is met. v2.0 ALIVE (docs/ALIVE_PLAN.md) is **on hold** until then.
+until every exit criterion in §9 is met. The v2.0 ALIVE plan was retired 11-25.
 
 ## Why the order changed
 

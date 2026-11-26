@@ -7,15 +7,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { PUBLIC } from "@/lib/engine";
-import { Engine } from "./alive/Engine";
-import { Rooms } from "./alive/Rooms";
-import { Pulse } from "./alive/Pulse";
-import { TabPulse } from "./alive/TabPulse";
-import { Replay } from "./alive/Replay";
-
-// ALIVE Phase 1 (docs/ALIVE_PLAN.md §5): the living engine replaces the door engine when NEXT_PUBLIC_ALIVE=1 (local
-// builds only: the public demo has no live stream). Off restores this page exactly as it was.
-const ALIVE = process.env.NEXT_PUBLIC_ALIVE === "1" && !PUBLIC;
 import { get } from "@/lib/types";
 
 type Part = { key: string; href: string; label: string; about: string; tone: string };
@@ -49,32 +40,7 @@ const at = (deg: number, r: number) => [CX + Math.cos((deg * Math.PI) / 180) * r
 const HARNESS = { x: 1010, y: 640 }, TANK = { x: 150, y: 470 }, GBX = { x: 600, y: 696 }, PLUG = { x: 150, y: 150 }, FLT = { x: W - 150, y: 150 }, RL = { x: W - 150, y: 400 }, IGN = { x: 150, y: 290 };
 
 export default function Home() {
-  return ALIVE ? <AliveHome /> : <EngineHome />;
-}
-
-/** The living engine with the pitch above it and every page as a plain link below (the drawers come in Phase 5). */
-function AliveHome() {
-  return (
-    <main className="alive-home" id="main">
-      <header className="engine-title">
-        <p className="eyebrow"><span className="brand">REGEN</span> live<span className="al-live-dot" aria-hidden /></p>
-        <h1>Your job engine, <em>running.</em></h1>
-        <p>Every disc is a real posting moving through the engine; every part is a real container. Grey means it is down.</p>
-      </header>
-      <TabPulse />
-      <Pulse />
-      <Rooms />
-      <Replay />
-      <TestDriveButton />
-      <Engine />
-      <details className="al-all-pages">
-        <summary>Every page on its own</summary>
-        <nav className="engine-list" aria-label="Engine parts">
-          {ALL.map((p) => <a key={p.key} href={p.href} style={{ ["--tone" as any]: p.tone }}>{p.label}</a>)}
-        </nav>
-      </details>
-    </main>
-  );
+  return <EngineHome />;
 }
 
 function EngineHome() {

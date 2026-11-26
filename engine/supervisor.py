@@ -22,7 +22,7 @@ is mounted into this one container only (the socket is root-equivalent on the ho
 """
 import json, os, re, socket, time
 
-from engine.config import WORKSPACE
+from engine.config import ASHBY_COOLDOWN, WORKSPACE
 
 FLEET = os.path.join(WORKSPACE, "fleet")
 BOX = os.path.join(WORKSPACE, "batches")
@@ -369,7 +369,7 @@ def clone(cid, rows):
 # is bounded, labeled, counted and audited, and a container of this project that compose did not declare is stopped.
 SCALABLE = {"applier", "eval"}  # the only services the supervisor may create containers for
 DECLARED = {"seed", "applier", "pipeline", "relay", "supervisor", "postgres", "ledger", "mcp", "answers", "api", "web",
-            "web-alive", "reposync", "eval", "desk", "feedback", "scout"}  # deploy/bank.compose.yml services (tests/test_v014.py keeps the two in step)
+            "reposync", "eval", "desk", "feedback", "scout"}  # deploy/bank.compose.yml services (tests/test_v014.py keeps the two in step)
 CAPS = {"applier": {"NanoCpus": int(float(os.environ.get("REGEN_APPLIER_CPUS", "1.5")) * 1e9),
                     "Memory": int(os.environ.get("REGEN_APPLIER_MEM_MB", "2048")) * 2 ** 20,
                     "PidsLimit": int(os.environ.get("REGEN_APPLIER_PIDS", "1024"))},
@@ -681,7 +681,6 @@ def control(argv):
 
 
 ASHBY_AUTOCLEAR = os.path.join(WORKSPACE, "ashby_autoclear.json")
-ASHBY_COOLDOWN = os.path.join(WORKSPACE, "ashby_cooldown")
 
 
 def ashby_autoclear_on():
@@ -708,7 +707,7 @@ def ashby_watch():
 
 # services without a heartbeat of their own: the supervisor probes them over the compose network
 SERVICES = {"api": "http://api:8787/api/health", "web": "http://web:3000/", "mcp": "http://mcp:8790/mcp",
-            "ledger": None, "postgres": None, "answers": None, "reposync": None,
+            "ledger": None, "postgres": None, "answers": None,
             "desk": "http://desk:6080/",
             # 10-29 (user: "one container is always checking the mails"): liveness() only restarts a RUNNING feedback
             # whose beat went stale; a stopped one was never started again
@@ -815,10 +814,9 @@ def services(_fails={}):  # _fails: consecutive failed probes per service (kept 
     return out
 
 
-WATCHED = ("pipeline", "answers", "relay", "reposync", "feedback", "scout")  # services that beat; appliers are matched by container id
-# silence that means hung, per role: appliers beat every few seconds while they work; reposync blocks up to 30 min in
-# its test gate; the answers container builds a retry batch between beats. The pipeline uses STALE (30 min).
-HUNG = {"applier": 300, "relay": 300, "answers": 600, "reposync": 2400, "feedback": 1800, "scout": 3600}
+WATCHED = ("pipeline", "answers", "relay", "feedback", "scout")  # services that beat; appliers are matched by container id
+# silence that means hung, per role: appliers beat every few seconds while they work; the answers container builds a retry batch between beats. The pipeline uses STALE (30 min).
+HUNG = {"applier": 300, "relay": 300, "answers": 600, "feedback": 1800, "scout": 3600}
 
 
 def liveness(now=None, _restarted={}):  # _restarted: container id -> when this watchdog last restarted it
@@ -1134,7 +1132,7 @@ def supervise(argv=None):
                     shadow_seen = {"error": str(e)[:120]}
             if n % 4 == 3:  # every minute: the Ashby cooldown, when the operator switched auto-clear on
                 ashby_watch()
-            if n % 4 == 1:  # every minute: warning lights (ALIVE Phase 0), recorded only when the list changes
+            if n % 4 == 1:  # every minute: warning lights, recorded only when the list changes
                 problems_changed(seen_problems)
             beat("supervisor", state="supervising", want=want, running=running, jobs=jobs, imap=imap, services=svc,
                  shadow=locals().get("shadow_seen"))

@@ -1,13 +1,10 @@
-"""ALIVE Phase 0 (docs/ALIVE_PLAN.md §4-5): the typed event contract, its new emitters, and the scrubbed replay.
-
-Covers every contract kind's mapping from a ledger event, the SSE split (narration vs signal), the supervisor's
-problem lights (recorded only on change), Shadow's abstain record, and that a public replay holds no employer name,
-URL, answer or waiting question, with the same submitted count as the live view (bench V7)."""
+"""The typed live-event contract: every ledger kind maps to a contract kind, the SSE split (narration vs signal),
+the supervisor's problem lights (recorded only on change) and Shadow's abstain record."""
 import json
 
 import pytest
 
-from engine.live import replay, server
+from engine.live import server
 
 U = "https://job-boards.greenhouse.io/initech/jobs/1"
 TS = "2026-11-10T10:00:00"
@@ -88,25 +85,3 @@ def test_shadow_records_the_questions_it_leaves(monkeypatch):
     left = shadow._use_recommendations(c, "u1")
     assert [w for _, w in left] == ["left for you", "nothing on file"] and shadow._conf(c) == 0.9
     assert got[0][0] == "shadow" and got[0][1]["action"] == "abstain" and got[0][1]["url"] == "u1"
-
-
-def test_public_replay_is_scrubbed_and_matches_the_live_count():
-    rows = replay.build("2026-11-10", LEDGER, NAMES)
-    raw = json.dumps(rows).lower()
-    assert not any(n in raw for n in NAMES)                       # V8: no employer names
-    assert "http" not in raw and "because" not in raw              # no URLs, no answers
-    assert "license" not in raw and "authorized" not in raw        # no question waiting on the candidate
-    assert "pipeline is not running" not in raw                    # problem texts stay private
-    live = sum(1 for e in LEDGER if (server.narrate(e) or {}).get("kind") == "submitted")
-    assert sum(r["kind"] == "submitted" for r in rows) == live == 1  # V7: replay end state == live end state
-    ids = [r["job"] for r in rows if r.get("job")]
-    assert ids and all(len(i) == 10 for i in ids) and rows[0]["job"] == rows[2]["job"]  # same posting, same chip
-    assert next(r for r in rows if r["kind"] == "gate.skip")["detail"] == "eligibility requirements"
-    assert next(r for r in rows if r["kind"] == "cap")["detail"] == "2:50"
-
-
-def test_replay_airbag_refuses_a_leak(monkeypatch):
-    monkeypatch.setattr(replay, "masker", lambda names: (lambda t: t))
-    monkeypatch.setattr(replay, "anonymize", lambda text, co: text)  # both scrubbers off: a name gets through
-    with pytest.raises(SystemExit):
-        replay.build("2026-11-10", LEDGER, NAMES)
