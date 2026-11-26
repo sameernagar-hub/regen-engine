@@ -278,6 +278,40 @@ def open_signin(page, url):
         return "opened (no Sign In button found: use the page's own menu)"
 
 
+def prefill_ats(url):
+    """Greenhouse / Lever / Ashby / Workable / Rippling: the appliers' own fillers can pre-fill these in the desk."""
+    return any(k in url for k in ("greenhouse", "jobs.lever.co", "ashbyhq", "workable.com", "ats.rippling.com"))
+
+
+def drive(gen):
+    """Run one filler generator to the end in this thread: a number it yields is seconds to wait (the scheduler's
+    contract, engine/apply/scheduler.py); returns the generator's return value (the missing required labels)."""
+    try:
+        while True:
+            w = next(gen)
+            if isinstance(w, (int, float)) and w > 0:
+                time.sleep(min(float(w), 30))
+    except StopIteration as stop:
+        return stop.value or []
+
+
+def prefill(page, job, log):
+    """The desk queue (user 11-25: "start the desk queue now"): a job parked on a CAPTCHA / human check is pre-filled
+    in the desk browser with the same fillers and answers the appliers use, and left for the user, who solves the
+    check and presses Submit themselves. The engine never touches the check and never submits here."""
+    from engine.apply import runner as R
+    url = job["url"]
+    if job.get("resume") and not os.path.exists(job["resume"]):
+        R.ensure_resume(job)
+    fill = (R.fill_ashby if "ashbyhq" in url else R.fill_lever if "jobs.lever.co" in url else
+            R.fill_workable if "workable.com" in url else R.fill_rippling if "ats.rippling.com" in url else R.fill_gh)
+    missing = drive(fill(page, job, log))
+    if missing:
+        return ("NEEDS YOU: filled in the desk (http://127.0.0.1:3000/desk); finish these, solve the check, press "
+                "Submit: " + " | ".join(missing))
+    return "NEEDS YOU: filled in the desk (http://127.0.0.1:3000/desk); solve the check and press Submit"
+
+
 def handle(ctx, req, log=print):
     """One request in a fresh tab of the desk's browser; the tab stays open for the user. A fill records the event."""
     from engine.feedback.events import record
@@ -296,9 +330,15 @@ def handle(ctx, req, log=print):
         job["resume"] = os.path.join(WORKSPACE, job["resume"].replace("\\", "/"))
     try:
         status = (walk_yc if "ycombinator.com/companies/" in job["url"] else
-                  walk_sr if "smartrecruiters.com" in job["url"] else walk)(page, job, log)
+                  walk_sr if "smartrecruiters.com" in job["url"] else
+                  prefill if prefill_ats(job["url"]) else walk)(page, job, log)
     except Exception as e:
         status = f"FAILED: {str(e)[:160]}"
+    if prefill_ats(job["url"]):
+        try:
+            page.bring_to_front()  # the desk queue (11-25): the filled form is the tab the user sees next
+        except Exception:
+            pass
     shot = ""
     try:
         os.makedirs(os.path.join(WORKSPACE, "proof"), exist_ok=True)

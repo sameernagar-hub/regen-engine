@@ -413,6 +413,26 @@ def human_mark(body: dict, request: Request):
     return {"ok": True, "url": url, "mark": mark, "ts": ev.get("ts") if isinstance(ev, dict) else None}
 
 
+@router.post("/desk/fill")
+def desk_fill(body: dict, request: Request):
+    """The desk queue (11-25): pre-fill one job that waits on the user (CAPTCHA / human check) in the desk browser,
+    so only the check and Submit are left. Same guard as /human/mark. The desk never solves the check or submits."""
+    if not REACH_WRITE:
+        raise HTTPException(403, "writes are disabled (REGEN_API_REACH=1 in the bank, REGEN_API_WRITE=1 locally)")
+    if not TRUST_PORT and (request.client.host if request.client else "") not in LOCAL:
+        raise HTTPException(403, "only from this computer")
+    from apps.api.main import _human
+    from engine.apply.workday import request as desk_request, prefill_ats
+    url = str(body.get("url") or "")
+    item = next((h for h in _human() if h.url == url), None)
+    if not item:
+        raise HTTPException(404, "not waiting on you")
+    if not prefill_ats(url):
+        raise HTTPException(422, "the desk can pre-fill Greenhouse, Lever, Ashby, Workable and Rippling forms only")
+    desk_request(url, item.job, item.resume, note="desk queue")
+    return {"ok": True, "url": url, "queued": True}
+
+
 # ---- Shadow mode (engine/shadow.py): presence heartbeat, who is answering, Shadow's recent work ----
 def _local_write(request: Request):
     if not REACH_WRITE:

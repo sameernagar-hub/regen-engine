@@ -12,7 +12,9 @@ import { get, post, poll, type HumanItem } from "@/lib/types";
 type Desk = { desk: { up: boolean; state: string; queued: number; last: string } | null; open: string };
 
 const IN_DESK = /filled in the desk|in the desk \(/i;
-const HUMAN = /captcha|human click|human check|no confirmation seen/i;
+const HUMAN = /captcha|human click|human check|human-only|bot check|no confirmation seen/i;
+const FILLABLE = /greenhouse|jobs\.lever\.co|ashbyhq|workable\.com|ats\.rippling\.com/i;  // engine/apply/workday.py prefill_ats
+const AHEAD = 2;  // forms kept filled in the desk ahead of the user
 
 export default function DeskPage() {
   return <DeskView />;
@@ -39,8 +41,38 @@ function DeskView() {
       await post("/api/human/mark", { url: it.url, mark: m });
       setGone((g) => ({ ...g, [it.url as string]: m }));
       setMsg(`${it.job}: marked ${m}.`);
+      if (m === "submitted") setDone((d) => d + 1);
     } catch (e: any) { setMsg(e.message); }
   };
+
+  // The desk queue (11-25): keep AHEAD forms pre-filled in the desk so a parked job is only "solve the check, press
+  // Submit". The engine fills; the check and the Submit are always the user's.
+  const [queueOn, setQueueOn] = useState(false);
+  const [queued, setQueued] = useState<Record<string, number>>({});
+  const [done, setDone] = useState(0);
+  const fillable = useMemo(() => onSite.filter((i) => FILLABLE.test(i.url || "")), [onSite]);
+  const current = inDesk[0];
+  useEffect(() => {
+    if (!queueOn) return;
+    const now = Date.now();
+    const pending = fillable.filter((i) => queued[i.url as string] && now - queued[i.url as string] < 5 * 60000).length;
+    const want = AHEAD - inDesk.length - pending;
+    const next = fillable.filter((i) => !queued[i.url as string]).slice(0, Math.max(0, want));
+    next.forEach((i) => {
+      setQueued((q) => ({ ...q, [i.url as string]: now }));
+      post("/api/desk/fill", { url: i.url }).catch((e) => setMsg(`${i.job}: ${e.message}`));
+    });
+  }, [queueOn, fillable, inDesk.length, queued]);
+  useEffect(() => {
+    if (!queueOn || !current) return;
+    const key = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === "INPUT") return;
+      if (e.key === "s" || e.key === "S") mark(current, "submitted");
+      if (e.key === "k" || e.key === "K") mark(current, "skipped");
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [queueOn, current]);
 
   const row = (it: HumanItem, where: "desk" | "site") => (
     <li key={it.url} className="card need">
@@ -62,6 +94,25 @@ function DeskView() {
         <p>{items ? `${inDesk.length} filled in the desk, ${onSite.length} waiting on a human check on the employer's page.` : "Loading…"} The desk below connects by itself; nothing asks for a password.</p>
       </header>
       {msg && <p className="note" role="status">{msg}</p>}
+      <section className="card" aria-label="Desk queue">
+        <p className="row">
+          <button className={queueOn ? "btn" : "btn gold"} onClick={() => setQueueOn((q) => !q)}>
+            {queueOn ? "Pause queue" : "Start desk queue"}</button>
+          <span className="dim small">
+            {queueOn ? `On: ${AHEAD} forms kept pre-filled ahead · ${fillable.length} fillable left · ${done} submitted this sitting`
+                     : `${fillable.length} parked jobs can be pre-filled in the desk; you solve the check and press Submit.`}</span>
+        </p>
+        {queueOn && (current ? (
+          <div>
+            <p><b>Now:</b> {current.job}</p>
+            <p className="dim small">{current.text}</p>
+            <p className="row small">
+              <button className="btn gold" onClick={() => mark(current, "submitted")}>Submitted → next (S)</button>
+              <button className="btn" onClick={() => mark(current, "skipped")}>Skip → next (K)</button>
+            </p>
+          </div>
+        ) : <p className="dim small">Filling the next form in the desk… it appears below in a few seconds.</p>)}
+      </section>
       <section className="card" aria-label="Desk browser">
         <p className="dim small">Desk: {desk?.desk ? `${desk.desk.up ? desk.desk.state : "down"}${desk.desk.queued ? `, ${desk.desk.queued} queued` : ""}` : "not reachable"}
           {desk?.open && <> · <a href={desk.open} target="_blank" rel="noreferrer">Open full screen ↗</a></>}</p>
