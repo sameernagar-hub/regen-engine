@@ -1,3 +1,19 @@
+# Handoff: 11-26 ~14:50 STOP POINT (user asked: engine idle, supply-bound; weekly usage 89%). Engine STOPPED: gear N,
+#   inbox+claimed 0, cap 0, Role Keywords off. LEFT RUNNING: api, web, desk, postgres (desk queue at :3000/desk).
+# Run 11:02-14:50 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 1 verified today by proof (663 total).
+#   Outcomes now 7 interviews (+1 today), 9 OA, 1 offer, 290 rejections.
+# FLEET: images rebuilt from HEAD (regen-applier 35401af5); containers had been on 4d6bd15 code without the desk queue.
+#   LESSON: a bare `compose up` drops the start.sh env (mcp lost REGEN_MCP_WRITE, pipeline cap 60). Always recreate
+#   with the scripts/start.sh env line + a regen-bank write probe (now in regen-fleet-health skill + captain file).
+# CREW SKILLS (new, ~/.claude/skills): regen-supply (scout), regen-answers (clerk), regen-fleet-health (mechanic),
+#   regen-inbox-outcomes (lookout), regen-docs-ship (scribe); tailor uses regen-resume. Each agent loads its skill first.
+# Crew results: Lookout recorded 24/28 mails (2 may be rejections logged as confirmations; 1 follow-up needs the user;
+#   names in the Lookout report, not here). Scout: harvest + SimplifyJobs feed, 50-name probe found 0 new boards; non-Ashby 162.
+#   Clerk saved ~92 Shadow answers. User-only: export/ITAR, one arbitration agreement, one EEO question, essays, uploads.
+# PROPOSED (not done): inbox_record returns {skipped:[{subject, reason}]}; Scout sources small US GH/Lever employers
+#   from unwatched job-list feeds. Bottleneck unchanged: supply (inbox empty most of the run, 1 applier).
+# NEXT START: /regen-start, then spawn regen-captain. NEXT_STEPS "11-25 queue" still leads (trust layer first).
+
 # Handoff: 11-25 STOP POINT (80% usage rule, Captain). Engine STOPPED: gear N, inbox+claimed drained, cap 0, Role
 #   Keywords off. LEFT RUNNING on purpose: api, web, desk, postgres (desk queue works without the engine; the user can
 #   finish pre-filled CAPTCHA jobs at http://127.0.0.1:3000/desk). Appliers, pipeline, scout, supervisor etc. stopped.
