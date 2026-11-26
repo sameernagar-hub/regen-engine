@@ -1,3 +1,24 @@
+# Handoff: 11-25 STOP POINT (80% usage rule, Captain). Engine STOPPED: gear N, inbox+claimed drained, cap 0, Role
+#   Keywords off. LEFT RUNNING on purpose: api, web, desk, postgres (desk queue works without the engine; the user can
+#   finish pre-filled CAPTCHA jobs at http://127.0.0.1:3000/desk). Appliers, pipeline, scout, supervisor etc. stopped.
+# Run 19:22-20:10 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 11 verified today.
+# SHIPPED: 4d6bd15 (Mechanic) web-alive retired, reposync opt-in, pipeline _wait overlap, shared Ashby cooldown path,
+#   cord id collision + file perms, needs_by_question full text/filter. 6eed3cb desk queue (pre-fill parked CAPTCHA jobs,
+#   focus mode, auto-advance). Both PUSHED (origin/main == 6eed3cb; privacy scan clean, 436 tests pass).
+# IMAGES: supervisor/mcp/pipeline run a 4d6bd15 image; api/desk/web carry the desk queue by HOT-COPY (web rebuilt).
+#   The NEXT image rebuild must come from HEAD (6eed3cb or later).
+# GITHUB: pushes report "2 of 2 required status checks are expected" (branch protection bypassed by an admin push?).
+#   Investigate together with the CI flake (test_orchestrator tick test).
+# CONFIG: Ashby autoclear OFF (/data/workspace/ashby_autoclear.json on=false, 11-25) so the 24 h cooldown holds after a
+#   bot-check. REVIEW / turn back on 11-26. Today's Ashby: 1 submitted, 8 human-check, 3 failed (1 BOT-CHECK).
+# Cord: all asks answered. User answered D.A. Davidson licensing/bond = No (by=user). Junk answer pattern "filled in the
+#   desk ... press submit" removed from profile/answers.json (backup answers.json.bak-20261125-junkdesk).
+# Docker prune done (user OK): 3.0 GB images + 3.8 GB build cache freed.
+# Bottlenecks seen: (1) pipeline waited for every batch (fixed in 4d6bd15, verify passes now overlap); (2) non-Ashby
+#   supply drained (~106 left, Scout probe saturated, harvest +38 boards); (3) memory: governor ceiling 1-3 appliers
+#   on a 7.6 GiB Docker VM; (4) Claude usage: 15% -> 80% in ~45 min, mostly crew runs.
+# NEXT START: /regen-start, then spawn regen-captain. Read docs/NEXT_STEPS.md "11-25 queue" first.
+
 # 11-25 UPDATE (read first): the ALIVE revamp / `web-alive` (:3001) is RETIRED and removed (user decision); there is one
 #   control room, `web` on :3000. START no longer brings up web-alive. `reposync` is OPT-IN (compose profile `sync`): a plain
 #   `up` skips it and the supervisor no longer restarts it. For a GitHub sync run

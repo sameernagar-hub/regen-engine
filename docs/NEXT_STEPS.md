@@ -5,6 +5,35 @@ Status: ACTIVE since 2026-11-07 (added by the user). Followed strictly. (The v2.
 Read this at the start of every session, before docs/HANDOFF.md. It overrides the HANDOFF "NEXT SESSION" order
 until every exit criterion in §9 is met. The v2.0 ALIVE plan was retired 11-25.
 
+## 11-25 queue (Captain, top priority next session; one Mechanic run, lean briefs)
+
+1. **Captain trust layer** (deferred from 11-25). `engine/captain_trust.py`, modeled on shadow_brain LADDER + train_and_test.
+   - Benchmarks, replayed from audit log, cord history, gear/supervisor events: C1 crew dispatch correct + no duplicates;
+     C2 70% warn / 80% clean stop / weekly 90% alert; C3 0 gear-4, 0 CAPTCHA/account/invented-fact, 0 restarts of cut
+     services; C4 cord answers traceable to Fact Bank/presets, EEO decline; C5 report claims match tool results;
+     C6 verified submissions per 1% of 5 h usage (cost axis); C7 problem -> reply latency + recovery; C8 commits only
+     after pytest + privacy scan, no red-CI push.
+   - Train/test: episodes per past session; older sessions train, newest 2 held out; gold = rule oracles + user corrections.
+   - Rungs: R0 observe; R1 cord + crew dispatch (C1 >= .90, C4 = 1); R2 gear 1-3/cap/scale/harvest (+C2 = 1, C5 >= .95,
+     3 clean sessions); R3 recreate/rebuild (C7 >= .9, 7 sessions); R4 gated commits (C8 = 1, 10 sessions); R5 push
+     (0 red-CI pushes 14 days). C3/C4 breach -> R0; C2/C8 miss -> one rung down. User trial up to R2.
+   - B11_captain in engine/bench.py, MCP read `captain_trust` + gate helper, card on /cord, tests/test_captain_trust.py.
+2. **Answer synonym map**: relatives_at_company, previous_employer_of_company, current_employer etc. keep arriving
+   reworded; map them in the matcher so they never reach the cord.
+3. **"If yes, ..." follow-ups -> N/A** automatically when the parent answer on the same form is No.
+4. **Cord dismiss path**: cord_reply on a question-kind ask always saves an answer; non-questions need `cord_dismiss`.
+   Shadow/needs parsing must skip statuses matching "filled in the desk" (a desk-queue status became a cord question 11-25).
+5. **Ashby autoclear review** (turned off 11-25). Route Ashby human checks straight to the desk queue pre-filled.
+6. **Supply**: source names from a specific GitHub new-grad README with GH/Lever links (not general web search);
+   monthly re-check of the 473 dead boards.
+7. **CAPTCHA throughput plan for the user (no bypass)**: pre-filled desk queue with auto-advance (shipped 6eed3cb),
+   phone ping at 10+ ready, per-ATS pacing to avoid bot checks, rank low-challenge boards higher, recruiter/referral
+   outreach for top matches stuck behind a CAPTCHA (user approves every send).
+8. **CI flake**: tests/test_orchestrator.py::test_command_is_a_request_the_tick_applies fails in CI (passes locally).
+9. **applier_mb tune** (912 estimated vs ~660-830 live) so the governor fits one more applier.
+10. **Crew token budget**: fixed brief template, MCP-only reads, tool-call cap, haiku where possible.
+
+
 ## Why the order changed
 
 The engine works: 424 verified submissions. What it was built to do has not happened yet: the mail record shows a
