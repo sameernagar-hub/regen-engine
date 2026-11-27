@@ -100,7 +100,7 @@ def boards(argv):
         dead = [d.split(":", 1) for d in b.get("dead", [])]
         _, still, _ = ats.fetch_all({a: [t for x, t in dead if x == a] for a in ats.ATS}, keep=lambda j: False)
         b["dead"] = sorted(f"{a}:{t}" for a, t in still)
-        ats.save_boards(b)
+        ats.save_boards(b, merge_dead=False)
         print(f"{len(dead) - len(still)} of {len(dead)} dead boards are back")
     else:
         b = ats.load_boards()

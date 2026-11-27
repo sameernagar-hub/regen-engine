@@ -4,6 +4,19 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-27 · efficiency pass (Captain's audit)
+- **Event cache capped:** every process kept all 72k events in memory, 68% of them `discovered` (mcp at 376/384 MB).
+  `events.read()` and the API store keep only the newest `REGEN_DISCOVERED_KEEP` (2000) of them; the file is complete.
+  mcp limit 384m -> 512m.
+- **Scan back-off:** after 2 passes that select nothing, the pipeline scans every `REGEN_IDLE_LOOP_MIN` (10) min instead
+  of 3; one pass that selects anything resets it. ~1,600 boards per pass were fetched for 0 selected.
+- **Dead boards stay dead:** `save_boards` merges the dead list from disk (harvest / scout / probe saved stale copies
+  over a scan's marks, ~300 dead boards refetched per pass); only `boards recheck` replaces it.
+- **Host memory hold:** the governor reads an optional fresh `fleet/host.json` (Windows free MB) and stops growing below
+  `REGEN_HOST_RESERVE_MB` (1500); it never sheds on that signal. Docker's VM cannot see the host (Windows had 1.0 GB free).
+- Scout default round 3 h -> 1 h. Queue pruned of a staffing intermediary (now in exclude_companies) and duplicates.
+- Verify: `pytest tests/test_efficiency_1127.py`; pipeline log shows "backing off"; dead count grows across passes.
+
 ## [Unreleased] - 2026-11-27 · full parked-question text everywhere, Shadow refresh
 - **Workday / desk forms keep the full question (300 chars) and its options**, like the main runner since 11-25 (was cut at
   90 chars, no options), so Shadow and the clerk can answer them truthfully. Compact on purpose: 300 chars, 12 options x 60.

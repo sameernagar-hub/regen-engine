@@ -41,7 +41,7 @@ def backend():
 
 def _reset():
     """Forget every cached row. `gen` changes, so memos keyed on version() can't mistake new rows for old ones."""
-    _C.update(ids=[], rows=[], offset=0, line=0, gen=_C["gen"] + 1)
+    _C.update(ids=[], rows=[], offset=0, line=0, gen=_C["gen"] + 1, trimmed_at=0)
 
 
 def _query(sql, args=()):
@@ -72,6 +72,7 @@ def _sync():
         for i, p in _query("SELECT id, payload FROM events WHERE id > %s ORDER BY id", (last,)):
             _C["ids"].append(i)
             _C["rows"].append((i, p))
+        _trim()
         return
     try:
         size = os.path.getsize(EVENTS)
@@ -97,6 +98,16 @@ def _sync():
         _C["ids"].append(_C["line"])
         _C["rows"].append((_C["line"], ev))
     _C["offset"] += end
+    _trim()
+
+
+def _trim():
+    """Keep only the newest "discovered" rows in memory (11-27: they were 68% of every process's cache)."""
+    from engine.feedback.events import DISCOVERED_KEEP, trim_discovered
+    if len(_C["rows"]) > 4 * DISCOVERED_KEEP and _C.get("trimmed_at", 0) * 1.5 < len(_C["rows"]):
+        _C["rows"] = trim_discovered(_C["rows"], ev=lambda r: r[1] if isinstance(r[1], dict) else {})
+        _C["ids"] = [i for i, _ in _C["rows"]]
+        _C["trimmed_at"] = len(_C["rows"])
 
 
 def read(after=0):

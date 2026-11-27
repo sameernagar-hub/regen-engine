@@ -285,6 +285,17 @@ def halted(stage):
 SOURCES_EVERY = int(os.environ.get("REGEN_SOURCES_EVERY", "6"))  # loop passes between new-grad + GitHub feed pulls
 
 
+LAST = {"chosen": None}  # what the last pass selected (the loop backs off after empty passes)
+IDLE_LOOP_MIN = float(os.environ.get("REGEN_IDLE_LOOP_MIN", "10"))
+IDLE_AFTER = 2  # empty passes in a row before the back-off
+
+
+def idle_wait(wait, empty):
+    """11-27: a pass scanned ~1,600 boards for 0 selected; after IDLE_AFTER empty passes, scan every IDLE_LOOP_MIN
+    minutes instead (never faster than the gear's own interval). One pass that selects anything resets it."""
+    return max(wait, IDLE_LOOP_MIN) if empty >= IDLE_AFTER else wait
+
+
 def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False, sources=False):
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     t0 = time.monotonic()
@@ -319,6 +330,7 @@ def run(days=1, max_jobs=30, appliers=2, tabs=3, scan=True, dry=False, hot=False
         except Exception as ex:  # the reach list is a side output: never stop the apply pass for it
             print(f"reach: {ex}", flush=True)
     chosen = select(q, max_jobs, ashby_ok)
+    LAST["chosen"] = len(chosen)
     record("pipeline", stage="select", queued=len(q), chosen=len(chosen), ashby=ashby_ok)
     print(f"select: {len(chosen)} of {len(q)} queued jobs" + ("" if ashby_ok else " (Ashby cooling down: skipped)"))
     if not chosen or halted("build"):
@@ -420,7 +432,7 @@ def main(argv=None):
         return
     # first-applicant mode: after the first full pass, rescan only the last few hours every `loop` minutes and apply
     # to whatever just opened. Runs until stopped (Ctrl+C or the control room's Stop): started by the user, never scheduled.
-    n = 0
+    n, empty = 0, 0
     while True:
         from engine.safety import killed
         if killed():  # held, not exited: the container restarts it anyway; it resumes once the kill is cleared
@@ -437,11 +449,13 @@ def main(argv=None):
         run(**dict(kw, days=kw["days"] if n == 0 else max(loop / 1440 * 3, 0.125), hot=n > 0,  # later passes: hot boards
                    sources=n % SOURCES_EVERY == 0))
         n += 1  # disk hygiene (engine/clean.py) is the supervisor's job: hourly, one owner
-        print(f"loop: pass {n} done; next scan in {wait:g} min", flush=True)
+        empty = empty + 1 if LAST["chosen"] == 0 else 0
+        gear_wait, wait = wait, idle_wait(wait, empty)
+        print(f"loop: pass {n} done; next scan in {wait:g} min" + (f" ({empty} empty passes: backing off)" if wait != gear_wait else ""), flush=True)
         for _ in range(int(wait)):  # one heartbeat a minute while idle; a shift takes effect within the minute
             beat("pipeline", state="sleeping until next scan", **{"pass": n})
             time.sleep(60)
-            if loop_minutes(loop) != wait:
+            if loop_minutes(loop) != gear_wait:
                 break
         else:
             time.sleep(wait * 60 - int(wait) * 60)

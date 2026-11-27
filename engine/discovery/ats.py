@@ -415,8 +415,17 @@ def load_boards():
     return b
 
 
-def save_boards(b):
+def save_boards(b, merge_dead=True):
+    """merge_dead (11-27): harvest / scout / boards_add load the file, work for minutes, then save their copy, which
+    erased the dead marks a scan wrote meanwhile (~300 dead boards refetched every pass). Dead marks on disk are kept
+    unless the caller is `boards recheck`, the one writer that legitimately shrinks the list."""
     os.makedirs(WORKSPACE, exist_ok=True)
+    if merge_dead and os.path.exists(boards_path()):
+        try:
+            on_disk = json.load(open(boards_path())).get("dead", [])
+            b = {**b, "dead": sorted(set(b.get("dead", [])) | set(on_disk))}
+        except (OSError, ValueError):
+            pass
     tmp = boards_path() + f".{os.getpid()}.tmp"  # 11-11: atomic, since the scout and the pipeline both write it
     json.dump({a: sorted(set(b.get(a, [])), key=str.lower) for a in ATS} | {k: v for k, v in b.items() if k not in ATS},
               open(tmp, "w"), indent=1)

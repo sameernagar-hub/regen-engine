@@ -72,7 +72,23 @@ def record(kind, **fields):
     return ev
 
 
-_cache = {"path": None, "offset": 0, "events": [], "bad": 0, "ino": None}
+_cache = {"path": None, "offset": 0, "events": [], "bad": 0, "ino": None, "disc": 0}
+# 11-27: 68% of the log is "discovered" (one per fresh posting); every process kept all of them in memory (mcp sat at
+# 376/384 MB). The cache keeps only the newest DISCOVERED_KEEP of them; the file on disk stays complete.
+DISCOVERED_KEEP = int(os.environ.get("REGEN_DISCOVERED_KEEP", "2000"))
+
+
+def trim_discovered(items, ev=lambda x: x, keep=None):
+    """items minus all but the newest `keep` "discovered" events (order kept). ev(item) -> the event dict. O(n)."""
+    keep = DISCOVERED_KEEP if keep is None else keep
+    n = sum(1 for x in items if ev(x).get("kind") == "discovered")
+    drop, out = n - keep, []
+    for x in items:
+        if drop > 0 and ev(x).get("kind") == "discovered":
+            drop -= 1
+            continue
+        out.append(x)
+    return out
 # 11-13: the API serves sync routes from a thread pool; two threads catching up the same chunk both appended it, and
 # every count doubled (the tab read "30 sent" for 15). One lock around the catch-up keeps the cache single-copy.
 _read_lock = threading.Lock()
@@ -94,7 +110,7 @@ def _catch_up(path):
     st = os.stat(path)
     c = _cache
     if c["path"] != path or st.st_size < c["offset"] or c["ino"] != (st.st_ino, st.st_dev) and st.st_ino:
-        c.update(path=path, offset=0, events=[], bad=0, ino=(st.st_ino, st.st_dev))  # new or truncated file: start over
+        c.update(path=path, offset=0, events=[], bad=0, ino=(st.st_ino, st.st_dev), disc=0)  # new or truncated file: start over
     if st.st_size > c["offset"]:
         with open(path, "rb") as fh:
             fh.seek(c["offset"])
@@ -104,10 +120,16 @@ def _catch_up(path):
             if not line.strip():
                 continue
             try:
-                c["events"].append(json.loads(line))
+                e = json.loads(line)
             except ValueError:
                 c["bad"] += 1
+                continue
+            c["events"].append(e)
+            c["disc"] += e.get("kind") == "discovered"
         c["offset"] += end
+        if c["disc"] > 2 * DISCOVERED_KEEP:  # amortized: trim when twice the cap, so O(1) per new line
+            c["events"] = trim_discovered(c["events"])
+            c["disc"] = min(c["disc"], DISCOVERED_KEEP)
     return c["events"]
 
 

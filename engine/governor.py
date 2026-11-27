@@ -30,9 +30,21 @@ MAX_LOAD = float(os.environ.get("REGEN_MAX_LOAD", "0.7"))
 SHED_LOAD = float(os.environ.get("REGEN_SHED_LOAD", "0.95"))
 GROW_COOLDOWN = int(os.environ.get("REGEN_GROW_COOLDOWN", "120"))
 SHED_COOLDOWN = int(os.environ.get("REGEN_SHED_COOLDOWN", "90"))
+HOST_RESERVE_MB = int(os.environ.get("REGEN_HOST_RESERVE_MB", "1500"))  # 11-27: Windows had 1.0 of 15.7 GB free
+HOST_FILE = os.path.join(WORKSPACE, "fleet", "host.json")  # {"free_mb", "ts"} written from the host (optional)
+HOST_MAX_AGE = 300
 HEALTH_MIN, HEALTH_TIMEOUTS, HEALTH_RATE, HEALTH_WINDOW_MIN = 4, 2, 0.25, 30
 TIMEOUT = re.compile(r"Timeout \d+ ?ms exceeded|Target (page|closed)|has been closed|crash|net::ERR_|Navigation failed"
                      r"|out of memory", re.I)
+
+
+def host_free(path=None, now=None):
+    """The Windows host's free MB when a fresh reading exists (the VM cannot see the host), else None."""
+    try:
+        h = json.load(open(path or HOST_FILE, encoding="utf-8"))
+        return int(h["free_mb"]) if (now or time.time()) - float(h["ts"]) <= HOST_MAX_AGE else None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
 
 
 def machine(proc="/proc"):
@@ -79,6 +91,12 @@ def decide(lo, hi, running, m, per_mb, h, capped, last_grow=0.0, last_shed=0.0, 
             if room < ceiling:
                 ceiling = room
                 reasons.append(f"memory fits {room} appliers (~{per_mb} MB each, {free} MB free)")
+        hf = m.get("host_free_mb")
+        if hf is not None:  # hold (never shed) when the host itself is short: Docker's free MB doesn't show it
+            host_room = running + max(0, hf - HOST_RESERVE_MB) // max(1, per_mb)
+            if host_room < ceiling:
+                ceiling = max(min(running, ceiling), host_room)
+                reasons.append(f"host fits {host_room} appliers ({hf} MB free on the host, {HOST_RESERVE_MB} MB kept)")
         lpc = m.get("load_per_cpu", 0)
         if lpc > SHED_LOAD:
             shed = True
@@ -157,6 +175,8 @@ def ceiling(lo, hi, running, wanted, workspace=None, proc="/proc"):
     except (OSError, ValueError):
         cont = {}
     m, per = (machine(proc) if live else {}), applier_mb(cont)
+    if m and live and host_free() is not None:
+        m["host_free_mb"] = host_free()
     h = {"recent": 0, "timeouts": 0, "rate": 0.0}
     subs, cap, capped = None, None, False
     if live:
