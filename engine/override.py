@@ -158,6 +158,10 @@ def main(argv=None):
         for a in agents.plan():
             print(f"  {'ALLOWED' if a['allowed'] else 'locked '} L{a['needs_level']} {a['action']}: {a['target']} ({a['why']})")
         return
+    if cmd == "refresh":  # 11-27: re-run parked jobs whose question was saved cut at 90 chars (full text + options)
+        n = int(argv[1]) if len(argv) > 1 and argv[1].isdigit() else 25
+        print(f"Shadow refresh: {shadow.refresh_cut(n)} parked job(s) with cut question text sent back to the queue")
+        return
     if cmd in ("on", "off", "always", "calls", "autopilot"):  # on = always; calls = two calls to you, then Shadow (shadow.py)
         ring = next((a for a in argv[1:] if a.replace(".", "", 1).isdigit()), None)
         s = shadow.configure({"on": "always"}.get(cmd, cmd), ring, " ".join(a for a in argv[1:] if a != ring))

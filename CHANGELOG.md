@@ -4,6 +4,13 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-27 · full parked-question text everywhere, Shadow refresh
+- **Workday / desk forms keep the full question (300 chars) and its options**, like the main runner since 11-25 (was cut at
+  90 chars, no options), so Shadow and the clerk can answer them truthfully. Compact on purpose: 300 chars, 12 options x 60.
+- **`engine shadow refresh [n]`** (default 25): re-runs, as Shadow, parked jobs whose question was saved at the old 90-char
+  cut, so the runner records the full text + options. Bounded per call; CAPTCHA / email-code / upload steps skipped.
+- Verify: `pytest tests/test_needs_by_question.py`; after the refreshed jobs run, `needs_by_question` shows full text.
+
 ## [Unreleased] - 2026-11-25 · web-alive retired, reposync opt-in, cord and Ashby fixes
 - **web-alive / ALIVE revamp retired (user decision, 11-25).** Removed the `web-alive` compose service (:3001), `apps/web/app/alive/`,
   `lib/spine.ts`, `scripts/spine_check.mjs`, `scripts/bench_alive.py`, `docs/ALIVE_PLAN.md`, `docs/bench/alive.md`, the

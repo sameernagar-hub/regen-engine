@@ -16,7 +16,7 @@ State: workspace/shadow_calls.json {url: {job, parked, call1, call2, by, done}};
 tick() runs in the answers container every 30 s: O(parked jobs) with no network calls; at most MAX_PICKUPS retries
 per tick so a backlog never floods the appliers.
 """
-import json, os, time
+import json, os, re, time
 
 from engine.config import WORKSPACE
 
@@ -203,6 +203,37 @@ def _retry_as_shadow(jobs):
         json.dump(out, open(tmp, "w", encoding="utf-8"), indent=1)
         os.replace(tmp, os.path.join(BOX, "inbox", name))
     return len(out)
+
+
+OLD_CUT = 90  # before 11-25 the runner cut NEEDS YOU labels at 90 chars and kept no options
+HUMAN_STEP = re.compile(r"captcha|bot[- ]?check|human[- ]?(only|check|click)|email code|file upload|resume upload", re.I)
+
+
+def cut_jobs(limit=25):
+    """Parked jobs whose blocking question was saved cut at the old 90-char limit (no options either), human-only
+    steps left out. Bounded: a refresh re-runs a few per call, never the whole backlog at once."""
+    from engine.feedback.answers import missing_questions
+    from engine.feedback.events import read
+    from engine.pipeline import latest_status
+    st, out = latest_status(), []
+    latest = {}
+    for e in read("application"):
+        if e.get("url") and e.get("job") and not e.get("dry"):
+            latest[e["url"]] = e
+    for url, e in latest.items():
+        if st.get(url) != "NEEDS YOU":
+            continue
+        qs = missing_questions(e.get("detail") or "")
+        if any(len(q) == OLD_CUT for q in qs) and not any(HUMAN_STEP.search(q) for q in qs) and e["job"] not in out:
+            out.append(e["job"])
+        if len(out) >= limit:
+            break
+    return out
+
+
+def refresh_cut(limit=25):
+    """Retry (as Shadow) parked jobs whose question text was cut, so the runner records the full text + options."""
+    return _retry_as_shadow(cut_jobs(limit))
 
 
 # ---- Shadow recommends, remembers, and learns (11-06) ----

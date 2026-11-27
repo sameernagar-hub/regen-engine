@@ -10,7 +10,7 @@
   bigtech [days]                   Amazon + NVIDIA careers APIs -> fit-gated roles with tailored resumes (workspace/bigtech.md)
   reach   [max]                    Workday / iCIMS / SmartRecruiters jobs -> fit-gated, tailored, you submit (workspace/reach.md)
   desk    [--fill url]             the desk: a visible browser you sign in to (noVNC :6080); fills Workday forms there
-  shadow  calls|autopilot|always|off|status|train|ladder|agents   Shadow, your AI delegate (alias: draft): answers as you;
+  shadow  calls|autopilot|always|off|status|train|ladder|agents|refresh [n]   Shadow, your AI delegate (alias: draft): answers as you;
                                    train = train/test on your answers, ladder = ownership level, agents = agent graph
   governor                         the supervisor's fleet ceiling now and why (memory, CPU, timeouts, daily cap)
   orch    [status|run|pause|resume <agent>]  the agent orchestrator: periodic agents + Shadow's plan, leases, retries

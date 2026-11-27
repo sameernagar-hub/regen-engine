@@ -75,7 +75,7 @@ def _required(el):
 
 def fill_page(page, job, log):
     """Fill every empty control on the current wizard page. Returns the labels of required fields left empty."""
-    from engine.apply.runner import P, answer, pick_option
+    from engine.apply.runner import MAX_Q, P, answer, note_options, pick_option
     missing = []
     for aid, key in FIXED.items():
         el = page.query_selector(AID(aid))
@@ -100,7 +100,7 @@ def fill_page(page, job, log):
         if ans and not str(ans).startswith("__"):
             el.fill(str(ans)); log(f"   . {label[:60]} -> {str(ans)[:30]}")
         elif _required(el):
-            missing.append(label[:90])
+            missing.append(label[:MAX_Q])
     for btn in page.query_selector_all("button[aria-haspopup=listbox]:visible"):
         cur = (btn.inner_text() or "").strip()
         if cur and not re.fullmatch(r"select one|select|choose", cur, re.I):
@@ -112,13 +112,14 @@ def fill_page(page, job, log):
         if ans:
             btn.click(); page.wait_for_timeout(400)
             opts = [(o.inner_text().strip(), o) for o in page.query_selector_all("[role=option]:visible")]
+            note_options(job, label, opts)
             h = pick_option(opts, str(ans)) if opts else None
             if h:
                 h.click(); log(f"   . {label[:60]} -> {str(ans)[:30]}")
             else:
                 page.keyboard.press("Escape")
         if not h and _required(btn):
-            missing.append(label[:90])
+            missing.append(label[:MAX_Q])
     for grp in page.query_selector_all("fieldset:visible"):
         radios = grp.query_selector_all("input[type=radio]")
         if not radios or any(r.is_checked() for r in radios):
@@ -128,11 +129,12 @@ def fill_page(page, job, log):
         ans = answer(label, job)
         job.setdefault("_answers", []).append([label[:200], ans])
         opts = [((r.evaluate("e => (e.labels[0] || {}).innerText || e.value") or "").strip(), r) for r in radios]
+        note_options(job, label, opts)
         h = pick_option(opts, str(ans)) if ans else None
         if h:
             h.check(); log(f"   . {label[:60]} -> {str(ans)[:30]}")
         elif _required(grp):
-            missing.append(label[:90])
+            missing.append(label[:MAX_Q])
     for box in page.query_selector_all("input[type=checkbox]:visible"):  # terms / consent boxes
         if box.is_checked():
             continue
@@ -141,7 +143,7 @@ def fill_page(page, job, log):
         if ans == "__ACK__" or ans == "Yes":
             box.check(); job.setdefault("_answers", []).append([label[:200], "checked"])
         elif _required(box):
-            missing.append(label[:90])
+            missing.append(label[:MAX_Q])
     return missing
 
 
@@ -349,7 +351,8 @@ def handle(ctx, req, log=print):
         shot = ""
     log(f"desk: {job['name'][:60]} -> {status}")
     record("application", job=job["name"], url=job["url"], status=status.split(":")[0], detail=status, proof=shot,
-           answers=job.get("_answers"), drafted=job.get("_drafted"), resume=req.get("resume"), dry=False, by="desk")
+           answers=job.get("_answers"), drafted=job.get("_drafted"), resume=req.get("resume"), dry=False, by="desk",
+           options={k: v for k, v in (job.get("_options") or {}).items() if status.startswith("NEEDS YOU") and k in status} or None)
     return status
 
 

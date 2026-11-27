@@ -41,3 +41,23 @@ def test_runner_keeps_long_labels_and_notes_options():
     job = {}
     runner.note_options(job, LONG, [("0-1", None), ("2-4", None), ("", None)])
     assert job["_options"] == {LONG: ["0-1", "2-4"]}
+
+
+def test_workday_keeps_long_labels_and_options():
+    import inspect
+    from engine.apply import workday
+    src = inspect.getsource(workday)
+    assert "label[:90]" not in src and "note_options(job, label, opts)" in src and "options=" in src
+
+
+def test_refresh_picks_cut_questions_only(monkeypatch):
+    from engine import shadow
+    cut, full = "x" * 90, "How many years of professional experience do you have?"
+    ev = [{"url": "u1", "job": "A - SWE", "detail": "NEEDS YOU: " + cut},
+          {"url": "u2", "job": "B - SWE", "detail": "NEEDS YOU: " + full},
+          {"url": "u3", "job": "C - SWE", "detail": "NEEDS YOU: " + cut + " | Please tick the hCaptcha box"},
+          {"url": "u4", "job": "D - SWE", "detail": "NEEDS YOU: " + cut}]
+    import engine.feedback.events as E, engine.pipeline as P
+    monkeypatch.setattr(E, "read", lambda kind=None: ev)
+    monkeypatch.setattr(P, "latest_status", lambda: {"u1": "NEEDS YOU", "u2": "NEEDS YOU", "u3": "NEEDS YOU", "u4": "SUBMITTED"})
+    assert shadow.cut_jobs() == ["A - SWE"]
