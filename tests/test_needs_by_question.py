@@ -61,3 +61,14 @@ def test_refresh_picks_cut_questions_only(monkeypatch):
     monkeypatch.setattr(E, "read", lambda kind=None: ev)
     monkeypatch.setattr(P, "latest_status", lambda: {"u1": "NEEDS YOU", "u2": "NEEDS YOU", "u3": "NEEDS YOU", "u4": "SUBMITTED"})
     assert shadow.cut_jobs() == ["A - SWE"]
+
+
+def test_refresh_skips_jobs_already_queued(monkeypatch):
+    from engine import shadow
+    import engine.feedback.events as E, engine.pipeline as P
+    cut = "x" * 90
+    monkeypatch.setattr(E, "read", lambda kind=None: [{"url": "u1", "job": "A - SWE", "detail": "NEEDS YOU: " + cut},
+                                                      {"url": "u2", "job": "B - SWE", "detail": "NEEDS YOU: " + cut}])
+    monkeypatch.setattr(P, "latest_status", lambda: {"u1": "NEEDS YOU", "u2": "NEEDS YOU"})
+    monkeypatch.setattr(shadow, "_queued_jobs", lambda: {"A - SWE"})
+    assert shadow.cut_jobs() == ["B - SWE"]

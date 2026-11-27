@@ -209,6 +209,19 @@ OLD_CUT = 90  # before 11-25 the runner cut NEEDS YOU labels at 90 chars and kep
 HUMAN_STEP = re.compile(r"captcha|bot[- ]?check|human[- ]?(only|check|click)|email code|file upload|resume upload", re.I)
 
 
+def _queued_jobs():
+    """Job names already waiting in or claimed from batches/: a refresh never sends them twice."""
+    import glob
+    from engine.feedback.answer_queue import BOX
+    names = set()
+    for f in glob.glob(os.path.join(BOX, "inbox", "*.json")) + glob.glob(os.path.join(BOX, "claimed", "*.json")):
+        try:
+            names.update(str(j.get("name") or j.get("job") or "") for j in json.load(open(f, encoding="utf-8")))
+        except (OSError, ValueError, AttributeError):
+            pass
+    return names
+
+
 def cut_jobs(limit=25):
     """Parked jobs whose blocking question was saved cut at the old 90-char limit (no options either), human-only
     steps left out. Bounded: a refresh re-runs a few per call, never the whole backlog at once."""
@@ -216,7 +229,7 @@ def cut_jobs(limit=25):
     from engine.feedback.events import read
     from engine.pipeline import latest_status
     st, out = latest_status(), []
-    latest = {}
+    latest, busy = {}, _queued_jobs()
     for e in read("application"):
         if e.get("url") and e.get("job") and not e.get("dry"):
             latest[e["url"]] = e
@@ -224,7 +237,8 @@ def cut_jobs(limit=25):
         if st.get(url) != "NEEDS YOU":
             continue
         qs = missing_questions(e.get("detail") or "")
-        if any(len(q) == OLD_CUT for q in qs) and not any(HUMAN_STEP.search(q) for q in qs) and e["job"] not in out:
+        if any(len(q) == OLD_CUT for q in qs) and not any(HUMAN_STEP.search(q) for q in qs) and e["job"] not in out \
+                and e["job"] not in busy:
             out.append(e["job"])
         if len(out) >= limit:
             break
