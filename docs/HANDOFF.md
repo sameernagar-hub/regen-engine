@@ -1,3 +1,19 @@
+# Handoff: 11-27 ~15:05 STOP POINT (80% 5-hour usage rule; weekly 8%). Engine STOPPED: gear N, inbox+claimed 0, cap 0,
+#   Role Keywords off. LEFT RUNNING: api, web, desk, postgres (desk queue at :3000/desk; desk still on the 11-26 image).
+# Run 11:03-15:00 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 9 verified today (672 total), 505 waiting.
+# SHIPPED + PUSHED: e256350/1e58189 full parked-question text + options in Workday, `engine shadow refresh [n]` (skips
+#   queued jobs); e4bd4a5 efficiency: discovered events capped in memory (mcp 512m), scan back-off after 2 empty passes
+#   (10 min), save_boards merges dead marks, governor host-memory hold (fleet/host.json, fed from the host while a
+#   session runs), scout every 1 h. All engine containers on the e4bd4a5 image. 444 tests pass, privacy clean.
+# SUPPLY: bottleneck all day. Ashby cooldown since 11-27 11:11 (24 h, autoclear off). Queue pruned 678 -> 543 (staffing
+#   intermediary now in exclude_companies, duplicates); 507 Ashby + 36 others. Scout added 46 GH/Lever boards. 37 answerable
+#   parked jobs retried as Shadow; ~43 cut-question jobs refreshed. Clerk saved ~125 Shadow answers.
+# NEEDS THE USER: ~196 CAPTCHA jobs at the desk; references, home address, other languages, export-control/citizenship,
+#   pronouns, phonetic name, Ruby/on-call years; Captain items awaiting OK: .wslconfig 8 GB cap, other projects' stopped
+#   containers/images (~3.5 GB), old proofs/backups archive, desk on demand. Windows had ~1 GB free at peak.
+# CHECK NEXT RUN: pipeline log shows "backing off"; dead-board count grows; needs_by_question rows carry options.
+# NEXT START: /regen-start, then regen-captain (trust layer still first in NEXT_STEPS).
+
 # Handoff: 11-26 ~14:50 STOP POINT (user asked: engine idle, supply-bound; weekly usage 89%). Engine STOPPED: gear N,
 #   inbox+claimed 0, cap 0, Role Keywords off. LEFT RUNNING: api, web, desk, postgres (desk queue at :3000/desk).
 # Run 11:02-14:50 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 1 verified today by proof (663 total).
