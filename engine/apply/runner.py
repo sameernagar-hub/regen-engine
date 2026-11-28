@@ -106,7 +106,7 @@ RULES = [
     # no securities / brokerage license is on file; a preset can override
     (r"(securities|finra|brokerage)\b.{0,40}licen[cs]e|series (6|7|24|63|65|66)\b", P.get("securities_license", "No")),
     # 10-20 parked: wordings the general rules below missed; every answer is on file
-    (r"(year|when) .{0,30}(receive|complete|earn|finish|graduat)\w* .{0,20}(undergraduate|bachelor)", undergrad_year()),
+    (r"(year|when) .{0,60}(receive|complete|earn|finish|graduat)\w*\W{1,2}.{0,60}(undergraduate|bachelor)", undergrad_year()),
     (r"(security )?clearance level", "None" if P.get("security_clearance") == "No" else None),
     # 10-27: "What level clearance do you currently possess?" / "Do you have a Top-Secret Clearance or higher?" parked
     # (presets: security_clearance); eligibility to obtain one is a different question and is left alone
@@ -121,7 +121,7 @@ RULES = [
     (r"transitioning (service ?member|military)", P.get("transitioning_service_member", P.get("us_military_reserve"))),  # B2: before the EEO decline  # acknowledgements, not salary/degree answers
     (r"(unlimited|unrestricted) (and (unlimited|unrestricted) )?(authori[sz]ation|right) to work", P.get("unrestricted_work_authorization")),  # OPT is time-limited
     # demographic / EEO questions are always declined, and checked before anything else can match their long labels
-    (r"gender|\bsex\b|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgbt|communities you|which communit|^i identify|pronoun(?!c)|chronic condition|armed forces|military status", "__DECLINE__"),
+    (r"gender|\bsex\b|\brace\b|racial|ethnic|hispanic|latin[oax]|veteran|disab|sexual orientation|transgender|lgb|lesbian|bisexual|communities you|which communit|^i identify|pronoun(?!c)|chronic condition|armed forces|military status", "__DECLINE__"),
     # "If you were referred, the referring individual's first and last name": the engine applies cold, so this is never
     # the candidate's own name (v0.8 bug: matched "last name" below)
     (r"(?<![a-z])referr(ed|ing|er|al)\b.{0,80}(name|individual)|name of .{0,30}referr", "N/A"),  # (?<![a-z]): not "preferred"
@@ -259,8 +259,8 @@ RULES = [
     # truthful affirmations (information is true, no confidential info from a former employer) are agreed
     (r"privacy|consent|acknowledge|agree|certify|attest|affirm|hereby (state|declare|confirm)", "__ACK__"),
 ]
-DECLINE = re.compile(r"decline|prefer not|don.t wish|do not wish|not to (answer|disclose|say)|choose not|do not want to answer|don.t want to (answer|disclose)", re.I)
-ACK = re.compile(r"^(yes|i agree|i acknowledge|i consent|i accept|i have read|i will read|i understand|i confirm|i certify|i attest|acknowledged?|agreed?|accepted?|confirm(ed)?|understood)\b", re.I)
+DECLINE = re.compile(r"decline|prefer not|prefer to not|rather not|don.t wish|do not wish|not to (answer|disclose|say|identify|self)|choose not|(do not|don.t) (want|care) to (answer|disclose|identify|say)|not (wish|want) to (answer|disclose|identify)|(do not|don.t) (identify|disclose)|no answer|undisclosed|self.identify", re.I)
+ACK = re.compile(r"^(yes|i agree|i acknowledge|i consent|i accept|i have read|i will read|i understand|i confirm|i certify|i attest|i affirm|i verify|i declare|i hereby|acknowledged?|agreed?|accepted?|confirm(ed)?|understood)\b", re.I)
 NACK = re.compile(r"\b(do not|don.t|disagree|decline|not|no|reject)\b", re.I)
 
 # Open-ended "why us" questions get the job's note (written per job from Fact Bank entries, reviewed before use).
@@ -288,6 +288,7 @@ if P.get("work_auth_status"):  # visa-type dropdowns word the same status many w
 ALIASES["Company careers page"] = ["Company Website", "Company website", "Careers Page", "Career Site", "Website", "Company Careers Site", "Job Board", "Other"]
 ALIASES = {k: [v for v in vs if v] for k, vs in ALIASES.items()}
 
+LOCATION_Q = re.compile(r"^\W*((current|your|home) )?(location|city)\b|where .{0,30}(currently )?(located|based|live|reside)|(current|home) (city|location|address)", re.I)
 MAX_Q = 300  # longest question label kept in a NEEDS YOU line (11-25: 90 cut real questions in half for the cord / Shadow)
 MAX_OPTION = 80  # longest answer we will try to match against dropdown / choice options
 YESNO_Q = re.compile(r"^\s*(are|do|does|did|will|would|have|has|had|is|was|can|could|should|may|any)\b", re.I)
@@ -677,12 +678,28 @@ def pick_option(options, ans):
         return None  # multi-select only: handled by skill_options
     if ans == "__DECLINE__":
         for t, h in options:
-            if DECLINE.search(t): return h
+            if DECLINE.search(t) and not re.search(r"\bnot (a |an )?(decline|prefer)", t, re.I): return h
         return None
     if ans == "__ACK__":
         for t, h in options:
             if ACK.search(t.strip()) and not NACK.search(t): return h
         return options[0][1] if len(options) == 1 and not NACK.search(options[0][0]) else None
+    if re.fullmatch(r"(19|20)\d\d", ans or ""):  # a degree/graduation year: exact, or "2022 or earlier" / "before 2023" / "2020-2022"
+        y = int(ans)
+        for t, h in options:
+            if set(re.findall(r"(?:19|20)\d\d", t)) == {str(y)}: return h
+        for t, h in options:
+            m = re.fullmatch(r"\s*((?:19|20)\d\d)\s*(?:-|to|–)\s*((?:19|20)\d\d)\s*", t)
+            if m and int(m.group(1)) <= y <= int(m.group(2)): return h
+            e = re.search(r"((?:19|20)\d\d)\s*(or (earlier|before|older)|and (earlier|before)|\band prior|\bor prior)|(before|prior to|earlier than)\s*((?:19|20)\d\d)", t, re.I)
+            if e:
+                lim = int(e.group(1) or e.group(6)); strict = e.group(6) is not None
+                if y < lim if strict else y <= lim: return h
+            l = re.search(r"((?:19|20)\d\d)\s*(or (later|after|newer)|and (later|after)|\+)|(after|since)\s*((?:19|20)\d\d)", t, re.I)
+            if l:
+                lim = int(l.group(1) or l.group(6)); strict = l.group(6) is not None
+                if y > lim if strict else y >= lim: return h
+        return None  # a year with no matching option: never another year (it would change a fact)
     if re.fullmatch(r"\d{4,7}", ans or ""):  # a salary number against range buckets ("$80,000 - $100,000", "120,000+")
         n = int(ans)
         nums_of = lambda t: [int(x.replace(",", "")) * (1000 if k else 1) for x, k in re.findall(r"(\d[\d,]*)\s*(k\b)?", t, re.I)]
@@ -742,6 +759,28 @@ def pick_option(options, ans):
             for t, h in options:
                 if re.search(rx, t, re.I): return h
     return option_fallback(options, a)
+
+
+def location_option(options, ans):
+    """Greenhouse/places autocompletes: the option for the user's own place out of a remote suggestion list.
+    options: (text, handle). ans: "<City>, <ST>, United States" / "<City>, <State>". Needs the city to lead the
+    option AND the home state (abbr or name) or the US to show; never another city or country ("<City>, Costa Rica").
+    A state/US-only suggestion is the last resort (the state, not a different city). None when nothing fits."""
+    parts = [x.strip() for x in (ans or "").split(",") if x.strip()]
+    if not parts: return None
+    city = _norm_opt(parts[0])
+    st = {_norm_opt(x) for x in (P.get("state"), P.get("state_abbr")) if x} | {x.lower() for x in parts[1:2]}
+    us = re.compile(r"(?<![a-z])(united states( of america)?|usa?)(?![a-z])")
+    def has_state(t):
+        return any(re.search(r"(?<![a-z])" + re.escape(x) + r"(?![a-z])", t) for x in st if x)
+    cands = [(_norm_opt(t), h) for t, h in options if t and not re.search(r"no options|loading", t, re.I)]
+    for t, h in cands:
+        if (t == city or t.startswith(city + ",") or t.startswith(city + " ")) and has_state(t[len(city):]) and not re.search(r"costa rica|mexico|philippines|colombia|chile|uruguay", t): return h
+    for t, h in cands:  # "<City>, United States": no state shown, so nothing contradicts the home state
+        if [x.strip() for x in t.split(",")][0] == city and len(t.split(",")) == 2 and us.fullmatch(t.split(",")[1].strip()): return h
+    for t, h in cands:
+        if has_state(t) and not t.startswith(city) and len(t.split(",")) <= 2 and us.search(t): return h
+    return None
 
 
 def _bounds(t):
@@ -1647,6 +1686,24 @@ def set_gh(page, f, ans, label="", loc=""):
         def options():
             opts = menu_options(page)
             return [o for o in opts if not re.search(r"no options|loading", o.inner_text(), re.I)]
+
+        if "," in ans and not ans.startswith("__") and LOCATION_Q.search(label):
+            # 11-28 (Optiver, Dropbox, Atto): a remote places search finds nothing for the whole "<City>, <ST>, United
+            # States"; type the city alone, wait for the list and take the suggestion in the home state (location_option)
+            parts = [x.strip() for x in ans.split(",")]
+            for term in (parts[0], ", ".join(parts[:2]), ans):
+                inp.click(timeout=4000); inp.fill(""); inp.type(term, delay=30)
+                for _ in range(6):  # the list loads remotely: wait up to ~4 s for real suggestions
+                    time.sleep(0.7); real = options()
+                    if real: break
+                h = location_option([(o.inner_text(), o) for o in real], ans) if real else None
+                if h:
+                    try: h.click(force=True, timeout=3000)
+                    except Exception:
+                        for _ in range(real.index(h) + 1): page.keyboard.press("ArrowDown")
+                        page.keyboard.press("Enter")
+                    time.sleep(0.4); return True
+            page.keyboard.press("Escape"); return False
 
         # fast path: open the menu once and choose from the full list (most selects have < 15 options)
         inp.click(timeout=4000); time.sleep(0.5)

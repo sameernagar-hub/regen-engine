@@ -4,6 +4,17 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-28 · form-filler gaps (places autocomplete, option wording)
+- **Greenhouse Location boxes:** a remote places search returns nothing for "<City>, <ST>, United States" (Optiver,
+  Dropbox, Atto parked on "Current Location"). `set_gh` now types the city, waits up to ~4 s for suggestions and picks
+  via `location_option`: the home city with the home state, else "City, United States", else the state itself; never
+  another city or country. No fit -> stays parked.
+- **Option wording:** `DECLINE` knows "I don't wish to answer", "Decline to self-identify", "rather not say";
+  `ACK` knows certify/attest/affirm/verify/declare; a degree year ("2022") matches exact, "2022 or earlier",
+  "before/after N" and ranges, never another year (DV Trading). The LGB question is an EEO decline (84.51), and the
+  "when did you complete ... bachelor's" wording is answered from the Fact Bank (Brattle).
+- Verify: `pytest tests/test_forms_1128.py`.
+
 ## [Unreleased] - 2026-11-28 · saved answers re-open their parked jobs
 - **Retry mailbox:** answers saved straight to the bank (MCP `answer_save`, cord replies: Shadow / the clerk) only
   wrote `batches/requeue.json`, which nothing in the Docker bank reads; 75 answered jobs sat parked. `answers.save`
