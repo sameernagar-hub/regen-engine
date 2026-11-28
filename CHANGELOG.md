@@ -4,6 +4,18 @@ Every change to the engine, newest first. Each entry says **what** changed, **wh
 so a reviewer can check the work without reading the whole diff.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow the README roadmap.
 
+## [Unreleased] - 2026-11-28 · saved answers re-open their parked jobs
+- **Retry mailbox:** answers saved straight to the bank (MCP `answer_save`, cord replies: Shadow / the clerk) only
+  wrote `batches/requeue.json`, which nothing in the Docker bank reads; 75 answered jobs sat parked. `answers.save`
+  now also drops the job in `answers/retry/`; the answers container's next drain folds them into its one retry batch.
+- **Retry skips walled ATSs:** `answer_queue._retry` never re-opens a captcha-walled ATS or Ashby while it cools down.
+- **3rd stop not final when answered:** `latest_status` pinned a job as NEEDS YOU after 3 stops on one question even when
+  the bank answered it later; now a 3rd stop re-opens once if the bank changed after it and answers every question.
+  The 4th stop is final.
+- **Prune keeps walled-ATS jobs** (9d8735b): the 3-day captcha wall dropped fresh Ashby finds every pass.
+- Verify: `pytest tests/test_answer_retry.py`; after an `answer_save`, `answers/retry/` empties and a
+  `batches/inbox/answers_*.json` appears.
+
 ## [Unreleased] - 2026-11-27 · efficiency pass (Captain's audit)
 - **Event cache capped:** every process kept all 72k events in memory, 68% of them `discovered` (mcp at 376/384 MB).
   `events.read()` and the API store keep only the newest `REGEN_DISCOVERED_KEEP` (2000) of them; the file is complete.

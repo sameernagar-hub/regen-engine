@@ -70,7 +70,7 @@ def save(job, question, answer, profile=None, workspace=None, requeue_job=True, 
         keep_for_job(job, question, answer)
         record("answer", job=job, question=question[:300], pattern=pattern_for(question), source=by)
         if requeue_job:
-            requeue(job, workspace)
+            _go_again(job, workspace)
         return {"pattern": pattern_for(question), "answer": answer, "source": f"{by}, job-scoped, for {job}"}
     question, answer = validate(question, answer)
     path = os.path.join(profile, "answers.json")
@@ -83,8 +83,19 @@ def save(job, question, answer, profile=None, workspace=None, requeue_job=True, 
     os.replace(tmp, path)  # atomic: a reader never sees half a file
     record("answer", job=job, question=question[:300], pattern=pat, source=by)
     if requeue_job:
-        requeue(job, workspace)
+        _go_again(job, workspace)
     return rec
+
+
+def _go_again(job, workspace=None):
+    """The job goes again with its new answer: batches/requeue.json (local `engine apply`) and, 11-28, the answers
+    container's retry mailbox (the Docker bank: its next drain drops one retry batch into batches/inbox)."""
+    requeue(job, workspace)
+    try:
+        from engine.feedback.answer_queue import mark_retry
+        mark_retry(job, workspace)
+    except OSError:
+        pass
 
 
 def requeue(job, workspace=None):

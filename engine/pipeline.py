@@ -58,7 +58,10 @@ def latest_status():
                 n = asked[(e["url"], e.get("detail") or "")]
                 # 3 stops on the same question: it is yours, whatever the bank says. 11-13: Shadow writes answers.json
                 # all the time, so "the bank changed since" was always true and dead-end parks re-ran every pass.
-                if n >= 3 or n >= 2 and (e.get("ts") or "") > bank_t:
+                # 11-28: a 3rd stop is not final when the bank changed after it and now answers every question
+                # (the clerk's answers sat behind this pin); the 4th stop on the same question always is.
+                late = (e.get("ts") or "") > bank_t
+                if n >= 4 or n >= 2 and late or n == 3 and not answerable_now(e.get("detail") or ""):
                     out[e["url"]] = st
                     continue
             if st == "ERROR":  # a page that never rendered its form: twice is enough (10-12: one Ashby job took

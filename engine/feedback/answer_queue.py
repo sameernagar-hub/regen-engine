@@ -23,7 +23,7 @@ BOX = os.path.join(WORKSPACE, "batches")
 
 
 def _dirs():
-    out = {k: os.path.join(QDIR, k) for k in ("inbox", "claimed", "done", "refused")}
+    out = {k: os.path.join(QDIR, k) for k in ("inbox", "claimed", "done", "refused", "retry")}
     for d in out.values():
         os.makedirs(d, exist_ok=True)
     return out
@@ -40,6 +40,36 @@ def enqueue(job, question, answer):
     os.replace(tmp, os.path.join(d["inbox"], name))  # appears whole: the container never reads half a file
     record("answer_queued", job=job, question=question[:300])
     return {"pattern": A.pattern_for(question), "answer": answer, "source": f"queued {ts}, for {job}"}
+
+
+def mark_retry(job, workspace=None):
+    """11-28: an answer saved straight to the bank (MCP answer_save, cord reply: Shadow / the clerk) asks for its job
+    to go again. One small file per job in answers/retry/; the next drain folds them into its single retry batch.
+    (Before, those saves only wrote batches/requeue.json, which nothing in the Docker bank reads.)"""
+    d = os.path.join(workspace, "answers", "retry") if workspace else _dirs()["retry"]
+    os.makedirs(d, exist_ok=True)
+    name = hashlib.sha1(str(job).encode()).hexdigest()[:12] + ".json"
+    tmp = os.path.join(d, "." + name)
+    json.dump({"job": job}, open(tmp, "w", encoding="utf-8"))
+    os.replace(tmp, os.path.join(d, name))
+
+
+def _take_retries():
+    """Job labels waiting in answers/retry/, each file removed as it is read (one owner: the answers container)."""
+    d, jobs = _dirs()["retry"], []
+    for n in sorted(os.listdir(d)):
+        if not n.endswith(".json") or n.startswith("."):
+            continue
+        f = os.path.join(d, n)
+        try:
+            jobs.append(json.load(open(f, encoding="utf-8"))["job"])
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+    return jobs
 
 
 JOB_EXTRA = "job_extra.json"  # under QDIR
@@ -112,6 +142,7 @@ def drain():
                scope="job" if A.job_scoped(item["question"]) else "all forms")
         jobs.append(item["job"])
         os.replace(mine, os.path.join(d["done"], n))
+    jobs += _take_retries()
     retry = _retry(jobs)
     return {"saved": saved, "refused": refused, "retry": retry}
 
@@ -120,11 +151,17 @@ def _retry(jobs):
     """One batch in batches/inbox for the answered jobs that are not submitted yet (deduped by URL)."""
     if not jobs:
         return 0
-    from engine.pipeline import latest_status
+    from engine.pipeline import ats_of, history, latest_status
+    from engine.apply.runner import ashby_cooling
     st, seen, out = latest_status(), set(), []
+    walled = history()[0]
+    if ashby_cooling():
+        walled.add("ashby")
     for job in dict.fromkeys(jobs):
         e = find_entry(job)
         if not e or e.get("url") in seen or st.get(e.get("url")) == "SUBMITTED":
+            continue
+        if ats_of(e.get("url")) in walled:  # 11-28: never re-open a captcha-walled / cooling ATS (Ashby spam flag)
             continue
         try:  # 11-06: a retry never brings back a title the current filter drops (sales, support, analyst roles)
             from engine.discovery.filters import keep, load_domain

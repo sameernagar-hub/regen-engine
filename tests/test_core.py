@@ -893,7 +893,9 @@ def test_three_parks_on_one_question_stay_with_the_user(monkeypatch):
     monkeypatch.setattr(Pl, "answerable_now", lambda d: True)
     assert Pl.latest_status()["u"] == "RETRY"  # two stops, older than the bank: one more try
     evs.append(dict(park))
-    assert Pl.latest_status()["u"] == "NEEDS YOU"
+    assert Pl.latest_status()["u"] == "RETRY"  # 11-28: a 3rd stop the bank now answers gets exactly one more try
+    evs.append(dict(park))
+    assert Pl.latest_status()["u"] == "NEEDS YOU"  # the 4th stop on the same question is final
 
 
 def test_fit_spoken_language():
