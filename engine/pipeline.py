@@ -245,13 +245,14 @@ def select(queue, max_jobs, ashby_ok=True, per_company=3):
 
 
 def prune(queue):
-    """Drop queue jobs that can never be applied to by the engine (final status, skipped or captcha-walled ATS) and
+    """Drop queue jobs that can never be applied to by the engine (final status, skipped ATS, account-gated reach) and
     rewrite queue.json, so the queue holds only fillable jobs (user, 2026-10-10). NEEDS YOU stays: answers re-open it.
     O(Q)."""
     st = latest_status()
-    walled, _ = history()
+    # 11-28: captcha-walled ATSs are NOT pruned. The wall is a rolling 3-day window (and Ashby's cooldown ends sooner),
+    # so pruning threw away fresh finds every pass; select() already skips walled ATSs.
     keep = [j for j in queue if st.get(j["url"]) not in ("SUBMITTED", "SKIPPED", "FLAGGED", "FAILED")
-            and j.get("ats") not in SKIP_ATS and j.get("ats") not in walled  # reach jobs stay: reach.py reads them
+            and j.get("ats") not in SKIP_ATS  # reach jobs stay: reach.py reads them
             and not (j.get("ats") in REACH and _open_only())]  # 11-15: ...unless open_only (the default)
     if len(keep) != len(queue):
         json.dump(keep, open(os.path.join(WORKSPACE, "queue.json"), "w", encoding="utf-8"), indent=1)
