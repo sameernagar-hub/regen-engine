@@ -1,3 +1,26 @@
+# Handoff: 11-28 ~00:45 STOP POINT (user asked: mechanic fix, then stop; 5-hour usage ~35%, weekly 15%). Engine STOPPED:
+#   gear N, inbox+claimed 0, cap 0, Role Keywords off. LEFT RUNNING: api, web, desk, postgres (desk queue at :3000/desk).
+# Run 11-27 23:26 - 11-28 00:45 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): verified 672 -> 681 (+9);
+#   7 dated 11-28. 493 waiting.
+# SHIPPED + PUSHED: 9d8735b prune keeps captcha-walled ATS jobs (the 3-day wall deleted fresh Ashby finds every pass);
+#   92bcd8d saved answers re-open their parked jobs: answers.save -> answers/retry/ mailbox -> the answers container's
+#   one retry batch (MCP answer_save / cord replies only wrote batches/requeue.json, read by nothing in Docker); _retry
+#   skips walled ATSs + Ashby while cooling; a 3rd stop re-opens once when the bank answers it later, the 4th is final.
+#   166ddb9 (Mechanic) Greenhouse location autocomplete + option matching (decline variants, certify boxes, EEO decline,
+#   degree-year selects). 455 tests pass, privacy clean. mcp/answers/pipeline run 92bcd8d; regen-applier:local is
+#   BUILT from 166ddb9 but the appliers were NOT recreated on it (stack stopped).
+# ANSWERS: Clerk saved ~86 Shadow answers. Captain audit: start date fixed to "Immediately" (no notice, per presets);
+#   one-word patterns (location/school/degree/discipline/current location/ideal start date) anchored to whole labels
+#   (the bank matches with re.search, "location" hit "relocation"); one unsupported tool-years Yes reset to No.
+#   Backups: /data/workspace/answers_backup_1128.json, job_extra_backup_1128.json.
+# Retry batch (27 GH/Lever): 8 submitted, 16 re-parked on filler gaps (now covered by 166ddb9, untested live),
+#   2 failed (1 Lever CAPTCHA), 1 page timeout. Next pass chose 7 of 28 via the 3rd-stop rule.
+# SUPPLY: still the bottleneck; queue = parked jobs only. Ashby cooldown ends 11-28 11:11 (autoclear off).
+# NEEDS THE USER: ~196 CAPTCHA jobs at the desk; salary questions (draft override keeps them yours); human-check quizzes.
+# NEXT START: /regen-start; recreate the appliers on the 166ddb9 image (start.sh env + write probe); then re-queue the
+#   ~15 jobs parked on location / select questions (Greenhouse location + Ashby "Missing entry: Location") with
+#   answer_queue._retry and watch the first live results of the Mechanic fix. After 11:11 Ashby reopens (5/pass).
+
 # Handoff: 11-27 ~15:05 STOP POINT (80% 5-hour usage rule; weekly 8%). Engine STOPPED: gear N, inbox+claimed 0, cap 0,
 #   Role Keywords off. LEFT RUNNING: api, web, desk, postgres (desk queue at :3000/desk; desk still on the 11-26 image).
 # Run 11:03-15:00 (gear 3, cap 4 = 150, keywords on, Shadow autopilot): 9 verified today (672 total), 505 waiting.
